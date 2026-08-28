@@ -680,8 +680,25 @@
         .sl-field label { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
         .sl-field input:focus, .sl-field textarea:focus, .sl-field select:focus { border-color:var(--accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
 
-        /* Brand confidence chip */
+        /* Resolution stage tracker */
+        .sl-res-track { display:flex; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); flex-wrap:wrap; }
+        .sl-res-label { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-right:2px; }
+        .sl-res-stage { display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:20px; font-size:0.72rem; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; }
+        .sl-res-stage.inactive { background:var(--bg-light); border-color:var(--border-color); color:var(--text-muted); }
+        .sl-res-stage.active-contacted { background:rgba(59,130,246,.1); border-color:#3B82F6; color:#2563EB; }
+        .sl-res-stage.active-progress  { background:rgba(245,158,11,.1); border-color:#F59E0B; color:#B45309; }
+        .sl-res-stage.active-closed    { background:rgba(5,150,105,.1);  border-color:#059669; color:#059669; }
+        .sl-res-stage:hover { opacity:.8; transform:scale(.97); }
         .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
+
+        /* Create Submission step animations */
+        @keyframes csSlideInRight  { from { opacity:0; transform:translateX(40px);  } to { opacity:1; transform:translateX(0); } }
+        @keyframes csSlideInLeft   { from { opacity:0; transform:translateX(-40px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes csSlideOutRight { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px);  } }
+        @keyframes csSlideOutLeft  { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(-40px); } }
+        .cs-slide-in-right  { animation: csSlideInRight  .32s cubic-bezier(.16,1,.3,1) both; }
+        .cs-slide-in-left   { animation: csSlideInLeft   .32s cubic-bezier(.16,1,.3,1) both; }
+        .cs-choice-selected { background:rgba(1,1,151,.06) !important; border-color:#010197 !important; color:#010197 !important; }
 
         /* Resolved state overlay */
         .sl-resolved-banner { font-size:0.7rem; font-weight:800; color:var(--status-good); background:var(--status-good-bg); border:1px solid rgba(5,150,105,.2); border-radius:6px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
@@ -1494,34 +1511,48 @@
             </div>
 
             <!-- ══════════════ CREATE SUBMISSION MODAL ══════════════ -->
-            <div id="cs-modal" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;" onclick="if(event.target===this)csCloseForm()">
-                <div style="background:var(--white);border-radius:20px;width:92%;max-width:560px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.25);animation:loginSlideUp .3s cubic-bezier(.16,1,.3,1) both;">
+            <div id="cs-modal" style="display:none;position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,0);align-items:center;justify-content:center;transition:background .3s ease;" onclick="if(event.target===this)csCloseForm()">
+                <div id="cs-modal-box" style="background:var(--white);border-radius:24px;width:92%;max-width:540px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 100px rgba(0,0,0,.3);transform:translateY(32px) scale(.97);opacity:0;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s cubic-bezier(.16,1,.3,1);">
 
                     <!-- Modal header -->
-                    <div style="padding:20px 28px 16px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-                        <div>
-                            <div style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Create Submission</div>
-                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Call Center · Step <span id="cs-step-num">1</span> of 8</div>
+                    <div style="padding:20px 24px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#010197,#3B5BDB);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="fas fa-headset" style="color:#fff;font-size:0.85rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:0.9rem;font-weight:800;color:var(--text-main);">Create Submission</div>
+                                <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">Call Center · <span id="cs-step-num">Step 1</span></div>
+                            </div>
                         </div>
-                        <button onclick="csCloseForm()" style="background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                        <button onclick="csCloseForm()" style="background:var(--bg-light);border:none;color:var(--text-muted);font-size:0.85rem;cursor:pointer;padding:7px 9px;border-radius:8px;transition:.15s;" onmouseover="this.style.background='var(--border-color)'" onmouseout="this.style.background='var(--bg-light)'">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
 
                     <!-- Progress bar -->
-                    <div style="height:3px;background:var(--bg-light);flex-shrink:0;">
-                        <div id="cs-progress" style="height:100%;background:linear-gradient(90deg,#010197,#3B5BDB);transition:width .35s ease;width:12.5%;"></div>
+                    <div style="height:2px;background:var(--bg-light);flex-shrink:0;margin:0 24px;border-radius:2px;">
+                        <div id="cs-progress" style="height:100%;background:linear-gradient(90deg,#010197,#3B5BDB);transition:width .5s cubic-bezier(.16,1,.3,1);border-radius:2px;width:0%;"></div>
                     </div>
 
-                    <!-- Step content -->
-                    <div id="cs-body" style="padding:32px 28px;overflow-y:auto;flex:1;"></div>
+                    <!-- Step content — animated -->
+                    <div style="position:relative;flex:1;overflow:hidden;">
+                        <div id="cs-body" style="padding:28px 24px 20px;overflow-y:auto;height:100%;"></div>
+                    </div>
 
                     <!-- Footer nav -->
-                    <div style="padding:16px 28px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-                        <button id="cs-prev-btn" onclick="csStep(-1)" style="display:flex;align-items:center;gap:6px;padding:9px 18px;border:1.5px solid var(--border-color);border-radius:9px;background:var(--white);color:var(--text-main);font-size:0.85rem;font-weight:700;cursor:pointer;opacity:0;pointer-events:none;">
-                            <i class="fas fa-arrow-left"></i> Previous
+                    <div style="padding:14px 24px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:8px;">
+                        <button id="cs-prev-btn" onclick="csStep(-1)" style="display:flex;align-items:center;gap:6px;padding:10px 18px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--white);color:var(--text-main);font-size:0.82rem;font-weight:700;cursor:pointer;transition:.2s;opacity:0;pointer-events:none;">
+                            <i class="fas fa-arrow-left" style="font-size:0.75rem;"></i> Back
                         </button>
-                        <button id="cs-next-btn" onclick="csStep(1)" style="display:flex;align-items:center;gap:6px;padding:9px 22px;border:none;border-radius:9px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(1,1,151,.2);">
-                            Next <i class="fas fa-arrow-right"></i>
-                        </button>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button id="cs-skip-btn" onclick="csSkip()" style="display:none;padding:10px 16px;border:1.5px solid var(--border-color);border-radius:10px;background:var(--white);color:var(--text-muted);font-size:0.82rem;font-weight:700;cursor:pointer;transition:.2s;">
+                                Skip
+                            </button>
+                            <button id="cs-next-btn" onclick="csStep(1)" style="display:flex;align-items:center;gap:6px;padding:10px 24px;border:none;border-radius:10px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(1,1,151,.25);transition:.2s;">
+                                Next <i class="fas fa-arrow-right" style="font-size:0.75rem;"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1843,11 +1874,14 @@
         const LIVE = {
             refreshMs: 60000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
-            slScriptUrl: 'https://script.google.com/macros/s/AKfycbzaza-qymEcGYtR_nh66zNg9NKx6bISj6lSUPwrcWRF0sL6Sufr5Uj0cjGIENWqwhDQ/exec',
+            slScriptUrl: 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec',
             // Social Listening — published CSV (reads rows back from Sheet)
             // NOTE: after publishing the sheet, get the gid for Social_Listening tab from:
             // File → Share → Publish to web → Social_Listening tab → CSV → copy link
             slSheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=324269416&single=true&output=csv',
+            // Published CSV of the SL_Resolution tab. Paste the link after you publish that tab
+            // (File → Share → Publish to web → SL_Resolution → CSV). Leave '' to keep resolutions local-only.
+            slResolutionUrl: '',
             // AI Executive Summary tab (published CSV), written by the Gemini Apps Script
             summaryUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1550342651&single=true&output=csv',
             actionPlanUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1996393145&single=true&output=csv',
@@ -3653,7 +3687,7 @@
               content:'@crumblepakistan Okay @crumblepakistan crumble, we need to talk about how amazing this is!',
               likes:0, comments:0, shares:0, date:_slDate(0),
               url:'https://www.instagram.com/crumblepakistan/',
-              resolved:false, tags:[], region:'Pakistan',
+              resolved:false, resolutionStatus:null, tags:[], region:'Pakistan',
               brandTier:'definite', brandLabel:'Crumble PK',
               triggeredBy:['comment on crumble post'] },
 
@@ -3669,63 +3703,63 @@
               content:'Really disappointed with my Crumble Johar Town order. Cookies were dry and crumbly (not in a good way), delivery took 90 minutes, and the packaging was crushed. @crumblepakistan please sort this out 🙏',
               likes:34, comments:52, shares:9, date:_slDate(1),
               url:'https://www.instagram.com/foodblogpk/',
-              resolved:false, tags:['#crumblepakistan'], region:'Central' },
+              resolved:false, resolutionStatus:'none', tags:['#crumblepakistan'], region:'Central' },
 
             { id:'sl3', platform:'Twitter/X', type:'Post', sentiment:'Complaint', branch:'',
               author:'@ali_raza_lhr',
               content:'@crumblepakistan my order has been "out for delivery" for 2 hours. Support isn\'t picking up. This is ridiculous. Never ordering again.',
               likes:8, comments:3, shares:12, date:_slDate(0),
               url:'https://x.com/crumblepakistan',
-              resolved:false, tags:[], region:'Pakistan' },
+              resolved:false, resolutionStatus:'none', tags:[], region:'Pakistan' },
 
             { id:'sl4', platform:'Facebook', type:'Review', sentiment:'Praise', branch:'MM Alam Road',
               author:'Ayesha Farooq',
               content:'Best cookies in Lahore hands down. The MM Alam Road branch staff are so friendly and the store always smells amazing. My kids demand Crumble every weekend now! ⭐⭐⭐⭐⭐',
               likes:91, comments:7, shares:0, date:_slDate(3),
               url:'https://www.facebook.com/crumblepakistan',
-              resolved:false, tags:[], region:'Central' },
+              resolved:false, resolutionStatus:null, tags:[], region:'Central' },
 
             { id:'sl5', platform:'Instagram', type:'Reel', sentiment:'Praise', branch:'F-11',
               author:'@isloocravings',
               content:'POV: You just discovered Crumble F-11 🤯 The s\'mores cookie literally melted in my mouth. Islamabad finally has a proper dessert spot! Must try. Link in bio for my full review. #islamabad #crumblecookies #f11',
               likes:1840, comments:134, shares:67, date:_slDate(5),
               url:'https://www.instagram.com/isloocravings/',
-              resolved:false, tags:['#islamabad','#crumblecookies','#f11'], region:'North' },
+              resolved:false, resolutionStatus:null, tags:['#islamabad','#crumblecookies','#f11'], region:'North' },
 
             { id:'sl6', platform:'Google', type:'Review', sentiment:'Complaint', branch:'Multan',
               author:'Hassan K.',
               content:'Ordered from Crumble Multan online. Got the wrong items — ordered 4 cookies, got 2. Called the number multiple times, nobody answered. Very poor service for the price they charge.',
               likes:0, comments:0, shares:0, date:_slDate(4),
               url:'https://maps.app.goo.gl/crumblemultan',
-              resolved:false, tags:[], region:'South' },
+              resolved:false, resolutionStatus:'none', tags:[], region:'South' },
 
             { id:'sl7', platform:'Instagram', type:'Story', sentiment:'Mention', branch:'',
               author:'@zara.eats',
               content:'Anyone else obsessed with @crumblepakistan or just me? 🍪💙 asking for a friend',
               likes:203, comments:41, shares:0, date:_slDate(1),
               url:'https://www.instagram.com/crumblepakistan/',
-              resolved:false, tags:['#crumblepakistan'], region:'Pakistan' },
+              resolved:false, resolutionStatus:null, tags:['#crumblepakistan'], region:'Pakistan' },
 
             { id:'sl8', platform:'TikTok', type:'Reel', sentiment:'Praise', branch:'Saddar',
               author:'@lahorefoodies',
               content:'Rating every Crumble branch in Lahore so you don\'t have to 🍪📍 Episode 3: Saddar — the vibe, the service, the cookies. 10/10 would recommend for a date. Comment your fav branch! #crumble #lahore #foodtok',
               likes:5200, comments:318, shares:204, date:_slDate(7),
               url:'https://www.tiktok.com/@lahorefoodies',
-              resolved:false, tags:['#crumble','#lahore','#foodtok'], region:'Central' },
+              resolved:false, resolutionStatus:null, tags:['#crumble','#lahore','#foodtok'], region:'Central' },
 
             { id:'sl9', platform:'Twitter/X', type:'Post', sentiment:'Query', branch:'',
               author:'@sarahjaved92',
               content:'@crumblepakistan do you guys do custom boxes for corporate gifting? Need something for 50 people for an office event next week. DM or email?',
               likes:2, comments:1, shares:0, date:_slDate(0),
               url:'https://x.com/crumblepakistan',
-              resolved:false, tags:[], region:'Pakistan' },
+              resolved:false, resolutionStatus:null, tags:[], region:'Pakistan' },
 
             { id:'sl10', platform:'Instagram', type:'Comment', sentiment:'Complaint', branch:'Lake City',
               author:'@bilal_foodie',
               content:'Visited the Lake City outlet yesterday. Waited 25 minutes even though it wasn\'t busy. The staff seemed undertrained and didn\'t know their own menu. Cookie quality was good but experience was not. @crumblepakistan',
               likes:19, comments:6, shares:0, date:_slDate(2),
               url:'https://www.instagram.com/crumblepakistan/',
-              resolved:false, tags:[], region:'Central' },
+              resolved:false, resolutionStatus:'none', tags:[], region:'Central' },
         ];
 
         // ── Date preset state — single variable, no CSS class conflicts ─────
@@ -3798,7 +3832,7 @@
         }
 
         // ── Data store ────────────────────────────────────────────────────────
-        const SL_DATA_VERSION = 4; // bumped — real URLs + wildriders666 added
+        const SL_DATA_VERSION = 5; // bumped — resolution stages added
         let slMentions = [];
         function slLoadData(){
             try {
@@ -3825,6 +3859,27 @@
                 sessionStorage.setItem('crumble_sl_mentions', JSON.stringify(slMentions));
                 sessionStorage.setItem('crumble_sl_version', String(SL_DATA_VERSION));
             }catch(e){}
+        }
+
+        // ── Resolution stage handler ──────────────────────────────────────────
+        function slSetResolution(id, stage){
+            const m = slMentions.find(x=>x.id===id);
+            if(!m) return;
+            // Toggle: clicking active stage clears it back to 'none'
+            m.resolutionStatus = m.resolutionStatus === stage ? 'none' : stage;
+            slSaveData();
+            renderSocialListening();
+            // Persist to Google Sheet (fire-and-forget, mirrors slAddMention)
+            if(LIVE.slScriptUrl){
+                fetch(LIVE.slScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'sl_resolution', id: id, status: m.resolutionStatus })
+                })
+                .then(() => console.log('Resolution saved to Google Sheet ✓'))
+                .catch(err => console.warn('Resolution save failed (kept locally):', err));
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -3860,7 +3915,7 @@
             return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
         }
 
-        function slIsUrgent(m){ return m.sentiment === 'Complaint' && !m.resolved; }
+        function slIsUrgent(m){ return m.sentiment === 'Complaint' && m.resolutionStatus !== 'closed'; }
 
         // ═══════════════════════════════════════════
         // BRAND INTELLIGENCE — keyword config
@@ -4141,6 +4196,7 @@
                 likes, comments, shares:0,
                 date: new Date(SYSTEM_NOW).toISOString().split('T')[0],
                 url, resolved:false, tags:[],
+                resolutionStatus: sentiment === 'Complaint' ? 'none' : null,
                 region: (config.branches.find(b=>b.name===branch)||{}).region || 'Pakistan',
                 brandTier: analysis.tier,
                 brandLabel: analysis.brand || 'Unverified',
@@ -4207,6 +4263,39 @@
         // ── Load Social Listening data from Google Sheet ──────────────────────
         // Reads the published CSV of Social_Listening tab, converts rows to
         // mention objects, merges with seed data (sheet rows take priority).
+        // Read saved resolution statuses from the SL_Resolution tab (id -> status)
+        // so a manager's "Contacted/Closed" persists across sessions and devices.
+        async function loadResolutionsFromSheet(){
+            if(!LIVE.slResolutionUrl) return null;
+            try {
+                const res = await _fetch(LIVE.slResolutionUrl);
+                if(!res || !res.length) return null;
+                const map = {};
+                res.forEach(row => {
+                    const keys = Object.keys(row);
+                    const idKey = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
+                    const stKey = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
+                    const id = idKey ? String(row[idKey]||'').trim() : '';
+                    const st = stKey ? String(row[stKey]||'').trim() : '';
+                    if(id && st) map[id] = st;
+                });
+                return map;
+            } catch(err){ console.warn('Resolution read-back failed:', err); return null; }
+        }
+        function slApplyResolutions(map){
+            if(!map) return;
+            slMentions.forEach(m => { if(map[m.id]) m.resolutionStatus = map[m.id]; });
+        }
+
+        // Deterministic id from a mention's content so a saved resolution
+        // re-attaches to the SAME post on reload (row position is not stable).
+        function slStableId(platform, author, date){
+            const s = (platform||'') + '|' + (author||'') + '|' + (date||'');
+            let h = 0;
+            for(let i=0;i<s.length;i++){ h = ((h<<5) - h + s.charCodeAt(i)) | 0; }
+            return 'sl_' + Math.abs(h).toString(36);
+        }
+
         async function loadSocialFromSheet(){
             try {
                 const res  = await _fetch(LIVE.slSheetUrl);
@@ -4222,7 +4311,7 @@
                     const analysis  = slAnalyseContent(content);
 
                     return {
-                        id:         'sheet_' + idx,
+                        id:         slStableId(platform, get('Author'), get('Date') || get('Timestamp').split('T')[0]),
                         platform,
                         type:       get('Type')      || 'Post',
                         sentiment:  get('Sentiment') || 'Mention',
@@ -4251,6 +4340,8 @@
                 const sheetKeys = new Set(fromSheet.map(m => m.author+'|'+m.date));
                 const seedOnly  = SL_SEED.filter(s => !sheetKeys.has(s.author+'|'+s.date));
                 slMentions = [...fromSheet, ...seedOnly];
+                // Merge saved resolution statuses from SL_Resolution (persist across sessions)
+                slApplyResolutions(await loadResolutionsFromSheet());
                 slSaveData();
 
                 console.log('Social Listening: loaded ' + fromSheet.length + ' rows from Google Sheet');
@@ -4303,7 +4394,7 @@
             const totalAll   = slMentions.length;
             const complaints = filtered.filter(m=>m.sentiment==='Complaint').length;
             const praises    = filtered.filter(m=>m.sentiment==='Praise').length;
-            const unresolved = filtered.filter(m=>m.sentiment==='Complaint'&&!m.resolved).length;
+            const unresolved = filtered.filter(m=>m.sentiment==='Complaint' && m.resolutionStatus !== 'closed').length;
             const reach      = filtered.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
 
             const kpiStrip = document.getElementById('sl-kpi-strip');
@@ -4470,6 +4561,21 @@
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
                     </div>
+                    ${m.sentiment === 'Complaint' ? `
+                    <div class="sl-res-track">
+                        <span class="sl-res-label"><i class="fas fa-circle-nodes" style="font-size:0.6rem;margin-right:3px;"></i>Resolution</span>
+                        <button class="sl-res-stage ${m.resolutionStatus==='contacted'?'active-contacted':'inactive'}" onclick="slSetResolution('${m.id}','contacted')" title="Mark as Contacted">
+                            <i class="fas fa-phone" style="font-size:0.6rem;"></i> Contacted
+                        </button>
+                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
+                        <button class="sl-res-stage ${m.resolutionStatus==='progress'?'active-progress':'inactive'}" onclick="slSetResolution('${m.id}','progress')" title="Mark as In Progress">
+                            <i class="fas fa-spinner" style="font-size:0.6rem;"></i> In Progress
+                        </button>
+                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
+                        <button class="sl-res-stage ${m.resolutionStatus==='closed'?'active-closed':'inactive'}" onclick="slSetResolution('${m.id}','closed')" title="Mark as Closed">
+                            <i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Closed
+                        </button>
+                    </div>` : ''}
                 </div>`;
             }).join('');
 
@@ -4701,11 +4807,11 @@
         // ═══════════════════════════════════════════
         // CREATE SUBMISSION — 8-step call center form
         // ═══════════════════════════════════════════
-        const CS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyW32BEqV4gGVvsccoqgRUMAqdbvCXOlRj9LlkvPfpcDa7UyAABPUk-gkODM_yU0lSB/exec';
+        const CS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec';
 
         let csCurrentStep = 1;
-        const CS_TOTAL = 8;
         const csData = {};
+        let csStartTime = null; // track time taken
 
         // City → branches mapping
         const CS_CITIES = {
@@ -4718,191 +4824,257 @@
             'Rawalpindi'  : ['Saddar'],
         };
 
-        const CS_STEPS = [
-            { id:'rating',    label:'How was your experience today?',        hint:'Always select 1 star for call center complaints.' },
-            { id:'customer',  label:'Enter relevant customer details.',       hint:"We'd love your feedback!" },
-            { id:'location',  label:'Please select branch and city.',         hint:'Location' },
-            { id:'channel',   label:'Please select order channel.',           hint:'Feedback' },
-            { id:'source',    label:'Please select order source.',            hint:'Feedback' },
-            { id:'complaint_source', label:'Please select source of complaint.', hint:'Feedback' },
-            { id:'improve',   label:'What can we improve?',                  hint:'Feedback' },
-            { id:'comments',  label:'Any other comments?',                    hint:'Feedback' },
-        ];
+        // Dynamic step builder based on rating
+        function csGetSteps(){
+            const isPositive = csData.rating >= 4;
+            const steps = [
+                { id:'rating',           label:'How was your experience today?',             hint:'Step 1' },
+                { id:'customer',         label:'Enter relevant customer details.',            hint:'Step 2' },
+                { id:'menuitem',         label:'Which menu item did they order?',             hint:'Step 3' },
+                { id:'location',         label:'Please select branch and city.',              hint:'Step 4' },
+                { id:'channel',          label:'Please select order channel.',                hint:'Step 5' },
+                { id:'source',           label:'Please select order source.',                 hint:'Step 6' },
+            ];
+            if(isPositive){
+                steps.push({ id:'like_menu',    label:'What did they like about the menu item?',   hint:'Step 7' });
+                steps.push({ id:'like_service', label:'What did they like about the service?',     hint:'Step 8' });
+                steps.push({ id:'like_ambiance',label:'What did they like about the ambiance?',    hint:'Step 9' });
+            } else {
+                steps.push({ id:'complaint_source', label:'Please select source of complaint.',    hint:'Step 7' });
+                steps.push({ id:'improve',           label:'What can we improve?',                 hint:'Step 8' });
+            }
+            if(csData.channel === 'Delivery'){
+                steps.push({ id:'delivery_time', label:'How long did the delivery take?',          hint:'Delivery' });
+            }
+            steps.push({ id:'comments', label:'Any other comments?', hint:'Final Step' });
+            return steps;
+        }
 
         function csOpenForm(){
             csCurrentStep = 1;
             Object.keys(csData).forEach(k => delete csData[k]);
-            document.getElementById('cs-modal').style.display = 'flex';
-            csRenderStep();
+            csStartTime = Date.now();
+            const modal = document.getElementById('cs-modal');
+            const box   = document.getElementById('cs-modal-box');
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                modal.style.background = 'rgba(0,0,0,.5)';
+                box.style.transform    = 'translateY(0) scale(1)';
+                box.style.opacity      = '1';
+            });
+            csRenderStep('right');
         }
 
         function csCloseForm(){
-            document.getElementById('cs-modal').style.display = 'none';
+            const modal = document.getElementById('cs-modal');
+            const box   = document.getElementById('cs-modal-box');
+            modal.style.background = 'rgba(0,0,0,0)';
+            box.style.transform    = 'translateY(32px) scale(.97)';
+            box.style.opacity      = '0';
+            setTimeout(() => { modal.style.display = 'none'; }, 380);
         }
 
-        function csRenderStep(){
-            const step = CS_STEPS[csCurrentStep - 1];
-            document.getElementById('cs-step-num').textContent = csCurrentStep;
-            document.getElementById('cs-progress').style.width = ((csCurrentStep / CS_TOTAL) * 100) + '%';
+        const CS_SKIPPABLE = ['menuitem','like_menu','like_service','like_ambiance','delivery_time','complaint_source','comments'];
 
-            // Prev button
+        function csSkip(){
+            const steps = csGetSteps();
+            const step  = steps[csCurrentStep - 1];
+            if(step) delete csData[step.id];
+            csStep(1);
+        }
+
+        function csRenderStep(dir){
+            dir = dir || 'right';
+            const steps = csGetSteps();
+            const total = steps.length;
+            const step  = steps[csCurrentStep - 1];
+            if(!step) return;
+
+            document.getElementById('cs-step-num').textContent = csCurrentStep + ' of ' + total;
+            document.getElementById('cs-progress').style.width = ((csCurrentStep / total) * 100) + '%';
+
             const prevBtn = document.getElementById('cs-prev-btn');
-            prevBtn.style.opacity = csCurrentStep === 1 ? '0' : '1';
+            prevBtn.style.opacity       = csCurrentStep === 1 ? '0' : '1';
             prevBtn.style.pointerEvents = csCurrentStep === 1 ? 'none' : 'auto';
 
-            // Next button label
-            const nextBtn = document.getElementById('cs-next-btn');
-            nextBtn.innerHTML = csCurrentStep === CS_TOTAL
-                ? '<i class="fas fa-check"></i> Submit'
-                : 'Next <i class="fas fa-arrow-right"></i>';
+            const isLast  = csCurrentStep === total;
+            const canSkip = CS_SKIPPABLE.includes(step.id) && !isLast;
+            const skipBtn = document.getElementById('cs-skip-btn');
+            if(skipBtn) skipBtn.style.display = canSkip ? 'block' : 'none';
 
+            const nextBtn = document.getElementById('cs-next-btn');
+            nextBtn.innerHTML = isLast
+                ? '<i class="fas fa-check" style="font-size:0.75rem;"></i> Submit'
+                : 'Next <i class="fas fa-arrow-right" style="font-size:0.75rem;"></i>';
+
+            const animClass = dir === 'right' ? 'cs-slide-in-right' : 'cs-slide-in-left';
             const body = document.getElementById('cs-body');
             body.innerHTML = `
-                <div style="font-size:0.72rem;font-weight:700;color:#8B5CF6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${step.hint}</div>
-                <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-main);margin-bottom:28px;line-height:1.3;">${step.label}</h3>
-                <div id="cs-input-area"></div>`;
+                <div class="${animClass}">
+                    <div style="font-size:0.68rem;font-weight:800;color:#8B5CF6;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;">${step.hint}</div>
+                    <h3 style="font-size:1.1rem;font-weight:800;color:var(--text-main);margin-bottom:22px;line-height:1.35;">${step.label}</h3>
+                    <div id="cs-input-area"></div>
+                </div>`;
 
             const area = document.getElementById('cs-input-area');
 
             if(step.id === 'rating'){
                 const emojis = ['😢','😟','😐','😊','😄'];
+                const labels = ['Very Poor','Poor','Okay','Good','Excellent'];
                 const colors = ['#DC2626','#F97316','#F59E0B','#10B981','#059669'];
-                area.innerHTML = `<div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;">` +
+                area.innerHTML = `<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">` +
                     emojis.map((e,i) => {
                         const sel = csData.rating === i+1;
-                        return `<button class="cs-emoji-btn" data-rating="${i+1}" data-color="${colors[i]}"
-                            onclick="csPickRating(this)"
-                            style="font-size:2.2rem;border:2px solid ${sel?colors[i]:'var(--border-color)'};border-radius:50%;width:60px;height:60px;background:var(--white);cursor:pointer;transition:.2s;transform:${sel?'scale(1.25)':'scale(1)'};">
-                            ${e}
-                        </button>`;
-                    }).join('') + `</div>
-                    <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;">
-                        <span style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Very Poor</span>
-                        <span style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Excellent</span>
-                    </div>`;
+                        return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                            <button class="cs-emoji-btn" data-rating="${i+1}" data-color="${colors[i]}" onclick="csPickRating(this)"
+                                style="font-size:2rem;border:2.5px solid ${sel?colors[i]:'var(--border-color)'};border-radius:50%;width:58px;height:58px;background:${sel?colors[i]+'18':'var(--white)'};cursor:pointer;transition:all .2s cubic-bezier(.16,1,.3,1);transform:${sel?'scale(1.2)':'scale(1)'};display:flex;align-items:center;justify-content:center;">
+                                ${e}</button>
+                            <span style="font-size:0.6rem;font-weight:700;color:${sel?colors[i]:'var(--text-muted)'};">${labels[i]}</span>
+                        </div>`;
+                    }).join('') + `</div>`;
 
             } else if(step.id === 'customer'){
-                area.innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                            <i class="fas fa-hashtag" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                            <input id="cs-orderid" type="text" placeholder="Order ID" value="${csData.orderId||''}"
-                                style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                            <i class="fas fa-user" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                            <input id="cs-name" type="text" placeholder="Customer Name" value="${csData.customerName||''}"
-                                style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
-                        </div>
-                        <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border-color);border-radius:10px;overflow:hidden;background:var(--white);">
-                            <span style="padding:11px 14px;font-size:0.85rem;font-weight:700;color:var(--text-main);border-right:1px solid var(--border-color);background:var(--bg-light);">+92</span>
-                            <input id="cs-phone" type="tel" placeholder="Phone Number" value="${csData.phone||''}"
-                                style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;padding:11px 14px;font-family:'Inter',sans-serif;">
-                        </div>
-                    </div>`;
+                area.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">
+                    ${csInputField('cs-orderid','text','Order ID','fa-hashtag',csData.orderId||'')}
+                    ${csInputField('cs-name','text','Customer Name','fa-user',csData.customerName||'')}
+                    <div style="display:flex;align-items:center;gap:0;border:1.5px solid var(--border-color);border-radius:10px;overflow:hidden;background:var(--white);transition:.2s;" onfocusin="this.style.borderColor='#010197';this.style.boxShadow='0 0 0 3px rgba(1,1,151,.08)'" onfocusout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+                        <span style="padding:12px 14px;font-size:0.85rem;font-weight:700;color:var(--text-muted);border-right:1px solid var(--border-color);background:var(--bg-light);flex-shrink:0;">+92</span>
+                        <input id="cs-phone" type="tel" placeholder="Phone Number" value="${csData.phone||''}" style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;padding:12px 14px;font-family:'Inter',sans-serif;">
+                    </div></div>`;
+
+            } else if(step.id === 'menuitem'){
+                area.innerHTML = csInputField('cs-menuitem','text',"e.g. Pink Velvet, S'mores...",'fa-cookie-bite',csData.menuItem||'')
+                    + `<p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Leave blank if not applicable — tap Skip.</p>`;
 
             } else if(step.id === 'location'){
                 const cityOpts = Object.keys(CS_CITIES).map(c =>
                     `<option value="${c}" ${csData.city===c?'selected':''}>${c}</option>`).join('');
                 const branchOpts = csData.city
                     ? (CS_CITIES[csData.city]||[]).map(b => `<option value="${b}" ${csData.branch===b?'selected':''}>${b}</option>`).join('')
-                    : '<option value="">— Select city first —</option>';
-                area.innerHTML = `
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                            <i class="fas fa-city" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                            <select id="cs-city" onchange="csData.city=this.value;csData.branch='';csRenderStep();"
-                                style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;cursor:pointer;">
-                                <option value="">Select city</option>${cityOpts}
-                            </select>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                            <i class="fas fa-store" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                            <select id="cs-branch"
-                                style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;cursor:pointer;">
-                                <option value="">Select branch</option>${branchOpts}
-                            </select>
-                        </div>
-                    </div>`;
+                    : '';
+                area.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:12px 14px;background:var(--white);">
+                        <i class="fas fa-city" style="color:var(--text-muted);font-size:0.82rem;flex-shrink:0;"></i>
+                        <select id="cs-city" onchange="csData.city=this.value;csData.branch='';csRenderStep('right');"
+                            style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;cursor:pointer;">
+                            <option value="">Select city</option>${cityOpts}
+                        </select>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:12px 14px;background:var(--white);">
+                        <i class="fas fa-store" style="color:var(--text-muted);font-size:0.82rem;flex-shrink:0;"></i>
+                        <select id="cs-branch" onchange="csData.branch=this.value;if(this.value)setTimeout(()=>csStep(1),320);"
+                            style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;cursor:pointer;">
+                            <option value="">Select branch</option>${branchOpts}
+                        </select>
+                    </div></div>`;
 
-            } else if(step.id === 'channel'){
-                csRenderChoices(area, ['Dine in','Takeaway','Delivery'], 'channel');
+            } else if(step.id === 'channel'){ csRenderChoices(area,['Dine in','Takeaway','Delivery'],'channel',true);
+            } else if(step.id === 'source'){ csRenderChoices(area,['Foodpanda','Blink App/Website','Phone Call Orders','WhatsApp Orders','Walk-in Orders','Other'],'orderSource',true);
+            } else if(step.id === 'complaint_source'){ csRenderChoices(area,['Foodpanda','Phone call','Instagram','Facebook','WhatsApp','Email','Play store','Other'],'complaintSource',true);
+            } else if(step.id === 'improve'){ csRenderChoices(area,['Food Quality','Customer Service','Ambience','Delivery Speed','Packaging','Order Accuracy','Something else'],'improve',true);
+            } else if(step.id === 'like_menu'){ csRenderChoices(area,['Taste and Flavor','Freshness','Portion Size','Presentation','Something else'],'likeMenu',true);
+            } else if(step.id === 'like_service'){ csRenderChoices(area,['Staff Friendliness','Service Speed','Order Accuracy','Packaging','Something else'],'likeService',true);
+            } else if(step.id === 'like_ambiance'){ csRenderChoices(area,['Cleanliness','Ambiance & Decor','Seating Comfort','Music & Vibe','Something else'],'likeAmbiance',true);
 
-            } else if(step.id === 'source'){
-                csRenderChoices(area, ['Foodpanda','Blink App/Website','Phone Call Orders','WhatsApp Orders','Walk-in Orders','Other'], 'orderSource');
-
-            } else if(step.id === 'complaint_source'){
-                csRenderChoices(area, ['Foodpanda','Phone call','Instagram','Facebook','WhatsApp','Email','Play store','Other'], 'complaintSource');
-
-            } else if(step.id === 'improve'){
-                csRenderChoices(area, ['Food Quality','Customer Service','Ambience','Delivery Speed','Packaging','Order Accuracy','Something else'], 'improve');
+            } else if(step.id === 'delivery_time'){
+                area.innerHTML = csInputField('cs-delivery-time','text','e.g. 45 mins, 75+ mins, 2 hours...','fa-clock',csData.deliveryTime||'')
+                    + `<p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Tap Skip if not applicable.</p>`;
 
             } else if(step.id === 'comments'){
-                area.innerHTML = `
-                    <textarea id="cs-comments" rows="5" placeholder="Type here..."
-                        style="width:100%;border:1.5px solid var(--border-color);border-radius:10px;padding:14px;font-size:0.88rem;font-family:'Inter',sans-serif;color:var(--text-main);background:var(--white);outline:none;resize:vertical;box-sizing:border-box;"
-                        onfocus="this.style.borderColor='var(--accent-blue)'"
-                        onblur="this.style.borderColor='var(--border-color)'">${csData.comments||''}</textarea>`;
+                area.innerHTML = `<textarea id="cs-comments" rows="5" placeholder="Type here..."
+                    style="width:100%;border:1.5px solid var(--border-color);border-radius:10px;padding:13px 14px;font-size:0.88rem;font-family:'Inter',sans-serif;color:var(--text-main);background:var(--white);outline:none;resize:none;box-sizing:border-box;transition:.2s;"
+                    onfocus="this.style.borderColor='#010197';this.style.boxShadow='0 0 0 3px rgba(1,1,151,.08)'"
+                    onblur="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">${csData.comments||''}</textarea>`;
+                setTimeout(() => document.getElementById('cs-comments')?.focus(), 320);
+            }
+
+            if(['customer','menuitem','delivery_time'].includes(step.id)){
+                setTimeout(() => { area.querySelector('input')?.focus(); }, 320);
             }
         }
 
-        function csRenderChoices(area, options, key){
+        function csInputField(id, type, placeholder, icon, value){
+            return `<div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:12px 14px;background:var(--white);transition:.2s;" onfocusin="this.style.borderColor='#010197';this.style.boxShadow='0 0 0 3px rgba(1,1,151,.08)'" onfocusout="this.style.borderColor='var(--border-color)';this.style.boxShadow='none'">
+                <i class="fas ${icon}" style="color:var(--text-muted);font-size:0.82rem;flex-shrink:0;"></i>
+                <input id="${id}" type="${type}" placeholder="${placeholder}" value="${value}" style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
+            </div>`;
+        }
+
+        function csRenderChoices(area, options, key, autoAdvance){
             area.innerHTML = options.map((opt, i) => {
                 const selected = csData[key] === opt;
-                const selStyle = selected
-                    ? 'background:rgba(1,1,151,.06);border-color:#010197;color:#010197;'
-                    : 'background:var(--white);border-color:var(--border-color);color:var(--text-main);';
-                return `<button
-                    class="cs-choice"
-                    data-val="${i}"
-                    data-key="${key}"
-                    data-opt="${opt.replace(/"/g,'&quot;')}"
+                const selStyle = selected ? 'background:rgba(1,1,151,.06);border-color:#010197;color:#010197;'
+                                           : 'background:var(--white);border-color:var(--border-color);color:var(--text-main);';
+                return `<button class="cs-choice" data-val="${i}" data-key="${key}"
+                    data-opt="${opt.replace(/"/g,'&quot;')}" data-auto="${autoAdvance?'1':'0'}"
                     onclick="csPickChoice(this,'${key}')"
-                    style="display:block;width:100%;text-align:left;padding:14px 18px;margin-bottom:10px;border:1.5px solid;border-radius:10px;${selStyle}font-size:0.9rem;font-weight:600;cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;">
-                    ${opt}
-                </button>`;
+                    style="display:block;width:100%;text-align:left;padding:13px 18px;margin-bottom:8px;border:1.5px solid;border-radius:10px;${selStyle}font-size:0.88rem;font-weight:600;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;">
+                    ${opt}</button>`;
             }).join('');
         }
 
         function csPickRating(btn){
+            const prev = csData.rating;
             csData.rating = parseInt(btn.dataset.rating);
             document.querySelectorAll('.cs-emoji-btn').forEach(b => {
                 b.style.transform   = 'scale(1)';
                 b.style.borderColor = 'var(--border-color)';
+                b.style.background  = 'var(--white)';
             });
-            btn.style.transform   = 'scale(1.25)';
+            btn.style.transform   = 'scale(1.2)';
             btn.style.borderColor = btn.dataset.color;
+            btn.style.background  = btn.dataset.color + '18';
+            const wasPositive = prev >= 4, nowPositive = csData.rating >= 4;
+            if(prev && wasPositive !== nowPositive){
+                ['complaintSource','improve','likeMenu','likeService','likeAmbiance'].forEach(k => delete csData[k]);
+            }
+            setTimeout(() => csStep(1), 420);
         }
 
         function csPickChoice(btn, key){
             csData[key] = btn.dataset.opt;
             document.querySelectorAll('.cs-choice').forEach(b => {
-                b.style.background    = 'var(--white)';
-                b.style.borderColor   = 'var(--border-color)';
-                b.style.color         = 'var(--text-main)';
+                b.style.background  = 'var(--white)';
+                b.style.borderColor = 'var(--border-color)';
+                b.style.color       = 'var(--text-main)';
             });
             btn.style.background  = 'rgba(1,1,151,.06)';
             btn.style.borderColor = '#010197';
             btn.style.color       = '#010197';
+            if(btn.dataset.auto === '1'){
+                setTimeout(() => csStep(1), 300);
+            }
         }
 
-        function csStep(dir){
-            // Save current step values before moving
-            const step = CS_STEPS[csCurrentStep - 1];
+        function csSaveCurrentStep(){
+            const steps = csGetSteps();
+            const step  = steps[csCurrentStep - 1];
+            if(!step) return;
             if(step.id === 'customer'){
                 csData.orderId      = document.getElementById('cs-orderid')?.value.trim()||'';
                 csData.customerName = document.getElementById('cs-name')?.value.trim()||'';
                 csData.phone        = document.getElementById('cs-phone')?.value.trim()||'';
             }
+            if(step.id === 'menuitem'){
+                csData.menuItem = document.getElementById('cs-menuitem')?.value.trim()||'';
+            }
             if(step.id === 'location'){
                 csData.city   = document.getElementById('cs-city')?.value||csData.city||'';
                 csData.branch = document.getElementById('cs-branch')?.value||csData.branch||'';
             }
+            if(step.id === 'delivery_time'){
+                csData.deliveryTime = document.getElementById('cs-delivery-time')?.value.trim()||'';
+            }
             if(step.id === 'comments'){
                 csData.comments = document.getElementById('cs-comments')?.value.trim()||'';
             }
+        }
 
-            // Validate required steps
+        function csStep(dir){
+            csSaveCurrentStep();
+            const steps = csGetSteps();
+            const step  = steps[csCurrentStep - 1];
+
             if(dir === 1){
                 if(step.id === 'rating' && !csData.rating){
                     alert('Please select a rating to continue.'); return;
@@ -4912,12 +5084,12 @@
                 }
             }
 
-            if(dir === 1 && csCurrentStep === CS_TOTAL){
+            if(dir === 1 && csCurrentStep === steps.length){
                 csSubmit(); return;
             }
 
-            csCurrentStep = Math.max(1, Math.min(CS_TOTAL, csCurrentStep + dir));
-            csRenderStep();
+            csCurrentStep = Math.max(1, Math.min(steps.length, csCurrentStep + dir));
+            csRenderStep(dir === 1 ? 'right' : 'left');
         }
 
         async function csSubmit(){
@@ -4925,21 +5097,31 @@
             nextBtn.disabled = true;
             nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
 
+            // Calculate time taken
+            const elapsed = csStartTime ? Math.round((Date.now() - csStartTime) / 1000) : 0;
+            const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+            const timeTaken = mins + 'm:' + String(secs).padStart(2,'0') + 's';
+
             const payload = {
-                action        : 'callcenter',
-                timestamp     : new Date().toISOString(),
-                rating        : csData.rating || 1,
-                orderId       : csData.orderId || '',
-                customerName  : csData.customerName || '',
-                phone         : csData.phone || '',
-                city          : csData.city || '',
-                location      : csData.branch || '',
-                channel       : csData.channel || '',
-                orderSource   : csData.orderSource || '',
-                complaintSource: csData.complaintSource || '',
-                improve       : csData.improve || '',
-                comments      : csData.comments || '',
-                submittedBy   : PERM.name || 'Call Center',
+                action          : 'callcenter',
+                createdAt       : new Date().toISOString(),
+                createdBy       : PERM.name || 'Call Center',
+                location        : csData.branch        || '',
+                timeTaken       : timeTaken,
+                name            : csData.customerName  || '',
+                phoneNumber     : csData.phone         || '',
+                orderId         : csData.orderId       || '',
+                menuItemName    : csData.menuItem      || '',
+                rating          : csData.rating        || 1,
+                channel         : csData.channel       || '',
+                orderSource     : csData.orderSource   || '',
+                complaintSource : csData.complaintSource || '',
+                likeMenu        : csData.likeMenu      || '',
+                likeService     : csData.likeService   || '',
+                likeAmbiance    : csData.likeAmbiance  || '',
+                deliveryTime    : csData.deliveryTime  || '',
+                comments        : csData.comments      || '',
+                status          : 'completed',
             };
 
             try {
@@ -4950,7 +5132,6 @@
                     body   : JSON.stringify(payload),
                 });
                 csCloseForm();
-                // Show success toast
                 const toast = document.createElement('div');
                 toast.innerHTML = '<i class="fas fa-check-circle"></i> Submission saved successfully';
                 toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;font-size:0.85rem;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:loginSlideUp .3s ease;';
@@ -4968,7 +5149,7 @@
         // ═══════════════════════════════════════════
         // AUTH — Google Sheets login system
         // ═══════════════════════════════════════════
-        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyW32BEqV4gGVvsccoqgRUMAqdbvCXOlRj9LlkvPfpcDa7UyAABPUk-gkODM_yU0lSB/exec';
+        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec';
         const AUTH_SESSION_KEY = 'crumble_auth_session';
 
         // Global permission state — set on login, used everywhere
