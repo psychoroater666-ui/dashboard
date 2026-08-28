@@ -1224,6 +1224,16 @@
         const rawData = { submissions: [], incidents: [] };
         const SYSTEM_NOW = new Date('2026-08-26T12:00:00');
 
+        // ── Branch → Region overrides ──────────────────────────────────────────
+        // Branches that arrive from the sheet but aren't in config.branches above
+        // would otherwise default to "Other". List their correct region here.
+        // Keys are matched case-insensitively and ignore extra spaces.
+        const REGION_OVERRIDES = {
+            'blue area': 'North',
+            'scheme 3':  'North'
+        };
+        const _regionFor = name => REGION_OVERRIDES[String(name||'').trim().toLowerCase().replace(/\s+/g,' ')] || 'Other';
+
         /* ═══════════════════════════════════════════════════════════
            LIVE DATA ENGINE — reads two transaction-log tabs from your
            Google Sheet (SubmissionsLog + IncidentsLog) and feeds them
@@ -1278,7 +1288,7 @@
         function _ensure(kind, name){
             if(!name) return;
             if(kind==='branch' && !config.branches.some(b=>b.name===name))
-                config.branches.push({name, region:'Other', basePq:85, baseSvc:85});
+                config.branches.push({name, region:_regionFor(name), basePq:85, baseSvc:85});
             if(kind==='form' && !config.forms.some(f=>f.name===name))
                 config.forms.push({name, color:_PALETTE[config.forms.length%_PALETTE.length], icon:'fa-tag'});
             if(kind==='channel' && !config.channels.some(c=>c.name===name))
