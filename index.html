@@ -683,10 +683,6 @@
         /* Brand confidence chip */
         .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
 
-        /* Date preset chips */
-        .sl-date-chip.active { background: var(--accent-blue) !important; color: #fff !important; }
-        .sl-date-chip:hover  { background: var(--bg-light) !important; color: var(--text-main) !important; }
-
         /* Resolved state overlay */
         .sl-resolved-banner { font-size:0.7rem; font-weight:800; color:var(--status-good); background:var(--status-good-bg); border:1px solid rgba(5,150,105,.2); border-radius:6px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
     </style>
@@ -1357,30 +1353,6 @@
                         <!-- Controls row -->
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
 
-                            <!-- Date presets -->
-                            <div style="display:flex;align-items:center;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:9px;overflow:hidden;">
-                                <button class="sl-date-chip active" data-preset="all"    onclick="slSetDate('all',this)"    style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;">All</button>
-                                <button class="sl-date-chip"        data-preset="today"  onclick="slSetDate('today',this)"  style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">Today</button>
-                                <button class="sl-date-chip"        data-preset="7d"     onclick="slSetDate('7d',this)"     style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">7 days</button>
-                                <button class="sl-date-chip"        data-preset="30d"    onclick="slSetDate('30d',this)"    style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">30 days</button>
-                                <button class="sl-date-chip"        data-preset="custom" onclick="slSetDate('custom',this)" style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">Custom</button>
-                            </div>
-
-                            <!-- Custom date range (hidden until Custom clicked) -->
-                            <div id="sl-custom-range" style="display:none;align-items:center;gap:6px;background:var(--bg-light);border:1.5px solid var(--accent-blue);border-radius:9px;padding:4px 10px;">
-                                <i class="fas fa-calendar-alt" style="color:var(--accent-blue);font-size:0.75rem;"></i>
-                                <input type="date" id="sl-date-from" onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;">
-                                <span style="color:var(--text-muted);font-weight:700;font-size:0.75rem;">→</span>
-                                <input type="date" id="sl-date-to"   onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;">
-                            </div>
-
-                            <!-- Source / region filter — Pakistan-focused -->
-                            <select id="sl-filter-region" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;" title="Filter by source region">
-                                <option value="all">🌍 All Sources</option>
-                                <option value="pk" selected>🇵🇰 Pakistan only</option>
-                                <option value="unclear">⚠️ Unverified / Unclear</option>
-                            </select>
-
                             <!-- Sentiment filter -->
                             <select id="sl-filter-sentiment" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
                                 <option value="all">All Types</option>
@@ -1406,31 +1378,8 @@
                 <!-- KPI strip -->
                 <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;"></div>
 
-                <!-- How-to-add notice -->
-                <div id="sl-howto-banner" style="background:linear-gradient(135deg,rgba(1,1,151,.04),rgba(59,91,219,.06));border:1.5px solid rgba(1,1,151,.12);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;">
-                    <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#010197,#3B5BDB);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;flex-shrink:0;margin-top:1px;">
-                        <i class="fas fa-circle-info"></i>
-                    </span>
-                    <div style="flex:1;">
-                        <div style="font-size:0.8rem;font-weight:800;color:var(--text-main);margin-bottom:4px;">This is a manual log — mentions don't appear automatically</div>
-                        <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.65;">
-                            Instagram, TikTok and other platforms don't allow automatic scraping. When you spot a mention, add it using the <strong style="color:#010197;">+ Add</strong> button.
-                            <span style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>Find the post / comment on Instagram</span>
-                                <span style="color:var(--text-muted);">→</span>
-                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>Tap ··· → Copy Link</span>
-                                <span style="color:var(--text-muted);">→</span>
-                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>Paste content + URL here → Save</span>
-                            </span>
-                        </div>
-                    </div>
-                    <button onclick="document.getElementById('sl-howto-banner').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;padding:2px;flex-shrink:0;" title="Dismiss">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <!-- Main content: mentions feed + keyword panel -->
-                <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;">
+                <!-- Main content: mentions feed + right panel -->
+                <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
 
                     <!-- MENTIONS FEED -->
                     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1443,10 +1392,10 @@
                         </div>
                     </div>
 
-                    <!-- RIGHT PANEL: Keywords + Trend -->
+                    <!-- RIGHT PANEL -->
                     <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:20px;">
 
-                        <!-- Top Keywords -->
+                        <!-- Trending Keywords -->
                         <div class="card" style="padding:18px 20px;">
                             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
                                 <i class="fas fa-fire" style="color:#F59E0B;"></i> Trending Keywords
@@ -1454,7 +1403,7 @@
                             <div id="sl-keywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
                         </div>
 
-                        <!-- Platform breakdown -->
+                        <!-- By Platform -->
                         <div class="card" style="padding:18px 20px;">
                             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
                                 <i class="fas fa-chart-pie" style="color:#8B5CF6;"></i> By Platform
@@ -1462,74 +1411,12 @@
                             <div id="sl-platform-breakdown" style="display:flex;flex-direction:column;gap:8px;"></div>
                         </div>
 
-                        <!-- Branch mentions -->
+                        <!-- Branch Mentions -->
                         <div class="card" style="padding:18px 20px;">
                             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
                                 <i class="fas fa-store" style="color:#10B981;"></i> Branch Mentions
                             </div>
                             <div id="sl-branch-breakdown" style="display:flex;flex-direction:column;gap:8px;"></div>
-                        </div>
-
-                        <!-- Brand Keywords Reference -->
-                        <div class="card" style="padding:18px 20px;">
-                            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
-                                <i class="fas fa-shield-halved" style="color:#010197;"></i> Brand Detection Rules
-                            </div>
-                            <p style="font-size:0.68rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Keywords that determine whether a mention is Crumble Pakistan, Crumbl US, or unclear.</p>
-
-                            <!-- Tier 1 -->
-                            <div style="margin-bottom:10px;">
-                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-good);margin-bottom:5px;">✅ Confirmed PK (Tier 1)</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble pakistan</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">@crumblepakistan</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumbledobara</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">#crumblepakistan</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble lahore</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble islamabad</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">+ all branch names</span>
-                                </div>
-                            </div>
-
-                            <!-- Tier 2 -->
-                            <div style="margin-bottom:10px;">
-                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-warn);margin-bottom:5px;">⚠️ Ambiguous — checked further (Tier 2)</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumble</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumbl</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumb cookie</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">#crumble</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">#crumbl</span>
-                                </div>
-                            </div>
-
-                            <!-- PK boosters -->
-                            <div style="margin-bottom:10px;">
-                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#2563EB;margin-bottom:5px;">🇵🇰 PK Context Signals (boost confidence)</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">pakistan</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">lahore</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">islamabad</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">dha</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">pkr</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">#lahore</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">yumookies</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">+ more…</span>
-                                </div>
-                            </div>
-
-                            <!-- US signals -->
-                            <div>
-                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-critical);margin-bottom:5px;">🇺🇸 US Brand Signals (flag as Crumbl US)</div>
-                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">crumbl cookie</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">#crumblcookies</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">utah</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">provo</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">salt lake</span>
-                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">sawyer hemsley</span>
-                                </div>
-                            </div>
                         </div>
 
                     </div>
@@ -3533,7 +3420,6 @@
 
         // ── Sort state ────────────────────────────────────────────────────────
         let slSortNewestFirst = true;
-        let slActiveDatePreset = 'all';
 
         function slToggleSort(){
             slSortNewestFirst = !slSortNewestFirst;
@@ -3544,41 +3430,6 @@
                     : '<i class="fas fa-arrow-up-wide-short"></i> Oldest first';
             }
             renderSocialListening();
-        }
-
-        function slSetDate(preset, chipEl){
-            slActiveDatePreset = preset;
-            // Highlight active chip
-            document.querySelectorAll('.sl-date-chip').forEach(c => {
-                c.style.background = 'transparent';
-                c.style.color = 'var(--text-muted)';
-            });
-            if(chipEl){ chipEl.style.background = 'var(--accent-blue)'; chipEl.style.color = '#fff'; }
-
-            const rangeEl = document.getElementById('sl-custom-range');
-            if(rangeEl) rangeEl.style.display = preset === 'custom' ? 'flex' : 'none';
-
-            if(preset !== 'custom') renderSocialListening();
-        }
-
-        function slGetDateRange(){
-            const maxDate = SYSTEM_NOW.toISOString().split('T')[0];
-            if(slActiveDatePreset === 'all')    return { from: '2000-01-01', to: maxDate };
-            if(slActiveDatePreset === 'today')  return { from: maxDate, to: maxDate };
-            if(slActiveDatePreset === '7d') {
-                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-7);
-                return { from: d.toISOString().split('T')[0], to: maxDate };
-            }
-            if(slActiveDatePreset === '30d') {
-                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-30);
-                return { from: d.toISOString().split('T')[0], to: maxDate };
-            }
-            if(slActiveDatePreset === 'custom'){
-                const f = (document.getElementById('sl-date-from')||{}).value || '2000-01-01';
-                const t = (document.getElementById('sl-date-to')||{}).value   || maxDate;
-                return { from: f, to: t };
-            }
-            return { from: '2000-01-01', to: maxDate };
         }
 
         // ── Data store ────────────────────────────────────────────────────────
@@ -4049,32 +3900,11 @@
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            const snFilter  = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
-            const rgFilter  = (document.getElementById('sl-filter-region')||{}).value||'all';
-            const dateRange = slGetDateRange();
+            const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
 
-            // ── Filter ──
+            // ── Filter — sentiment only, show all dates ──
             let filtered = slMentions.slice().filter(m => {
-                // Date range
-                const mDate = m.date || '2000-01-01';
-                if(mDate < dateRange.from || mDate > dateRange.to) return false;
-
-                // Sentiment / type
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
-
-                // Source region filter — based on brand analysis, not branch location
-                // 'pk'      = only show confirmed/likely Crumble Pakistan mentions
-                // 'unclear' = only show ambiguous / unverified ones
-                // 'all'     = show everything
-                if(rgFilter !== 'all'){
-                    // Get brand tier — use stored value or run analysis live
-                    const tier = m.brandTier || slAnalyseContent(m.content).tier;
-                    const isPK = tier === 'definite' || tier === 'likely';
-                    const isUnclear = tier === 'ambiguous' || tier === 'unrelated';
-                    if(rgFilter === 'pk'      && !isPK)      return false;
-                    if(rgFilter === 'unclear' && !isUnclear) return false;
-                }
-
                 return true;
             });
 
