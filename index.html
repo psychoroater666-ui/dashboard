@@ -600,6 +600,91 @@
         .skel-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
         @media (max-width:1100px){ .skel-3 { grid-template-columns: 1fr; } }
         .skel-line { height: 12px; margin-bottom: 10px; }
+
+        /* ═══════════ SOCIAL LISTENING ═══════════ */
+        .sl-mention-card {
+            background: var(--white);
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px 20px;
+            transition: box-shadow .2s, transform .2s;
+            position: relative;
+        }
+        .sl-mention-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
+        .sl-mention-card.sentiment-complaint { border-left: 4px solid var(--status-critical); }
+        .sl-mention-card.sentiment-praise    { border-left: 4px solid var(--status-good); }
+        .sl-mention-card.sentiment-query     { border-left: 4px solid #3B82F6; }
+        .sl-mention-card.sentiment-mention   { border-left: 4px solid var(--text-muted); }
+
+        .sl-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+        .sl-platform-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
+        .sl-platform-instagram { background:#fce4ec; color:#C2185B; }
+        .sl-platform-facebook  { background:#E3F2FD; color:#1565C0; }
+        .sl-platform-twitterx  { background:#E8EAF6; color:#311B92; }
+        .sl-platform-google    { background:#FFF3E0; color:#E65100; }
+        .sl-platform-tiktok    { background:#F3E5F5; color:#6A1B9A; }
+        .sl-platform-default   { background:var(--bg-light); color:var(--text-muted); }
+
+        .sl-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
+        .sl-time { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
+
+        .sl-sentiment-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
+        .sl-chip-complaint { background:var(--status-critical-bg); color:var(--status-critical); }
+        .sl-chip-praise    { background:var(--status-good-bg); color:var(--status-good); }
+        .sl-chip-query     { background:rgba(59,130,246,.1); color:#2563EB; }
+        .sl-chip-mention   { background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
+
+        .sl-branch-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(1,1,151,.08); color:#010197; border:1px solid rgba(1,1,151,.12); }
+        .sl-urgency { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#FEF2F2; color:#DC2626; border:1px solid rgba(220,38,38,.2); animation: pulse 2s infinite; }
+
+        .sl-content { font-size:0.85rem; line-height:1.65; color:var(--text-main); margin:10px 0 12px; font-weight:500; }
+        .sl-content a { color:#010197; text-decoration:none; }
+        .sl-content a:hover { text-decoration:underline; }
+
+        .sl-meta-row { display:flex; align-items:center; gap:16px; }
+        .sl-stat { display:flex; align-items:center; gap:5px; font-size:0.75rem; font-weight:600; color:var(--text-muted); }
+        .sl-stat i { font-size:0.7rem; }
+
+        .sl-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
+        .sl-action-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:7px; font-size:0.73rem; font-weight:700; cursor:pointer; transition:.15s; border:1px solid var(--border-color); background:var(--white); color:var(--text-main); }
+        .sl-action-btn:hover { background:var(--bg-light); }
+        .sl-action-btn.primary { background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; border-color:transparent; }
+        .sl-action-btn.primary:hover { opacity:.9; }
+        .sl-action-btn.resolved { background:var(--status-good-bg); color:var(--status-good); border-color:rgba(5,150,105,.2); }
+
+        .sl-author { font-size:0.75rem; font-weight:800; color:var(--text-main); }
+
+        /* KPI strip */
+        .sl-kpi { background:var(--white); border:1.5px solid var(--border-color); border-radius:12px; padding:16px 18px; }
+        .sl-kpi-label { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:6px; }
+        .sl-kpi-val { font-size:1.5rem; font-weight:800; color:var(--text-main); }
+        .sl-kpi-sub { font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
+
+        /* Keyword chip */
+        .sl-keyword { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:default; border:1px solid var(--border-color); background:var(--bg-light); color:var(--text-main); transition:.15s; }
+        .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; }
+        .sl-keyword.hot { background:rgba(245,158,11,.1); border-color:rgba(245,158,11,.3); color:#B45309; }
+
+        /* Platform/branch bar */
+        .sl-bar-row { display:flex; align-items:center; gap:10px; font-size:0.78rem; }
+        .sl-bar-label { min-width:90px; font-weight:700; color:var(--text-main); font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sl-bar-wrap { flex:1; height:6px; background:var(--bg-light); border-radius:10px; overflow:hidden; }
+        .sl-bar-fill { height:100%; border-radius:10px; transition:width .5s ease; }
+        .sl-bar-count { font-size:0.72rem; font-weight:800; color:var(--text-muted); min-width:20px; text-align:right; }
+
+        /* Modal */
+        .sl-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9000; align-items:center; justify-content:center; }
+        .sl-modal-overlay.open { display:flex; }
+        .sl-modal-box { background:var(--white); border-radius:16px; padding:28px; max-width:560px; width:90%; max-height:90vh; overflow-y:auto; box-shadow:0 24px 60px rgba(0,0,0,.2); }
+        .sl-field { display:flex; flex-direction:column; gap:5px; }
+        .sl-field label { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+        .sl-field input:focus, .sl-field textarea:focus, .sl-field select:focus { border-color:var(--accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+
+        /* Brand confidence chip */
+        .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
+
+        /* Resolved state overlay */
+        .sl-resolved-banner { font-size:0.7rem; font-weight:800; color:var(--status-good); background:var(--status-good-bg); border:1px solid rgba(5,150,105,.2); border-radius:6px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
     </style>
 </head>
 <body class="app-loading">
@@ -624,6 +709,7 @@
                 <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
+                <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
             </nav>
             <div class="header-controls">
                 <button class="btn-icon" onclick="app.refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
@@ -1243,6 +1329,252 @@
                         <p class="text-sm" style="margin-bottom:8px;"><strong>Database Status:</strong> Online & Dynamic</p>
                         <p class="text-sm" style="margin-bottom:8px;"><strong>Total Submissions in DB:</strong> <span id="db-subs">--</span></p>
                         <p class="text-sm" style="margin-bottom:8px;"><strong>Total Incidents in DB:</strong> <span id="db-incs">--</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOCIAL LISTENING -->
+            <div id="view-social" class="view">
+
+                <!-- Header strip -->
+                <div class="card" style="padding:20px 24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:10px;">
+                                <span style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#E1306C,#833AB4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.85rem;box-shadow:0 3px 8px rgba(225,48,108,.3);">
+                                    <i class="fas fa-hashtag"></i>
+                                </span>
+                                Social Listening
+                            </h2>
+                            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Public conversations about Crumble across social platforms — manually curated &amp; intelligently classified.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <!-- Platform filter -->
+                            <select id="sl-filter-platform" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
+                                <option value="all">All Platforms</option>
+                                <option value="Instagram">Instagram</option>
+                                <option value="Facebook">Facebook</option>
+                                <option value="Twitter/X">Twitter / X</option>
+                                <option value="Google">Google Reviews</option>
+                                <option value="TikTok">TikTok</option>
+                            </select>
+                            <!-- Sentiment filter -->
+                            <select id="sl-filter-sentiment" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
+                                <option value="all">All Sentiments</option>
+                                <option value="Complaint">🔴 Complaints</option>
+                                <option value="Praise">🟢 Praise</option>
+                                <option value="Query">🔵 Queries</option>
+                                <option value="Mention">⚪ Mentions</option>
+                            </select>
+                            <!-- Branch filter -->
+                            <select id="sl-filter-branch" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
+                                <option value="all">All Branches</option>
+                            </select>
+                            <!-- Add mention button -->
+                            <button onclick="document.getElementById('sl-add-modal').classList.add('open')" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(1,1,151,.25);">
+                                <i class="fas fa-plus"></i> Add Mention
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI strip -->
+                <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;"></div>
+
+                <!-- Main content: mentions feed + keyword panel -->
+                <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;">
+
+                    <!-- MENTIONS FEED -->
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div id="sl-feed" style="display:flex;flex-direction:column;gap:12px;">
+                            <!-- Filled by JS -->
+                        </div>
+                        <div id="sl-empty" style="display:none;text-align:center;padding:48px 24px;color:var(--text-muted);">
+                            <i class="fas fa-satellite-dish" style="font-size:2rem;margin-bottom:12px;display:block;opacity:.4;"></i>
+                            <p style="font-size:0.88rem;font-weight:600;">No mentions match your current filters.</p>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT PANEL: Keywords + Trend -->
+                    <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:20px;">
+
+                        <!-- Top Keywords -->
+                        <div class="card" style="padding:18px 20px;">
+                            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-fire" style="color:#F59E0B;"></i> Trending Keywords
+                            </div>
+                            <div id="sl-keywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+                        </div>
+
+                        <!-- Platform breakdown -->
+                        <div class="card" style="padding:18px 20px;">
+                            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-chart-pie" style="color:#8B5CF6;"></i> By Platform
+                            </div>
+                            <div id="sl-platform-breakdown" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        </div>
+
+                        <!-- Branch mentions -->
+                        <div class="card" style="padding:18px 20px;">
+                            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-store" style="color:#10B981;"></i> Branch Mentions
+                            </div>
+                            <div id="sl-branch-breakdown" style="display:flex;flex-direction:column;gap:8px;"></div>
+                        </div>
+
+                        <!-- Brand Keywords Reference -->
+                        <div class="card" style="padding:18px 20px;">
+                            <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                                <i class="fas fa-shield-halved" style="color:#010197;"></i> Brand Detection Rules
+                            </div>
+                            <p style="font-size:0.68rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">Keywords that determine whether a mention is Crumble Pakistan, Crumbl US, or unclear.</p>
+
+                            <!-- Tier 1 -->
+                            <div style="margin-bottom:10px;">
+                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-good);margin-bottom:5px;">✅ Confirmed PK (Tier 1)</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble pakistan</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">@crumblepakistan</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumbledobara</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">#crumblepakistan</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble lahore</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">crumble islamabad</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(5,150,105,.1);color:var(--status-good);">+ all branch names</span>
+                                </div>
+                            </div>
+
+                            <!-- Tier 2 -->
+                            <div style="margin-bottom:10px;">
+                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-warn);margin-bottom:5px;">⚠️ Ambiguous — checked further (Tier 2)</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumble</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumbl</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">crumb cookie</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">#crumble</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(217,119,6,.1);color:var(--status-warn);">#crumbl</span>
+                                </div>
+                            </div>
+
+                            <!-- PK boosters -->
+                            <div style="margin-bottom:10px;">
+                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:#2563EB;margin-bottom:5px;">🇵🇰 PK Context Signals (boost confidence)</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">pakistan</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">lahore</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">islamabad</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">dha</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">pkr</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">#lahore</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">yumookies</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(37,99,235,.08);color:#2563EB;">+ more…</span>
+                                </div>
+                            </div>
+
+                            <!-- US signals -->
+                            <div>
+                                <div style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--status-critical);margin-bottom:5px;">🇺🇸 US Brand Signals (flag as Crumbl US)</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">crumbl cookie</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">#crumblcookies</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">utah</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">provo</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">salt lake</span>
+                                    <span style="font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.08);color:var(--status-critical);">sawyer hemsley</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ADD MENTION MODAL -->
+            <div id="sl-add-modal" class="sl-modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+                <div class="sl-modal-box">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                        <h3 style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Add Social Mention</h3>
+                        <button onclick="document.getElementById('sl-add-modal').classList.remove('open')" style="background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div class="sl-field">
+                            <label>Platform</label>
+                            <select id="sl-m-platform" class="select-input" style="width:100%;">
+                                <option>Instagram</option>
+                                <option>Facebook</option>
+                                <option>Twitter/X</option>
+                                <option>Google</option>
+                                <option>TikTok</option>
+                            </select>
+                        </div>
+                        <div class="sl-field">
+                            <label>Type</label>
+                            <select id="sl-m-type" class="select-input" style="width:100%;">
+                                <option value="Post">Post</option>
+                                <option value="Story">Story</option>
+                                <option value="Review">Review</option>
+                                <option value="Comment">Comment</option>
+                                <option value="Reel">Reel</option>
+                            </select>
+                        </div>
+                        <div class="sl-field">
+                            <label>Sentiment</label>
+                            <select id="sl-m-sentiment" class="select-input" style="width:100%;">
+                                <option value="Complaint">🔴 Complaint</option>
+                                <option value="Praise">🟢 Praise</option>
+                                <option value="Query">🔵 Query</option>
+                                <option value="Mention">⚪ Mention</option>
+                            </select>
+                        </div>
+                        <div class="sl-field">
+                            <label>Branch (if mentioned)</label>
+                            <select id="sl-m-branch" class="select-input" style="width:100%;">
+                                <option value="">— None / General —</option>
+                            </select>
+                        </div>
+                        <div class="sl-field" style="grid-column:1/-1;">
+                            <label>Author / Handle</label>
+                            <input id="sl-m-author" type="text" placeholder="@username or page name" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                        </div>
+                        <div class="sl-field" style="grid-column:1/-1;">
+                            <label>Post Content / Caption</label>
+                            <textarea id="sl-m-content" rows="3" oninput="slLiveAnalyse()" placeholder="Paste the post caption, review text, or comment here..." style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;resize:vertical;font-family:'Inter',sans-serif;"></textarea>
+                            <!-- Live brand analysis result appears here -->
+                            <div id="sl-analyse-result" style="display:none;margin-top:8px;padding:10px 13px;border-radius:9px;border:1px solid var(--border-color);background:var(--bg-light);font-size:0.78rem;line-height:1.5;"></div>
+                            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:flex;align-items:center;gap:4px;"><i class="fas fa-circle-info"></i> Brand detection runs automatically as you type.</div>
+                        </div>
+                        <div class="sl-field">
+                            <label>Likes</label>
+                            <input id="sl-m-likes" type="number" value="0" min="0" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                        </div>
+                        <div class="sl-field">
+                            <label>Comments</label>
+                            <input id="sl-m-comments" type="number" value="0" min="0" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                        </div>
+                        <div class="sl-field" style="grid-column:1/-1;">
+                            <label>Post URL (optional)</label>
+                            <input id="sl-m-url" type="url" placeholder="https://www.instagram.com/p/..." style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                        <button onclick="document.getElementById('sl-add-modal').classList.remove('open')" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-muted);font-size:0.85rem;font-weight:600;cursor:pointer;">Cancel</button>
+                        <button onclick="slAddMention()" style="padding:9px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Save Mention</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REPLY DRAFT MODAL -->
+            <div id="sl-reply-modal" class="sl-modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
+                <div class="sl-modal-box">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                        <h3 style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Drafted Reply</h3>
+                        <button onclick="document.getElementById('sl-reply-modal').classList.remove('open')" style="background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div id="sl-reply-content" style="background:var(--bg-light);border:1px solid var(--border-color);border-radius:10px;padding:14px 16px;font-size:0.85rem;line-height:1.7;color:var(--text-main);white-space:pre-wrap;min-height:100px;"></div>
+                    <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Copy this reply and respond directly on the platform. Edit as needed before posting.</p>
+                    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('sl-reply-content').innerText).then(()=>{this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy Text',1800)})" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.85rem;font-weight:600;cursor:pointer;">Copy Text</button>
+                        <button onclick="document.getElementById('sl-reply-modal').classList.remove('open')" style="padding:9px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Done</button>
                     </div>
                 </div>
             </div>
@@ -1963,13 +2295,13 @@
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => (el.getAttribute('onclick')||'').indexOf("'"+viewId+"'") !== -1);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                 
-                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data'];
+                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social'];
                 document.getElementById(dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics').classList.add('active');
                 
                 const gc = document.getElementById('global-controls');
@@ -1996,6 +2328,7 @@
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'data') return;
+                else if (state.currentView === 'social') { if(typeof renderSocialListening==='function') renderSocialListening(); }
                 else this.renderUniversalAnalytics(state.currentView);
             },
 
@@ -3041,6 +3374,527 @@
             }).join('');
             container.innerHTML = html;
         };
+
+        // ═══════════════════════════════════════════
+        // SOCIAL LISTENING ENGINE
+        // ═══════════════════════════════════════════
+
+        // ── Static seed data (real-looking Crumble Pakistan mentions) ──────────
+        // Farooq/team can add new ones via the "Add Mention" button — they persist in sessionStorage.
+        const SL_SEED = [
+            { id:'sl1', platform:'Instagram', type:'Post', sentiment:'Praise', branch:'DHA',
+              author:'@hunzabaloch__', content:'Finally tried Crumble DHA today and honestly it was WORTH every rupee 😭🍪 the brownie cookie was perfection. I\'m obsessed. #crumblepakistan #cookies #lahore',
+              likes:247, comments:18, shares:5, daysAgo:2, url:'', resolved:false,
+              tags:['#crumblepakistan','#cookies','#lahore'] },
+            { id:'sl2', platform:'Instagram', type:'Post', sentiment:'Complaint', branch:'Johar Town',
+              author:'@foodblogpk', content:'Really disappointed with my Crumble Johar Town order. Cookies were dry and crumbly (not in a good way), delivery took 90 minutes, and the packaging was crushed. @crumblepakistan please sort this out 🙏',
+              likes:34, comments:52, shares:9, daysAgo:1, url:'', resolved:false,
+              tags:['#crumblepakistan'] },
+            { id:'sl3', platform:'Twitter/X', type:'Post', sentiment:'Complaint', branch:'',
+              author:'@ali_raza_lhr', content:'@crumblepakistan my order has been "out for delivery" for 2 hours. Support isn\'t picking up. This is ridiculous. Never ordering again.',
+              likes:8, comments:3, shares:12, daysAgo:0, url:'', resolved:false,
+              tags:[] },
+            { id:'sl4', platform:'Facebook', type:'Review', sentiment:'Praise', branch:'MM Alam Road',
+              author:'Ayesha Farooq', content:'Best cookies in Lahore hands down. The MM Alam Road branch staff are so friendly and the store always smells amazing. My kids demand Crumble every weekend now! ⭐⭐⭐⭐⭐',
+              likes:91, comments:7, shares:0, daysAgo:3, url:'', resolved:false,
+              tags:[] },
+            { id:'sl5', platform:'Instagram', type:'Reel', sentiment:'Praise', branch:'F-11',
+              author:'@isloocravings', content:'POV: You just discovered Crumble F-11 🤯 The s\'mores cookie literally melted in my mouth. Islamabad finally has a proper dessert spot! Must try. Link in bio for my full review. #islamabad #crumblecookies #f11',
+              likes:1840, comments:134, shares:67, daysAgo:5, url:'', resolved:false,
+              tags:['#islamabad','#crumblecookies','#f11'] },
+            { id:'sl6', platform:'Google', type:'Review', sentiment:'Complaint', branch:'Multan',
+              author:'Hassan K.', content:'Ordered from Crumble Multan online. Got the wrong items — ordered 4 cookies, got 2. Called the number multiple times, nobody answered. Very poor service for the price they charge.',
+              likes:0, comments:0, shares:0, daysAgo:4, url:'', resolved:false,
+              tags:[] },
+            { id:'sl7', platform:'Instagram', type:'Story', sentiment:'Mention', branch:'',
+              author:'@zara.eats', content:'Anyone else obsessed with @crumblepakistan or just me? 🍪💙 asking for a friend',
+              likes:203, comments:41, shares:0, daysAgo:1, url:'', resolved:false,
+              tags:['#crumblepakistan'] },
+            { id:'sl8', platform:'TikTok', type:'Reel', sentiment:'Praise', branch:'Saddar',
+              author:'@lahorefoodies', content:'Rating every Crumble branch in Lahore so you don\'t have to 🍪📍 Episode 3: Saddar — the vibe, the service, the cookies. 10/10 would recommend for a date. Comment your fav branch! #crumble #lahore #foodtok',
+              likes:5200, comments:318, shares:204, daysAgo:7, url:'', resolved:false,
+              tags:['#crumble','#lahore','#foodtok'] },
+            { id:'sl9', platform:'Twitter/X', type:'Post', sentiment:'Query', branch:'',
+              author:'@sarahjaved92', content:'@crumblepakistan do you guys do custom boxes for corporate gifting? Need something for 50 people for an office event next week. DM or email?',
+              likes:2, comments:1, shares:0, daysAgo:0, url:'', resolved:false,
+              tags:[] },
+            { id:'sl10', platform:'Instagram', type:'Comment', sentiment:'Complaint', branch:'Lake City',
+              author:'@bilal_foodie', content:'Visited the Lake City outlet yesterday. Waited 25 minutes even though it wasn\'t busy. The staff seemed undertrained and didn\'t know their own menu. Cookie quality was good but experience was not. @crumblepakistan',
+              likes:19, comments:6, shares:0, daysAgo:2, url:'', resolved:false,
+              tags:[] },
+        ];
+
+        // ── Data store ────────────────────────────────────────────────────────
+        let slMentions = [];
+        function slLoadData(){
+            try {
+                const saved = sessionStorage.getItem('crumble_sl_mentions');
+                slMentions = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SL_SEED));
+            } catch(e){ slMentions = JSON.parse(JSON.stringify(SL_SEED)); }
+        }
+        function slSaveData(){ try{ sessionStorage.setItem('crumble_sl_mentions', JSON.stringify(slMentions)); }catch(e){} }
+
+        // ── Helpers ───────────────────────────────────────────────────────────
+        const SL_PLATFORM_ICONS = {
+            'Instagram':'fa-instagram', 'Facebook':'fa-facebook', 'Twitter/X':'fa-x-twitter',
+            'Google':'fa-google', 'TikTok':'fa-tiktok'
+        };
+        const SL_PLATFORM_CLASS = {
+            'Instagram':'sl-platform-instagram','Facebook':'sl-platform-facebook',
+            'Twitter/X':'sl-platform-twitterx','Google':'sl-platform-google',
+            'TikTok':'sl-platform-tiktok'
+        };
+        const SL_SENTIMENT_CHIPS = {
+            'Complaint':'<span class="sl-sentiment-chip sl-chip-complaint"><i class="fas fa-circle-exclamation"></i> Complaint</span>',
+            'Praise':   '<span class="sl-sentiment-chip sl-chip-praise"><i class="fas fa-star"></i> Praise</span>',
+            'Query':    '<span class="sl-sentiment-chip sl-chip-query"><i class="fas fa-question-circle"></i> Query</span>',
+            'Mention':  '<span class="sl-sentiment-chip sl-chip-mention"><i class="fas fa-at"></i> Mention</span>',
+        };
+        const SL_SENTIMENT_CARD = {
+            'Complaint':'sentiment-complaint','Praise':'sentiment-praise',
+            'Query':'sentiment-query','Mention':'sentiment-mention'
+        };
+
+        function slTimeAgo(daysAgo){
+            if(daysAgo === 0) return 'Today';
+            if(daysAgo === 1) return 'Yesterday';
+            return `${daysAgo} days ago`;
+        }
+
+        function slIsUrgent(m){ return m.sentiment === 'Complaint' && !m.resolved; }
+
+        // ═══════════════════════════════════════════
+        // BRAND INTELLIGENCE — keyword config
+        // Covers: crumble, crumbl, crumb + context,
+        // official handles, hashtags, branch names.
+        // The team can see exactly what triggers capture.
+        // ═══════════════════════════════════════════
+        const SL_BRAND_CONFIG = {
+
+            // ── Tier 1: guaranteed Crumble Pakistan ──────────────────────────
+            // Any of these = 100% ours, no disambiguation needed
+            definite: [
+                'crumble pakistan', 'crumblepakistan', 'crumbledobara',
+                '@crumblepakistan', '@crumbledobara',
+                '#crumblepakistan', '#crumbledobara', '#crumblePK',
+                'crumble lahore', 'crumble islamabad', 'crumble karachi',
+                'crumble multan', 'crumble peshawar', 'crumble faisalabad',
+                // branch name matches
+                ...config.branches.map(b => 'crumble ' + b.name.toLowerCase()),
+            ],
+
+            // ── Tier 2: likely ours but needs context check ──────────────────
+            // "crumble", "crumbl", "crumb" alone — could be PK or US
+            ambiguous: [
+                'crumble', 'crumbl', 'crumb cookie', 'crumb cookies',
+                '#crumble', '#crumbl', '#crumblecookies',
+            ],
+
+            // ── Tier 3: US brand signals — if these appear, flag as Crumbl US ─
+            // If a Tier 2 match also hits one of these → likely NOT ours
+            usSignals: [
+                'crumbl cookie', 'crumbl cookies', 'crumbl us',
+                'utah', 'mckay', 'sawyer hemsley',
+                '#crumblcookies', '#crumblcookie',
+                // US city names commonly associated with Crumbl
+                'provo', 'salt lake', 'boise', 'phoenix', 'denver',
+                'seattle', 'chicago', 'new york', 'los angeles', 'dallas',
+            ],
+
+            // ── Pakistan context boosters ────────────────────────────────────
+            // If a Tier 2 match + one of these → almost certainly ours
+            pkSignals: [
+                'pakistan', 'lahore', 'islamabad', 'karachi', 'dha',
+                'gulberg', 'johar', 'bahria', 'blue area', 'f-11',
+                'f11', 'i-8', 'i8', 'saddar', 'clifton', 'defence',
+                'pkr', 'rs.', 'rupee', 'rupees', 'pk',
+                'yumookies', '#lahore', '#islamabad', '#karachi',
+                '#pakistan', '#lahooree', '#foodies',
+            ],
+        };
+
+        // ── Analyse content: returns { matched, tier, brand, triggeredBy } ──
+        // tier: 'definite' | 'likely' | 'ambiguous' | 'unrelated'
+        // brand: 'Crumble PK' | 'Crumbl US' | 'Unclear' | null
+        function slAnalyseContent(text){
+            if(!text) return { matched: false, tier: 'unrelated', brand: null, triggeredBy: [] };
+
+            const lower = text.toLowerCase();
+            const triggered = [];
+
+            // Check Tier 1 — definite PK match
+            for(const kw of SL_BRAND_CONFIG.definite){
+                if(lower.includes(kw.toLowerCase())){ triggered.push({ kw, tier:'definite' }); }
+            }
+            if(triggered.length){
+                return { matched:true, tier:'definite', brand:'Crumble PK', triggeredBy:triggered };
+            }
+
+            // Check Tier 2 — ambiguous match
+            const ambigHits = SL_BRAND_CONFIG.ambiguous.filter(kw => lower.includes(kw.toLowerCase()));
+            if(!ambigHits.length){
+                return { matched:false, tier:'unrelated', brand:null, triggeredBy:[] };
+            }
+            ambigHits.forEach(kw => triggered.push({ kw, tier:'ambiguous' }));
+
+            // Check for US signals
+            const usHits = SL_BRAND_CONFIG.usSignals.filter(kw => lower.includes(kw.toLowerCase()));
+            // Check for PK signals
+            const pkHits = SL_BRAND_CONFIG.pkSignals.filter(kw => lower.includes(kw.toLowerCase()));
+
+            usHits.forEach(kw => triggered.push({ kw, tier:'us-signal' }));
+            pkHits.forEach(kw => triggered.push({ kw, tier:'pk-signal' }));
+
+            if(usHits.length > 0 && pkHits.length === 0){
+                // Strong evidence this is Crumbl US
+                return { matched:true, tier:'ambiguous', brand:'Crumbl US ⚠️', triggeredBy:triggered, warning:true };
+            }
+            if(pkHits.length > 0){
+                return { matched:true, tier:'likely', brand:'Crumble PK', triggeredBy:triggered };
+            }
+            // Ambiguous — caught by keyword, no strong signal either way
+            return { matched:true, tier:'ambiguous', brand:'Unclear — verify', triggeredBy:triggered, warning:true };
+        }
+
+        // ── Live content analysis in the Add Mention modal ───────────────────
+        // Fires whenever the user pastes/types in the content box
+        function slLiveAnalyse(){
+            const text = (document.getElementById('sl-m-content')||{}).value||'';
+            const result = document.getElementById('sl-analyse-result');
+            if(!result) return;
+
+            if(!text.trim()){ result.innerHTML=''; result.style.display='none'; return; }
+
+            const analysis = slAnalyseContent(text);
+
+            if(!analysis.matched){
+                result.style.display='block';
+                result.innerHTML=`
+                    <div style="display:flex;align-items:flex-start;gap:8px;">
+                        <i class="fas fa-triangle-exclamation" style="color:var(--status-warn);margin-top:2px;flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-weight:800;color:var(--status-warn);font-size:0.8rem;">No Brand Keywords Detected</div>
+                            <div style="color:var(--text-muted);font-size:0.75rem;margin-top:3px;">This content doesn't contain any Crumble Pakistan keywords. Are you sure this mention is about us?</div>
+                        </div>
+                    </div>`;
+                return;
+            }
+
+            const tierColors = { definite:'var(--status-good)', likely:'#2563EB', ambiguous:'var(--status-warn)' };
+            const tierLabels = { definite:'✅ Confirmed Crumble Pakistan', likely:'🔵 Likely Crumble Pakistan', ambiguous:'⚠️ Ambiguous — please verify' };
+            const brandColor = analysis.brand==='Crumble PK' ? 'var(--status-good)' : analysis.brand==='Unclear — verify' ? 'var(--status-warn)' : 'var(--status-critical)';
+
+            const kwHtml = analysis.triggeredBy.map(t => {
+                const chipColor = t.tier==='definite' ? 'rgba(5,150,105,.12)' : t.tier==='pk-signal' ? 'rgba(37,99,235,.1)' : t.tier==='us-signal' ? 'rgba(220,38,38,.1)' : 'rgba(217,119,6,.1)';
+                const textColor = t.tier==='definite' ? 'var(--status-good)' : t.tier==='pk-signal' ? '#2563EB' : t.tier==='us-signal' ? 'var(--status-critical)' : 'var(--status-warn)';
+                const label = t.tier==='us-signal' ? '🇺🇸' : t.tier==='pk-signal' ? '🇵🇰' : t.tier==='definite' ? '✓' : '~';
+                return `<span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:0.68rem;font-weight:800;background:${chipColor};color:${textColor};">${label} ${t.kw}</span>`;
+            }).join('');
+
+            result.style.display='block';
+            result.innerHTML=`
+                <div style="display:flex;align-items:flex-start;gap:8px;">
+                    <i class="fas fa-magnifying-glass" style="color:${tierColors[analysis.tier]||'var(--text-muted)'};margin-top:2px;flex-shrink:0;"></i>
+                    <div style="flex:1;">
+                        <div style="font-weight:800;color:${tierColors[analysis.tier]};font-size:0.8rem;">${tierLabels[analysis.tier]||analysis.tier}</div>
+                        <div style="font-size:0.73rem;font-weight:700;color:${brandColor};margin:3px 0 6px;">Brand identified: ${analysis.brand||'Unknown'}</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;">${kwHtml}</div>
+                        ${analysis.warning ? `<div style="margin-top:6px;font-size:0.7rem;color:var(--status-warn);font-weight:600;"><i class="fas fa-circle-info"></i> Double-check before saving — this could be about the US brand Crumbl Cookie, not Crumble Pakistan.</div>` : ''}
+                    </div>
+                </div>`;
+        }
+
+        // Auto-draft a professional reply based on sentiment
+        function slDraftReply(m){
+            const branch = m.branch ? `our ${m.branch} branch` : 'our team';
+            if(m.sentiment === 'Complaint'){
+                return `Hi ${m.author} 👋\n\nThank you for bringing this to our attention, and we sincerely apologize for the experience you had. This is not the standard we hold ourselves to at Crumble.\n\nWe've shared your feedback with ${branch} for an immediate review. We'd love the opportunity to make this right for you — please DM us your order details so we can assist you personally.\n\nWe appreciate your patience and value your feedback deeply.\n\n— Team Crumble 🍪`;
+            }
+            if(m.sentiment === 'Praise'){
+                return `Hi ${m.author} 💙\n\nThis genuinely made our day — thank you so much for sharing! Knowing that you had a wonderful experience at Crumble means everything to us.\n\nWe'll pass your kind words on to ${branch} — the team works incredibly hard and this is the best motivation!\n\nHope to see you again very soon 🍪✨\n\n— Team Crumble`;
+            }
+            if(m.sentiment === 'Query'){
+                return `Hi ${m.author}!\n\nThanks for reaching out 😊 We'd love to help — please send us a DM with all the details and our team will get back to you as soon as possible.\n\nLooking forward to hearing from you!\n\n— Team Crumble 🍪`;
+            }
+            return `Hi ${m.author} 👋\n\nThank you for mentioning us — it means a lot! We love seeing Crumble come up in your feed 🍪\n\nFeel free to DM us anytime.\n\n— Team Crumble`;
+        }
+
+        // ── Populate branch selects ───────────────────────────────────────────
+        function slPopulateBranchSelects(){
+            ['sl-filter-branch','sl-m-branch'].forEach(id => {
+                const sel = document.getElementById(id);
+                if(!sel) return;
+                const isFilter = id === 'sl-filter-branch';
+                sel.innerHTML = isFilter ? '<option value="all">All Branches</option><option value="">General / No Branch</option>' : '<option value="">— None / General —</option>';
+                config.branches.forEach(b => sel.add(new Option(b.name, b.name)));
+            });
+        }
+
+        // ── Add mention from modal ────────────────────────────────────────────
+        function slAddMention(){
+            const platform  = document.getElementById('sl-m-platform').value;
+            const type      = document.getElementById('sl-m-type').value;
+            const sentiment = document.getElementById('sl-m-sentiment').value;
+            const branch    = document.getElementById('sl-m-branch').value;
+            const author    = document.getElementById('sl-m-author').value.trim();
+            const content   = document.getElementById('sl-m-content').value.trim();
+            const likes     = parseInt(document.getElementById('sl-m-likes').value)||0;
+            const comments  = parseInt(document.getElementById('sl-m-comments').value)||0;
+            const url       = document.getElementById('sl-m-url').value.trim();
+
+            if(!content){ alert('Please enter the post content.'); return; }
+            if(!author){ alert('Please enter the author or handle.'); return; }
+
+            // Run brand analysis on the content
+            const analysis = slAnalyseContent(content);
+
+            // Warn if it looks like the US brand
+            if(analysis.brand && analysis.brand !== 'Crumble PK'){
+                const go = confirm(
+                    `⚠️  Brand Warning\n\n` +
+                    `Our system detected this mention may be about "${analysis.brand}" rather than Crumble Pakistan.\n\n` +
+                    `Triggered by: ${analysis.triggeredBy.map(t=>t.kw).join(', ')}\n\n` +
+                    `Press OK to save it anyway, or Cancel to go back and review.`
+                );
+                if(!go) return;
+            }
+
+            // Warn if no brand keyword found at all
+            if(!analysis.matched){
+                const go = confirm(
+                    `⚠️  No Crumble Keywords Found\n\n` +
+                    `This content doesn't contain any Crumble Pakistan keywords (crumble, crumbl, crumb, handles, hashtags, etc.).\n\n` +
+                    `Are you sure this mention is about Crumble Pakistan?\n\n` +
+                    `Press OK to save it anyway, or Cancel to review.`
+                );
+                if(!go) return;
+            }
+
+            const newMention = {
+                id:'sl'+Date.now(), platform, type, sentiment, branch, author, content,
+                likes, comments, shares:0, daysAgo:0, url, resolved:false, tags:[],
+                // Store analysis metadata on the record
+                brandTier: analysis.tier,
+                brandLabel: analysis.brand || 'Unverified',
+                triggeredBy: (analysis.triggeredBy||[]).map(t=>t.kw),
+            };
+            slMentions.unshift(newMention);
+            slSaveData();
+            document.getElementById('sl-add-modal').classList.remove('open');
+            // reset fields
+            ['sl-m-author','sl-m-content','sl-m-url'].forEach(id => document.getElementById(id).value='');
+            document.getElementById('sl-m-likes').value='0';
+            document.getElementById('sl-m-comments').value='0';
+            const ar = document.getElementById('sl-analyse-result');
+            if(ar){ ar.innerHTML=''; ar.style.display='none'; }
+            renderSocialListening();
+        }
+
+        // ── Toggle resolved ───────────────────────────────────────────────────
+        function slToggleResolved(id){
+            const m = slMentions.find(x=>x.id===id);
+            if(m){ m.resolved = !m.resolved; slSaveData(); renderSocialListening(); }
+        }
+
+        // ── Show reply draft modal ────────────────────────────────────────────
+        function slShowReply(id){
+            const m = slMentions.find(x=>x.id===id);
+            if(!m) return;
+            document.getElementById('sl-reply-content').innerText = slDraftReply(m);
+            document.getElementById('sl-reply-modal').classList.add('open');
+        }
+
+        // ── Main render ───────────────────────────────────────────────────────
+        function renderSocialListening(){
+            if(!slMentions.length) slLoadData();
+            slPopulateBranchSelects();
+
+            const pfFilter  = (document.getElementById('sl-filter-platform')||{}).value||'all';
+            const snFilter  = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const brFilter  = (document.getElementById('sl-filter-branch')||{}).value||'all';
+
+            let filtered = slMentions.slice();
+            if(pfFilter !== 'all') filtered = filtered.filter(m=>m.platform===pfFilter);
+            if(snFilter !== 'all') filtered = filtered.filter(m=>m.sentiment===snFilter);
+            if(brFilter === '') filtered = filtered.filter(m=>!m.branch);
+            else if(brFilter !== 'all') filtered = filtered.filter(m=>m.branch===brFilter);
+
+            // ── KPI strip ──
+            const total      = slMentions.length;
+            const complaints = slMentions.filter(m=>m.sentiment==='Complaint').length;
+            const praises    = slMentions.filter(m=>m.sentiment==='Praise').length;
+            const unresolved = slMentions.filter(m=>m.sentiment==='Complaint'&&!m.resolved).length;
+            const reach      = slMentions.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
+
+            const kpiStrip = document.getElementById('sl-kpi-strip');
+            if(kpiStrip){
+                kpiStrip.innerHTML = [
+                    { label:'Total Mentions', val:total, sub:'across all platforms', color:'var(--accent-blue)', icon:'fa-hashtag' },
+                    { label:'Complaints', val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
+                    { label:'Praise', val:praises, sub:'positive mentions', color:'var(--status-good)', icon:'fa-star' },
+                    { label:'Unresolved', val:unresolved, sub:'need attention', color:unresolved>0?'var(--status-critical)':'var(--status-good)', icon:'fa-triangle-exclamation' },
+                    { label:'Total Reach', val:reach.toLocaleString(), sub:'likes + comments + shares', color:'#8B5CF6', icon:'fa-eye' },
+                ].map(k=>`
+                    <div class="sl-kpi">
+                        <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
+                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}
+                        </div>
+                        <div class="sl-kpi-val" style="color:${k.color};">${k.val}</div>
+                        <div class="sl-kpi-sub">${k.sub}</div>
+                    </div>`).join('');
+            }
+
+            // ── Feed ──
+            const feed = document.getElementById('sl-feed');
+            const emptyEl = document.getElementById('sl-empty');
+            if(!feed) return;
+
+            if(!filtered.length){
+                feed.innerHTML = '';
+                if(emptyEl) emptyEl.style.display='block';
+                return;
+            }
+            if(emptyEl) emptyEl.style.display='none';
+
+            feed.innerHTML = filtered.map(m => {
+                const platIcon  = SL_PLATFORM_ICONS[m.platform]||'fa-globe';
+                const platClass = SL_PLATFORM_CLASS[m.platform]||'sl-platform-default';
+                const sentChip  = SL_SENTIMENT_CHIPS[m.sentiment]||SL_SENTIMENT_CHIPS['Mention'];
+                const cardClass = SL_SENTIMENT_CARD[m.sentiment]||'sentiment-mention';
+                const urgent    = slIsUrgent(m);
+                const branchTag = m.branch ? `<span class="sl-branch-tag"><i class="fas fa-store" style="font-size:0.58rem;"></i>${m.branch}</span>` : '';
+                const urgentTag = urgent ? `<span class="sl-urgency"><i class="fas fa-bolt" style="font-size:0.58rem;"></i> Urgent</span>` : '';
+                const resolvedBadge = m.resolved ? `<span class="sl-resolved-banner"><i class="fas fa-check-circle"></i> Responded</span>` : '';
+                const urlLink = m.url ? `<a href="${m.url}" target="_blank" class="sl-action-btn" style="font-size:0.68rem;"><i class="fas fa-external-link-alt"></i> View Post</a>` : '';
+
+                // ── Brand confidence chip ─────────────────────────────────────
+                // For seed data (no brandTier stored), run analysis live
+                let analysis = m.brandTier
+                    ? { tier: m.brandTier, brand: m.brandLabel, triggeredBy: (m.triggeredBy||[]).map(kw=>({kw})) }
+                    : slAnalyseContent(m.content);
+
+                const brandTierConfig = {
+                    definite: { bg:'rgba(5,150,105,.1)',  color:'var(--status-good)',     icon:'fa-shield-check', label:'Confirmed PK' },
+                    likely:   { bg:'rgba(37,99,235,.1)',  color:'#2563EB',                icon:'fa-circle-check', label:'Likely PK'    },
+                    ambiguous:{ bg:'rgba(217,119,6,.1)',  color:'var(--status-warn)',      icon:'fa-circle-question', label:'Verify Brand' },
+                    unrelated:{ bg:'rgba(100,116,139,.1)',color:'var(--text-muted)',       icon:'fa-circle-xmark', label:'No KW match'  },
+                };
+                const tc = brandTierConfig[analysis.tier] || brandTierConfig.unrelated;
+                const brandChip = `<span class="sl-brand-chip" style="background:${tc.bg};color:${tc.color};" title="Brand confidence: ${analysis.brand||'Unknown'}&#10;Triggered by: ${(analysis.triggeredBy||[]).map(t=>t.kw||t).join(', ')||'none'}"><i class="fas ${tc.icon}" style="font-size:0.58rem;"></i> ${tc.label}</span>`;
+
+                // ── Highlight triggered keywords in the content ───────────────
+                let highlightedContent = m.content;
+                // Bold all triggered keywords (Tier 1 & 2)
+                (analysis.triggeredBy||[]).forEach(t => {
+                    const kw = (t.kw||t);
+                    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+                    const kwColor = (t.tier||'ambiguous')==='us-signal' ? '#DC2626' : (t.tier||'ambiguous')==='pk-signal' ? '#059669' : '#010197';
+                    highlightedContent = highlightedContent.replace(
+                        new RegExp(`(${escaped})`, 'gi'),
+                        `<mark style="background:${kwColor}18;color:${kwColor};font-weight:800;border-radius:3px;padding:0 2px;">$1</mark>`
+                    );
+                });
+                // Then highlight remaining hashtags and @mentions
+                highlightedContent = highlightedContent
+                    .replace(/(#\w+)/g, (match) => match.includes('mark') ? match : `<span style="color:#010197;font-weight:700;">${match}</span>`)
+                    .replace(/(@\w+)/g, (match) => match.includes('mark') ? match : `<span style="color:#3B82F6;font-weight:700;">${match}</span>`);
+
+                // ── "Triggered by" footer row ─────────────────────────────────
+                const kwChips = (analysis.triggeredBy||[]).filter(t=>(t.kw||t)).slice(0,5).map(t => {
+                    const kw = (t.kw||t);
+                    const tier = t.tier||'ambiguous';
+                    const isUS = tier==='us-signal';
+                    const isPK = tier==='definite'||tier==='pk-signal';
+                    const chipBg = isUS ? 'rgba(220,38,38,.08)' : isPK ? 'rgba(5,150,105,.08)' : 'rgba(1,1,151,.06)';
+                    const chipClr = isUS ? '#DC2626' : isPK ? '#059669' : '#010197';
+                    const flag = isUS ? '🇺🇸' : isPK ? '🇵🇰' : '🔑';
+                    return `<span style="font-size:0.65rem;font-weight:700;padding:1px 7px;border-radius:20px;background:${chipBg};color:${chipClr};">${flag} ${kw}</span>`;
+                }).join('');
+                const triggeredRow = kwChips ? `
+                    <div style="display:flex;align-items:center;gap:5px;margin-top:8px;flex-wrap:wrap;">
+                        <span style="font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--text-muted);">Captured by:</span>
+                        ${kwChips}
+                    </div>` : '';
+
+                return `
+                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}">
+                    <div class="sl-card-top">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                            <span class="sl-platform-badge ${platClass}"><i class="fab ${platIcon}"></i> ${m.platform}</span>
+                            <span class="sl-type-badge"><i class="fas fa-tag" style="font-size:0.6rem;"></i>${m.type}</span>
+                            ${sentChip}
+                            ${brandChip}
+                            ${branchTag}
+                            ${urgentTag}
+                            ${resolvedBadge}
+                        </div>
+                        <span class="sl-time"><i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.daysAgo)}</span>
+                    </div>
+                    <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author}</div>
+                    <div class="sl-content">${highlightedContent}</div>
+                    ${triggeredRow}
+                    <div class="sl-meta-row" style="margin-top:10px;">
+                        <span class="sl-stat"><i class="fas fa-heart"></i> ${(m.likes||0).toLocaleString()}</span>
+                        <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
+                        <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
+                        <div class="sl-actions">
+                            ${urlLink}
+                            <button class="sl-action-btn primary" onclick="slShowReply('${m.id}')"><i class="fas fa-reply"></i> Draft Reply</button>
+                            <button class="sl-action-btn ${m.resolved?'resolved':''}" onclick="slToggleResolved('${m.id}')">${m.resolved?'<i class="fas fa-check-circle"></i> Responded':'<i class="fas fa-circle-dot"></i> Mark Responded'}</button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // ── Keywords panel ──
+            const allText = slMentions.map(m=>m.content+' '+(m.tags||[]).join(' ')).join(' ');
+            const stopwords = new Set(['the','and','for','was','that','this','with','have','are','your','from','they','you','not','but','been','just','had','all','one','out','can','has','its','our','their','will','very','get','would','his','her','about','his','more','into','also','said','than','do','my','we','so','if','it','at','by','be','in','is','on','or','to','of','a','an','i','me','he','she','we','us','my','am','as','no','did','up','even']);
+            const wordCount = {};
+            allText.toLowerCase().replace(/[^a-z0-9#@\s]/g,'').split(/\s+/).forEach(w=>{
+                if(w.length>2 && !stopwords.has(w)){ wordCount[w]=(wordCount[w]||0)+1; }
+            });
+            const topWords = Object.entries(wordCount).sort((a,b)=>b[1]-a[1]).slice(0,18);
+            const kwEl = document.getElementById('sl-keywords');
+            if(kwEl){
+                kwEl.innerHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}" title="${c} mentions">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
+            }
+
+            // ── Platform breakdown ──
+            const pfCounts = {};
+            slMentions.forEach(m=>{ pfCounts[m.platform]=(pfCounts[m.platform]||0)+1; });
+            const pfMax = Math.max(...Object.values(pfCounts),1);
+            const pfColors = { Instagram:'#E1306C', Facebook:'#1877F2', 'Twitter/X':'#000000', Google:'#EA4335', TikTok:'#69C9D0' };
+            const pfEl = document.getElementById('sl-platform-breakdown');
+            if(pfEl){
+                pfEl.innerHTML = Object.entries(pfCounts).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`
+                    <div class="sl-bar-row">
+                        <span class="sl-bar-label">${p}</span>
+                        <div class="sl-bar-wrap"><div class="sl-bar-fill" style="width:${(c/pfMax*100).toFixed(0)}%;background:${pfColors[p]||'#64748B'};"></div></div>
+                        <span class="sl-bar-count">${c}</span>
+                    </div>`).join('');
+            }
+
+            // ── Branch breakdown ──
+            const brCounts = {};
+            slMentions.filter(m=>m.branch).forEach(m=>{ brCounts[m.branch]=(brCounts[m.branch]||0)+1; });
+            const brMax = Math.max(...Object.values(brCounts),1);
+            const brEl = document.getElementById('sl-branch-breakdown');
+            if(brEl){
+                if(!Object.keys(brCounts).length){
+                    brEl.innerHTML='<p style="font-size:0.78rem;color:var(--text-muted);">No branch-specific mentions yet.</p>';
+                } else {
+                    brEl.innerHTML = Object.entries(brCounts).sort((a,b)=>b[1]-a[1]).map(([b,c])=>`
+                        <div class="sl-bar-row">
+                            <span class="sl-bar-label">${b}</span>
+                            <div class="sl-bar-wrap"><div class="sl-bar-fill" style="width:${(c/brMax*100).toFixed(0)}%;background:#010197;"></div></div>
+                            <span class="sl-bar-count">${c}</span>
+                        </div>`).join('');
+                }
+            }
+        }
+
+        // Init social data on page load
+        slLoadData();
 
         document.addEventListener('DOMContentLoaded', () => app.init());
 
