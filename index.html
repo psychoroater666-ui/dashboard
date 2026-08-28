@@ -1353,6 +1353,20 @@
                         <!-- Controls row -->
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
 
+                            <!-- Date range — clean from/to, no chip glitch -->
+                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:9px;padding:5px 12px;">
+                                <i class="fas fa-calendar-alt" style="color:var(--text-muted);font-size:0.72rem;"></i>
+                                <input type="date" id="sl-date-from" onchange="renderSocialListening()"
+                                    style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
+                                <span style="color:var(--text-muted);font-size:0.75rem;font-weight:700;">→</span>
+                                <input type="date" id="sl-date-to" onchange="renderSocialListening()"
+                                    style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
+                                <button onclick="document.getElementById('sl-date-from').value='';document.getElementById('sl-date-to').value='';renderSocialListening();"
+                                    style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:0 2px;" title="Clear date filter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
                             <!-- Sentiment filter -->
                             <select id="sl-filter-sentiment" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
                                 <option value="all">All Types</option>
@@ -3900,11 +3914,15 @@
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const snFilter  = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const dateFrom  = (document.getElementById('sl-date-from')||{}).value||'';
+            const dateTo    = (document.getElementById('sl-date-to')||{}).value||'';
 
-            // ── Filter — sentiment only, show all dates ──
+            // ── Filter — sentiment + optional date range ──
             let filtered = slMentions.slice().filter(m => {
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
+                if(dateFrom && m.date && m.date < dateFrom) return false;
+                if(dateTo   && m.date && m.date > dateTo)   return false;
                 return true;
             });
 
