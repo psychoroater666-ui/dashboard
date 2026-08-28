@@ -1374,12 +1374,11 @@
                                 <input type="date" id="sl-date-to"   onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;">
                             </div>
 
-                            <!-- Region filter -->
-                            <select id="sl-filter-region" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;" title="Filter by region">
-                                <option value="all">🇵🇰 All Pakistan</option>
-                                <option value="North">North Region</option>
-                                <option value="Central">Central Region</option>
-                                <option value="South">South Region</option>
+                            <!-- Source / region filter — Pakistan-focused -->
+                            <select id="sl-filter-region" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;" title="Filter by source region">
+                                <option value="all">🌍 All Sources</option>
+                                <option value="pk" selected>🇵🇰 Pakistan only</option>
+                                <option value="unclear">⚠️ Unverified / Unclear</option>
                             </select>
 
                             <!-- Sentiment filter -->
@@ -1535,12 +1534,13 @@
                         </div>
                         <div class="sl-field">
                             <label>Type</label>
-                            <select id="sl-m-type" class="select-input" style="width:100%;">
-                                <option value="Post">Post</option>
-                                <option value="Story">Story</option>
+                            <select id="sl-m-type" class="select-input" style="width:100%;" onchange="slOnTypeChange()">
+                                <option value="Post">Post / Caption</option>
+                                <option value="Comment on Crumble Post" selected>Comment on Crumble's Post</option>
+                                <option value="Story">Story / Tag</option>
                                 <option value="Review">Review</option>
-                                <option value="Comment">Comment</option>
-                                <option value="Reel">Reel</option>
+                                <option value="Reel">Reel / Video</option>
+                                <option value="DM">DM / Message</option>
                             </select>
                         </div>
                         <div class="sl-field">
@@ -1585,22 +1585,6 @@
                     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
                         <button onclick="document.getElementById('sl-add-modal').classList.remove('open')" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-muted);font-size:0.85rem;font-weight:600;cursor:pointer;">Cancel</button>
                         <button onclick="slAddMention()" style="padding:9px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Save Mention</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- REPLY DRAFT MODAL -->
-            <div id="sl-reply-modal" class="sl-modal-overlay" onclick="if(event.target===this) this.classList.remove('open')">
-                <div class="sl-modal-box">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                        <h3 style="font-size:0.95rem;font-weight:800;color:var(--text-main);">Drafted Reply</h3>
-                        <button onclick="document.getElementById('sl-reply-modal').classList.remove('open')" style="background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:4px;"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div id="sl-reply-content" style="background:var(--bg-light);border:1px solid var(--border-color);border-radius:10px;padding:14px 16px;font-size:0.85rem;line-height:1.7;color:var(--text-main);white-space:pre-wrap;min-height:100px;"></div>
-                    <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Copy this reply and respond directly on the platform. Edit as needed before posting.</p>
-                    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
-                        <button onclick="navigator.clipboard.writeText(document.getElementById('sl-reply-content').innerText).then(()=>{this.innerText='Copied!'; setTimeout(()=>this.innerText='Copy Text',1800)})" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.85rem;font-weight:600;cursor:pointer;">Copy Text</button>
-                        <button onclick="document.getElementById('sl-reply-modal').classList.remove('open')" style="padding:9px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;">Done</button>
                     </div>
                 </div>
             </div>
@@ -3714,6 +3698,28 @@
         }
 
         // Auto-draft a professional reply based on sentiment
+        // When type = "Comment on Crumble Post", auto-set brand as confirmed PK
+        // and show a helper note so the user knows they don't need brand keywords
+        function slOnTypeChange(){
+            const type = (document.getElementById('sl-m-type')||{}).value||'';
+            const ar   = document.getElementById('sl-analyse-result');
+            if(!ar) return;
+            if(type === 'Comment on Crumble Post'){
+                ar.style.display = 'block';
+                ar.innerHTML = `
+                    <div style="display:flex;align-items:flex-start;gap:8px;">
+                        <i class="fas fa-shield-check" style="color:var(--status-good);margin-top:2px;flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-weight:800;color:var(--status-good);font-size:0.8rem;">✅ Auto-confirmed as Crumble Pakistan</div>
+                            <div style="color:var(--text-muted);font-size:0.75rem;margin-top:3px;">Comments on Crumble's own posts are always confirmed PK — no brand keywords needed in the text.</div>
+                        </div>
+                    </div>`;
+            } else {
+                // Re-run normal analysis if content is already there
+                slLiveAnalyse();
+            }
+        }
+
         function slDraftReply(m){
             const branch = m.branch ? `our ${m.branch} branch` : 'our team';
             if(m.sentiment === 'Complaint'){
@@ -3753,29 +3759,33 @@
             if(!content){ alert('Please enter the post content.'); return; }
             if(!author){ alert('Please enter the author or handle.'); return; }
 
-            // Run brand analysis on the content
-            const analysis = slAnalyseContent(content);
-
-            // Warn if it looks like the US brand
-            if(analysis.brand && analysis.brand !== 'Crumble PK'){
-                const go = confirm(
-                    `⚠️  Brand Warning\n\n` +
-                    `Our system detected this mention may be about "${analysis.brand}" rather than Crumble Pakistan.\n\n` +
-                    `Triggered by: ${analysis.triggeredBy.map(t=>t.kw).join(', ')}\n\n` +
-                    `Press OK to save it anyway, or Cancel to go back and review.`
-                );
-                if(!go) return;
-            }
-
-            // Warn if no brand keyword found at all
-            if(!analysis.matched){
-                const go = confirm(
-                    `⚠️  No Crumble Keywords Found\n\n` +
-                    `This content doesn't contain any Crumble Pakistan keywords (crumble, crumbl, crumb, handles, hashtags, etc.).\n\n` +
-                    `Are you sure this mention is about Crumble Pakistan?\n\n` +
-                    `Press OK to save it anyway, or Cancel to review.`
-                );
-                if(!go) return;
+            // If it's a comment on Crumble's own post — auto-confirm as PK, skip all brand warnings
+            const isOnCrumblePost = type === 'Comment on Crumble Post';
+            let analysis;
+            if(isOnCrumblePost){
+                analysis = { tier:'definite', brand:'Crumble PK', matched:true, triggeredBy:[{kw:'comment on crumble post', tier:'definite'}] };
+            } else {
+                analysis = slAnalyseContent(content);
+                // Warn if it looks like the US brand
+                if(analysis.brand && analysis.brand !== 'Crumble PK'){
+                    const go = confirm(
+                        `⚠️  Brand Warning\n\n` +
+                        `Our system detected this mention may be about "${analysis.brand}" rather than Crumble Pakistan.\n\n` +
+                        `Triggered by: ${analysis.triggeredBy.map(t=>t.kw).join(', ')}\n\n` +
+                        `Press OK to save it anyway, or Cancel to go back and review.`
+                    );
+                    if(!go) return;
+                }
+                // Warn if no brand keyword found at all
+                if(!analysis.matched){
+                    const go = confirm(
+                        `⚠️  No Crumble Keywords Found\n\n` +
+                        `This content doesn't contain any Crumble Pakistan keywords.\n\n` +
+                        `If you're adding a comment made on Crumble's own post, choose "Comment on Crumble's Post" as the Type — it will be auto-confirmed.\n\n` +
+                        `Press OK to save anyway, or Cancel to review.`
+                    );
+                    if(!go) return;
+                }
             }
 
             const newMention = {
@@ -3830,14 +3840,23 @@
                 // Date range
                 const mDate = m.date || '2000-01-01';
                 if(mDate < dateRange.from || mDate > dateRange.to) return false;
-                // Sentiment
+
+                // Sentiment / type
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
-                // Region — "all" shows everything, specific region filters by m.region
-                // Branches without a region are assumed Pakistan-wide
+
+                // Source region filter — based on brand analysis, not branch location
+                // 'pk'      = only show confirmed/likely Crumble Pakistan mentions
+                // 'unclear' = only show ambiguous / unverified ones
+                // 'all'     = show everything
                 if(rgFilter !== 'all'){
-                    const mRegion = m.region || (config.branches.find(b=>b.name===m.branch)||{}).region || 'Pakistan';
-                    if(mRegion !== rgFilter && mRegion !== 'Pakistan') return false;
+                    // Get brand tier — use stored value or run analysis live
+                    const tier = m.brandTier || slAnalyseContent(m.content).tier;
+                    const isPK = tier === 'definite' || tier === 'likely';
+                    const isUnclear = tier === 'ambiguous' || tier === 'unrelated';
+                    if(rgFilter === 'pk'      && !isPK)      return false;
+                    if(rgFilter === 'unclear' && !isUnclear) return false;
                 }
+
                 return true;
             });
 
@@ -3850,20 +3869,20 @@
             // ── Showing label ──
             const showingEl = document.getElementById('sl-showing-label');
             if(showingEl){
-                const total = slMentions.length;
-                if(filtered.length === total){
-                    showingEl.textContent = `Showing all ${total} mentions`;
+                if(filtered.length === slMentions.length){
+                    showingEl.textContent = `Showing all ${slMentions.length} mentions`;
                 } else {
-                    showingEl.textContent = `Showing ${filtered.length} of ${total} mentions`;
+                    showingEl.textContent = `Showing ${filtered.length} of ${slMentions.length}`;
                 }
             }
 
-            // ── KPI strip ──
-            const total      = slMentions.length;
-            const complaints = slMentions.filter(m=>m.sentiment==='Complaint').length;
-            const praises    = slMentions.filter(m=>m.sentiment==='Praise').length;
-            const unresolved = slMentions.filter(m=>m.sentiment==='Complaint'&&!m.resolved).length;
-            const reach      = slMentions.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
+            // ── KPI strip — counts from filtered (matches what's visible) ──
+            const total      = filtered.length;
+            const totalAll   = slMentions.length;
+            const complaints = filtered.filter(m=>m.sentiment==='Complaint').length;
+            const praises    = filtered.filter(m=>m.sentiment==='Praise').length;
+            const unresolved = filtered.filter(m=>m.sentiment==='Complaint'&&!m.resolved).length;
+            const reach      = filtered.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
 
             const kpiStrip = document.getElementById('sl-kpi-strip');
             if(kpiStrip){
@@ -3903,8 +3922,18 @@
                 const urgent    = slIsUrgent(m);
                 const branchTag = m.branch ? `<span class="sl-branch-tag"><i class="fas fa-store" style="font-size:0.58rem;"></i>${m.branch}</span>` : '';
                 const urgentTag = urgent ? `<span class="sl-urgency"><i class="fas fa-bolt" style="font-size:0.58rem;"></i> Urgent</span>` : '';
-                const resolvedBadge = m.resolved ? `<span class="sl-resolved-banner"><i class="fas fa-check-circle"></i> Responded</span>` : '';
-                const urlLink = m.url ? `<a href="${m.url}" target="_blank" class="sl-action-btn" style="font-size:0.68rem;"><i class="fas fa-external-link-alt"></i> View Post</a>` : '';
+                // ── Source button — platform-coloured, in card header ─────────
+                const platformColors = {
+                    'Instagram': { bg:'#E1306C', icon:'fa-instagram' },
+                    'Facebook':  { bg:'#1877F2', icon:'fa-facebook'  },
+                    'Twitter/X': { bg:'#000000', icon:'fa-x-twitter' },
+                    'Google':    { bg:'#EA4335', icon:'fa-google'    },
+                    'TikTok':    { bg:'#010101', icon:'fa-tiktok'    },
+                };
+                const pc = platformColors[m.platform] || { bg:'#64748B', icon:'fa-globe' };
+                const sourceBtn = m.url
+                    ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'"><i class="fab ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
+                    : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:var(--bg-light);color:var(--text-muted);font-size:0.72rem;font-weight:700;border:1px dashed var(--border-color);cursor:default;" title="No source URL added"><i class="fas fa-link-slash" style="font-size:0.68rem;"></i> No link</span>`;
 
                 // ── Brand confidence chip ─────────────────────────────────────
                 // For seed data (no brandTier stored), run analysis live
@@ -4004,12 +4033,14 @@
                             ${brandChip}
                             ${branchTag}
                             ${urgentTag}
-                            ${resolvedBadge}
                         </div>
-                        <span class="sl-time">
-                            <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}
-                            ${m.date ? `<span style="color:var(--border-color);margin:0 4px;">·</span><span style="font-size:0.65rem;">${new Date(m.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>` : ''}
-                        </span>
+                        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                            ${sourceBtn}
+                            <span class="sl-time">
+                                <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}
+                                ${m.date ? `<span style="color:var(--border-color);margin:0 4px;">·</span><span style="font-size:0.65rem;">${new Date(m.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>` : ''}
+                            </span>
+                        </div>
                     </div>
                     <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author}</div>
                     <div class="sl-content">${highlightedContent}</div>
@@ -4018,11 +4049,6 @@
                         <span class="sl-stat"><i class="fas fa-heart"></i> ${(m.likes||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
-                        <div class="sl-actions">
-                            ${urlLink}
-                            <button class="sl-action-btn primary" onclick="slShowReply('${m.id}')"><i class="fas fa-reply"></i> Draft Reply</button>
-                            <button class="sl-action-btn ${m.resolved?'resolved':''}" onclick="slToggleResolved('${m.id}')">${m.resolved?'<i class="fas fa-check-circle"></i> Responded':'<i class="fas fa-circle-dot"></i> Mark Responded'}</button>
-                        </div>
                     </div>
                 </div>`;
             }).join('');
