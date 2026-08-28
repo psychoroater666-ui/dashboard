@@ -1353,18 +1353,22 @@
                         <!-- Controls row -->
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
 
-                            <!-- Date range — clean from/to, no chip glitch -->
-                            <div style="display:flex;align-items:center;gap:6px;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:9px;padding:5px 12px;">
-                                <i class="fas fa-calendar-alt" style="color:var(--text-muted);font-size:0.72rem;"></i>
-                                <input type="date" id="sl-date-from" onchange="renderSocialListening()"
-                                    style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
-                                <span style="color:var(--text-muted);font-size:0.75rem;font-weight:700;">→</span>
-                                <input type="date" id="sl-date-to" onchange="renderSocialListening()"
-                                    style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
-                                <button onclick="document.getElementById('sl-date-from').value='';document.getElementById('sl-date-to').value='';renderSocialListening();"
-                                    style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:0 2px;" title="Clear date filter">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                            <!-- Date preset chips — single source of truth via slSetPreset() -->
+                            <div style="display:flex;align-items:center;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:9px;overflow:hidden;">
+                                <button id="slp-all"       onclick="slSetPreset('all')"     style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border-color);">All</button>
+                                <button id="slp-today"     onclick="slSetPreset('today')"   style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border-color);">Today</button>
+                                <button id="slp-yesterday" onclick="slSetPreset('yesterday')" style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border-color);">Yesterday</button>
+                                <button id="slp-7d"        onclick="slSetPreset('7d')"      style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border-color);">7 days</button>
+                                <button id="slp-30d"       onclick="slSetPreset('30d')"     style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;border-right:1px solid var(--border-color);">30 days</button>
+                                <button id="slp-custom"    onclick="slSetPreset('custom')"  style="padding:6px 12px;font-size:0.75rem;font-weight:700;border:none;cursor:pointer;transition:background .15s,color .15s;">Custom</button>
+                            </div>
+
+                            <!-- Custom date pickers — only visible when Custom is active -->
+                            <div id="sl-custom-range" style="display:none;align-items:center;gap:6px;background:var(--bg-light);border:1.5px solid var(--accent-blue);border-radius:9px;padding:5px 11px;">
+                                <i class="fas fa-calendar-alt" style="color:var(--accent-blue);font-size:0.72rem;"></i>
+                                <input type="date" id="sl-date-from" onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
+                                <span style="color:var(--text-muted);font-weight:700;font-size:0.75rem;">→</span>
+                                <input type="date" id="sl-date-to"   onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
                             </div>
 
                             <!-- Sentiment filter -->
@@ -1377,7 +1381,7 @@
                             </select>
 
                             <!-- Sort toggle -->
-                            <button id="sl-sort-btn" onclick="slToggleSort()" style="display:flex;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.78rem;font-weight:700;cursor:pointer;transition:.15s;" title="Toggle sort order">
+                            <button id="sl-sort-btn" onclick="slToggleSort()" style="display:flex;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.78rem;font-weight:700;cursor:pointer;transition:.15s;">
                                 <i class="fas fa-arrow-down-wide-short"></i> Newest first
                             </button>
 
@@ -3432,8 +3436,63 @@
               resolved:false, tags:[], region:'Central' },
         ];
 
-        // ── Sort state ────────────────────────────────────────────────────────
+        // ── Date preset state — single variable, no CSS class conflicts ─────
         let slSortNewestFirst = true;
+        let slActivePreset    = 'all';
+
+        function slSetPreset(preset){
+            slActivePreset = preset;
+
+            // Style all chips from scratch each time — no leftover state
+            const chips = { all:'slp-all', today:'slp-today', yesterday:'slp-yesterday',
+                            '7d':'slp-7d', '30d':'slp-30d', custom:'slp-custom' };
+            Object.entries(chips).forEach(([key, id]) => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                if(key === preset){
+                    el.style.background = 'var(--accent-blue)';
+                    el.style.color      = '#fff';
+                } else {
+                    el.style.background = 'transparent';
+                    el.style.color      = 'var(--text-muted)';
+                }
+            });
+
+            // Show/hide custom pickers
+            const cr = document.getElementById('sl-custom-range');
+            if(cr) cr.style.display = preset === 'custom' ? 'flex' : 'none';
+
+            // Set the from/to inputs automatically for non-custom presets
+            if(preset !== 'custom'){
+                const max = SYSTEM_NOW.toISOString().split('T')[0];
+                let from  = '';
+                if(preset === 'today'){
+                    from = max;
+                } else if(preset === 'yesterday'){
+                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-1);
+                    from = d.toISOString().split('T')[0];
+                    // yesterday only = from AND to = yesterday
+                    const toEl = document.getElementById('sl-date-to');
+                    if(toEl) toEl.value = from;
+                } else if(preset === '7d'){
+                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-7);
+                    from = d.toISOString().split('T')[0];
+                } else if(preset === '30d'){
+                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-30);
+                    from = d.toISOString().split('T')[0];
+                } else {
+                    // 'all' — clear both
+                    from = '';
+                }
+
+                const fromEl = document.getElementById('sl-date-from');
+                const toEl   = document.getElementById('sl-date-to');
+                if(fromEl) fromEl.value = from;
+                if(toEl && preset !== 'yesterday') toEl.value = preset === 'all' ? '' : max;
+            }
+
+            renderSocialListening();
+        }
 
         function slToggleSort(){
             slSortNewestFirst = !slSortNewestFirst;
@@ -3914,11 +3973,16 @@
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            const snFilter  = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
-            const dateFrom  = (document.getElementById('sl-date-from')||{}).value||'';
-            const dateTo    = (document.getElementById('sl-date-to')||{}).value||'';
+            // Init chip styles on first render
+            if(!document.getElementById('slp-all')?.style.background){
+                slSetPreset('all'); return; // slSetPreset calls renderSocialListening again
+            }
 
-            // ── Filter — sentiment + optional date range ──
+            const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const dateFrom = (document.getElementById('sl-date-from')||{}).value||'';
+            const dateTo   = (document.getElementById('sl-date-to')||{}).value||'';
+
+            // ── Filter ──
             let filtered = slMentions.slice().filter(m => {
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
                 if(dateFrom && m.date && m.date < dateFrom) return false;
