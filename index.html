@@ -3492,11 +3492,11 @@
             if(slActiveDatePreset === 'all')    return { from: '2000-01-01', to: maxDate };
             if(slActiveDatePreset === 'today')  return { from: maxDate, to: maxDate };
             if(slActiveDatePreset === '7d') {
-                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-6);
+                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-7);
                 return { from: d.toISOString().split('T')[0], to: maxDate };
             }
             if(slActiveDatePreset === '30d') {
-                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-29);
+                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-30);
                 return { from: d.toISOString().split('T')[0], to: maxDate };
             }
             if(slActiveDatePreset === 'custom'){
@@ -3508,14 +3508,34 @@
         }
 
         // ── Data store ────────────────────────────────────────────────────────
+        const SL_DATA_VERSION = 3; // bump this whenever SL_SEED structure changes
         let slMentions = [];
         function slLoadData(){
             try {
                 const saved = sessionStorage.getItem('crumble_sl_mentions');
-                slMentions = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(SL_SEED));
-            } catch(e){ slMentions = JSON.parse(JSON.stringify(SL_SEED)); }
+                const ver   = parseInt(sessionStorage.getItem('crumble_sl_version')||'0');
+                if(saved && ver >= SL_DATA_VERSION){
+                    const parsed = JSON.parse(saved);
+                    // Extra guard: if first record has no date field, treat as stale
+                    if(parsed.length && parsed[0].date){
+                        slMentions = parsed;
+                        return;
+                    }
+                }
+                // Stale or missing — reset to fresh seed
+                slMentions = JSON.parse(JSON.stringify(SL_SEED));
+                sessionStorage.setItem('crumble_sl_mentions', JSON.stringify(slMentions));
+                sessionStorage.setItem('crumble_sl_version', String(SL_DATA_VERSION));
+            } catch(e){
+                slMentions = JSON.parse(JSON.stringify(SL_SEED));
+            }
         }
-        function slSaveData(){ try{ sessionStorage.setItem('crumble_sl_mentions', JSON.stringify(slMentions)); }catch(e){} }
+        function slSaveData(){
+            try{
+                sessionStorage.setItem('crumble_sl_mentions', JSON.stringify(slMentions));
+                sessionStorage.setItem('crumble_sl_version', String(SL_DATA_VERSION));
+            }catch(e){}
+        }
 
         // ── Helpers ───────────────────────────────────────────────────────────
         const SL_PLATFORM_ICONS = {
@@ -3902,21 +3922,60 @@
                 const brandChip = `<span class="sl-brand-chip" style="background:${tc.bg};color:${tc.color};" title="Brand confidence: ${analysis.brand||'Unknown'}&#10;Triggered by: ${(analysis.triggeredBy||[]).map(t=>t.kw||t).join(', ')||'none'}"><i class="fas ${tc.icon}" style="font-size:0.58rem;"></i> ${tc.label}</span>`;
 
                 // ── Highlight triggered keywords in the content ───────────────
-                let highlightedContent = m.content;
-                // Bold all triggered keywords (Tier 1 & 2)
+                // Use a replacer FUNCTION (not string) to avoid $ conflicts between
+                // $1 capture group and $ characters inside hex color values.
+                let highlightedContent = m.content
+                    // First escape any HTML special chars to prevent injection
+                    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+                // Mark which character ranges are already highlighted (to avoid double-wrapping)
+                // Strategy: do a single combined pass using a placeholder map
+                const replacements = []; // { from, to, html }
+
                 (analysis.triggeredBy||[]).forEach(t => {
                     const kw = (t.kw||t);
+                    if(!kw) return;
                     const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-                    const kwColor = (t.tier||'ambiguous')==='us-signal' ? '#DC2626' : (t.tier||'ambiguous')==='pk-signal' ? '#059669' : '#010197';
-                    highlightedContent = highlightedContent.replace(
-                        new RegExp(`(${escaped})`, 'gi'),
-                        `<mark style="background:${kwColor}18;color:${kwColor};font-weight:800;border-radius:3px;padding:0 2px;">$1</mark>`
-                    );
+                    const kwColor = (t.tier||'ambiguous')==='us-signal' ? '#DC2626'
+                                  : (t.tier||'ambiguous')==='pk-signal' ? '#059669'
+                                  : '#010197';
+                    const bg = kwColor + '22'; // 22 = ~13% opacity hex
+                    const re = new RegExp(escaped, 'gi');
+                    let match;
+                    while((match = re.exec(highlightedContent)) !== null){
+                        replacements.push({
+                            from: match.index,
+                            to:   match.index + match[0].length,
+                            html: `<mark style="background:${bg};color:${kwColor};font-weight:800;border-radius:3px;padding:0 2px;">${match[0]}</mark>`,
+                            len:  match[0].length
+                        });
+                    }
                 });
-                // Then highlight remaining hashtags and @mentions
-                highlightedContent = highlightedContent
-                    .replace(/(#\w+)/g, (match) => match.includes('mark') ? match : `<span style="color:#010197;font-weight:700;">${match}</span>`)
-                    .replace(/(@\w+)/g, (match) => match.includes('mark') ? match : `<span style="color:#3B82F6;font-weight:700;">${match}</span>`);
+
+                // Sort replacements by position descending so we can splice without offset issues
+                replacements.sort((a,b) => b.from - a.from);
+                // Remove overlapping ranges (keep first encountered = highest priority keyword)
+                const used = new Set();
+                const clean = replacements.filter(r => {
+                    for(let i = r.from; i < r.to; i++){
+                        if(used.has(i)) return false;
+                    }
+                    for(let i = r.from; i < r.to; i++) used.add(i);
+                    return true;
+                });
+                // Apply replacements back-to-front
+                clean.forEach(r => {
+                    highlightedContent = highlightedContent.slice(0,r.from) + r.html + highlightedContent.slice(r.to);
+                });
+
+                // Now highlight remaining hashtags and @mentions that aren't already inside a <mark>
+                // Split on existing tags, only process text nodes
+                highlightedContent = highlightedContent.replace(/(<[^>]+>)|([^<]+)/g, (full, tag, text) => {
+                    if(tag) return tag; // leave HTML tags untouched
+                    return text
+                        .replace(/(#\w+)/g, '<span style="color:#010197;font-weight:700;">$1</span>')
+                        .replace(/(@\w+)/g, '<span style="color:#3B82F6;font-weight:700;">$1</span>');
+                });
 
                 // ── "Triggered by" footer row ─────────────────────────────────
                 const kwChips = (analysis.triggeredBy||[]).filter(t=>(t.kw||t)).slice(0,5).map(t => {
