@@ -855,6 +855,68 @@
             color: #cbd5e1;
             margin-top: 28px;
         }
+        /* ═══════════ MOTION POLISH (smoother, modern, professional) ═══════════ */
+        /* Entrance rise — uses 'backwards' fill so it never locks the transform,
+           keeping the existing hover lifts on .kpi-card/.card fully working. */
+        @keyframes riseIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .view.active > .card,
+        .exec-mode-container.active > .card {
+            animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+        }
+        .view.active > .card:nth-child(1),  .exec-mode-container.active > .card:nth-child(1)  { animation-delay: 0.04s; }
+        .view.active > .card:nth-child(2),  .exec-mode-container.active > .card:nth-child(2)  { animation-delay: 0.09s; }
+        .view.active > .card:nth-child(3),  .exec-mode-container.active > .card:nth-child(3)  { animation-delay: 0.14s; }
+        .view.active > .card:nth-child(4),  .exec-mode-container.active > .card:nth-child(4)  { animation-delay: 0.19s; }
+        .view.active > .card:nth-child(5),  .exec-mode-container.active > .card:nth-child(5)  { animation-delay: 0.24s; }
+        .view.active > .card:nth-child(n+6),.exec-mode-container.active > .card:nth-child(n+6){ animation-delay: 0.28s; }
+
+        /* KPI cards cascade in */
+        .kpi-grid > .kpi-card { animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
+        .kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0.03s; }
+        .kpi-grid > .kpi-card:nth-child(2) { animation-delay: 0.08s; }
+        .kpi-grid > .kpi-card:nth-child(3) { animation-delay: 0.13s; }
+        .kpi-grid > .kpi-card:nth-child(4) { animation-delay: 0.18s; }
+        .kpi-grid > .kpi-card:nth-child(5) { animation-delay: 0.23s; }
+        .kpi-grid > .kpi-card:nth-child(6) { animation-delay: 0.28s; }
+
+        /* Nav: smooth hover lift + active indicator */
+        .topnav-link { transition: color .18s ease, background .18s ease, transform .12s ease; }
+        .topnav-link:hover { transform: translateY(-1px); }
+        .topnav-link.active { transition: color .18s ease, background .18s ease; }
+
+        /* Interactive micro-feedback — gentle press on buttons/segments/chips */
+        button, .ct-seg button, .view-btn, .sl-res-stage, .select-input { transition: transform .1s ease, box-shadow .2s ease, background .18s ease, border-color .18s ease, color .18s ease; }
+        button:active:not(:disabled) { transform: scale(0.97); }
+
+        /* Smooth in-page scrolling */
+        .content-scroll { scroll-behavior: smooth; }
+
+        /* Respect users who prefer reduced motion (accessibility + professionalism) */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.001ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+        /* ═══════════ PREMIUM TOP BAR ═══════════ */
+        .header-controls { display: flex; align-items: center; gap: 4px; padding-left: 6px; }
+        .btn-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(255,255,255,0.82); cursor: pointer; font-size: 0.98rem; padding: 0; transition: 0.18s; border-radius: 9px; }
+        .btn-icon:hover { background: rgba(255,255,255,0.12); color: #fff; }
+        .header-divider { width: 1px; height: 26px; background: rgba(255,255,255,0.14); margin: 0 8px; }
+        /* fade the nav's right edge instead of hard-clipping scrolled items */
+        .topnav-links { -webkit-mask-image: linear-gradient(to right, #000 94%, transparent); mask-image: linear-gradient(to right, #000 94%, transparent); }
+
+        .user-chip { display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 5px; border-radius: 30px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); }
+        .user-avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #64D0FF, #010197); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.5px; box-shadow: 0 2px 7px rgba(0,0,0,0.28); }
+        .user-meta { display: flex; flex-direction: column; line-height: 1.2; }
+        .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; }
+        .user-sub { font-size: 0.64rem; font-weight: 600; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+        .user-role { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 20px; }
+        .btn-logout { width: 34px; height: 34px; flex-shrink: 0; margin-left: 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.85); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.18s; font-size: 0.85rem; }
+        .btn-logout:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: #fff; transform: translateY(-1px); }
     </style>
 </head>
 <body class="app-loading">
@@ -896,15 +958,15 @@
             </div>
             <nav class="topnav-links" id="topNav">
                 <span class="topnav-link active" onclick="app.navigate('executive', this)">Overview</span>
-                <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
+                <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
+                <span class="topnav-link" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" onclick="app.navigate('incidents', this)">Incidents</span>
-                <span class="topnav-link" onclick="app.navigate('branches', this)">Branches</span>
                 <span class="topnav-link" onclick="app.navigate('channels', this)">Channels</span>
+                <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
+                <span class="topnav-link" onclick="app.navigate('branches', this)">Branches</span>
                 <span class="topnav-link" onclick="app.navigate('forms', this)">Forms</span>
                 <span class="topnav-link" onclick="app.navigate('products', this)">Products</span>
-                <span class="topnav-link" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
-                <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
@@ -921,7 +983,8 @@
                     </div>
                 </div>
                 <button class="btn-icon" onclick="app.toggleTheme(this)" title="Toggle Theme"><i class="fas fa-sun"></i></button>
-                <div id="auth-user-name" style="display:flex;align-items:center;gap:6px;padding:0 4px;"></div>
+                <div class="header-divider"></div>
+                <div id="auth-user-name" style="display:flex;align-items:center;gap:8px;"></div>
             </div>
         </header>
 
@@ -2627,15 +2690,15 @@
                     const sTrend = p2Subs ? (((tSubs - p2Subs)/p2Subs)*100).toFixed(1) : 0;
                     const iTrend = p2Incs ? (((tIncs - p2Incs)/p2Incs)*100).toFixed(1) : 0;
 
-                    document.getElementById('kpi-subs').innerText = tSubs.toLocaleString();
+                    countUp(document.getElementById('kpi-subs'), tSubs);
                     document.getElementById('trend-subs').innerHTML = `<span class="${sTrend>=0?'trend-good':'trend-bad'}"><i class="fas ${sTrend>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(sTrend).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
                     
-                    document.getElementById('kpi-incs').innerText = tIncs.toLocaleString();
+                    countUp(document.getElementById('kpi-incs'), tIncs);
                     document.getElementById('trend-incs').innerHTML = `<span class="${iTrend<=0?'trend-good':'trend-bad'}"><i class="fas ${iTrend>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(iTrend).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
 
                     const ver = p1.incs.filter(i=>i.verified).length, fake = tIncs - ver;
-                    document.getElementById('kpi-ver').innerText = ver.toLocaleString(); 
-                    document.getElementById('kpi-fake').innerText = fake.toLocaleString();
+                    countUp(document.getElementById('kpi-ver'), ver); 
+                    countUp(document.getElementById('kpi-fake'), fake);
 
                     const branchMetrics = config.branches.map(b => {
                         const s = p1.subs.filter(x=>x.branch===b.name).length;
@@ -5206,16 +5269,26 @@
                 });
             }
 
-            // ── Show user name + role badge in header ──
+            // ── Show user chip in header ──
             const nameEl = document.getElementById('auth-user-name');
             if(nameEl){
-                const roleColor = PERM.role === 'Admin' ? '#010197' : PERM.role === 'Manager' ? '#059669' : '#64748B';
+                // Bright role colours that read well on the dark navy bar
+                const roleColor = PERM.role === 'Admin' ? '#64D0FF' : PERM.role === 'Manager' ? '#34D399' : '#CBD5E1';
+                const displayName = PERM.name || PERM.email || 'User';
+                const initials = displayName.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase() || 'U';
+                const scope = PERM.branch !== 'All' ? PERM.branch : (PERM.region !== 'All' ? PERM.region : '');
                 nameEl.innerHTML = `
-                    <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">${PERM.name}</span>
-                    <span style="font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;background:${roleColor}18;color:${roleColor};border:1px solid ${roleColor}30;">${PERM.role}</span>
-                    ${PERM.branch !== 'All' ? `<span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);">· ${PERM.branch}</span>` : ''}
-                    ${PERM.region !== 'All' && PERM.branch === 'All' ? `<span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);">· ${PERM.region}</span>` : ''}
-                    <button onclick="authLogout()" style="margin-left:4px;background:none;border:1px solid var(--border-color);border-radius:6px;padding:3px 8px;font-size:0.68rem;font-weight:700;color:var(--text-muted);cursor:pointer;" title="Sign out">
+                    <div class="user-chip">
+                        <div class="user-avatar">${initials}</div>
+                        <div class="user-meta">
+                            <span class="user-name">${displayName}</span>
+                            <span class="user-sub">
+                                <span class="user-role" style="background:${roleColor}26;color:${roleColor};border:1px solid ${roleColor}55;">${PERM.role}</span>
+                                ${scope ? `<span>${scope}</span>` : ''}
+                            </span>
+                        </div>
+                    </div>
+                    <button class="btn-logout" onclick="authLogout()" title="Sign out">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>`;
             }
@@ -5282,6 +5355,26 @@
         }
 
         // On page load — check for existing session first
+        // Animated count-up for numeric KPIs (0 -> value on load, ticks to new value on filter change)
+        function countUp(el, target){
+            if(!el) return;
+            target = Number(target) || 0;
+            if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+                el.innerText = target.toLocaleString(); return;
+            }
+            const start = Number(String(el.innerText).replace(/[^0-9.-]/g,'')) || 0;
+            if(start === target){ el.innerText = target.toLocaleString(); return; }
+            const dur = 600, t0 = performance.now();
+            const step = (now) => {
+                const p = Math.min(1, (now - t0) / dur);
+                const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+                el.innerText = Math.round(start + (target - start) * eased).toLocaleString();
+                if(p < 1) requestAnimationFrame(step);
+                else el.innerText = target.toLocaleString();
+            };
+            requestAnimationFrame(step);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const session = authGetSession();
             if(session && session.email){
