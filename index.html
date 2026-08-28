@@ -1595,9 +1595,16 @@
                             </h3>
                             <div class="text-xs text-muted" id="ct-subtitle" style="font-weight:600;margin-top:4px;">Classified complaints · root cause → operational area → where they cluster</div>
                         </div>
-                        <div class="ct-seg" id="ct-scope">
-                            <button class="active" onclick="app.setComplaintScope('branch', this)">By Branch</button>
-                            <button onclick="app.setComplaintScope('region', this)">By Region</button>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <div class="ct-seg" id="ct-range">
+                                <button class="active" onclick="app.setComplaintRange('7d', this)">7 Days</button>
+                                <button onclick="app.setComplaintRange('30d', this)">30 Days</button>
+                                <button onclick="app.setComplaintRange('month', this)">Monthly</button>
+                            </div>
+                            <div class="ct-seg" id="ct-scope">
+                                <button class="active" onclick="app.setComplaintScope('branch', this)">By Branch</button>
+                                <button onclick="app.setComplaintScope('region', this)">By Region</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2370,6 +2377,12 @@
 
             setComplaintScope(scope, btn) {
                 CT_SCOPE = scope;
+                if(btn){ btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+                this.renderComplaintTopography();
+            },
+
+            setComplaintRange(range, btn) {
+                CT_RANGE = range;
                 if(btn){ btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
                 this.renderComplaintTopography();
             },
@@ -4336,6 +4349,7 @@
         // "der" won't wrongly fire inside "ri-der" and "raw" won't hit "st-raw-berry".
         // ══════════════════════════════════════════════════════════════════
         let CT_SCOPE = 'branch';
+        let CT_RANGE = '7d';   // '7d' | '30d' | 'month'
         const COMPLAINT_CATEGORIES = [
             { id:'missing',    title:'Missing Item',       cause:'Packing accuracy failure',             op:'Packing / dispatch',     keywords:['missing','not received','didn\'t get','did not get','item missing','incomplete','forgot','left out','nahi mila','nai mila'] },
             { id:'wrong',      title:'Wrong Order',        cause:'Order-handling error at counter',      op:'Front counter / system', keywords:['wrong order','wrong item','incorrect order','not what i ordered','different item','wrong flavour','wrong flavor','galat'] },
@@ -4380,28 +4394,43 @@
             if(!ledgerEl) return;
             const incs = rawData.incidents || [];
 
-            // Recent 3 months relative to newest incident
-            const ym = d => { const dt = new Date(d); return isNaN(dt) ? null : { y:dt.getFullYear(), m:dt.getMonth() }; };
-            const keyed = incs.map(i => ({ inc:i, k:ym(i.date), cat:classifyComplaint(i) })).filter(x => x.k);
+            // Classify + attach a parsed date
+            const parse = d => { const dt = new Date(d); return isNaN(dt) ? null : dt; };
+            const keyed = incs.map(i => ({ inc:i, dt:parse(i.date), cat:classifyComplaint(i) })).filter(x => x.dt);
             if(!keyed.length){
                 ledgerEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;">No complaint data available.</div>';
                 document.getElementById('ct-heatmap').innerHTML = ''; return;
             }
-            const maxK = keyed.reduce((a,x)=> (x.k.y*12+x.k.m) > (a.y*12+a.m) ? x.k : a, keyed[0].k);
-            const monthIdx = [0,1,2].map(off => { const t = maxK.y*12 + maxK.m - off; return { y:Math.floor(t/12), m:((t%12)+12)%12 }; });
-            const monthLabels = monthIdx.map(mk => _MONTH_ABBR[mk.m]);
-            const same = (k, mk) => k.y===mk.y && k.m===mk.m;
+
+            // Build the 3 comparison windows depending on the selected range.
+            // Returns 0 (most recent) | 1 | 2 | -1 (outside) for a given date.
+            const maxDate = new Date(Math.max(...keyed.map(x => x.dt.getTime()))); maxDate.setHours(0,0,0,0);
+            let windowOf, windowLabels;
+            if(CT_RANGE === 'month'){
+                const maxK = { y:maxDate.getFullYear(), m:maxDate.getMonth() };
+                const monthIdx = [0,1,2].map(off => { const t = maxK.y*12 + maxK.m - off; return { y:Math.floor(t/12), m:((t%12)+12)%12 }; });
+                windowLabels = monthIdx.map(mk => _MONTH_ABBR[mk.m]);
+                windowOf = dt => { for(let i=0;i<3;i++){ if(dt.getFullYear()===monthIdx[i].y && dt.getMonth()===monthIdx[i].m) return i; } return -1; };
+            } else {
+                const span = CT_RANGE === '30d' ? 30 : 7;
+                windowLabels = CT_RANGE === '30d' ? ['LAST 30D','PREV 30D','PRIOR 30D'] : ['LAST 7D','PREV 7D','PRIOR 7D'];
+                windowOf = dt => { const d0 = new Date(dt); d0.setHours(0,0,0,0); const days = Math.floor((maxDate - d0)/86400000); if(days < 0) return -1; const idx = Math.floor(days/span); return idx < 3 ? idx : -1; };
+            }
+            const monthLabels = windowLabels;   // reuse existing variable name downstream
             const colOf = inc => CT_SCOPE === 'region' ? _regionFor(inc.branch) : inc.branch;
 
-            document.getElementById('ct-subtitle').textContent = `Classified complaints · ${monthLabels[0]} vs ${monthLabels[1]} · clustered by ${CT_SCOPE}`;
+            const rangeWord = CT_RANGE === 'month' ? 'month' : (CT_RANGE === '30d' ? '30-day window' : '7-day window');
+            document.getElementById('ct-subtitle').textContent = `Classified complaints · ${monthLabels[0]} vs ${monthLabels[1]} · ${rangeWord} · clustered by ${CT_SCOPE}`;
 
-            // Aggregate per category
+            // Aggregate per category across the 3 windows
             const agg = {};
-            keyed.forEach(({inc, k, cat}) => {
+            keyed.forEach(({inc, dt, cat}) => {
+                const wi = windowOf(dt);
+                if(wi < 0) return;
                 if(!agg[cat.id]) agg[cat.id] = { cat, months:[0,0,0], latestBranches:{}, colCounts:{}, samples:[] };
                 const s = agg[cat.id];
-                monthIdx.forEach((mk, mi) => { if(same(k, mk)) s.months[mi]++; });
-                if(same(k, monthIdx[0])){
+                s.months[wi]++;
+                if(wi === 0){
                     s.latestBranches[inc.branch] = (s.latestBranches[inc.branch]||0)+1;
                     const col = colOf(inc); s.colCounts[col] = (s.colCounts[col]||0)+1;
                     if(cat.id === 'other' && s.samples.length < 12) s.samples.push(inc);
