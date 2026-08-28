@@ -683,6 +683,10 @@
         /* Brand confidence chip */
         .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
 
+        /* Date preset chips */
+        .sl-date-chip.active { background: var(--accent-blue) !important; color: #fff !important; }
+        .sl-date-chip:hover  { background: var(--bg-light) !important; color: var(--text-main) !important; }
+
         /* Resolved state overlay */
         .sl-resolved-banner { font-size:0.7rem; font-weight:800; color:var(--status-good); background:var(--status-good-bg); border:1px solid rgba(5,150,105,.2); border-radius:6px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
     </style>
@@ -1337,42 +1341,64 @@
             <div id="view-social" class="view">
 
                 <!-- Header strip -->
-                <div class="card" style="padding:20px 24px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                        <div>
-                            <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:10px;">
-                                <span style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#E1306C,#833AB4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.85rem;box-shadow:0 3px 8px rgba(225,48,108,.3);">
-                                    <i class="fas fa-hashtag"></i>
-                                </span>
-                                Social Listening
-                            </h2>
-                            <p style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">Public conversations about Crumble across social platforms — manually curated &amp; intelligently classified.</p>
+                <div class="card" style="padding:18px 24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+                        <!-- Brand + description -->
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span style="width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#E1306C,#833AB4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.9rem;box-shadow:0 3px 8px rgba(225,48,108,.3);flex-shrink:0;">
+                                <i class="fas fa-hashtag"></i>
+                            </span>
+                            <div>
+                                <div style="font-size:1rem;font-weight:800;color:var(--text-main);">Social Listening</div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Public conversations about Crumble — curated &amp; intelligently classified. <span id="sl-showing-label" style="font-weight:700;color:var(--accent-blue);"></span></div>
+                            </div>
                         </div>
+
+                        <!-- Controls row -->
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <!-- Platform filter -->
-                            <select id="sl-filter-platform" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
-                                <option value="all">All Platforms</option>
-                                <option value="Instagram">Instagram</option>
-                                <option value="Facebook">Facebook</option>
-                                <option value="Twitter/X">Twitter / X</option>
-                                <option value="Google">Google Reviews</option>
-                                <option value="TikTok">TikTok</option>
+
+                            <!-- Date presets -->
+                            <div style="display:flex;align-items:center;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:9px;overflow:hidden;">
+                                <button class="sl-date-chip active" data-preset="all"    onclick="slSetDate('all',this)"    style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;">All</button>
+                                <button class="sl-date-chip"        data-preset="today"  onclick="slSetDate('today',this)"  style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">Today</button>
+                                <button class="sl-date-chip"        data-preset="7d"     onclick="slSetDate('7d',this)"     style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">7 days</button>
+                                <button class="sl-date-chip"        data-preset="30d"    onclick="slSetDate('30d',this)"    style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">30 days</button>
+                                <button class="sl-date-chip"        data-preset="custom" onclick="slSetDate('custom',this)" style="padding:6px 11px;font-size:0.75rem;font-weight:700;border:none;background:transparent;color:var(--text-muted);cursor:pointer;transition:.15s;border-left:1px solid var(--border-color);">Custom</button>
+                            </div>
+
+                            <!-- Custom date range (hidden until Custom clicked) -->
+                            <div id="sl-custom-range" style="display:none;align-items:center;gap:6px;background:var(--bg-light);border:1.5px solid var(--accent-blue);border-radius:9px;padding:4px 10px;">
+                                <i class="fas fa-calendar-alt" style="color:var(--accent-blue);font-size:0.75rem;"></i>
+                                <input type="date" id="sl-date-from" onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;">
+                                <span style="color:var(--text-muted);font-weight:700;font-size:0.75rem;">→</span>
+                                <input type="date" id="sl-date-to"   onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;">
+                            </div>
+
+                            <!-- Region filter -->
+                            <select id="sl-filter-region" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;" title="Filter by region">
+                                <option value="all">🇵🇰 All Pakistan</option>
+                                <option value="North">North Region</option>
+                                <option value="Central">Central Region</option>
+                                <option value="South">South Region</option>
                             </select>
+
                             <!-- Sentiment filter -->
                             <select id="sl-filter-sentiment" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
-                                <option value="all">All Sentiments</option>
+                                <option value="all">All Types</option>
                                 <option value="Complaint">🔴 Complaints</option>
                                 <option value="Praise">🟢 Praise</option>
                                 <option value="Query">🔵 Queries</option>
                                 <option value="Mention">⚪ Mentions</option>
                             </select>
-                            <!-- Branch filter -->
-                            <select id="sl-filter-branch" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
-                                <option value="all">All Branches</option>
-                            </select>
-                            <!-- Add mention button -->
-                            <button onclick="document.getElementById('sl-add-modal').classList.add('open')" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(1,1,151,.25);">
-                                <i class="fas fa-plus"></i> Add Mention
+
+                            <!-- Sort toggle -->
+                            <button id="sl-sort-btn" onclick="slToggleSort()" style="display:flex;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.78rem;font-weight:700;cursor:pointer;transition:.15s;" title="Toggle sort order">
+                                <i class="fas fa-arrow-down-wide-short"></i> Newest first
+                            </button>
+
+                            <!-- Add mention -->
+                            <button onclick="document.getElementById('sl-add-modal').classList.add('open')" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(1,1,151,.25);">
+                                <i class="fas fa-plus"></i> Add
                             </button>
                         </div>
                     </div>
@@ -3381,48 +3407,105 @@
 
         // ── Static seed data (real-looking Crumble Pakistan mentions) ──────────
         // Farooq/team can add new ones via the "Add Mention" button — they persist in sessionStorage.
+        // Helper: compute an ISO date string relative to SYSTEM_NOW
+        const _slDate = (daysBack) => {
+            const d = new Date(SYSTEM_NOW);
+            d.setDate(d.getDate() - daysBack);
+            return d.toISOString().split('T')[0];
+        };
+
         const SL_SEED = [
             { id:'sl1', platform:'Instagram', type:'Post', sentiment:'Praise', branch:'DHA',
               author:'@hunzabaloch__', content:'Finally tried Crumble DHA today and honestly it was WORTH every rupee 😭🍪 the brownie cookie was perfection. I\'m obsessed. #crumblepakistan #cookies #lahore',
-              likes:247, comments:18, shares:5, daysAgo:2, url:'', resolved:false,
-              tags:['#crumblepakistan','#cookies','#lahore'] },
+              likes:247, comments:18, shares:5, date:_slDate(2), url:'', resolved:false,
+              tags:['#crumblepakistan','#cookies','#lahore'], region:'Central' },
             { id:'sl2', platform:'Instagram', type:'Post', sentiment:'Complaint', branch:'Johar Town',
               author:'@foodblogpk', content:'Really disappointed with my Crumble Johar Town order. Cookies were dry and crumbly (not in a good way), delivery took 90 minutes, and the packaging was crushed. @crumblepakistan please sort this out 🙏',
-              likes:34, comments:52, shares:9, daysAgo:1, url:'', resolved:false,
-              tags:['#crumblepakistan'] },
+              likes:34, comments:52, shares:9, date:_slDate(1), url:'', resolved:false,
+              tags:['#crumblepakistan'], region:'Central' },
             { id:'sl3', platform:'Twitter/X', type:'Post', sentiment:'Complaint', branch:'',
               author:'@ali_raza_lhr', content:'@crumblepakistan my order has been "out for delivery" for 2 hours. Support isn\'t picking up. This is ridiculous. Never ordering again.',
-              likes:8, comments:3, shares:12, daysAgo:0, url:'', resolved:false,
-              tags:[] },
+              likes:8, comments:3, shares:12, date:_slDate(0), url:'', resolved:false,
+              tags:[], region:'Pakistan' },
             { id:'sl4', platform:'Facebook', type:'Review', sentiment:'Praise', branch:'MM Alam Road',
               author:'Ayesha Farooq', content:'Best cookies in Lahore hands down. The MM Alam Road branch staff are so friendly and the store always smells amazing. My kids demand Crumble every weekend now! ⭐⭐⭐⭐⭐',
-              likes:91, comments:7, shares:0, daysAgo:3, url:'', resolved:false,
-              tags:[] },
+              likes:91, comments:7, shares:0, date:_slDate(3), url:'', resolved:false,
+              tags:[], region:'Central' },
             { id:'sl5', platform:'Instagram', type:'Reel', sentiment:'Praise', branch:'F-11',
               author:'@isloocravings', content:'POV: You just discovered Crumble F-11 🤯 The s\'mores cookie literally melted in my mouth. Islamabad finally has a proper dessert spot! Must try. Link in bio for my full review. #islamabad #crumblecookies #f11',
-              likes:1840, comments:134, shares:67, daysAgo:5, url:'', resolved:false,
-              tags:['#islamabad','#crumblecookies','#f11'] },
+              likes:1840, comments:134, shares:67, date:_slDate(5), url:'', resolved:false,
+              tags:['#islamabad','#crumblecookies','#f11'], region:'North' },
             { id:'sl6', platform:'Google', type:'Review', sentiment:'Complaint', branch:'Multan',
               author:'Hassan K.', content:'Ordered from Crumble Multan online. Got the wrong items — ordered 4 cookies, got 2. Called the number multiple times, nobody answered. Very poor service for the price they charge.',
-              likes:0, comments:0, shares:0, daysAgo:4, url:'', resolved:false,
-              tags:[] },
+              likes:0, comments:0, shares:0, date:_slDate(4), url:'', resolved:false,
+              tags:[], region:'South' },
             { id:'sl7', platform:'Instagram', type:'Story', sentiment:'Mention', branch:'',
               author:'@zara.eats', content:'Anyone else obsessed with @crumblepakistan or just me? 🍪💙 asking for a friend',
-              likes:203, comments:41, shares:0, daysAgo:1, url:'', resolved:false,
-              tags:['#crumblepakistan'] },
+              likes:203, comments:41, shares:0, date:_slDate(1), url:'', resolved:false,
+              tags:['#crumblepakistan'], region:'Pakistan' },
             { id:'sl8', platform:'TikTok', type:'Reel', sentiment:'Praise', branch:'Saddar',
               author:'@lahorefoodies', content:'Rating every Crumble branch in Lahore so you don\'t have to 🍪📍 Episode 3: Saddar — the vibe, the service, the cookies. 10/10 would recommend for a date. Comment your fav branch! #crumble #lahore #foodtok',
-              likes:5200, comments:318, shares:204, daysAgo:7, url:'', resolved:false,
-              tags:['#crumble','#lahore','#foodtok'] },
+              likes:5200, comments:318, shares:204, date:_slDate(7), url:'', resolved:false,
+              tags:['#crumble','#lahore','#foodtok'], region:'North' },
             { id:'sl9', platform:'Twitter/X', type:'Post', sentiment:'Query', branch:'',
               author:'@sarahjaved92', content:'@crumblepakistan do you guys do custom boxes for corporate gifting? Need something for 50 people for an office event next week. DM or email?',
-              likes:2, comments:1, shares:0, daysAgo:0, url:'', resolved:false,
-              tags:[] },
+              likes:2, comments:1, shares:0, date:_slDate(0), url:'', resolved:false,
+              tags:[], region:'Pakistan' },
             { id:'sl10', platform:'Instagram', type:'Comment', sentiment:'Complaint', branch:'Lake City',
               author:'@bilal_foodie', content:'Visited the Lake City outlet yesterday. Waited 25 minutes even though it wasn\'t busy. The staff seemed undertrained and didn\'t know their own menu. Cookie quality was good but experience was not. @crumblepakistan',
-              likes:19, comments:6, shares:0, daysAgo:2, url:'', resolved:false,
-              tags:[] },
+              likes:19, comments:6, shares:0, date:_slDate(2), url:'', resolved:false,
+              tags:[], region:'Central' },
         ];
+
+        // ── Sort state ────────────────────────────────────────────────────────
+        let slSortNewestFirst = true;
+        let slActiveDatePreset = 'all';
+
+        function slToggleSort(){
+            slSortNewestFirst = !slSortNewestFirst;
+            const btn = document.getElementById('sl-sort-btn');
+            if(btn){
+                btn.innerHTML = slSortNewestFirst
+                    ? '<i class="fas fa-arrow-down-wide-short"></i> Newest first'
+                    : '<i class="fas fa-arrow-up-wide-short"></i> Oldest first';
+            }
+            renderSocialListening();
+        }
+
+        function slSetDate(preset, chipEl){
+            slActiveDatePreset = preset;
+            // Highlight active chip
+            document.querySelectorAll('.sl-date-chip').forEach(c => {
+                c.style.background = 'transparent';
+                c.style.color = 'var(--text-muted)';
+            });
+            if(chipEl){ chipEl.style.background = 'var(--accent-blue)'; chipEl.style.color = '#fff'; }
+
+            const rangeEl = document.getElementById('sl-custom-range');
+            if(rangeEl) rangeEl.style.display = preset === 'custom' ? 'flex' : 'none';
+
+            if(preset !== 'custom') renderSocialListening();
+        }
+
+        function slGetDateRange(){
+            const maxDate = SYSTEM_NOW.toISOString().split('T')[0];
+            if(slActiveDatePreset === 'all')    return { from: '2000-01-01', to: maxDate };
+            if(slActiveDatePreset === 'today')  return { from: maxDate, to: maxDate };
+            if(slActiveDatePreset === '7d') {
+                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-6);
+                return { from: d.toISOString().split('T')[0], to: maxDate };
+            }
+            if(slActiveDatePreset === '30d') {
+                const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-29);
+                return { from: d.toISOString().split('T')[0], to: maxDate };
+            }
+            if(slActiveDatePreset === 'custom'){
+                const f = (document.getElementById('sl-date-from')||{}).value || '2000-01-01';
+                const t = (document.getElementById('sl-date-to')||{}).value   || maxDate;
+                return { from: f, to: t };
+            }
+            return { from: '2000-01-01', to: maxDate };
+        }
 
         // ── Data store ────────────────────────────────────────────────────────
         let slMentions = [];
@@ -3455,10 +3538,16 @@
             'Query':'sentiment-query','Mention':'sentiment-mention'
         };
 
-        function slTimeAgo(daysAgo){
-            if(daysAgo === 0) return 'Today';
-            if(daysAgo === 1) return 'Yesterday';
-            return `${daysAgo} days ago`;
+        function slTimeAgo(dateStr){
+            if(!dateStr) return '—';
+            const d = new Date(dateStr + 'T00:00:00');
+            const today = new Date(SYSTEM_NOW); today.setHours(0,0,0,0);
+            const diff = Math.round((today - d) / 86400000);
+            if(diff === 0) return 'Today';
+            if(diff === 1) return 'Yesterday';
+            if(diff < 7)  return `${diff} days ago`;
+            if(diff < 30) return `${Math.floor(diff/7)} week${Math.floor(diff/7)>1?'s':''} ago`;
+            return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
         }
 
         function slIsUrgent(m){ return m.sentiment === 'Complaint' && !m.resolved; }
@@ -3619,15 +3708,14 @@
             return `Hi ${m.author} 👋\n\nThank you for mentioning us — it means a lot! We love seeing Crumble come up in your feed 🍪\n\nFeel free to DM us anytime.\n\n— Team Crumble`;
         }
 
-        // ── Populate branch selects ───────────────────────────────────────────
+        // ── Populate branch select in the Add modal ───────────────────────────
         function slPopulateBranchSelects(){
-            ['sl-filter-branch','sl-m-branch'].forEach(id => {
-                const sel = document.getElementById(id);
-                if(!sel) return;
-                const isFilter = id === 'sl-filter-branch';
-                sel.innerHTML = isFilter ? '<option value="all">All Branches</option><option value="">General / No Branch</option>' : '<option value="">— None / General —</option>';
-                config.branches.forEach(b => sel.add(new Option(b.name, b.name)));
-            });
+            const sel = document.getElementById('sl-m-branch');
+            if(!sel) return;
+            // Only repopulate if empty (avoid resetting the user's selection)
+            if(sel.options.length > 1) return;
+            sel.innerHTML = '<option value="">— None / General —</option>';
+            config.branches.forEach(b => sel.add(new Option(b.name, b.name)));
         }
 
         // ── Add mention from modal ────────────────────────────────────────────
@@ -3672,7 +3760,11 @@
 
             const newMention = {
                 id:'sl'+Date.now(), platform, type, sentiment, branch, author, content,
-                likes, comments, shares:0, daysAgo:0, url, resolved:false, tags:[],
+                likes, comments, shares:0,
+                date: new Date(SYSTEM_NOW).toISOString().split('T')[0],
+                url, resolved:false, tags:[],
+                // Auto-detect region from branch config
+                region: (config.branches.find(b=>b.name===branch)||{}).region || 'Pakistan',
                 // Store analysis metadata on the record
                 brandTier: analysis.tier,
                 brandLabel: analysis.brand || 'Unverified',
@@ -3709,15 +3801,42 @@
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            const pfFilter  = (document.getElementById('sl-filter-platform')||{}).value||'all';
             const snFilter  = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
-            const brFilter  = (document.getElementById('sl-filter-branch')||{}).value||'all';
+            const rgFilter  = (document.getElementById('sl-filter-region')||{}).value||'all';
+            const dateRange = slGetDateRange();
 
-            let filtered = slMentions.slice();
-            if(pfFilter !== 'all') filtered = filtered.filter(m=>m.platform===pfFilter);
-            if(snFilter !== 'all') filtered = filtered.filter(m=>m.sentiment===snFilter);
-            if(brFilter === '') filtered = filtered.filter(m=>!m.branch);
-            else if(brFilter !== 'all') filtered = filtered.filter(m=>m.branch===brFilter);
+            // ── Filter ──
+            let filtered = slMentions.slice().filter(m => {
+                // Date range
+                const mDate = m.date || '2000-01-01';
+                if(mDate < dateRange.from || mDate > dateRange.to) return false;
+                // Sentiment
+                if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
+                // Region — "all" shows everything, specific region filters by m.region
+                // Branches without a region are assumed Pakistan-wide
+                if(rgFilter !== 'all'){
+                    const mRegion = m.region || (config.branches.find(b=>b.name===m.branch)||{}).region || 'Pakistan';
+                    if(mRegion !== rgFilter && mRegion !== 'Pakistan') return false;
+                }
+                return true;
+            });
+
+            // ── Sort: newest first (highest date) by default ──
+            filtered.sort((a, b) => {
+                const da = a.date || '2000-01-01', db = b.date || '2000-01-01';
+                return slSortNewestFirst ? (db > da ? 1 : db < da ? -1 : 0) : (da > db ? 1 : da < db ? -1 : 0);
+            });
+
+            // ── Showing label ──
+            const showingEl = document.getElementById('sl-showing-label');
+            if(showingEl){
+                const total = slMentions.length;
+                if(filtered.length === total){
+                    showingEl.textContent = `Showing all ${total} mentions`;
+                } else {
+                    showingEl.textContent = `Showing ${filtered.length} of ${total} mentions`;
+                }
+            }
 
             // ── KPI strip ──
             const total      = slMentions.length;
@@ -3828,7 +3947,10 @@
                             ${urgentTag}
                             ${resolvedBadge}
                         </div>
-                        <span class="sl-time"><i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.daysAgo)}</span>
+                        <span class="sl-time">
+                            <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}
+                            ${m.date ? `<span style="color:var(--border-color);margin:0 4px;">·</span><span style="font-size:0.65rem;">${new Date(m.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span>` : ''}
+                        </span>
                     </div>
                     <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author}</div>
                     <div class="sl-content">${highlightedContent}</div>
