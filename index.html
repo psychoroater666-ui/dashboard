@@ -917,6 +917,21 @@
         .user-role { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 20px; }
         .btn-logout { width: 34px; height: 34px; flex-shrink: 0; margin-left: 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.85); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.18s; font-size: 0.85rem; }
         .btn-logout:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: #fff; transform: translateY(-1px); }
+        /* ═══════════ INCIDENTS VIEW ═══════════ */
+        .inc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+        @media (max-width: 1100px){ .inc-stats { grid-template-columns: repeat(2, 1fr); } }
+        .inc-stat { background: var(--white); border: 1px solid var(--border-color); border-radius: 13px; padding: 16px 18px; }
+        .inc-stat-label { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .inc-stat-value { font-size: 1.7rem; font-weight: 800; letter-spacing: -1px; margin-top: 6px; color: var(--text-main); line-height: 1; }
+        .inc-stat-sub { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-top: 5px; }
+        .inc-break-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        @media (max-width: 900px){ .inc-break-row { grid-template-columns: 1fr; } }
+        .inc-bar-row { display: grid; grid-template-columns: 130px 1fr 44px; align-items: center; gap: 10px; margin-bottom: 9px; }
+        .inc-bar-label { font-size: 0.8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inc-bar-track { height: 8px; background: var(--bg-light); border-radius: 20px; overflow: hidden; }
+        .inc-bar-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #3B5BDB, #64D0FF); transition: width .5s cubic-bezier(.22,.61,.36,1); }
+        .inc-bar-val { font-size: 0.8rem; font-weight: 800; color: var(--text-main); text-align: right; }
+        .inc-comment { max-width: 280px; font-size: 0.78rem; color: var(--text-muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
 </head>
 <body class="app-loading">
@@ -1555,18 +1570,57 @@
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
                     <div>
                         <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);">Incident Case Log</h2>
-                        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">All low-rating submissions across channels. <span id="inc-count-label" style="font-weight:700;color:var(--accent-blue);"></span></p>
+                        <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">Low-rated submissions across all channels. <span id="inc-count-label" style="font-weight:700;color:var(--accent-blue);"></span></p>
                     </div>
-                    <button onclick="csOpenForm()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:0.85rem;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(1,1,151,.25);">
-                        <i class="fas fa-plus"></i> Create Submission
-                    </button>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button onclick="app.exportIncidents()" style="display:flex;align-items:center;gap:7px;background:var(--white);color:var(--text-main);border:1px solid var(--border-color);border-radius:9px;padding:10px 16px;font-size:0.82rem;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                        <button onclick="csOpenForm()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:9px;padding:10px 20px;font-size:0.85rem;font-weight:800;cursor:pointer;box-shadow:0 4px 12px rgba(1,1,151,.25);">
+                            <i class="fas fa-plus"></i> Create Submission
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary stat strip -->
+                <div class="inc-stats" id="inc-stats"></div>
+
+                <!-- Pattern breakdown -->
+                <div class="inc-break-row">
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-signal" style="color:var(--accent-blue);margin-right:6px;"></i> Incidents by Channel</h3></div>
+                        <div id="inc-by-channel"></div>
+                    </div>
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-tags" style="color:var(--accent-blue);margin-right:6px;"></i> Top Complaint Types</h3></div>
+                        <div id="inc-by-type"></div>
+                    </div>
+                </div>
+
+                <!-- Toolbar: search + rating filter -->
+                <div class="card" style="padding:14px 18px;">
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <div style="position:relative;flex:1;min-width:220px;">
+                            <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.82rem;"></i>
+                            <input type="text" id="inc-search" oninput="app.filterIncidents()" placeholder="Search branch, product, complaint, or comment…" style="width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;font-family:inherit;background:var(--white);color:var(--text-main);">
+                        </div>
+                        <select class="select-input" id="inc-rating-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
+                            <option value="all">All ratings</option>
+                            <option value="1">Rating 1 (critical)</option>
+                            <option value="2">Rating 2</option>
+                            <option value="3">Rating 3</option>
+                        </select>
+                        <select class="select-input" id="inc-chan-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
+                            <option value="all">All channels</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- Incident table -->
                 <div class="card" style="padding:0;overflow:hidden;">
-                    <div class="table-wrapper" style="max-height:520px;overflow-y:auto;">
+                    <div class="table-wrapper" style="max-height:560px;overflow-y:auto;">
                         <table id="inc-detail-table">
-                            <thead><tr><th>Code</th><th>Date</th><th>Branch</th><th>Product</th><th>Complaint</th><th>Channel</th><th>Survey</th><th>Rating</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Code</th><th>Date</th><th>Branch</th><th>Product</th><th>Complaint</th><th>Customer Comment</th><th>Channel</th><th>Rating</th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
@@ -2885,25 +2939,112 @@
             },
 
             renderIncidentsView() {
-                const incs = state.p1.incs.slice(0, 60);
+                const incs = state.p1.incs.slice();
+                this._incAll = incs; // cache for search/filter/export
+
+                // ── Summary stats ──
+                const total = incs.length;
+                const prevTotal = state.p2 ? state.p2.incs.length : 0;
+                const critical = incs.filter(i => (i.smileScore||i.rating||0) <= 1).length;
+                const byBranch = {}, byChannel = {}, byType = {};
+                incs.forEach(i => {
+                    byBranch[i.branch] = (byBranch[i.branch]||0)+1;
+                    const ch = i.channel || '—'; byChannel[ch] = (byChannel[ch]||0)+1;
+                    const t = i.complaintType || i.product || 'Unspecified'; byType[t] = (byType[t]||0)+1;
+                });
+                const topBranch = Object.entries(byBranch).sort((a,b)=>b[1]-a[1])[0];
+                const topChannel = Object.entries(byChannel).sort((a,b)=>b[1]-a[1])[0];
+                let trendPct, trendDir;
+                if(prevTotal === 0){ trendPct = total>0?100:0; } else { trendPct = Math.round(((total-prevTotal)/prevTotal)*100); }
+                trendDir = total > prevTotal ? 'up' : total < prevTotal ? 'down' : 'flat';
+                const trendColor = trendDir==='up' ? 'var(--status-critical)' : trendDir==='down' ? 'var(--status-good)' : 'var(--text-muted)';
+                const trendIcon = trendDir==='up' ? 'fa-arrow-up' : trendDir==='down' ? 'fa-arrow-down' : 'fa-minus';
+
+                const statsEl = document.getElementById('inc-stats');
+                if(statsEl) statsEl.innerHTML = `
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value" style="color:var(--status-critical);">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-store"></i> Most-Hit Branch</div><div class="inc-stat-value" style="font-size:1.15rem;">${topBranch?topBranch[0]:'—'}</div><div class="inc-stat-sub">${topBranch?topBranch[1]+' incidents':'no data'}</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-signal"></i> Top Channel</div><div class="inc-stat-value" style="font-size:1.15rem;">${topChannel?topChannel[0]:'—'}</div><div class="inc-stat-sub">${topChannel?topChannel[1]+' incidents':'no data'}</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-comment-dots"></i> With Comments</div><div class="inc-stat-value">${incs.filter(i=>i.note && i.note.trim()).length}</div><div class="inc-stat-sub">have customer text</div></div>`;
+
+                // ── Breakdown bars ──
+                const barBlock = (obj, el) => {
+                    const entries = Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,6);
+                    const max = entries.length ? entries[0][1] : 1;
+                    document.getElementById(el).innerHTML = entries.map(([k,v]) =>
+                        `<div class="inc-bar-row"><div class="inc-bar-label" title="${k}">${k}</div><div class="inc-bar-track"><div class="inc-bar-fill" style="width:${(v/max*100).toFixed(0)}%;"></div></div><div class="inc-bar-val">${v}</div></div>`
+                    ).join('') || '<div style="color:var(--text-muted);font-size:0.82rem;padding:8px 0;">No data.</div>';
+                };
+                barBlock(byChannel, 'inc-by-channel');
+                barBlock(byType, 'inc-by-type');
+
+                // ── Populate channel filter ──
+                const chanSel = document.getElementById('inc-chan-filter');
+                if(chanSel){
+                    const prev = chanSel.value;
+                    chanSel.length = 1;
+                    Object.keys(byChannel).sort().forEach(c => chanSel.add(new Option(c, c)));
+                    if([...chanSel.options].some(o=>o.value===prev)) chanSel.value = prev;
+                }
+
+                this.filterIncidents();
+            },
+
+            filterIncidents() {
+                const incs = this._incAll || [];
+                const q = (document.getElementById('inc-search')?.value || '').toLowerCase().trim();
+                const rf = document.getElementById('inc-rating-filter')?.value || 'all';
+                const cf = document.getElementById('inc-chan-filter')?.value || 'all';
+                const filtered = incs.filter(i => {
+                    const score = i.smileScore || i.rating || 0;
+                    if(rf !== 'all' && String(score) !== rf) return false;
+                    if(cf !== 'all' && (i.channel||'—') !== cf) return false;
+                    if(q){
+                        const hay = `${i.branch} ${i.product} ${i.complaintType} ${i.note||''}`.toLowerCase();
+                        if(!hay.includes(q)) return false;
+                    }
+                    return true;
+                });
+
                 const countEl = document.getElementById('inc-count-label');
-                if(countEl) countEl.textContent = `${incs.length} incidents in selected period`;
-                document.querySelector('#inc-detail-table tbody').innerHTML = incs.map((inc, idx) => {
+                if(countEl) countEl.textContent = filtered.length === incs.length
+                    ? `${incs.length} incidents in selected period`
+                    : `${filtered.length} of ${incs.length} shown`;
+
+                const rows = filtered.slice(0, 300);
+                document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
                     const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
-                    const ratingColor = inc.rating<=1?'#DC2626':inc.rating<=2?'#F97316':inc.rating<=3?'#F59E0B':'#059669';
+                    const score = inc.smileScore || inc.rating || 0;
+                    const ratingColor = score<=1?'#DC2626':score<=2?'#F97316':score<=3?'#F59E0B':'#059669';
+                    const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : '—';
                     return `<tr>
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span></td>
                         <td>${dateStr}</td>
-                        <td>${inc.branch||'—'}</td>
+                        <td style="font-weight:600;">${inc.branch||'—'}</td>
                         <td>${inc.product||'—'}</td>
                         <td>${inc.complaintType||'—'}</td>
+                        <td><span class="inc-comment" title="${comment.replace(/"/g,'&quot;')}">${comment === '—' ? '<span style="color:var(--border-color);">—</span>' : '"'+comment+'"'}</span></td>
                         <td>${inc.channel||'—'}</td>
-                        <td>${inc.surveyForm||'—'}</td>
-                        <td><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.78rem;">${inc.rating||'—'}</span></td>
-                        <td><span style="font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(220,38,38,.1);color:#DC2626;">Open</span></td>
+                        <td><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.78rem;">${score||'—'}</span></td>
                     </tr>`;
-                }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents in selected period.</td></tr>';
+                }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
+            },
+
+            exportIncidents() {
+                const incs = this._incAll || [];
+                const headers = ['Date','Branch','Product','Complaint','Comment','Channel','Survey','Rating','OrderID'];
+                const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+                const lines = [headers.join(',')].concat(incs.map(i => [
+                    i.date, i.branch, i.product, i.complaintType, (i.note||''), i.channel, i.surveyForm, (i.smileScore||i.rating||''), i.orderId
+                ].map(esc).join(',')));
+                const blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'incidents_' + new Date().toISOString().slice(0,10) + '.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             },
 
             renderResolution() {
