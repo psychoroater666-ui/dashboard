@@ -739,9 +739,135 @@
         /* Unclassified strip */
         .ct-unc-item { font-size:0.78rem; color:var(--text-main); padding:8px 12px; background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; }
         .ct-unc-item .ct-unc-meta { font-size:0.68rem; color:var(--text-muted); font-weight:700; }
+        /* ═══════════ LOGIN SCREEN ═══════════ */
+        #login-screen {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: linear-gradient(135deg, #010197 0%, #1a1a8c 40%, #0a0a6e 100%);
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+        }
+        #login-screen.visible { display: flex; }
+        .login-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 48px 44px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.35);
+            animation: loginSlideUp .4s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes loginSlideUp {
+            from { opacity:0; transform:translateY(24px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .login-logo {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: #010197;
+            letter-spacing: -1px;
+            margin-bottom: 6px;
+        }
+        .login-sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 600;
+            margin-bottom: 36px;
+        }
+        .login-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #64748b;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .login-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+            box-sizing: border-box;
+            margin-bottom: 18px;
+        }
+        .login-input:focus {
+            border-color: #010197;
+            box-shadow: 0 0 0 3px rgba(1,1,151,.1);
+        }
+        .login-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #010197, #3B5BDB);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: opacity .2s, transform .15s;
+            margin-top: 4px;
+        }
+        .login-btn:hover   { opacity: .92; }
+        .login-btn:active  { transform: scale(.98); }
+        .login-btn:disabled { opacity: .6; cursor: not-allowed; }
+        .login-error {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #dc2626;
+            margin-bottom: 16px;
+        }
+        .login-error.visible { display: block; }
+        .login-footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            margin-top: 28px;
+        }
     </style>
 </head>
 <body class="app-loading">
+
+    <!-- ══════════════ LOGIN SCREEN ══════════════ -->
+    <div id="login-screen" class="visible">
+        <div class="login-box">
+            <div class="login-logo">Crumble</div>
+            <div class="login-sub">Customer Experience Intelligence Dashboard</div>
+
+            <label class="login-label" for="login-email">Email</label>
+            <input id="login-email" class="login-input" type="email"
+                placeholder="your@email.com"
+                onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+
+            <label class="login-label" for="login-password">Password</label>
+            <input id="login-password" class="login-input" type="password"
+                placeholder="••••••••"
+                onkeydown="if(event.key==='Enter') doLogin()">
+
+            <div id="login-error" class="login-error"></div>
+
+            <button id="login-btn" class="login-btn" onclick="doLogin()">
+                Sign In
+            </button>
+
+            <div class="login-footer">Crumble Pakistan · Internal Use Only</div>
+        </div>
+    </div>
+    <!-- ══════════════ END LOGIN ══════════════ -->
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
@@ -4518,7 +4644,103 @@
         // Init social data on page load
         slLoadData();
 
-        document.addEventListener('DOMContentLoaded', () => app.init());
+        // ═══════════════════════════════════════════
+        // AUTH — Google Sheets login system
+        // ═══════════════════════════════════════════
+        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbwdBH5W2tt2rzmd4hFF7uSlNfTCCMxuJTks7LJMcs300nsR7PHd06hHkYBlPzHJr4x4/exec';
+        const AUTH_SESSION_KEY = 'crumble_auth_session';
+
+        // Check if already logged in from a previous session
+        function authGetSession(){
+            try {
+                const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
+                return raw ? JSON.parse(raw) : null;
+            } catch(e){ return null; }
+        }
+
+        function authSaveSession(user){
+            try { sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(user)); } catch(e){}
+        }
+
+        function authClearSession(){
+            try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch(e){}
+        }
+
+        function authShowApp(user){
+            // Hide login, show dashboard
+            const ls = document.getElementById('login-screen');
+            if(ls) ls.classList.remove('visible');
+            // Inject user name into header if there's a place for it
+            const nameEl = document.getElementById('auth-user-name');
+            if(nameEl) nameEl.textContent = user.name || user.email;
+            // Now boot the app
+            app.init();
+        }
+
+        async function doLogin(){
+            const emailEl = document.getElementById('login-email');
+            const passEl  = document.getElementById('login-password');
+            const errEl   = document.getElementById('login-error');
+            const btn     = document.getElementById('login-btn');
+
+            const email    = (emailEl.value || '').trim();
+            const password = (passEl.value  || '').trim();
+
+            errEl.classList.remove('visible');
+
+            if(!email || !password){
+                errEl.textContent = 'Please enter your email and password.';
+                errEl.classList.add('visible');
+                return;
+            }
+
+            btn.disabled    = true;
+            btn.textContent = 'Signing in…';
+
+            try {
+                const url = AUTH_URL
+                    + '?action=login'
+                    + '&email='    + encodeURIComponent(email)
+                    + '&password=' + encodeURIComponent(password);
+
+                const res  = await fetch(url);
+                const data = await res.json();
+
+                if(data.status === 'success'){
+                    authSaveSession({ name: data.name, email: data.email, role: data.role });
+                    authShowApp(data);
+                } else {
+                    errEl.textContent = data.message || 'Invalid email or password.';
+                    errEl.classList.add('visible');
+                    btn.disabled    = false;
+                    btn.textContent = 'Sign In';
+                    passEl.value    = '';
+                    passEl.focus();
+                }
+            } catch(err){
+                errEl.textContent = 'Connection error. Please try again.';
+                errEl.classList.add('visible');
+                btn.disabled    = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        // On page load — check for existing session first
+        document.addEventListener('DOMContentLoaded', () => {
+            const session = authGetSession();
+            if(session && session.email){
+                // Already logged in — skip login screen
+                authShowApp(session);
+            } else {
+                // Show login screen, focus email field
+                const ls = document.getElementById('login-screen');
+                if(ls) ls.classList.add('visible');
+                setTimeout(() => {
+                    const el = document.getElementById('login-email');
+                    if(el) el.focus();
+                }, 300);
+            }
+        });
 
         // ── Remove Netlify badge if injected after page load ──
         (function removeNetlifyBadge() {
