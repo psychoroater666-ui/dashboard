@@ -1843,7 +1843,7 @@
         const LIVE = {
             refreshMs: 60000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
-            slScriptUrl: 'https://script.google.com/macros/s/AKfycbxpKIBrU47FZcYNB79trOhX-kzJdkdeoa-rqaHYDLpZgF2-nNAeYaf3quS5cf2--ATm/exec',
+            slScriptUrl: 'https://script.google.com/macros/s/AKfycbzaza-qymEcGYtR_nh66zNg9NKx6bISj6lSUPwrcWRF0sL6Sufr5Uj0cjGIENWqwhDQ/exec',
             // Social Listening — published CSV (reads rows back from Sheet)
             // NOTE: after publishing the sheet, get the gid for Social_Listening tab from:
             // File → Share → Publish to web → Social_Listening tab → CSV → copy link
@@ -4701,11 +4701,11 @@
         // ═══════════════════════════════════════════
         // CREATE SUBMISSION — 8-step call center form
         // ═══════════════════════════════════════════
-        const CS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxpKIBrU47FZcYNB79trOhX-kzJdkdeoa-rqaHYDLpZgF2-nNAeYaf3quS5cf2--ATm/exec';
+        const CS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyW32BEqV4gGVvsccoqgRUMAqdbvCXOlRj9LlkvPfpcDa7UyAABPUk-gkODM_yU0lSB/exec';
 
         let csCurrentStep = 1;
+        const CS_TOTAL = 8;
         const csData = {};
-        let csStartTime = null; // track time taken
 
         // City → branches mapping
         const CS_CITIES = {
@@ -4718,36 +4718,20 @@
             'Rawalpindi'  : ['Saddar'],
         };
 
-        // Dynamic step builder based on rating
-        function csGetSteps(){
-            const isPositive = csData.rating >= 4;
-            const steps = [
-                { id:'rating',           label:'How was your experience today?',             hint:'Step 1' },
-                { id:'customer',         label:'Enter relevant customer details.',            hint:'Step 2' },
-                { id:'menuitem',         label:'Which menu item did they order?',             hint:'Step 3' },
-                { id:'location',         label:'Please select branch and city.',              hint:'Step 4' },
-                { id:'channel',          label:'Please select order channel.',                hint:'Step 5' },
-                { id:'source',           label:'Please select order source.',                 hint:'Step 6' },
-            ];
-            if(isPositive){
-                steps.push({ id:'like_menu',    label:'What did they like about the menu item?',   hint:'Step 7' });
-                steps.push({ id:'like_service', label:'What did they like about the service?',     hint:'Step 8' });
-                steps.push({ id:'like_ambiance',label:'What did they like about the ambiance?',    hint:'Step 9' });
-            } else {
-                steps.push({ id:'complaint_source', label:'Please select source of complaint.',    hint:'Step 7' });
-                steps.push({ id:'improve',           label:'What can we improve?',                 hint:'Step 8' });
-            }
-            if(csData.channel === 'Delivery'){
-                steps.push({ id:'delivery_time', label:'How long did the delivery take?',          hint:'Delivery' });
-            }
-            steps.push({ id:'comments', label:'Any other comments?', hint:'Final Step' });
-            return steps;
-        }
+        const CS_STEPS = [
+            { id:'rating',    label:'How was your experience today?',        hint:'Always select 1 star for call center complaints.' },
+            { id:'customer',  label:'Enter relevant customer details.',       hint:"We'd love your feedback!" },
+            { id:'location',  label:'Please select branch and city.',         hint:'Location' },
+            { id:'channel',   label:'Please select order channel.',           hint:'Feedback' },
+            { id:'source',    label:'Please select order source.',            hint:'Feedback' },
+            { id:'complaint_source', label:'Please select source of complaint.', hint:'Feedback' },
+            { id:'improve',   label:'What can we improve?',                  hint:'Feedback' },
+            { id:'comments',  label:'Any other comments?',                    hint:'Feedback' },
+        ];
 
         function csOpenForm(){
             csCurrentStep = 1;
             Object.keys(csData).forEach(k => delete csData[k]);
-            csStartTime = Date.now();
             document.getElementById('cs-modal').style.display = 'flex';
             csRenderStep();
         }
@@ -4757,27 +4741,25 @@
         }
 
         function csRenderStep(){
-            const steps = csGetSteps();
-            const total = steps.length;
-            const step  = steps[csCurrentStep - 1];
-            if(!step) return;
+            const step = CS_STEPS[csCurrentStep - 1];
+            document.getElementById('cs-step-num').textContent = csCurrentStep;
+            document.getElementById('cs-progress').style.width = ((csCurrentStep / CS_TOTAL) * 100) + '%';
 
-            document.getElementById('cs-step-num').textContent = csCurrentStep + ' of ' + total;
-            document.getElementById('cs-progress').style.width = ((csCurrentStep / total) * 100) + '%';
-
+            // Prev button
             const prevBtn = document.getElementById('cs-prev-btn');
-            prevBtn.style.opacity      = csCurrentStep === 1 ? '0' : '1';
-            prevBtn.style.pointerEvents= csCurrentStep === 1 ? 'none' : 'auto';
+            prevBtn.style.opacity = csCurrentStep === 1 ? '0' : '1';
+            prevBtn.style.pointerEvents = csCurrentStep === 1 ? 'none' : 'auto';
 
+            // Next button label
             const nextBtn = document.getElementById('cs-next-btn');
-            nextBtn.innerHTML = csCurrentStep === total
+            nextBtn.innerHTML = csCurrentStep === CS_TOTAL
                 ? '<i class="fas fa-check"></i> Submit'
                 : 'Next <i class="fas fa-arrow-right"></i>';
 
             const body = document.getElementById('cs-body');
             body.innerHTML = `
                 <div style="font-size:0.72rem;font-weight:700;color:#8B5CF6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${step.hint}</div>
-                <h3 style="font-size:1.15rem;font-weight:800;color:var(--text-main);margin-bottom:24px;line-height:1.3;">${step.label}</h3>
+                <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-main);margin-bottom:28px;line-height:1.3;">${step.label}</h3>
                 <div id="cs-input-area"></div>`;
 
             const area = document.getElementById('cs-input-area');
@@ -4790,8 +4772,9 @@
                         const sel = csData.rating === i+1;
                         return `<button class="cs-emoji-btn" data-rating="${i+1}" data-color="${colors[i]}"
                             onclick="csPickRating(this)"
-                            style="font-size:2.2rem;border:2px solid ${sel?colors[i]:'var(--border-color)'};border-radius:50%;width:64px;height:64px;background:var(--white);cursor:pointer;transition:.2s;transform:${sel?'scale(1.25)':'scale(1)'};">
-                            ${e}</button>`;
+                            style="font-size:2.2rem;border:2px solid ${sel?colors[i]:'var(--border-color)'};border-radius:50%;width:60px;height:60px;background:var(--white);cursor:pointer;transition:.2s;transform:${sel?'scale(1.25)':'scale(1)'};">
+                            ${e}
+                        </button>`;
                     }).join('') + `</div>
                     <div style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;">
                         <span style="font-size:0.68rem;color:var(--text-muted);font-weight:600;">Very Poor</span>
@@ -4817,15 +4800,6 @@
                                 style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;padding:11px 14px;font-family:'Inter',sans-serif;">
                         </div>
                     </div>`;
-
-            } else if(step.id === 'menuitem'){
-                area.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                        <i class="fas fa-cookie-bite" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                        <input id="cs-menuitem" type="text" placeholder="e.g. Pink Velvet, S'mores, Birthday Cake..." value="${csData.menuItem||''}"
-                            style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
-                    </div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;">Leave blank if not applicable.</p>`;
 
             } else if(step.id === 'location'){
                 const cityOpts = Object.keys(CS_CITIES).map(c =>
@@ -4863,24 +4837,6 @@
             } else if(step.id === 'improve'){
                 csRenderChoices(area, ['Food Quality','Customer Service','Ambience','Delivery Speed','Packaging','Order Accuracy','Something else'], 'improve');
 
-            } else if(step.id === 'like_menu'){
-                csRenderChoices(area, ['Taste and Flavor','Freshness','Portion Size','Presentation','Something else'], 'likeMenu');
-
-            } else if(step.id === 'like_service'){
-                csRenderChoices(area, ['Staff Friendliness','Service Speed','Order Accuracy','Packaging','Something else'], 'likeService');
-
-            } else if(step.id === 'like_ambiance'){
-                csRenderChoices(area, ['Cleanliness','Ambiance & Decor','Seating Comfort','Music & Vibe','Something else'], 'likeAmbiance');
-
-            } else if(step.id === 'delivery_time'){
-                area.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:11px 14px;background:var(--white);">
-                        <i class="fas fa-clock" style="color:var(--text-muted);font-size:0.85rem;"></i>
-                        <input id="cs-delivery-time" type="text" placeholder="e.g. 45 mins, 75+ mins, 2 hours..." value="${csData.deliveryTime||''}"
-                            style="border:none;outline:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
-                    </div>
-                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;">Only applicable for delivery orders.</p>`;
-
             } else if(step.id === 'comments'){
                 area.innerHTML = `
                     <textarea id="cs-comments" rows="5" placeholder="Type here..."
@@ -4896,16 +4852,19 @@
                 const selStyle = selected
                     ? 'background:rgba(1,1,151,.06);border-color:#010197;color:#010197;'
                     : 'background:var(--white);border-color:var(--border-color);color:var(--text-main);';
-                return `<button class="cs-choice" data-val="${i}" data-key="${key}"
+                return `<button
+                    class="cs-choice"
+                    data-val="${i}"
+                    data-key="${key}"
                     data-opt="${opt.replace(/"/g,'&quot;')}"
                     onclick="csPickChoice(this,'${key}')"
                     style="display:block;width:100%;text-align:left;padding:14px 18px;margin-bottom:10px;border:1.5px solid;border-radius:10px;${selStyle}font-size:0.9rem;font-weight:600;cursor:pointer;transition:.15s;font-family:'Inter',sans-serif;">
-                    ${opt}</button>`;
+                    ${opt}
+                </button>`;
             }).join('');
         }
 
         function csPickRating(btn){
-            const prev = csData.rating;
             csData.rating = parseInt(btn.dataset.rating);
             document.querySelectorAll('.cs-emoji-btn').forEach(b => {
                 b.style.transform   = 'scale(1)';
@@ -4913,54 +4872,37 @@
             });
             btn.style.transform   = 'scale(1.25)';
             btn.style.borderColor = btn.dataset.color;
-            // If rating category changed (positive ↔ negative), clear dependent fields
-            const wasPositive = prev >= 4, nowPositive = csData.rating >= 4;
-            if(wasPositive !== nowPositive){
-                ['complaintSource','improve','likeMenu','likeService','likeAmbiance'].forEach(k => delete csData[k]);
-            }
         }
 
         function csPickChoice(btn, key){
             csData[key] = btn.dataset.opt;
             document.querySelectorAll('.cs-choice').forEach(b => {
-                b.style.background  = 'var(--white)';
-                b.style.borderColor = 'var(--border-color)';
-                b.style.color       = 'var(--text-main)';
+                b.style.background    = 'var(--white)';
+                b.style.borderColor   = 'var(--border-color)';
+                b.style.color         = 'var(--text-main)';
             });
             btn.style.background  = 'rgba(1,1,151,.06)';
             btn.style.borderColor = '#010197';
             btn.style.color       = '#010197';
         }
 
-        function csSaveCurrentStep(){
-            const steps = csGetSteps();
-            const step  = steps[csCurrentStep - 1];
-            if(!step) return;
+        function csStep(dir){
+            // Save current step values before moving
+            const step = CS_STEPS[csCurrentStep - 1];
             if(step.id === 'customer'){
                 csData.orderId      = document.getElementById('cs-orderid')?.value.trim()||'';
                 csData.customerName = document.getElementById('cs-name')?.value.trim()||'';
                 csData.phone        = document.getElementById('cs-phone')?.value.trim()||'';
             }
-            if(step.id === 'menuitem'){
-                csData.menuItem = document.getElementById('cs-menuitem')?.value.trim()||'';
-            }
             if(step.id === 'location'){
                 csData.city   = document.getElementById('cs-city')?.value||csData.city||'';
                 csData.branch = document.getElementById('cs-branch')?.value||csData.branch||'';
             }
-            if(step.id === 'delivery_time'){
-                csData.deliveryTime = document.getElementById('cs-delivery-time')?.value.trim()||'';
-            }
             if(step.id === 'comments'){
                 csData.comments = document.getElementById('cs-comments')?.value.trim()||'';
             }
-        }
 
-        function csStep(dir){
-            csSaveCurrentStep();
-            const steps = csGetSteps();
-            const step  = steps[csCurrentStep - 1];
-
+            // Validate required steps
             if(dir === 1){
                 if(step.id === 'rating' && !csData.rating){
                     alert('Please select a rating to continue.'); return;
@@ -4970,11 +4912,11 @@
                 }
             }
 
-            if(dir === 1 && csCurrentStep === steps.length){
+            if(dir === 1 && csCurrentStep === CS_TOTAL){
                 csSubmit(); return;
             }
 
-            csCurrentStep = Math.max(1, Math.min(steps.length, csCurrentStep + dir));
+            csCurrentStep = Math.max(1, Math.min(CS_TOTAL, csCurrentStep + dir));
             csRenderStep();
         }
 
@@ -4983,31 +4925,21 @@
             nextBtn.disabled = true;
             nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
 
-            // Calculate time taken
-            const elapsed = csStartTime ? Math.round((Date.now() - csStartTime) / 1000) : 0;
-            const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
-            const timeTaken = mins + 'm:' + String(secs).padStart(2,'0') + 's';
-
             const payload = {
-                action          : 'callcenter',
-                createdAt       : new Date().toISOString(),
-                createdBy       : PERM.name || 'Call Center',
-                location        : csData.branch        || '',
-                timeTaken       : timeTaken,
-                name            : csData.customerName  || '',
-                phoneNumber     : csData.phone         || '',
-                orderId         : csData.orderId       || '',
-                menuItemName    : csData.menuItem      || '',
-                rating          : csData.rating        || 1,
-                channel         : csData.channel       || '',
-                orderSource     : csData.orderSource   || '',
-                complaintSource : csData.complaintSource || '',
-                likeMenu        : csData.likeMenu      || '',
-                likeService     : csData.likeService   || '',
-                likeAmbiance    : csData.likeAmbiance  || '',
-                deliveryTime    : csData.deliveryTime  || '',
-                comments        : csData.comments      || '',
-                status          : 'completed',
+                action        : 'callcenter',
+                timestamp     : new Date().toISOString(),
+                rating        : csData.rating || 1,
+                orderId       : csData.orderId || '',
+                customerName  : csData.customerName || '',
+                phone         : csData.phone || '',
+                city          : csData.city || '',
+                location      : csData.branch || '',
+                channel       : csData.channel || '',
+                orderSource   : csData.orderSource || '',
+                complaintSource: csData.complaintSource || '',
+                improve       : csData.improve || '',
+                comments      : csData.comments || '',
+                submittedBy   : PERM.name || 'Call Center',
             };
 
             try {
@@ -5018,6 +4950,7 @@
                     body   : JSON.stringify(payload),
                 });
                 csCloseForm();
+                // Show success toast
                 const toast = document.createElement('div');
                 toast.innerHTML = '<i class="fas fa-check-circle"></i> Submission saved successfully';
                 toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;font-size:0.85rem;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:loginSlideUp .3s ease;';
@@ -5035,7 +4968,7 @@
         // ═══════════════════════════════════════════
         // AUTH — Google Sheets login system
         // ═══════════════════════════════════════════
-        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxpKIBrU47FZcYNB79trOhX-kzJdkdeoa-rqaHYDLpZgF2-nNAeYaf3quS5cf2--ATm/exec';
+        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyW32BEqV4gGVvsccoqgRUMAqdbvCXOlRj9LlkvPfpcDa7UyAABPUk-gkODM_yU0lSB/exec';
         const AUTH_SESSION_KEY = 'crumble_auth_session';
 
         // Global permission state — set on login, used everywhere
