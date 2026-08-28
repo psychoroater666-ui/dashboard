@@ -463,6 +463,14 @@
         .branch-inc-detail.open { display: block; }
         .inc-detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-top: 8px; }
         .inc-detail-chip { background: var(--white); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
+        .inc-card-list { display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+        .inc-card { background: var(--white); border:1px solid var(--border-color); border-left:3px solid var(--status-critical); border-radius:8px; padding:10px 13px; }
+        .inc-card-top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
+        .inc-card-item { font-size:0.84rem; font-weight:700; color:var(--text-main); }
+        .inc-card-meta { font-size:0.72rem; font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:8px; white-space:nowrap; }
+        .inc-stars { color:#F59E0B; letter-spacing:1px; font-size:0.72rem; }
+        .inc-note { margin-top:6px; font-size:0.82rem; line-height:1.5; color:var(--text-main); font-style:italic; }
+        .inc-note-empty { color:var(--text-muted); font-style:normal; font-size:0.78rem; }
         .inc-chip-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
         .inc-chip-val { font-size: 0.85rem; font-weight: 800; color: var(--text-main); }
 
@@ -1249,7 +1257,7 @@
         // A completed visit rated at or below this counts as an incident/complaint. Change to 2 or 1 to tighten.
         const INCIDENT_MAX_RATING = 3;
         let LIVE_MODE = false;
-        const BUILD = 'P4.2-fixes';
+        const BUILD = 'P4.3-breakdown';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
         const _get  = (row,...names) => { const keys=Object.keys(row); for(const w of names){ const k=keys.find(k=>k.trim().toLowerCase()===w.trim().toLowerCase()); if(k!==undefined) return row[k]; } return ''; };
@@ -1341,7 +1349,7 @@
                         const complaintType = prod || (src.form + ' Issue');
                         _ensure('complaint',complaintType);
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
-                            complaintType, verified:true, resolved:false, resolutionMins:0, product: prod || '—',
+                            complaintType, verified:true, resolved:false, resolutionMins:0, product: prod || '—', smileScore:rating,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
                             note: comment });
                     }
@@ -2804,13 +2812,27 @@
                 const branchRows = Object.entries(data.branches)
                     .sort((a,b) => b[1].incs.length - a[1].incs.length)
                     .map(([brName, brData], brIdx) => {
-                        const typeChips = Object.entries(brData.types)
-                            .sort((a,b)=>b[1]-a[1])
-                            .map(([type, cnt]) => `
-                                <div class="inc-detail-chip">
-                                    <span class="inc-chip-label">${type}</span>
-                                    <span class="inc-chip-val">${cnt}</span>
-                                </div>`).join('');
+                        const incidentCards = brData.incs
+                            .slice()
+                            .sort((a,b)=> new Date(b.date) - new Date(a.date))
+                            .map(inc => {
+                                const item = (inc.product && inc.product !== '—') ? inc.product : 'Low-rated visit';
+                                const rating = inc.smileScore ? inc.smileScore : '';
+                                const stars = rating ? '★'.repeat(rating) + '☆'.repeat(5-rating) : '';
+                                const dateStr = inc.date ? new Date(inc.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '';
+                                const chanStr = inc.channel && inc.channel !== inc.surveyForm ? ` · ${inc.channel}` : '';
+                                const note = inc.note && String(inc.note).trim()
+                                    ? `<div class="inc-note">“${String(inc.note).trim()}”</div>`
+                                    : `<div class="inc-note inc-note-empty">No comment left by the customer.</div>`;
+                                return `
+                                    <div class="inc-card">
+                                        <div class="inc-card-top">
+                                            <span class="inc-card-item">${item}</span>
+                                            <span class="inc-card-meta">${stars ? `<span class="inc-stars">${stars}</span>` : ''}${dateStr}${chanStr}</span>
+                                        </div>
+                                        ${note}
+                                    </div>`;
+                            }).join('');
                         return `
                             <div class="branch-inc-row" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.branch-expand-icon').classList.toggle('fa-chevron-down'); this.querySelector('.branch-expand-icon').classList.toggle('fa-chevron-up');">
                                 <div class="branch-inc-name">
@@ -2824,8 +2846,8 @@
                                 </div>
                             </div>
                             <div class="branch-inc-detail">
-                                <div style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px; margin-top:4px;">Incident Types at ${brName}</div>
-                                <div class="inc-detail-grid">${typeChips || '<div style="font-size:0.78rem;color:var(--text-muted);">No classification data available.</div>'}</div>
+                                <div style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px; margin-top:4px;">What went wrong at ${brName}</div>
+                                <div class="inc-card-list">${incidentCards}</div>
                             </div>`;
                     }).join('');
 
