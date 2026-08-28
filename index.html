@@ -4710,7 +4710,7 @@
                     authSaveSession({ name: data.name, email: data.email, role: data.role });
                     authShowApp(data);
                 } else {
-                    errEl.textContent = data.message || 'Invalid email or password.';
+                    errEl.textContent = 'The email or password you entered is incorrect. Please try again.';
                     errEl.classList.add('visible');
                     btn.disabled    = false;
                     btn.textContent = 'Sign In';
