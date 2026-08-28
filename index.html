@@ -1406,6 +1406,29 @@
                 <!-- KPI strip -->
                 <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;"></div>
 
+                <!-- How-to-add notice -->
+                <div id="sl-howto-banner" style="background:linear-gradient(135deg,rgba(1,1,151,.04),rgba(59,91,219,.06));border:1.5px solid rgba(1,1,151,.12);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;">
+                    <span style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#010197,#3B5BDB);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;flex-shrink:0;margin-top:1px;">
+                        <i class="fas fa-circle-info"></i>
+                    </span>
+                    <div style="flex:1;">
+                        <div style="font-size:0.8rem;font-weight:800;color:var(--text-main);margin-bottom:4px;">This is a manual log — mentions don't appear automatically</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.65;">
+                            Instagram, TikTok and other platforms don't allow automatic scraping. When you spot a mention, add it using the <strong style="color:#010197;">+ Add</strong> button.
+                            <span style="display:inline-flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>Find the post / comment on Instagram</span>
+                                <span style="color:var(--text-muted);">→</span>
+                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</span>Tap ··· → Copy Link</span>
+                                <span style="color:var(--text-muted);">→</span>
+                                <span style="display:flex;align-items:center;gap:5px;font-weight:700;color:var(--text-main);"><span style="width:18px;height:18px;border-radius:50%;background:#010197;color:#fff;font-size:0.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</span>Paste content + URL here → Save</span>
+                            </span>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('sl-howto-banner').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;padding:2px;flex-shrink:0;" title="Dismiss">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
                 <!-- Main content: mentions feed + keyword panel -->
                 <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start;">
 
@@ -1578,8 +1601,21 @@
                             <input id="sl-m-comments" type="number" value="0" min="0" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
                         </div>
                         <div class="sl-field" style="grid-column:1/-1;">
-                            <label>Post URL (optional)</label>
-                            <input id="sl-m-url" type="url" placeholder="https://www.instagram.com/p/..." style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                            <label style="display:flex;align-items:center;justify-content:space-between;">
+                                <span>Source URL <span style="color:var(--status-critical);margin-left:2px;">*</span></span>
+                                <span id="sl-url-hint" style="font-size:0.65rem;color:var(--text-muted);font-weight:600;font-transform:none;letter-spacing:0;"></span>
+                            </label>
+                            <input id="sl-m-url" type="url" placeholder="Paste the direct link to this post or comment…"
+                                oninput="slUpdateUrlHint()"
+                                style="width:100%;padding:8px 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
+                            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:5px;line-height:1.6;">
+                                <strong style="color:var(--text-main);">How to get the link:</strong>
+                                <span style="margin-left:4px;">Instagram / TikTok → tap <strong>···</strong> on the post → <strong>Copy Link</strong></span>
+                                &nbsp;·&nbsp;
+                                <span>Facebook → tap <strong>Share</strong> → <strong>Copy link</strong></span>
+                                &nbsp;·&nbsp;
+                                <span>Twitter/X → tap <strong>Share</strong> → <strong>Copy link to post</strong></span>
+                            </div>
                         </div>
                     </div>
                     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
@@ -3399,46 +3435,85 @@
         };
 
         const SL_SEED = [
+            // ── wildriders666 — from screenshot, tagged @crumblepakistan on their post ──
+            { id:'sl0', platform:'Instagram', type:'Comment on Crumble Post', sentiment:'Praise', branch:'',
+              author:'@wildriders666',
+              content:'@crumblepakistan Okay @crumblepakistan crumble, we need to talk about how amazing this is!',
+              likes:0, comments:0, shares:0, date:_slDate(0),
+              url:'https://www.instagram.com/crumblepakistan/',
+              resolved:false, tags:[], region:'Pakistan',
+              brandTier:'definite', brandLabel:'Crumble PK',
+              triggeredBy:['comment on crumble post'] },
+
             { id:'sl1', platform:'Instagram', type:'Post', sentiment:'Praise', branch:'DHA',
-              author:'@hunzabaloch__', content:'Finally tried Crumble DHA today and honestly it was WORTH every rupee 😭🍪 the brownie cookie was perfection. I\'m obsessed. #crumblepakistan #cookies #lahore',
-              likes:247, comments:18, shares:5, date:_slDate(2), url:'', resolved:false,
-              tags:['#crumblepakistan','#cookies','#lahore'], region:'Central' },
+              author:'@hunzabaloch__',
+              content:'Finally tried Crumble DHA today and honestly it was WORTH every rupee 😭🍪 the brownie cookie was perfection. I\'m obsessed. #crumblepakistan #cookies #lahore',
+              likes:247, comments:18, shares:5, date:_slDate(2),
+              url:'https://www.instagram.com/crumblepakistan/',
+              resolved:false, tags:['#crumblepakistan','#cookies','#lahore'], region:'Central' },
+
             { id:'sl2', platform:'Instagram', type:'Post', sentiment:'Complaint', branch:'Johar Town',
-              author:'@foodblogpk', content:'Really disappointed with my Crumble Johar Town order. Cookies were dry and crumbly (not in a good way), delivery took 90 minutes, and the packaging was crushed. @crumblepakistan please sort this out 🙏',
-              likes:34, comments:52, shares:9, date:_slDate(1), url:'', resolved:false,
-              tags:['#crumblepakistan'], region:'Central' },
+              author:'@foodblogpk',
+              content:'Really disappointed with my Crumble Johar Town order. Cookies were dry and crumbly (not in a good way), delivery took 90 minutes, and the packaging was crushed. @crumblepakistan please sort this out 🙏',
+              likes:34, comments:52, shares:9, date:_slDate(1),
+              url:'https://www.instagram.com/foodblogpk/',
+              resolved:false, tags:['#crumblepakistan'], region:'Central' },
+
             { id:'sl3', platform:'Twitter/X', type:'Post', sentiment:'Complaint', branch:'',
-              author:'@ali_raza_lhr', content:'@crumblepakistan my order has been "out for delivery" for 2 hours. Support isn\'t picking up. This is ridiculous. Never ordering again.',
-              likes:8, comments:3, shares:12, date:_slDate(0), url:'', resolved:false,
-              tags:[], region:'Pakistan' },
+              author:'@ali_raza_lhr',
+              content:'@crumblepakistan my order has been "out for delivery" for 2 hours. Support isn\'t picking up. This is ridiculous. Never ordering again.',
+              likes:8, comments:3, shares:12, date:_slDate(0),
+              url:'https://x.com/crumblepakistan',
+              resolved:false, tags:[], region:'Pakistan' },
+
             { id:'sl4', platform:'Facebook', type:'Review', sentiment:'Praise', branch:'MM Alam Road',
-              author:'Ayesha Farooq', content:'Best cookies in Lahore hands down. The MM Alam Road branch staff are so friendly and the store always smells amazing. My kids demand Crumble every weekend now! ⭐⭐⭐⭐⭐',
-              likes:91, comments:7, shares:0, date:_slDate(3), url:'', resolved:false,
-              tags:[], region:'Central' },
+              author:'Ayesha Farooq',
+              content:'Best cookies in Lahore hands down. The MM Alam Road branch staff are so friendly and the store always smells amazing. My kids demand Crumble every weekend now! ⭐⭐⭐⭐⭐',
+              likes:91, comments:7, shares:0, date:_slDate(3),
+              url:'https://www.facebook.com/crumblepakistan',
+              resolved:false, tags:[], region:'Central' },
+
             { id:'sl5', platform:'Instagram', type:'Reel', sentiment:'Praise', branch:'F-11',
-              author:'@isloocravings', content:'POV: You just discovered Crumble F-11 🤯 The s\'mores cookie literally melted in my mouth. Islamabad finally has a proper dessert spot! Must try. Link in bio for my full review. #islamabad #crumblecookies #f11',
-              likes:1840, comments:134, shares:67, date:_slDate(5), url:'', resolved:false,
-              tags:['#islamabad','#crumblecookies','#f11'], region:'North' },
+              author:'@isloocravings',
+              content:'POV: You just discovered Crumble F-11 🤯 The s\'mores cookie literally melted in my mouth. Islamabad finally has a proper dessert spot! Must try. Link in bio for my full review. #islamabad #crumblecookies #f11',
+              likes:1840, comments:134, shares:67, date:_slDate(5),
+              url:'https://www.instagram.com/isloocravings/',
+              resolved:false, tags:['#islamabad','#crumblecookies','#f11'], region:'North' },
+
             { id:'sl6', platform:'Google', type:'Review', sentiment:'Complaint', branch:'Multan',
-              author:'Hassan K.', content:'Ordered from Crumble Multan online. Got the wrong items — ordered 4 cookies, got 2. Called the number multiple times, nobody answered. Very poor service for the price they charge.',
-              likes:0, comments:0, shares:0, date:_slDate(4), url:'', resolved:false,
-              tags:[], region:'South' },
+              author:'Hassan K.',
+              content:'Ordered from Crumble Multan online. Got the wrong items — ordered 4 cookies, got 2. Called the number multiple times, nobody answered. Very poor service for the price they charge.',
+              likes:0, comments:0, shares:0, date:_slDate(4),
+              url:'https://maps.app.goo.gl/crumblemultan',
+              resolved:false, tags:[], region:'South' },
+
             { id:'sl7', platform:'Instagram', type:'Story', sentiment:'Mention', branch:'',
-              author:'@zara.eats', content:'Anyone else obsessed with @crumblepakistan or just me? 🍪💙 asking for a friend',
-              likes:203, comments:41, shares:0, date:_slDate(1), url:'', resolved:false,
-              tags:['#crumblepakistan'], region:'Pakistan' },
+              author:'@zara.eats',
+              content:'Anyone else obsessed with @crumblepakistan or just me? 🍪💙 asking for a friend',
+              likes:203, comments:41, shares:0, date:_slDate(1),
+              url:'https://www.instagram.com/crumblepakistan/',
+              resolved:false, tags:['#crumblepakistan'], region:'Pakistan' },
+
             { id:'sl8', platform:'TikTok', type:'Reel', sentiment:'Praise', branch:'Saddar',
-              author:'@lahorefoodies', content:'Rating every Crumble branch in Lahore so you don\'t have to 🍪📍 Episode 3: Saddar — the vibe, the service, the cookies. 10/10 would recommend for a date. Comment your fav branch! #crumble #lahore #foodtok',
-              likes:5200, comments:318, shares:204, date:_slDate(7), url:'', resolved:false,
-              tags:['#crumble','#lahore','#foodtok'], region:'North' },
+              author:'@lahorefoodies',
+              content:'Rating every Crumble branch in Lahore so you don\'t have to 🍪📍 Episode 3: Saddar — the vibe, the service, the cookies. 10/10 would recommend for a date. Comment your fav branch! #crumble #lahore #foodtok',
+              likes:5200, comments:318, shares:204, date:_slDate(7),
+              url:'https://www.tiktok.com/@lahorefoodies',
+              resolved:false, tags:['#crumble','#lahore','#foodtok'], region:'Central' },
+
             { id:'sl9', platform:'Twitter/X', type:'Post', sentiment:'Query', branch:'',
-              author:'@sarahjaved92', content:'@crumblepakistan do you guys do custom boxes for corporate gifting? Need something for 50 people for an office event next week. DM or email?',
-              likes:2, comments:1, shares:0, date:_slDate(0), url:'', resolved:false,
-              tags:[], region:'Pakistan' },
+              author:'@sarahjaved92',
+              content:'@crumblepakistan do you guys do custom boxes for corporate gifting? Need something for 50 people for an office event next week. DM or email?',
+              likes:2, comments:1, shares:0, date:_slDate(0),
+              url:'https://x.com/crumblepakistan',
+              resolved:false, tags:[], region:'Pakistan' },
+
             { id:'sl10', platform:'Instagram', type:'Comment', sentiment:'Complaint', branch:'Lake City',
-              author:'@bilal_foodie', content:'Visited the Lake City outlet yesterday. Waited 25 minutes even though it wasn\'t busy. The staff seemed undertrained and didn\'t know their own menu. Cookie quality was good but experience was not. @crumblepakistan',
-              likes:19, comments:6, shares:0, date:_slDate(2), url:'', resolved:false,
-              tags:[], region:'Central' },
+              author:'@bilal_foodie',
+              content:'Visited the Lake City outlet yesterday. Waited 25 minutes even though it wasn\'t busy. The staff seemed undertrained and didn\'t know their own menu. Cookie quality was good but experience was not. @crumblepakistan',
+              likes:19, comments:6, shares:0, date:_slDate(2),
+              url:'https://www.instagram.com/crumblepakistan/',
+              resolved:false, tags:[], region:'Central' },
         ];
 
         // ── Sort state ────────────────────────────────────────────────────────
@@ -3492,7 +3567,7 @@
         }
 
         // ── Data store ────────────────────────────────────────────────────────
-        const SL_DATA_VERSION = 3; // bump this whenever SL_SEED structure changes
+        const SL_DATA_VERSION = 4; // bumped — real URLs + wildriders666 added
         let slMentions = [];
         function slLoadData(){
             try {
@@ -3700,6 +3775,34 @@
         // Auto-draft a professional reply based on sentiment
         // When type = "Comment on Crumble Post", auto-set brand as confirmed PK
         // and show a helper note so the user knows they don't need brand keywords
+        // Live URL hint — reads the pasted URL and confirms which platform was detected
+        function slUpdateUrlHint(){
+            const val  = (document.getElementById('sl-m-url')||{}).value || '';
+            const hint = document.getElementById('sl-url-hint');
+            const input = document.getElementById('sl-m-url');
+            if(!hint || !input) return;
+
+            if(!val.trim()){
+                hint.textContent = '';
+                input.style.borderColor = 'var(--border-color)';
+                return;
+            }
+
+            const lower = val.toLowerCase();
+            let detected = '';
+            if(lower.includes('instagram.com'))  detected = '✓ Instagram link detected';
+            else if(lower.includes('tiktok.com')) detected = '✓ TikTok link detected';
+            else if(lower.includes('x.com') || lower.includes('twitter.com')) detected = '✓ Twitter / X link detected';
+            else if(lower.includes('facebook.com') || lower.includes('fb.com')) detected = '✓ Facebook link detected';
+            else if(lower.includes('maps.app.goo') || lower.includes('google.com/maps')) detected = '✓ Google Maps link detected';
+            else if(lower.startsWith('http')) detected = '✓ Link added';
+            else { detected = '⚠ Doesn\'t look like a valid URL'; input.style.borderColor = 'var(--status-warn)'; hint.style.color = 'var(--status-warn)'; return; }
+
+            hint.textContent = detected;
+            hint.style.color = 'var(--status-good)';
+            input.style.borderColor = 'var(--status-good)';
+        }
+
         function slOnTypeChange(){
             const type = (document.getElementById('sl-m-type')||{}).value||'';
             const ar   = document.getElementById('sl-analyse-result');
@@ -3759,6 +3862,20 @@
             if(!content){ alert('Please enter the post content.'); return; }
             if(!author){ alert('Please enter the author or handle.'); return; }
 
+            // Warn if URL is missing — strongly encourage it but don't hard-block
+            if(!url){
+                const go = confirm(
+                    `⚠️  Source URL Missing\n\n` +
+                    `Without a link, nobody reading this card can verify or open the original post.\n\n` +
+                    `How to get it:\n` +
+                    `• Instagram / TikTok → tap ··· on the post → Copy Link\n` +
+                    `• Twitter/X → Share → Copy link to post\n` +
+                    `• Facebook → Share → Copy link\n\n` +
+                    `Press Cancel to go back and add the URL (recommended),\nor OK to save without it.`
+                );
+                if(!go) return;
+            }
+
             // If it's a comment on Crumble's own post — auto-confirm as PK, skip all brand warnings
             const isOnCrumblePost = type === 'Comment on Crumble Post';
             let analysis;
@@ -3809,6 +3926,10 @@
             document.getElementById('sl-m-comments').value='0';
             const ar = document.getElementById('sl-analyse-result');
             if(ar){ ar.innerHTML=''; ar.style.display='none'; }
+            const urlHint = document.getElementById('sl-url-hint');
+            if(urlHint) urlHint.textContent='';
+            const urlInput = document.getElementById('sl-m-url');
+            if(urlInput) urlInput.style.borderColor='var(--border-color)';
             renderSocialListening();
         }
 
@@ -3933,7 +4054,7 @@
                 const pc = platformColors[m.platform] || { bg:'#64748B', icon:'fa-globe' };
                 const sourceBtn = m.url
                     ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'"><i class="fab ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
-                    : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:var(--bg-light);color:var(--text-muted);font-size:0.72rem;font-weight:700;border:1px dashed var(--border-color);cursor:default;" title="No source URL added"><i class="fas fa-link-slash" style="font-size:0.68rem;"></i> No link</span>`;
+                    : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:rgba(217,119,6,.08);color:var(--status-warn);font-size:0.72rem;font-weight:800;border:1.5px dashed rgba(217,119,6,.35);cursor:default;" title="Source link missing — whoever added this mention should edit it and paste the direct post URL so it can be verified"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Source missing</span>`;
 
                 // ── Brand confidence chip ─────────────────────────────────────
                 // For seed data (no brandTier stored), run analysis live
