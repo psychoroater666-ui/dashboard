@@ -685,6 +685,60 @@
 
         /* Resolved state overlay */
         .sl-resolved-banner { font-size:0.7rem; font-weight:800; color:var(--status-good); background:var(--status-good-bg); border:1px solid rgba(5,150,105,.2); border-radius:6px; padding:3px 10px; display:inline-flex; align-items:center; gap:4px; }
+        /* ═══════════ COMPLAINT TOPOGRAPHY ═══════════ */
+        .ct-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:4px; }
+        .ct-seg { display:inline-flex; background:var(--bg-light); border:1px solid var(--border-color); border-radius:9px; padding:3px; gap:2px; }
+        .ct-seg button { border:none; background:transparent; font-family:'Inter',sans-serif; font-weight:700; font-size:0.76rem; color:var(--text-muted); padding:6px 14px; border-radius:7px; cursor:pointer; transition:.15s; }
+        .ct-seg button.active { background:var(--white); color:var(--brand-accent); box-shadow:0 2px 6px rgba(0,0,0,.08); }
+
+        /* Ranked ledger cards */
+        .ci-list { display:flex; flex-direction:column; gap:14px; }
+        .ci-card { position:relative; display:grid; grid-template-columns:56px 1fr auto auto; align-items:center; gap:18px;
+            background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:18px 22px 18px 20px;
+            box-shadow:0 6px 15px -3px rgba(0,0,0,.05); transition:.2s; overflow:hidden; }
+        .ci-card:hover { transform:translateY(-2px); box-shadow:0 12px 26px -6px rgba(0,0,0,.10); }
+        .ci-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--brand-accent); }
+        .ci-card.sev-hot::before { background:var(--status-critical); }
+        .ci-rank { font-size:2rem; font-weight:800; color:var(--border-color); line-height:1; text-align:center; letter-spacing:-1px; }
+        .ci-card.sev-hot .ci-rank { color:rgba(220,38,38,.30); }
+        .ci-main { min-width:0; }
+        .ci-title { font-size:1.15rem; font-weight:800; color:var(--brand-accent); margin-bottom:3px; letter-spacing:-.3px; }
+        .ci-cause { font-size:0.86rem; font-weight:700; color:var(--text-main); margin-bottom:10px; }
+        .ci-cause .ci-op { font-weight:500; color:var(--text-muted); }
+        .ci-leaders { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .ci-lead-label { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-right:2px; }
+        .ci-lead-primary { font-size:0.75rem; font-weight:800; color:#fff; background:var(--brand-accent); padding:4px 11px; border-radius:7px; }
+        .ci-lead-rest { font-size:0.75rem; font-weight:700; color:var(--text-main); background:var(--bg-light); border:1px solid var(--border-color); padding:4px 11px; border-radius:7px; }
+        .ci-months { display:flex; align-items:flex-start; gap:22px; padding-right:8px; }
+        .ci-mon { text-align:center; }
+        .ci-mon-val { font-weight:800; letter-spacing:-1px; line-height:1; color:var(--text-main); }
+        .ci-mon.m0 .ci-mon-val { font-size:2rem; color:var(--brand-accent); }
+        .ci-mon.m1 .ci-mon-val { font-size:1.5rem; color:var(--text-main); }
+        .ci-mon.m2 .ci-mon-val { font-size:1.1rem; color:var(--text-muted); }
+        .ci-mon-label { font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-top:6px; }
+        .ci-trend { display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:74px; padding:10px 8px; border-radius:12px; }
+        .ci-trend.up { background:var(--status-critical-bg); color:var(--status-critical); }
+        .ci-trend.down { background:var(--status-good-bg); color:var(--status-good); }
+        .ci-trend.flat { background:var(--bg-light); color:var(--text-muted); }
+        .ci-trend-val { font-size:0.95rem; font-weight:800; display:flex; align-items:center; gap:4px; }
+        .ci-trend-sub { font-size:0.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.3px; margin-top:2px; opacity:.8; }
+        @media (max-width:900px){ .ci-card { grid-template-columns:44px 1fr; } .ci-months,.ci-trend { grid-column:2; justify-self:start; margin-top:8px; } }
+
+        /* Heatmap */
+        .ct-heat-wrap { overflow-x:auto; }
+        .ct-heat { border-collapse:separate; border-spacing:4px; width:100%; }
+        .ct-heat th { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); padding:6px 8px; text-align:center; white-space:nowrap; }
+        .ct-heat th.ct-row-h { text-align:left; position:sticky; left:0; background:var(--white); z-index:2; }
+        .ct-heat td.ct-row-h { font-size:0.8rem; font-weight:700; color:var(--text-main); text-align:left; white-space:nowrap; padding:6px 10px 6px 4px; position:sticky; left:0; background:var(--white); z-index:1; }
+        .ct-cell { width:46px; height:38px; border-radius:8px; text-align:center; font-size:0.82rem; font-weight:800; color:#fff; }
+        .ct-cell.zero { color:var(--text-muted); font-weight:600; background:var(--bg-light); }
+        .ct-legend { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:12px; }
+        .ct-legend-scale { display:flex; gap:3px; }
+        .ct-legend-scale span { width:22px; height:12px; border-radius:3px; }
+
+        /* Unclassified strip */
+        .ct-unc-item { font-size:0.78rem; color:var(--text-main); padding:8px 12px; background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; }
+        .ct-unc-item .ct-unc-meta { font-size:0.68rem; color:var(--text-muted); font-weight:700; }
     </style>
 </head>
 <body class="app-loading">
@@ -1530,6 +1584,41 @@
                 </div>
             </div>
 
+            <!-- COMPLAINT TOPOGRAPHY -->
+            <div id="view-complaints" class="view">
+                <div class="card" style="padding:20px 24px;">
+                    <div class="ct-toolbar">
+                        <div>
+                            <h3 style="display:flex;align-items:center;gap:10px;margin:0;">
+                                <span style="width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#010197,#64D0FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.78rem;box-shadow:0 3px 8px rgba(1,1,151,0.3);"><i class="fas fa-fingerprint"></i></span>
+                                COMPLAINT TOPOGRAPHY
+                            </h3>
+                            <div class="text-xs text-muted" id="ct-subtitle" style="font-weight:600;margin-top:4px;">Classified complaints · root cause → operational area → where they cluster</div>
+                        </div>
+                        <div class="ct-seg" id="ct-scope">
+                            <button class="active" onclick="app.setComplaintScope('branch', this)">By Branch</button>
+                            <button onclick="app.setComplaintScope('region', this)">By Region</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:20px 24px;">
+                    <div class="section-header"><h3>CATEGORY LEDGER</h3><span class="text-xs text-muted" id="ct-ledger-note" style="font-weight:600;"></span></div>
+                    <div id="ct-ledger" class="ci-list" style="margin-top:10px;"></div>
+                </div>
+
+                <div class="card" style="padding:20px 24px;">
+                    <div class="section-header"><h3>TOPOGRAPHY HEATMAP</h3><span class="text-xs text-muted" id="ct-heat-note" style="font-weight:600;">Darker = more complaints this month</span></div>
+                    <div class="ct-heat-wrap" style="margin-top:12px;"><table class="ct-heat" id="ct-heatmap"></table></div>
+                    <div class="ct-legend">Fewer <div class="ct-legend-scale" id="ct-legend"></div> More</div>
+                </div>
+
+                <div class="card" id="ct-unc-card" style="padding:20px 24px;display:none;">
+                    <div class="section-header"><h3>UNCLASSIFIED — REVIEW BACKLOG</h3><span class="text-xs text-muted" id="ct-unc-note" style="font-weight:600;"></span></div>
+                    <div id="ct-unclassified" style="margin-top:12px;"></div>
+                </div>
+            </div>
+
             <!-- FALLBACK ANALYTICS -->
             <div id="view-analytics" class="view">
                 <div class="card">
@@ -1701,6 +1790,7 @@
                         const resolutionMins = resMinsRaw !== '' ? _num(resMinsRaw) : 0;
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
                             complaintType, verified, resolved, resolutionMins, product: prod || '—', smileScore:rating,
+                            category: String(_find(r,'complaint category') || _find(r,'issue type') || _find(r,'category') || '').trim(),
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
                             note: comment });
                     }
@@ -2258,7 +2348,7 @@
 
                 document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                 
-                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social'];
+                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social', 'complaints'];
                 document.getElementById(dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics').classList.add('active');
                 
                 const gc = document.getElementById('global-controls');
@@ -2278,12 +2368,19 @@
                 this.renderExecutive();
             },
 
+            setComplaintScope(scope, btn) {
+                CT_SCOPE = scope;
+                if(btn){ btn.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+                this.renderComplaintTopography();
+            },
+
             renderCurrentView() {
                 if (state.currentView === 'executive') this.renderExecutive();
                 else if (state.currentView === 'branches') this.renderBranchesView();
                 else if (state.currentView === 'incidents') this.renderIncidentsView();
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'insights') this.renderInsights();
+                else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
                     // Always try to pull fresh data from Google Sheet when opening Social tab
@@ -4227,6 +4324,167 @@
                 }
             }
         }
+
+        // ══════════════════════════════════════════════════════════════════
+        // COMPLAINT TOPOGRAPHY  — classify free-text complaints into operational
+        // categories, then show them as a ranked ledger + a where-they-cluster
+        // heatmap. Classification order of precedence:
+        //   1. a clean "category" value from the sheet (if that column exists)
+        //   2. keyword rules below (boundary-aware, highest-score wins)
+        //   3. "Other" bucket (surfaced as a review backlog, not hidden)
+        // Edit keywords freely — matching uses whole words, so short tokens like
+        // "der" won't wrongly fire inside "ri-der" and "raw" won't hit "st-raw-berry".
+        // ══════════════════════════════════════════════════════════════════
+        let CT_SCOPE = 'branch';
+        const COMPLAINT_CATEGORIES = [
+            { id:'missing',    title:'Missing Item',       cause:'Packing accuracy failure',             op:'Packing / dispatch',     keywords:['missing','not received','didn\'t get','did not get','item missing','incomplete','forgot','left out','nahi mila','nai mila'] },
+            { id:'wrong',      title:'Wrong Order',        cause:'Order-handling error at counter',      op:'Front counter / system', keywords:['wrong order','wrong item','incorrect order','not what i ordered','different item','wrong flavour','wrong flavor','galat'] },
+            { id:'broken',     title:'Broken / Smashed',   cause:'Packing & handling / dispatch',        op:'Packing / rider',        keywords:['broken','smashed','crushed','melted','melt','damaged','spilled','fell apart','mashed','tuta'] },
+            { id:'cold',       title:'Cold / Stale',       cause:'Holding-window / kitchen timing',      op:'Kitchen ops',            keywords:['cold','stale','hard','dry','soggy','not fresh','raw egg','undercooked','baasi','thanda'] },
+            { id:'sweet',      title:'Too Sweet',          cause:'Recipe / sugar-portion inconsistency', op:'Kitchen & R&D',          keywords:['too sweet','so much sugar','very sweet','sweetness','extra sugar','meetha'] },
+            { id:'portion',    title:'Portion / Quantity', cause:'Portion control / SOP',                op:'Kitchen ops',            keywords:['small portion','less quantity','portion','quantity','too little','less shake','kam'] },
+            { id:'delayserve', title:'Delay Serving',      cause:'Kitchen throughput / dine-in timing',  op:'Kitchen ops',            keywords:['waited','waiting','slow service','took long','20 min','30 min','late serving','service slow','der'] },
+            { id:'delivery',   title:'Delivery Delay',     cause:'Rider management',                     op:'Rider ops',              keywords:['late delivery','delivery late','rider','took hours','delivery delay','delivery time','came late','arrived late'] },
+            { id:'staff',      title:'Staff Behaviour',    cause:'Service attitude / training gap',      op:'Branch staff',           keywords:['rude','behaviour','behavior','staff','attitude','misbehav','ignored','unprofessional','bad service'] },
+            { id:'taste',      title:'Taste',              cause:'Product inconsistency',                op:'Kitchen',                keywords:['taste','tasteless','flavour','flavor','bland','not good','disgusting','bad quality','quality'] },
+        ];
+        const CI_OTHER = { id:'other', title:'Other / Unspecified', cause:'Uncategorised feedback', op:'Review manually' };
+        // Pre-compile whole-word regexes for each keyword
+        COMPLAINT_CATEGORIES.forEach(c => {
+            c._re = c.keywords.map(kw => new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+') + '\\b', 'i'));
+        });
+        const _MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+        function classifyComplaint(inc){
+            // 1. Sheet-provided category wins (map to a known bucket if names match)
+            const sheetCat = (inc.category || '').trim();
+            if(sheetCat){
+                const known = COMPLAINT_CATEGORIES.find(c => c.title.toLowerCase() === sheetCat.toLowerCase() || c.id === sheetCat.toLowerCase());
+                if(known) return known;
+                return { id:'sheet_'+sheetCat.toLowerCase().replace(/\s+/g,'_'), title:sheetCat, cause:'Sheet-defined category', op:'Review mapping', _re:[] };
+            }
+            // 2. Keyword scoring — most hits wins
+            const text = [inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
+            if(!text.trim()) return CI_OTHER;
+            let best = null, bestScore = 0;
+            for(const c of COMPLAINT_CATEGORIES){
+                let score = 0;
+                for(const re of c._re){ if(re.test(text)) score++; }
+                if(score > bestScore){ bestScore = score; best = c; }
+            }
+            return best || CI_OTHER;
+        }
+
+        app.renderComplaintTopography = function(){
+            const ledgerEl = document.getElementById('ct-ledger');
+            if(!ledgerEl) return;
+            const incs = rawData.incidents || [];
+
+            // Recent 3 months relative to newest incident
+            const ym = d => { const dt = new Date(d); return isNaN(dt) ? null : { y:dt.getFullYear(), m:dt.getMonth() }; };
+            const keyed = incs.map(i => ({ inc:i, k:ym(i.date), cat:classifyComplaint(i) })).filter(x => x.k);
+            if(!keyed.length){
+                ledgerEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;">No complaint data available.</div>';
+                document.getElementById('ct-heatmap').innerHTML = ''; return;
+            }
+            const maxK = keyed.reduce((a,x)=> (x.k.y*12+x.k.m) > (a.y*12+a.m) ? x.k : a, keyed[0].k);
+            const monthIdx = [0,1,2].map(off => { const t = maxK.y*12 + maxK.m - off; return { y:Math.floor(t/12), m:((t%12)+12)%12 }; });
+            const monthLabels = monthIdx.map(mk => _MONTH_ABBR[mk.m]);
+            const same = (k, mk) => k.y===mk.y && k.m===mk.m;
+            const colOf = inc => CT_SCOPE === 'region' ? _regionFor(inc.branch) : inc.branch;
+
+            document.getElementById('ct-subtitle').textContent = `Classified complaints · ${monthLabels[0]} vs ${monthLabels[1]} · clustered by ${CT_SCOPE}`;
+
+            // Aggregate per category
+            const agg = {};
+            keyed.forEach(({inc, k, cat}) => {
+                if(!agg[cat.id]) agg[cat.id] = { cat, months:[0,0,0], latestBranches:{}, colCounts:{}, samples:[] };
+                const s = agg[cat.id];
+                monthIdx.forEach((mk, mi) => { if(same(k, mk)) s.months[mi]++; });
+                if(same(k, monthIdx[0])){
+                    s.latestBranches[inc.branch] = (s.latestBranches[inc.branch]||0)+1;
+                    const col = colOf(inc); s.colCounts[col] = (s.colCounts[col]||0)+1;
+                    if(cat.id === 'other' && s.samples.length < 12) s.samples.push(inc);
+                }
+            });
+
+            let rows = Object.values(agg).filter(r => r.months.some(v=>v));
+            rows.sort((a,b) => b.months[0] - a.months[0] || b.months[1] - a.months[1]);
+
+            // ── LEDGER (ranked cards) ──
+            const realRows = rows.filter(r => r.cat.id !== 'other');
+            document.getElementById('ct-ledger-note').textContent = `${monthLabels[0]} leaders shown · trend vs ${monthLabels[1]}`;
+            ledgerEl.innerHTML = realRows.map((r, idx) => {
+                const rank = String(idx+1).padStart(2,'0');
+                const [m0,m1,m2] = r.months;
+                let pct; if(m1===0){ pct = m0>0?100:0; } else { pct = Math.round(((m0-m1)/m1)*100); }
+                const dir = m0>m1?'up':m0<m1?'down':'flat';
+                const arrow = dir==='up'?'fa-arrow-up':dir==='down'?'fa-arrow-down':'fa-minus';
+                const sevHot = idx < 2 ? 'sev-hot' : '';
+                const leaders = Object.entries(r.latestBranches).sort((a,b)=>b[1]-a[1]);
+                let leaderHtml;
+                if(leaders.length){
+                    const [pN,pC] = leaders[0];
+                    const rest = leaders.slice(1,3).map(([n,c])=>`${n} ${c}`).join(' / ');
+                    leaderHtml = `<div class="ci-leaders"><span class="ci-lead-label">${monthLabels[0]} leaders</span><span class="ci-lead-primary">${pN} ${pC}</span>${rest?`<span class="ci-lead-rest">${rest}</span>`:''}</div>`;
+                } else {
+                    leaderHtml = `<div class="ci-leaders"><span class="ci-lead-label">${monthLabels[0]} leaders</span><span class="ci-lead-rest">—</span></div>`;
+                }
+                return `<div class="ci-card ${sevHot}">
+                    <div class="ci-rank">${rank}</div>
+                    <div class="ci-main">
+                        <div class="ci-title">${r.cat.title}</div>
+                        <div class="ci-cause">${r.cat.cause} <span class="ci-op">· ${r.cat.op}</span></div>
+                        ${leaderHtml}
+                    </div>
+                    <div class="ci-months">
+                        <div class="ci-mon m0"><div class="ci-mon-val">${m0}</div><div class="ci-mon-label">${monthLabels[0]}</div></div>
+                        <div class="ci-mon m1"><div class="ci-mon-val">${m1}</div><div class="ci-mon-label">${monthLabels[1]}</div></div>
+                        <div class="ci-mon m2"><div class="ci-mon-val">${m2}</div><div class="ci-mon-label">${monthLabels[2]}</div></div>
+                    </div>
+                    <div class="ci-trend ${dir}"><div class="ci-trend-val"><i class="fas ${arrow}" style="font-size:0.7rem;"></i> ${Math.abs(pct)}%</div><div class="ci-trend-sub">vs ${monthLabels[1]}</div></div>
+                </div>`;
+            }).join('') || '<div style="text-align:center;padding:30px;color:var(--text-muted);">No classified complaints in the latest month.</div>';
+
+            // ── HEATMAP (category × branch/region, latest month) ──
+            const colTotals = {};
+            realRows.forEach(r => Object.entries(r.colCounts).forEach(([c,n]) => colTotals[c] = (colTotals[c]||0)+n));
+            const cols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).slice(0, CT_SCOPE==='region'?8:8).map(x=>x[0]);
+            let maxCell = 1;
+            realRows.forEach(r => cols.forEach(c => { if((r.colCounts[c]||0) > maxCell) maxCell = r.colCounts[c]; }));
+            const cellColor = n => { if(!n) return ''; const t = n/maxCell; const a = 0.18 + 0.82*t; return `background:rgba(220,38,38,${a.toFixed(2)});${a>0.5?'color:#fff;':'color:var(--text-main);'}`; };
+
+            const heat = document.getElementById('ct-heatmap');
+            if(!cols.length){ heat.innerHTML = '<tr><td style="color:var(--text-muted);padding:16px;">No data for the latest month.</td></tr>'; }
+            else {
+                let html = '<thead><tr><th class="ct-row-h">Category</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+                html += realRows.map(r => {
+                    return `<tr><td class="ct-row-h">${r.cat.title}</td>` + cols.map(c=>{
+                        const n = r.colCounts[c]||0;
+                        return n ? `<td class="ct-cell" style="${cellColor(n)}">${n}</td>` : `<td class="ct-cell zero">·</td>`;
+                    }).join('') + '</tr>';
+                }).join('');
+                html += '</tbody>';
+                heat.innerHTML = html;
+            }
+            document.getElementById('ct-heat-note').textContent = `${monthLabels[0]} · darker = more complaints (top ${cols.length} ${CT_SCOPE==='region'?'regions':'branches'})`;
+            const legend = document.getElementById('ct-legend');
+            if(legend) legend.innerHTML = [0.18,0.38,0.58,0.78,1].map(a=>`<span style="background:rgba(220,38,38,${a});"></span>`).join('');
+
+            // ── UNCLASSIFIED review backlog ──
+            const other = agg['other'];
+            const uncCard = document.getElementById('ct-unc-card');
+            if(other && other.samples.length){
+                uncCard.style.display = 'block';
+                document.getElementById('ct-unc-note').textContent = `${other.months[0]} unmatched in ${monthLabels[0]} — refine keywords to capture these`;
+                document.getElementById('ct-unclassified').innerHTML = other.samples.map(s=>{
+                    const txt = (s.note || s.product || s.complaintType || '—');
+                    return `<div class="ct-unc-item">"${txt}" <span class="ct-unc-meta">— ${s.branch}, ${s.date}</span></div>`;
+                }).join('');
+            } else {
+                uncCard.style.display = 'none';
+            }
+        };
 
         // Init social data on page load
         slLoadData();
