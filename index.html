@@ -600,6 +600,15 @@
         @media (max-width:1100px){ .skel-row { grid-template-columns: 1fr; } }
         .skel-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
         @media (max-width:1100px){ .skel-3 { grid-template-columns: 1fr; } }
+        /* ═══════════ COLLAPSIBLE CARDS ═══════════ */
+        .collapsible-card { transition: box-shadow .25s; }
+        .collapse-header { user-select:none; }
+        .collapse-header:hover .collapse-chevron { background: rgba(1,1,151,.08) !important; color:#010197 !important; }
+        .collapse-chevron.open { transform: rotate(180deg); background: rgba(1,1,151,.08) !important; color:#010197 !important; }
+        .collapse-body { animation: collapseIn .35s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes collapseIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+        .collapsible-card.is-open { box-shadow: 0 8px 32px rgba(1,1,151,.1); border-color: rgba(1,1,151,.18); }
+
         .skel-line { height: 12px; margin-bottom: 10px; }
 
         /* ═══════════ SOCIAL LISTENING ═══════════ */
@@ -1221,20 +1230,28 @@
                     </div>
 
                     <!-- ══════════ VOICE OF CUSTOMER ══════════ -->
-                    <div class="card" style="padding: 22px 24px; border-top: 3px solid #010197;">
-                        <div class="section-header" style="margin-bottom: 20px;">
-                            <h3 style="display:flex; align-items:center; gap:10px;">
-                                <span style="width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#010197,#64D0FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.78rem;box-shadow:0 3px 8px rgba(1,1,151,0.3);">
+                    <div class="card collapsible-card" id="voc-card" style="padding:0;overflow:hidden;">
+                        <!-- Header — click to expand/collapse -->
+                        <div class="collapse-header" onclick="toggleSection('voc-card')" style="padding:18px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:0px solid var(--border-color);transition:border-bottom .3s;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <span style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#010197,#64D0FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.82rem;box-shadow:0 3px 10px rgba(1,1,151,0.25);flex-shrink:0;">
                                     <i class="fas fa-comments"></i>
                                 </span>
-                                VOICE OF CUSTOMER
-                            </h3>
+                                <div>
+                                    <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);letter-spacing:.3px;">VOICE OF CUSTOMER</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">Praise · Complaints · Suggestions · Sentiment</div>
+                                </div>
+                            </div>
                             <div style="display:flex;align-items:center;gap:10px;">
-                                
                                 <span id="voc-total-chip" style="font-size:0.72rem;font-weight:800;background:rgba(1,1,151,0.08);color:#010197;padding:3px 10px;border-radius:20px;border:1px solid rgba(1,1,151,0.15);">0 responses</span>
+                                <span class="collapse-chevron" id="voc-card-chevron" style="width:28px;height:28px;border-radius:8px;background:var(--bg-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s;flex-shrink:0;">
+                                    <i class="fas fa-chevron-down"></i>
+                                </span>
                             </div>
                         </div>
-
+                        <!-- Body — collapses -->
+                        <div class="collapse-body" id="voc-card-body" style="display:none;">
+                            <div style="padding:20px 24px 24px;">
                         <!-- Top row: Praise + Complaints side by side -->
                         <div class="voc-grid">
 
@@ -1314,19 +1331,32 @@
                                 </div>
                             </div>
                         </div>
+                            </div><!-- end padding wrapper -->
+                        </div><!-- end collapse-body -->
                     </div>
                     <!-- ══════════ END VOICE OF CUSTOMER ══════════ -->
-                    <div class="card ai-card">
-                        <div class="section-header" style="margin-bottom: 20px;">
-                            <h3>
-                                <span class="ai-spark" style="background:linear-gradient(135deg,#010197,#64D0FF);"><i class="fas fa-wand-magic-sparkles"></i></span>
-                                AI INSIGHTS
-                            </h3>
-                            <span style="font-size:0.72rem; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:6px;">
-                                <span style="width:7px;height:7px;border-radius:50%;background:#64D0FF;display:inline-block;box-shadow:0 0 6px #64D0FF;"></span>
-                                Syncs automatically from your sheet
+
+                    <!-- ══════════ AI INSIGHTS ══════════ -->
+                    <div class="card ai-card collapsible-card" id="ai-card" style="padding:0;overflow:hidden;">
+                        <!-- Header -->
+                        <div class="collapse-header" onclick="toggleSection('ai-card')" style="padding:18px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <span class="ai-spark" style="background:linear-gradient(135deg,#010197,#64D0FF);width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(1,1,151,0.25);"><i class="fas fa-wand-magic-sparkles"></i></span>
+                                <div>
+                                    <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);letter-spacing:.3px;">AI INSIGHTS</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#64D0FF;display:inline-block;box-shadow:0 0 6px #64D0FF;"></span>
+                                        Syncs automatically from your sheet
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="collapse-chevron" id="ai-card-chevron" style="width:28px;height:28px;border-radius:8px;background:var(--bg-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s;flex-shrink:0;">
+                                <i class="fas fa-chevron-down"></i>
                             </span>
                         </div>
+                        <!-- Body -->
+                        <div class="collapse-body" id="ai-card-body" style="display:none;">
+                            <div style="padding:4px 24px 24px;">
                         <div class="ai-suite-grid">
                             <div class="ai-tile" id="ai-tile-actionplan">
                                 <div class="ai-tile-ico"><i class="fas fa-list-check"></i></div>
@@ -1353,7 +1383,10 @@
                                 <div class="ai-status">Connect your Gemini Apps Script to activate</div>
                             </div>
                         </div>
+                            </div><!-- end padding wrapper -->
+                        </div><!-- end collapse-body -->
                     </div>
+                    <!-- ══════════ END AI INSIGHTS ══════════ -->
 
                     <!-- BRANCH PERFORMANCE — cards on top, full table below -->
                     <div class="card" style="padding: 22px 24px;">
@@ -5404,6 +5437,40 @@
                 alert('Submission failed. Please try again.');
                 nextBtn.disabled = false;
                 nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // COLLAPSIBLE SECTIONS
+        // ═══════════════════════════════════════════
+        function toggleSection(cardId){
+            const card    = document.getElementById(cardId);
+            const body    = document.getElementById(cardId + '-body');
+            const chevron = document.getElementById(cardId + '-chevron');
+            if(!card || !body) return;
+
+            const isOpen = body.style.display !== 'none';
+            if(isOpen){
+                // Collapse — animate out
+                body.style.animation = 'none';
+                body.style.opacity   = '0';
+                body.style.transform = 'translateY(-8px)';
+                body.style.transition= 'opacity .25s ease, transform .25s ease';
+                setTimeout(() => {
+                    body.style.display    = 'none';
+                    body.style.opacity    = '';
+                    body.style.transform  = '';
+                    body.style.transition = '';
+                    body.style.animation  = '';
+                }, 250);
+                chevron.classList.remove('open');
+                card.classList.remove('is-open');
+            } else {
+                // Expand
+                body.style.display   = 'block';
+                body.style.animation = 'collapseIn .35s cubic-bezier(.16,1,.3,1) both';
+                chevron.classList.add('open');
+                card.classList.add('is-open');
             }
         }
 
