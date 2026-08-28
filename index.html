@@ -148,6 +148,31 @@
         
         /* Modern date range pill */
         .date-range-pill { display: flex; align-items: center; background: var(--bg-light); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 6px 14px; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: border-color 0.2s; }
+        .date-presets { display:flex; gap:6px; align-items:center; }
+        .preset-chip { padding:7px 13px; border-radius:9px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-muted); font-size:0.8rem; font-weight:700; cursor:pointer; transition:.15s; white-space:nowrap; }
+        .preset-chip:hover { color:var(--text-main); border-color:var(--accent-blue); }
+        .preset-chip.active { background:var(--primary-navy); color:#fff; border-color:var(--primary-navy); }
+        /* Incidents-by-form monitor */
+        .mon-form { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
+        .mon-form-head { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; cursor:pointer; background:var(--white); transition:.15s; }
+        .mon-form-head:hover { background:var(--bg-light); }
+        .mon-form-title { display:flex; align-items:center; gap:9px; font-weight:700; font-size:0.85rem; color:var(--text-main); }
+        .mon-ic { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:0.72rem; }
+        .mon-rate { font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:20px; }
+        .mon-count { font-weight:800; font-size:1rem; min-width:20px; text-align:right; }
+        .mon-fx { transition:.2s; }
+        .mon-form-body { max-height:0; overflow:hidden; transition:max-height .25s ease; background:var(--bg-light); }
+        .mon-form-body.open { max-height:600px; }
+        .mon-branch { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 8px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-main); border-top:1px solid var(--border-color); }
+        .mon-branch:hover { background:var(--white); }
+        .mon-bcount { font-weight:800; color:var(--status-critical); }
+        .mon-bx { transition:.2s; }
+        .mon-detail { max-height:0; overflow:hidden; transition:max-height .2s ease; }
+        .mon-detail.open { max-height:400px; padding:2px 0; }
+        .mon-inc { display:flex; align-items:baseline; gap:7px; padding:5px 12px 5px 26px; font-size:0.76rem; color:var(--text-main); }
+        .mon-what { font-weight:700; }
+        .mon-note { color:var(--text-muted); font-style:italic; font-weight:500; }
+        .mon-empty { padding:10px 14px; font-size:0.78rem; color:var(--text-muted); }
         .date-range-pill:hover { border-color: var(--accent-blue); }
         .date-range-pill i { color: var(--accent-blue); font-size: 0.85rem; }
         .date-range-pill input[type="date"] { border: none; outline: none; font-size: 0.83rem; font-weight: 600; color: var(--text-main); background: transparent; cursor: pointer; }
@@ -592,12 +617,20 @@
         <!-- GLOBAL CONTROLS — single modern filter bar -->
         <div class="controls-wrapper" id="global-controls">
             <div class="filter-row">
+                <!-- Quick date presets -->
+                <div class="date-presets" id="date-presets">
+                    <button class="preset-chip active" data-range="latest" onclick="app.setDateRange('latest', this)">Latest day</button>
+                    <button class="preset-chip" data-range="yesterday" onclick="app.setDateRange('yesterday', this)">Yesterday</button>
+                    <button class="preset-chip" data-range="7d" onclick="app.setDateRange('7d', this)">7 days</button>
+                    <button class="preset-chip" data-range="30d" onclick="app.setDateRange('30d', this)">30 days</button>
+                    <button class="preset-chip" data-range="all" onclick="app.setDateRange('all', this)">All</button>
+                </div>
                 <!-- Single modern date range -->
                 <div class="date-range-pill">
                     <i class="fas fa-calendar-alt"></i>
-                    <input type="date" id="filter-start-date" onchange="app.applyFilters()">
+                    <input type="date" id="filter-start-date" onchange="app.setDateRange('custom', null); app.applyFilters()">
                     <span class="date-separator">→</span>
-                    <input type="date" id="filter-end-date" onchange="app.applyFilters()">
+                    <input type="date" id="filter-end-date" onchange="app.setDateRange('custom', null); app.applyFilters()">
                 </div>
                 
                 <select class="select-input" id="filter-region" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px;">
@@ -681,15 +714,10 @@
                     <div style="display:grid; grid-template-columns: 1fr 1.7fr; gap: 18px;">
                         <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:14px;">
-                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>LIVE INCIDENT MONITOR</h3>
-                                <button class="btn-link" onclick="app.navigate('complaints')" style="font-size:0.72rem;">View all →</button>
+                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
+                                <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                             </div>
-                            <div class="table-wrapper" style="height:216px; overflow-y:auto;">
-                                <table id="exec-complaints-table">
-                                    <thead><tr><th>#</th><th>Top Complaints</th><th>Vol</th><th>Trend</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+                            <div id="exec-incident-monitor" style="height:216px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 
                         <div class="card" style="padding:20px;">
@@ -771,7 +799,7 @@
                                 VOICE OF CUSTOMER
                             </h3>
                             <div style="display:flex;align-items:center;gap:10px;">
-                                <span style="font-size:0.7rem;font-weight:700;color:var(--text-muted);">Derived from live feedback data</span>
+                                
                                 <span id="voc-total-chip" style="font-size:0.72rem;font-weight:800;background:rgba(1,1,151,0.08);color:#010197;padding:3px 10px;border-radius:20px;border:1px solid rgba(1,1,151,0.15);">0 responses</span>
                             </div>
                         </div>
@@ -848,7 +876,7 @@
 
                                 <!-- Urgency flags -->
                                 <div style="padding: 0 20px 16px;">
-                                    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);margin-bottom:8px;">⚡ Urgency Flags</div>
+                                    <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted);margin-bottom:8px;">Urgency Flags</div>
                                     <div id="voc-urgency-flags" style="display:flex;flex-wrap:wrap;gap:6px;">
                                         <!-- Filled by JS -->
                                     </div>
@@ -1221,7 +1249,7 @@
         // A completed visit rated at or below this counts as an incident/complaint. Change to 2 or 1 to tighten.
         const INCIDENT_MAX_RATING = 3;
         let LIVE_MODE = false;
-        const BUILD = 'P3.2-topnav';
+        const BUILD = 'P4.2-fixes';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
         const _get  = (row,...names) => { const keys=Object.keys(row); for(const w of names){ const k=keys.find(k=>k.trim().toLowerCase()===w.trim().toLowerCase()); if(k!==undefined) return row[k]; } return ''; };
@@ -1424,7 +1452,7 @@
             el.style.background = ok ? '#ECFDF5' : '#FFFBEB';
             el.style.color = ok ? '#059669' : '#D97706';
             el.innerHTML = ok ? `<span style="width:7px;height:7px;border-radius:50%;background:#059669"></span> Live · synced`
-                              : `⚠ Sample data`;
+                              : `Sample data`;
         }
 
         /* Real System Alerts — computed from thresholds against the current period */
@@ -1513,11 +1541,23 @@
         // ==========================================
         // 3. GLOBAL FILTERS (Overview)
         // ==========================================
+        // Newest date present in the loaded data (auto-follows as new days are pasted)
+        let DATA_MAX_DATE = null, DATA_MIN_DATE = null;
+        function computeDataDateRange() {
+            const dates = (rawData.submissions||[]).map(s => s.date).filter(Boolean).sort();
+            if(dates.length){ DATA_MIN_DATE = dates[0]; DATA_MAX_DATE = dates[dates.length-1]; }
+            else { const t = SYSTEM_NOW.toISOString().split('T')[0]; DATA_MIN_DATE = t; DATA_MAX_DATE = t; }
+        }
+        const _fmtDate = d => (d instanceof Date ? d.toISOString().split('T')[0] : d);
+        const _shiftDays = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return _fmtDate(d); };
+
         function initGlobalDates() {
+            computeDataDateRange();
             const s = document.getElementById('filter-start-date');
             const e = document.getElementById('filter-end-date');
-            s.value = '2026-08-01'; e.value = '2026-08-26';
-            s.max = '2026-08-26'; e.max = '2026-08-26';
+            s.max = DATA_MAX_DATE; e.max = DATA_MAX_DATE;
+            // default view = latest day of data
+            s.value = DATA_MAX_DATE; e.value = DATA_MAX_DATE;
         }
 
         function applyGlobalFilters() {
@@ -1762,9 +1802,30 @@
                 this.renderCurrentView(); 
             },
 
+            setDateRange(preset, chipEl) {
+                const s = document.getElementById('filter-start-date');
+                const e = document.getElementById('filter-end-date');
+                if(!DATA_MAX_DATE) computeDataDateRange();
+                const max = DATA_MAX_DATE;
+                if(preset === 'latest')       { s.value = max; e.value = max; }
+                else if(preset === 'yesterday'){ const y = _shiftDays(max, -1); s.value = y; e.value = y; }
+                else if(preset === '7d')      { s.value = _shiftDays(max, -6);  e.value = max; }
+                else if(preset === '30d')     { s.value = _shiftDays(max, -29); e.value = max; }
+                else if(preset === 'all')     { s.value = DATA_MIN_DATE; e.value = max; }
+                // 'custom' just updates the chip highlight (values come from the pickers)
+
+                // highlight the active chip
+                document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('active'));
+                if(chipEl && chipEl.classList) chipEl.classList.add('active');
+                else { const c = document.querySelector('.preset-chip[data-range="'+preset+'"]'); if(c) c.classList.add('active'); }
+
+                if(preset !== 'custom') this.applyFilters();
+            },
+
             applyFilters() {
                 const s = document.getElementById('filter-start-date');
                 const e = document.getElementById('filter-end-date');
+                if(!s.value || !e.value){ computeDataDateRange(); s.value = DATA_MAX_DATE; e.value = DATA_MAX_DATE; }
                 if(new Date(s.value) > new Date(e.value)) s.value = e.value;
                 e.min = s.value;
 
@@ -1806,9 +1867,6 @@
 
             setExecMode(mode, btnElement) {
                 state.execMode = mode;
-                // In compare mode, dim the global date filters slightly
-                const fr = document.querySelector('.filter-row');
-                if(fr) { fr.style.opacity = mode === 'compare' ? '0.5' : '1'; fr.style.pointerEvents = mode === 'compare' ? 'none' : 'auto'; }
 
                 document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
                 btnElement.classList.add('active');
@@ -1861,33 +1919,10 @@
                         document.getElementById('rate-worst').innerText = `${branchMetrics[branchMetrics.length-1].rate.toFixed(2)}% Rate`;
                     }
 
-                    const compCounts = {}, p2CompCounts = {}; 
+                    const compCounts = {};
                     p1.incs.forEach(i => compCounts[i.complaintType] = (compCounts[i.complaintType]||0)+1);
-                    p2.incs.forEach(i => p2CompCounts[i.complaintType] = (p2CompCounts[i.complaintType]||0)+1);
-                    
                     const sortedComps = Object.entries(compCounts).sort((a,b)=>b[1]-a[1]).slice(0, 5);
-                    
-                    document.querySelector('#exec-complaints-table tbody').innerHTML = sortedComps.map((c, idx) => {
-                        let rankColor = 'var(--text-muted)';
-                        let rankBg = 'var(--bg-light)';
-                        if(idx === 0) { rankColor = '#B45309'; rankBg = '#FEF3C7'; } 
-                        else if(idx === 1) { rankColor = '#475569'; rankBg = '#F1F5F9'; } 
-                        else if(idx === 2) { rankColor = '#B45309'; rankBg = '#FFEDD5'; } 
-                        
-                        const prevVol = p2CompCounts[c[0]] || 0;
-                        const trend = prevVol ? (((c[1] - prevVol) / prevVol) * 100) : 0;
-                        const isUp = trend > 0;
-                        const trendPill = prevVol === 0 ? `<span class="trend-pill neutral">Flat</span>` :
-                                          `<span class="trend-pill ${isUp ? 'bad' : 'good'}"><i class="fas ${isUp ? 'fa-arrow-up' : 'fa-arrow-down'}"></i> ${Math.abs(trend).toFixed(0)}%</span>`;
-
-                        return `
-                        <tr>
-                            <td><div class="rank-badge" style="color:${rankColor}; background:${rankBg};">${idx+1}</div></td>
-                            <td class="font-bold" style="color:var(--text-main);">${c[0]}</td>
-                            <td style="font-weight:800; font-size:1.1rem; color:var(--text-main);">${c[1]}</td>
-                            <td>${trendPill}</td>
-                        </tr>`;
-                    }).join('');
+                    this.renderIncidentMonitor();
                     
                     const computedSummary = `This period, total submissions ${sTrend>=0?'increased':'decreased'} by ${Math.abs(sTrend).toFixed(1)}%. Incidents ${iTrend>=0?'increased':'decreased'} by ${Math.abs(iTrend).toFixed(1)}%. "${sortedComps[0]?sortedComps[0][0]:'N/A'}" remains the top complaint.`;
                     const aiText = (window.__aiSummary||'').trim();
@@ -2592,7 +2627,7 @@
                 const flagged = Object.entries(complaintByType).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,5);
                 urgencyFlags.innerHTML = flagged.length
                     ? flagged.map(([type,cnt])=>`<span class="voc-urgent-chip"><i class="fas fa-triangle-exclamation"></i>${type} (${cnt})</span>`).join('')
-                    : `<span style="font-size:0.75rem;color:var(--status-good);font-weight:600;">✓ No urgent patterns detected</span>`;
+                    : `<span style="font-size:0.75rem;color:var(--status-good);font-weight:600;">No urgent patterns detected</span>`;
             }
         };
 
@@ -2620,10 +2655,10 @@
 
                 // AI bot note based on metrics
                 let aiNote = '';
-                if (rate >= 6) aiNote = `⛔ High incident rate — urgent operational review needed at this branch.`;
-                else if (rate >= 3) aiNote = `⚠ Moderate friction — monitor complaint types and review staff feedback.`;
-                else if (posFB >= 90) aiNote = `✓ Strong performer — positive feedback above 90%. Keep up the standard.`;
-                else aiNote = `✓ Within healthy range. Continue monitoring for consistency.`;
+                if (rate >= 6) aiNote = `High incident rate — urgent operational review needed at this branch.`;
+                else if (rate >= 3) aiNote = `Moderate friction — monitor complaint types and review staff feedback.`;
+                else if (posFB >= 90) aiNote = `Strong performer — positive feedback above 90%. Keep up the standard.`;
+                else aiNote = `Within healthy range. Continue monitoring for consistency.`;
 
                 return { ...b, sL, iL, rate, avgSmile, avgSmileDisplay, posFB, res, statusClass, rateColor, rateBg, smileColor, aiNote };
             }).sort((a, b) => a.rate - b.rate); // best first
@@ -2686,9 +2721,9 @@
             grid.innerHTML = forms.map(f => {
                 const d = getSurveyData(f.key);
                 const rateColor = d.rate < 2 ? 'var(--status-good)' : d.rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
-                const perfMsg = d.rate < 2 ? '✓ Performing well — incident rate is within healthy range.'
-                    : d.rate < 5 ? '⚠ Moderate friction detected — review common complaints.'
-                    : '⛔ High incident rate — immediate operational review needed.';
+                const perfMsg = d.rate < 2 ? 'Performing well — incident rate is within healthy range.'
+                    : d.rate < 5 ? 'Moderate friction detected — review common complaints.'
+                    : 'High incident rate — immediate operational review needed.';
                 return `
                 <div class="form-perf-card ${f.cls}">
                     <div class="form-perf-header">
@@ -2813,6 +2848,51 @@
                     </div>
                 </div>`;
             }).join('');
+        };
+
+        app.renderIncidentMonitor = function() {
+            const container = document.getElementById('exec-incident-monitor');
+            if (!container) return;
+            const forms = ['Dine In', 'Delivery', 'Call Center'];
+            const known = new Set(forms);
+            const allForms = forms.concat([...new Set(state.p1.incs.map(i=>i.surveyForm))].filter(f=>!known.has(f)));
+            const iconMap = { 'Dine In':'fa-utensils', 'Delivery':'fa-motorcycle', 'Call Center':'fa-headset' };
+            const colorMap = { 'Dine In':'#F59E0B', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' };
+
+            const html = allForms.map(fn => {
+                const fIncs = state.p1.incs.filter(i => i.surveyForm === fn);
+                const fSubs = state.p1.subs.filter(s => s.surveyForm === fn).length;
+                const rate = fSubs ? (fIncs.length/fSubs*100).toFixed(1) : '0.0';
+                const color = colorMap[fn] || '#64748B', icon = iconMap[fn] || 'fa-tag';
+                // group this form's incidents by branch
+                const branches = {};
+                fIncs.forEach(i => { (branches[i.branch] = branches[i.branch] || []).push(i); });
+                const branchRows = Object.entries(branches).sort((a,b)=>b[1].length-a[1].length).map(([br, incs]) => {
+                    const detail = incs.map(i => {
+                        const what = (i.product && i.product !== '—') ? i.product : 'Low-rated visit';
+                        const note = i.note ? `<span class="mon-note">“${String(i.note).slice(0,80)}”</span>` : '';
+                        return `<div class="mon-inc"><i class="fas fa-circle" style="font-size:5px;color:${color};"></i> <span class="mon-what">${what}</span> ${note}</div>`;
+                    }).join('');
+                    return `<div class="mon-branch" onclick="var d=this.nextElementSibling; d.classList.toggle('open'); this.querySelector('.mon-bx').classList.toggle('fa-chevron-up');">
+                                <span><i class="fas fa-store" style="font-size:0.65rem;color:var(--text-muted);margin-right:6px;"></i>${br}</span>
+                                <span style="display:flex;align-items:center;gap:7px;"><span class="mon-bcount">${incs.length}</span><i class="fas fa-chevron-down mon-bx" style="font-size:0.6rem;color:var(--text-muted);"></i></span>
+                            </div>
+                            <div class="mon-detail">${detail}</div>`;
+                }).join('') || '<div class="mon-empty">No incidents in this period.</div>';
+
+                return `<div class="mon-form">
+                    <div class="mon-form-head" onclick="var b=this.nextElementSibling; b.classList.toggle('open'); this.querySelector('.mon-fx').classList.toggle('fa-chevron-down');">
+                        <span class="mon-form-title"><span class="mon-ic" style="background:${color}15;color:${color};"><i class="fas ${icon}"></i></span>${fn}</span>
+                        <span style="display:flex;align-items:center;gap:8px;">
+                            <span class="mon-rate" style="color:${color};background:${color}12;">${rate}%</span>
+                            <span class="mon-count" style="color:${fIncs.length?'var(--status-critical)':'var(--status-good)'};">${fIncs.length}</span>
+                            <i class="fas fa-chevron-right mon-fx" style="font-size:0.65rem;color:var(--text-muted);"></i>
+                        </span>
+                    </div>
+                    <div class="mon-form-body">${branchRows}</div>
+                </div>`;
+            }).join('');
+            container.innerHTML = html;
         };
 
         document.addEventListener('DOMContentLoaded', () => app.init());
