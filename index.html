@@ -1013,7 +1013,10 @@
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
             <div class="header-controls">
-                <button class="btn-icon" onclick="app.refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+                <button id="refresh-btn" onclick="appRefresh()" title="Refresh data" style="display:flex;align-items:center;gap:7px;padding:7px 14px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;backdrop-filter:blur(4px);" onmouseover="this.style.background='rgba(255,255,255,0.16)';this.style.borderColor='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.18)'">
+                    <i id="refresh-icon" class="fas fa-rotate-right" style="font-size:0.8rem;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
+                    <span id="refresh-label">Refresh</span>
+                </button>
                 <div style="position:relative;">
                     <button class="btn-icon" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
                         <i class="fas fa-bell"></i>
@@ -1345,8 +1348,8 @@
                                 <div>
                                     <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);letter-spacing:.3px;">AI INSIGHTS</div>
                                     <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">
-                                        <span style="width:6px;height:6px;border-radius:50%;background:#64D0FF;display:inline-block;box-shadow:0 0 6px #64D0FF;"></span>
-                                        Syncs automatically from your sheet
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#64D0FF;display:inline-block;animation:pulse 2s infinite;"></span>
+                                        Live AI · Auto-updated daily
                                     </div>
                                 </div>
                             </div>
@@ -5438,6 +5441,84 @@
                 nextBtn.disabled = false;
                 nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
             }
+        }
+
+        // ═══════════════════════════════════════════
+        // PREMIUM REFRESH — animated button + toast
+        // ═══════════════════════════════════════════
+        function appRefresh(){
+            const btn   = document.getElementById('refresh-btn');
+            const icon  = document.getElementById('refresh-icon');
+            const label = document.getElementById('refresh-label');
+            if(!btn || btn.disabled) return;
+
+            // Disable button + spin icon
+            btn.disabled = true;
+            btn.style.opacity = '.7';
+            btn.style.cursor  = 'not-allowed';
+            label.textContent = 'Refreshing…';
+            icon.style.transform = 'rotate(360deg)';
+
+            // Show loading toast
+            const toast = document.createElement('div');
+            toast.id = 'refresh-toast';
+            toast.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:toastSpin .7s linear infinite;flex-shrink:0;"></div>
+                    <span style="font-size:0.85rem;font-weight:700;">Syncing latest data…</span>
+                </div>`;
+            toast.style.cssText = `
+                position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
+                background:linear-gradient(135deg,#010197,#3B5BDB);
+                color:#fff;padding:13px 22px;border-radius:12px;
+                font-family:'Inter',sans-serif;z-index:99999;
+                box-shadow:0 8px 32px rgba(1,1,151,.35);
+                opacity:0;transition:opacity .3s ease,transform .35s cubic-bezier(.16,1,.3,1);
+                pointer-events:none;white-space:nowrap;`;
+            document.body.appendChild(toast);
+
+            // Add spin keyframe if not already there
+            if(!document.getElementById('toast-spin-style')){
+                const s = document.createElement('style');
+                s.id = 'toast-spin-style';
+                s.textContent = '@keyframes toastSpin{to{transform:rotate(360deg)}}';
+                document.head.appendChild(s);
+            }
+
+            // Animate toast in
+            requestAnimationFrame(() => {
+                toast.style.opacity   = '1';
+                toast.style.transform = 'translateX(-50%) translateY(0)';
+            });
+
+            // Actually refresh data
+            setTimeout(() => {
+                try { app.refreshData(); } catch(e){}
+
+                // Update toast to success
+                toast.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <i class="fas fa-circle-check" style="font-size:0.9rem;"></i>
+                        <span style="font-size:0.85rem;font-weight:700;">Data refreshed successfully</span>
+                    </div>`;
+                toast.style.background = 'linear-gradient(135deg,#059669,#10B981)';
+                toast.style.boxShadow  = '0 8px 32px rgba(5,150,105,.35)';
+
+                // Reset button
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor  = 'pointer';
+                label.textContent = 'Refresh';
+                icon.style.transform = 'rotate(0deg)';
+
+                // Dismiss toast
+                setTimeout(() => {
+                    toast.style.opacity   = '0';
+                    toast.style.transform = 'translateX(-50%) translateY(12px)';
+                    setTimeout(() => toast.remove(), 350);
+                }, 2200);
+
+            }, 1200);
         }
 
         // ═══════════════════════════════════════════
