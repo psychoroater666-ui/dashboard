@@ -1394,7 +1394,7 @@
                 </div>
 
                 <!-- KPI strip -->
-                <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;"></div>
+                <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;"></div>
 
                 <!-- Main content: mentions feed + right panel -->
                 <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
@@ -4020,8 +4020,6 @@
                     { label:'Total Mentions', val:total, sub:'across all platforms', color:'var(--accent-blue)', icon:'fa-hashtag' },
                     { label:'Complaints', val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
                     { label:'Praise', val:praises, sub:'positive mentions', color:'var(--status-good)', icon:'fa-star' },
-                    { label:'Unresolved', val:unresolved, sub:'need attention', color:unresolved>0?'var(--status-critical)':'var(--status-good)', icon:'fa-triangle-exclamation' },
-                    { label:'Total Reach', val:reach.toLocaleString(), sub:'likes + comments + shares', color:'#8B5CF6', icon:'fa-eye' },
                 ].map(k=>`
                     <div class="sl-kpi">
                         <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
