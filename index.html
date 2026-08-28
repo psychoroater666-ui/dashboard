@@ -1128,7 +1128,7 @@
                 <!-- SUB-MODE: BREAKDOWN -->
                 <div id="exec-mode-breakdown" class="exec-mode-container">
                     <div class="grid-half">
-                        <div class="card"><div class="section-header"><h3>FORM INCIDENT RATE COMPARISON</h3></div><div class="chart-container"><canvas id="formBarChartExpanded"></canvas></div></div>
+                        <div class="card"><div class="section-header"><h3>TOP PRODUCTS BY INCIDENT RATE</h3><span class="text-xs text-muted" style="font-weight:600;">Worst 10 · min 5 responses</span></div><div class="chart-container"><canvas id="formBarChartExpanded"></canvas></div></div>
                         <div class="card"><div class="section-header"><h3>CHANNEL DISTRIBUTION</h3></div><div class="chart-container"><canvas id="channelDoughnutExpanded"></canvas></div></div>
                     </div>
                     <div class="card">
@@ -2078,11 +2078,18 @@
                 }
                 
                 if (state.execMode === 'breakdown') {
-                    const formStats = config.forms.map(f => {
+                    // Build per-product stats, then keep only items with enough responses to be
+                    // meaningful (a single 1-star on a 1-response product is not a "100% rate").
+                    // Rank worst-first and cap to the top 10 so the chart stays readable.
+                    const allForms = config.forms.map(f => {
                         const fs = state.p1.subs.filter(s=>s.form===f.name).length;
                         const fi = state.p1.incs.filter(i=>i.form===f.name).length;
                         return { ...f, subs: fs, incs: fi, rate: fs ? (fi/fs)*100 : 0 };
-                    });
+                    }).filter(f => f.subs > 0);
+                    const MIN_RESPONSES = 5;
+                    let formStats = allForms.filter(f => f.subs >= MIN_RESPONSES);
+                    if (formStats.length < 3) formStats = allForms.slice();   // relax if data is sparse
+                    formStats = formStats.sort((a,b) => b.rate - a.rate).slice(0, 10);
                     this.renderFormBarChart('formBarChartExpanded', formStats);
                     this.renderChannelDoughnut('channelDoughnutExpanded');
 
@@ -2312,33 +2319,47 @@
                 const ctx = document.getElementById(canvasId).getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const textColor = isDark ? '#F1F5F9' : '#1E293B';
-                
+
+                const shortLabel = s => { s = String(s||''); return s.length > 24 ? s.slice(0,22) + '…' : s; };
+                const maxRate = formStats.length ? Math.max(...formStats.map(f=>f.rate)) : 1;
+
                 state.charts[canvasId] = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: formStats.map(f=>f.name),
+                        labels: formStats.map(f=>shortLabel(f.name)),
                         datasets: [{
-                            data: formStats.map(f=>f.rate.toFixed(2)),
-                            backgroundColor: formStats.map(f=>f.color),
+                            data: formStats.map(f=>+f.rate.toFixed(2)),
+                            backgroundColor: formStats.map(f=>f.color || '#2563EB'),
                             borderRadius: 6,
-                            barThickness: 14
+                            barThickness: 16
                         }]
                     },
                     options: {
                         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        layout: { padding: { right: 50 } }, 
-                        plugins: { 
+                        layout: { padding: { right: 56, left: 4 } },
+                        plugins: {
                             legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    // Show the FULL product name + response count on hover
+                                    title: (items) => formStats[items[0].dataIndex]?.name || '',
+                                    label: (item) => {
+                                        const f = formStats[item.dataIndex] || {};
+                                        return `${f.rate?.toFixed(2)}% incident rate · ${f.incs}/${f.subs} responses`;
+                                    }
+                                }
+                            },
                             datalabels: {
-                                display: true, align: 'right', anchor: 'end',
+                                display: (c) => c.dataset.data[c.dataIndex] > 0,
+                                align: 'right', anchor: 'end',
                                 formatter: (val) => val + '%',
                                 color: textColor,
-                                font: { size: 12, weight: '700', family: "'Inter', sans-serif" }
+                                font: { size: 11, weight: '700', family: "'Inter', sans-serif" }
                             }
                         },
                         scales: {
-                            x: { display: false, max: Math.max(...formStats.map(f=>f.rate)) * 1.3 },
-                            y: { grid: { display: false }, border: {display: false}, ticks: { font: {weight:'600', family: "'Inter', sans-serif"}, color: textColor } }
+                            x: { display: false, max: (maxRate || 1) * 1.25 },
+                            y: { grid: { display: false }, border: {display: false}, ticks: { font: {size: 11, weight:'600', family: "'Inter', sans-serif"}, color: textColor } }
                         }
                     }
                 });
