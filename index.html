@@ -932,6 +932,23 @@
         .inc-bar-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #3B5BDB, #64D0FF); transition: width .5s cubic-bezier(.22,.61,.36,1); }
         .inc-bar-val { font-size: 0.8rem; font-weight: 800; color: var(--text-main); text-align: right; }
         .inc-comment { max-width: 280px; font-size: 0.78rem; color: var(--text-muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* ── Incident timeline tracker + labels + detail ── */
+        .inc-timeline { display: flex; align-items: center; gap: 0; }
+        .inc-tl-node { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; flex-shrink: 0; border: 1.5px solid; background: var(--white); }
+        .inc-tl-line { width: 22px; height: 2px; flex-shrink: 0; }
+        .inc-tl-done   { border-color: #DC2626; color: #DC2626; }        /* reported */
+        .inc-tl-review { border-color: #F59E0B; color: #F59E0B; }        /* reviewing */
+        .inc-tl-resolved { border-color: #059669; color: #059669; }
+        .inc-tl-idle   { border-color: var(--border-color); color: var(--border-color); }
+        .inc-label-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+        .inc-menu-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: .15s; }
+        .inc-menu-btn:hover { background: var(--bg-light); color: var(--text-main); }
+        .inc-detail-row > td { background: var(--bg-light); padding: 0 !important; }
+        .inc-detail-inner { padding: 16px 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 26px; animation: fadeIn .2s ease; }
+        .inc-detail-field .inc-df-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
+        .inc-detail-field .inc-df-val { font-size: 0.85rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
+        .inc-detail-field.full { grid-column: 1 / -1; }
+        .inc-df-comment { font-style: italic; color: var(--text-main); background: var(--white); border-left: 3px solid var(--accent-blue); padding: 10px 14px; border-radius: 0 8px 8px 0; }
     </style>
 </head>
 <body class="app-loading">
@@ -1620,7 +1637,7 @@
                 <div class="card" style="padding:0;overflow:hidden;">
                     <div class="table-wrapper" style="max-height:560px;overflow-y:auto;">
                         <table id="inc-detail-table">
-                            <thead><tr><th>Code</th><th>Date</th><th>Branch</th><th>Product</th><th>Complaint</th><th>Customer Comment</th><th>Channel</th><th>Rating</th></tr></thead>
+                            <thead><tr><th>Code</th><th>Timeline</th><th>Date</th><th>Rating</th><th>Survey</th><th>Label</th><th>Branch</th><th></th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
@@ -3013,24 +3030,65 @@
                     : `${filtered.length} of ${incs.length} shown`;
 
                 const rows = filtered.slice(0, 300);
+                const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
                 document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
-                    const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+                    const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
                     const score = inc.smileScore || inc.rating || 0;
                     const ratingColor = score<=1?'#DC2626':score<=2?'#F97316':score<=3?'#F59E0B':'#059669';
-                    const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : '—';
-                    return `<tr>
+                    const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : {title:(inc.complaintType||'—'), id:'other'};
+                    const lc = labelColors[cat.id] || '#64748B';
+                    // Timeline stages: reported (always) -> reviewing -> resolved
+                    const resolved = !!inc.resolved;
+                    const tl = `<div class="inc-timeline">
+                        <span class="inc-tl-node inc-tl-done" title="Reported"><i class="fas fa-triangle-exclamation"></i></span>
+                        <span class="inc-tl-line" style="background:${resolved?'#059669':'#F59E0B'};"></span>
+                        <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-review'}" title="Reviewing"><i class="fas fa-eye"></i></span>
+                        <span class="inc-tl-line" style="background:${resolved?'#059669':'var(--border-color)'};"></span>
+                        <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-idle'}" title="${resolved?'Resolved':'Not resolved'}"><i class="fas fa-thumbs-up"></i></span>
+                    </div>`;
+                    return `<tr style="cursor:pointer;" onclick="app.toggleIncidentDetail(this, ${idx})">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span></td>
-                        <td>${dateStr}</td>
+                        <td>${tl}</td>
+                        <td style="white-space:nowrap;">${dateStr}</td>
+                        <td><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.8rem;">${score||'—'}</span></td>
+                        <td style="font-size:0.82rem;">${inc.surveyForm||'—'}</td>
+                        <td><span class="inc-label-chip" style="background:${lc}1a;color:${lc};">${cat.title}</span></td>
                         <td style="font-weight:600;">${inc.branch||'—'}</td>
-                        <td>${inc.product||'—'}</td>
-                        <td>${inc.complaintType||'—'}</td>
-                        <td><span class="inc-comment" title="${comment.replace(/"/g,'&quot;')}">${comment === '—' ? '<span style="color:var(--border-color);">—</span>' : '"'+comment+'"'}</span></td>
-                        <td>${inc.channel||'—'}</td>
-                        <td><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.78rem;">${score||'—'}</span></td>
+                        <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.toggleIncidentDetail(this.closest('tr'), ${idx})" title="Details"><i class="fas fa-ellipsis"></i></button></td>
                     </tr>`;
                 }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
+                this._incFiltered = rows;
             },
+
+            toggleIncidentDetail(rowEl, idx) {
+                // collapse if already open
+                const next = rowEl.nextElementSibling;
+                if(next && next.classList.contains('inc-detail-row')){ next.remove(); return; }
+                document.querySelectorAll('.inc-detail-row').forEach(r => r.remove());
+                const inc = (this._incFiltered || [])[idx];
+                if(!inc) return;
+                const score = inc.smileScore || inc.rating || 0;
+                const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+                const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : 'No comment provided.';
+                const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
+                const tr = document.createElement('tr');
+                tr.className = 'inc-detail-row';
+                tr.innerHTML = `<td colspan="8"><div class="inc-detail-inner">
+                    ${field('Branch', inc.branch)}
+                    ${field('Product', inc.product)}
+                    ${field('Complaint Type', inc.complaintType)}
+                    ${field('Channel', inc.channel)}
+                    ${field('Survey Form', inc.surveyForm)}
+                    ${field('Rating', score)}
+                    ${field('Date', dateStr)}
+                    ${field('Order ID', inc.orderId)}
+                    ${field('Resolved', inc.resolved ? 'Yes' : 'No')}
+                    <div class="inc-detail-field full"><div class="inc-df-label">Customer Comment</div><div class="inc-df-val inc-df-comment">${comment}</div></div>
+                </div></td>`;
+                rowEl.after(tr);
+            },
+
 
             exportIncidents() {
                 const incs = this._incAll || [];
