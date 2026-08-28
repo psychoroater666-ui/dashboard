@@ -711,9 +711,9 @@
                 <span class="topnav-link" onclick="app.navigate('products', this)">Products</span>
                 <span class="topnav-link" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
+                <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
-                <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
             </nav>
             <div class="header-controls">
                 <button class="btn-icon" onclick="app.refreshData()" title="Refresh"><i class="fas fa-sync-alt"></i></button>
@@ -1669,6 +1669,12 @@
            ═══════════════════════════════════════════════════════════ */
         const LIVE = {
             refreshMs: 60000,
+            // Social Listening — Apps Script Web App (receives POSTs from dashboard)
+            slScriptUrl: 'https://script.google.com/macros/s/AKfycbzaza-qymEcGYtR_nh66zNg9NKx6bISj6lSUPwrcWRF0sL6Sufr5Uj0cjGIENWqwhDQ/exec',
+            // Social Listening — published CSV (reads rows back from Sheet)
+            // NOTE: after publishing the sheet, get the gid for Social_Listening tab from:
+            // File → Share → Publish to web → Social_Listening tab → CSV → copy link
+            slSheetUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=324269416&single=true&output=csv',
             // AI Executive Summary tab (published CSV), written by the Gemini Apps Script
             summaryUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1550342651&single=true&output=csv',
             actionPlanUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1996393145&single=true&output=csv',
@@ -2374,7 +2380,16 @@
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'data') return;
-                else if (state.currentView === 'social') { if(typeof renderSocialListening==='function') renderSocialListening(); }
+                else if (state.currentView === 'social') {
+                    // Always try to pull fresh data from Google Sheet when opening Social tab
+                    loadSocialFromSheet().then(loaded => {
+                        if(!loaded && !slMentions.length) slLoadData();
+                        renderSocialListening();
+                    }).catch(() => {
+                        if(!slMentions.length) slLoadData();
+                        renderSocialListening();
+                    });
+                }
                 else this.renderUniversalAnalytics(state.currentView);
             },
 
@@ -3910,15 +3925,40 @@
                 likes, comments, shares:0,
                 date: new Date(SYSTEM_NOW).toISOString().split('T')[0],
                 url, resolved:false, tags:[],
-                // Auto-detect region from branch config
                 region: (config.branches.find(b=>b.name===branch)||{}).region || 'Pakistan',
-                // Store analysis metadata on the record
                 brandTier: analysis.tier,
                 brandLabel: analysis.brand || 'Unverified',
                 triggeredBy: (analysis.triggeredBy||[]).map(t=>t.kw),
             };
+
+            // ── 1. Add to local list immediately so UI updates without waiting ──
             slMentions.unshift(newMention);
             slSaveData();
+
+            // ── 2. POST to Google Sheets in background ──
+            const saveBtn = document.querySelector('#sl-add-modal button[onclick="slAddMention()"]');
+            if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='Saving…'; }
+
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Apps Script requires no-cors from browser
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    platform, type, sentiment, branch, author, content,
+                    likes, comments,
+                    url,
+                    date: newMention.date,
+                })
+            })
+            .then(() => {
+                console.log('Social mention saved to Google Sheets ✓');
+            })
+            .catch(err => {
+                console.warn('Sheet save failed (mention kept locally):', err);
+            })
+            .finally(() => {
+                if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Mention'; }
+            });
             document.getElementById('sl-add-modal').classList.remove('open');
             // reset fields
             ['sl-m-author','sl-m-content','sl-m-url'].forEach(id => document.getElementById(id).value='');
@@ -3948,6 +3988,63 @@
         }
 
         // ── Main render ───────────────────────────────────────────────────────
+        // ── Load Social Listening data from Google Sheet ──────────────────────
+        // Reads the published CSV of Social_Listening tab, converts rows to
+        // mention objects, merges with seed data (sheet rows take priority).
+        async function loadSocialFromSheet(){
+            try {
+                const res  = await _fetch(LIVE.slSheetUrl);
+                if(!res || !res.length) return false;
+
+                // res is array of row-objects keyed by header name
+                const fromSheet = res.map((row, idx) => {
+                    const get = (k) => String(row[k]||'').trim();
+                    const content = get('Content');
+                    if(!content) return null; // skip empty rows
+
+                    const platform  = get('Platform')  || 'Instagram';
+                    const analysis  = slAnalyseContent(content);
+
+                    return {
+                        id:         'sheet_' + idx,
+                        platform,
+                        type:       get('Type')      || 'Post',
+                        sentiment:  get('Sentiment') || 'Mention',
+                        branch:     get('Branch')    || '',
+                        author:     get('Author')    || '',
+                        content,
+                        likes:      parseInt(get('Likes'))    || 0,
+                        comments:   parseInt(get('Comments')) || 0,
+                        shares:     0,
+                        date:       get('Date')      || get('Timestamp').split('T')[0] || '',
+                        url:        get('URL')        || '',
+                        resolved:   false,
+                        tags:       [],
+                        region:     (config.branches.find(b=>b.name===get('Branch'))||{}).region || 'Pakistan',
+                        brandTier:  analysis.tier,
+                        brandLabel: analysis.brand || 'Crumble PK',
+                        triggeredBy:(analysis.triggeredBy||[]).map(t=>t.kw),
+                        fromSheet:  true,
+                    };
+                }).filter(Boolean);
+
+                if(!fromSheet.length) return false;
+
+                // Merge: sheet rows first (newest at top), then seed data after
+                // Remove any seed entries that duplicate sheet content (by author+date)
+                const sheetKeys = new Set(fromSheet.map(m => m.author+'|'+m.date));
+                const seedOnly  = SL_SEED.filter(s => !sheetKeys.has(s.author+'|'+s.date));
+                slMentions = [...fromSheet, ...seedOnly];
+                slSaveData();
+
+                console.log('Social Listening: loaded ' + fromSheet.length + ' rows from Google Sheet');
+                return true;
+            } catch(err){
+                console.warn('Social Listening sheet load failed:', err);
+                return false;
+            }
+        }
+
         function renderSocialListening(){
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
