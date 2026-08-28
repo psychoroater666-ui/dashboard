@@ -161,14 +161,15 @@
         .mon-rate { font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:20px; }
         .mon-count { font-weight:800; font-size:1rem; min-width:20px; text-align:right; }
         .mon-fx { transition:.2s; }
-        .mon-form-body { max-height:0; overflow:hidden; transition:max-height .25s ease; background:var(--bg-light); }
-        .mon-form-body.open { max-height:600px; }
+        .mon-form-body { display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s cubic-bezier(.4,0,.2,1); background:var(--bg-light); }
+        .mon-form-body.open { grid-template-rows:1fr; }
         .mon-branch { display:flex; align-items:center; justify-content:space-between; padding:8px 12px 8px 16px; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-main); border-top:1px solid var(--border-color); }
         .mon-branch:hover { background:var(--white); }
         .mon-bcount { font-weight:800; color:var(--status-critical); }
         .mon-bx { transition:.2s; }
-        .mon-detail { max-height:0; overflow:hidden; transition:max-height .2s ease; }
-        .mon-detail.open { max-height:400px; padding:2px 0; }
+        .mon-detail { display:grid; grid-template-rows:0fr; transition:grid-template-rows .25s cubic-bezier(.4,0,.2,1); }
+        .mon-detail.open { grid-template-rows:1fr; }
+        .mon-collapse-inner { overflow:hidden; min-height:0; }
         .mon-inc { display:flex; align-items:baseline; gap:7px; padding:5px 12px 5px 26px; font-size:0.76rem; color:var(--text-main); }
         .mon-what { font-weight:700; }
         .mon-note { color:var(--text-muted); font-style:italic; font-weight:500; }
@@ -1147,7 +1148,7 @@
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
                                 <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                             </div>
-                            <div id="exec-incident-monitor" style="height:216px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+                            <div id="exec-incident-monitor" style="max-height:440px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 
                         <div class="card" style="padding:20px;">
@@ -3911,7 +3912,7 @@
                                 <span><i class="fas fa-store" style="font-size:0.65rem;color:var(--text-muted);margin-right:6px;"></i>${br}</span>
                                 <span style="display:flex;align-items:center;gap:7px;"><span class="mon-bcount">${incs.length}</span><i class="fas fa-chevron-down mon-bx" style="font-size:0.6rem;color:var(--text-muted);"></i></span>
                             </div>
-                            <div class="mon-detail">${detail}</div>`;
+                            <div class="mon-detail"><div class="mon-collapse-inner">${detail}</div></div>`;
                 }).join('') || '<div class="mon-empty">No incidents in this period.</div>';
 
                 return `<div class="mon-form">
@@ -3923,7 +3924,7 @@
                             <i class="fas fa-chevron-right mon-fx" style="font-size:0.65rem;color:var(--text-muted);"></i>
                         </span>
                     </div>
-                    <div class="mon-form-body">${branchRows}</div>
+                    <div class="mon-form-body"><div class="mon-collapse-inner">${branchRows}</div></div>
                 </div>`;
             }).join('');
             container.innerHTML = html;
