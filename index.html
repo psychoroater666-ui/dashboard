@@ -904,6 +904,7 @@
                     </div>
                 </div>
                 <button class="btn-icon" onclick="app.toggleTheme(this)" title="Toggle Theme"><i class="fas fa-sun"></i></button>
+                <div id="auth-user-name" style="display:flex;align-items:center;gap:6px;padding:0 4px;"></div>
             </div>
         </header>
 
@@ -2149,10 +2150,14 @@
         function applyGlobalFilters() {
             const start = new Date(document.getElementById('filter-start-date').value);
             const end = new Date(document.getElementById('filter-end-date').value);
-            const region = (document.getElementById('filter-region')||{}).value || 'all';
-            const branch = (document.getElementById('filter-branch')||{}).value || 'all';
+            let region  = (document.getElementById('filter-region')||{}).value  || 'all';
+            let branch  = (document.getElementById('filter-branch')||{}).value  || 'all';
             const channel = (document.getElementById('filter-channel')||{}).value || 'all';
-            const survey = (document.getElementById('filter-survey')||{}).value || 'all';
+            const survey  = (document.getElementById('filter-survey')||{}).value  || 'all';
+
+            // ── Enforce permissions — override filter values with locked ones ──
+            if(PERM.region !== 'All') region = PERM.region;
+            if(PERM.branch !== 'All') branch = PERM.branch;
 
             const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
             const p2End = new Date(start); p2End.setDate(p2End.getDate() - 1);
@@ -4647,10 +4652,12 @@
         // ═══════════════════════════════════════════
         // AUTH — Google Sheets login system
         // ═══════════════════════════════════════════
-        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbwdBH5W2tt2rzmd4hFF7uSlNfTCCMxuJTks7LJMcs300nsR7PHd06hHkYBlPzHJr4x4/exec';
+        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyW32BEqV4gGVvsccoqgRUMAqdbvCXOlRj9LlkvPfpcDa7UyAABPUk-gkODM_yU0lSB/exec';
         const AUTH_SESSION_KEY = 'crumble_auth_session';
 
-        // Check if already logged in from a previous session
+        // Global permission state — set on login, used everywhere
+        const PERM = { role:'Admin', region:'All', branch:'All', name:'' };
+
         function authGetSession(){
             try {
                 const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
@@ -4666,14 +4673,66 @@
             try { sessionStorage.removeItem(AUTH_SESSION_KEY); } catch(e){}
         }
 
+        function authApplyPermissions(user){
+            // Load into global PERM object
+            PERM.role   = user.role   || 'Viewer';
+            PERM.region = user.region || 'All';
+            PERM.branch = user.branch || 'All';
+            PERM.name   = user.name   || user.email || '';
+
+            // ── Lock region filter ──
+            const regionEl = document.getElementById('filter-region');
+            if(regionEl && PERM.region !== 'All'){
+                regionEl.value    = PERM.region;
+                regionEl.disabled = true;
+            }
+
+            // ── Lock branch filter ──
+            const branchEl = document.getElementById('filter-branch');
+            if(branchEl && PERM.branch !== 'All'){
+                // Wait for branch dropdown to be populated, then lock it
+                setTimeout(() => {
+                    branchEl.value    = PERM.branch;
+                    branchEl.disabled = true;
+                }, 800);
+            }
+
+            // ── Hide nav items based on role ──
+            const allNavLinks = document.querySelectorAll('.topnav-link');
+            if(PERM.role === 'Viewer'){
+                // Viewers can't see Insights, Data, AI-heavy sections
+                allNavLinks.forEach(el => {
+                    const txt = el.textContent.trim().toLowerCase();
+                    if(['insights','data','resolution'].includes(txt)){
+                        el.style.display = 'none';
+                    }
+                });
+            }
+
+            // ── Show user name + role badge in header ──
+            const nameEl = document.getElementById('auth-user-name');
+            if(nameEl){
+                const roleColor = PERM.role === 'Admin' ? '#010197' : PERM.role === 'Manager' ? '#059669' : '#64748B';
+                nameEl.innerHTML = `
+                    <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">${PERM.name}</span>
+                    <span style="font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;background:${roleColor}18;color:${roleColor};border:1px solid ${roleColor}30;">${PERM.role}</span>
+                    ${PERM.branch !== 'All' ? `<span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);">· ${PERM.branch}</span>` : ''}
+                    ${PERM.region !== 'All' && PERM.branch === 'All' ? `<span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);">· ${PERM.region}</span>` : ''}
+                    <button onclick="authLogout()" style="margin-left:4px;background:none;border:1px solid var(--border-color);border-radius:6px;padding:3px 8px;font-size:0.68rem;font-weight:700;color:var(--text-muted);cursor:pointer;" title="Sign out">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>`;
+            }
+        }
+
+        function authLogout(){
+            authClearSession();
+            location.reload();
+        }
+
         function authShowApp(user){
-            // Hide login, show dashboard
             const ls = document.getElementById('login-screen');
             if(ls) ls.classList.remove('visible');
-            // Inject user name into header if there's a place for it
-            const nameEl = document.getElementById('auth-user-name');
-            if(nameEl) nameEl.textContent = user.name || user.email;
-            // Now boot the app
+            authApplyPermissions(user);
             app.init();
         }
 
@@ -4707,7 +4766,7 @@
                 const data = await res.json();
 
                 if(data.status === 'success'){
-                    authSaveSession({ name: data.name, email: data.email, role: data.role });
+                    authSaveSession({ name: data.name, email: data.email, role: data.role, region: data.region || 'All', branch: data.branch || 'All' });
                     authShowApp(data);
                 } else {
                     errEl.textContent = 'The email or password you entered is incorrect. Please try again.';
