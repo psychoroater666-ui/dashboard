@@ -643,18 +643,12 @@
                 
                 <select class="select-input" id="filter-region" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px;">
                     <option value="all">All Regions</option>
-                    <option value="Central Region">Central</option>
-                    <option value="North Region">North</option>
                 </select>
                 <select class="select-input" id="filter-branch" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px;">
                     <option value="all">All Branches</option>
                 </select>
                 <select class="select-input" id="filter-channel" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px;">
                     <option value="all">All Channels</option>
-                    <option value="Foodpanda">Foodpanda</option>
-                    <option value="Blink">Blink</option>
-                    <option value="Walk In">Walk In</option>
-                    <option value="Other">Other</option>
                 </select>
 
                 <!-- View mode toggles inline in filter bar -->
@@ -1348,8 +1342,17 @@
                     if(rating <= INCIDENT_MAX_RATING){
                         const complaintType = prod || (src.form + ' Issue');
                         _ensure('complaint',complaintType);
+                        // OPTIONAL columns — only override the defaults if the sheet actually has them.
+                        // If these columns don't exist, _find returns '' and the defaults below stand,
+                        // so this is 100% backward-compatible with the current sheet.
+                        const resolvedRaw = _find(r,'resolved') || _find(r,'resolution status') || _find(r,'is resolved');
+                        const verifiedRaw = _find(r,'verified') || _find(r,'genuine') || _find(r,'is verified');
+                        const resMinsRaw  = _find(r,'resolution time') || _find(r,'resolution mins') || _find(r,'time to resolve');
+                        const resolved = resolvedRaw !== '' ? _bool(resolvedRaw) : false;
+                        const verified = verifiedRaw !== '' ? _bool(verifiedRaw) : true;
+                        const resolutionMins = resMinsRaw !== '' ? _num(resMinsRaw) : 0;
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
-                            complaintType, verified:true, resolved:false, resolutionMins:0, product: prod || '—', smileScore:rating,
+                            complaintType, verified, resolved, resolutionMins, product: prod || '—', smileScore:rating,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
                             note: comment });
                     }
@@ -1446,6 +1449,7 @@
                 out.subs.forEach(x=>rawData.submissions.push(x));
                 out.incs.forEach(x=>rawData.incidents.push(x));
                 LIVE_MODE = true;
+                if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 if(typeof app !== 'undefined' && app.applyFilters){ try{ app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); }catch(e){} }   // repaint with fresh data
                 setLiveBadge(true);
                 return true;
@@ -1528,7 +1532,10 @@
                     for (let s = 0; s < dailyVolume; s++) {
                         const formObj = config.forms[Math.floor(Math.random() * config.forms.length)];
                         const channelObj = config.channels[Math.floor(Math.random() * config.channels.length)];
-                        const surveyForm = config.surveyForms[Math.floor(Math.random() * config.surveyForms.length)];
+                        // Use the same survey forms the dashboard actually filters by, so the
+                        // fallback/sample view isn't blank in Form Performance, VOC sentiment, etc.
+                        const SAMPLE_SURVEY_FORMS = ['Delivery', 'Dine In', 'Call Center'];
+                        const surveyForm = SAMPLE_SURVEY_FORMS[Math.floor(Math.random() * SAMPLE_SURVEY_FORMS.length)];
                         const smileScore = Math.random() > 0.15 ? (Math.random() > 0.4 ? 5 : 4) : Math.floor(Math.random() * 3) + 1;
                         
                         rawData.submissions.push({ id: `SUB-${subId++}`, date: dateStr, branch: b.name, form: formObj.name, channel: channelObj.name, surveyForm, smileScore });
@@ -1582,12 +1589,16 @@
 
             state.periodLabels.p2 = `${p2Start.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} - ${p2End.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`;
 
+            // branch -> region lookup so the Region filter actually does something
+            const _regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
+
             const filter = (ds, dS, dE) => {
                 return ds.filter(item => {
                     const d = new Date(item.date); d.setHours(0,0,0,0);
                     const s = new Date(dS); s.setHours(0,0,0,0);
                     const e = new Date(dE); e.setHours(23,59,59,999);
                     return d >= s && d <= e && 
+                           (region === 'all' || _regionOf(item.branch) === region) &&
                            (branch === 'all' || item.branch === branch) && 
                            (channel === 'all' || item.channel === channel) &&
                            (survey === 'all' || item.surveyForm === survey);
@@ -1603,8 +1614,11 @@
         // ==========================================
         const compareEngine = {
             init() {
-                const dAEnd = new Date(SYSTEM_NOW);
-                const dAStart = new Date(SYSTEM_NOW); dAStart.setDate(dAStart.getDate() - 6);
+                // Anchor to the newest date actually in the data (falls back to SYSTEM_NOW),
+                // so the Compare timeline isn't empty when live data isn't from Aug 2026.
+                const anchor = (typeof DATA_MAX_DATE === 'string' && DATA_MAX_DATE) ? new Date(DATA_MAX_DATE + 'T12:00:00') : new Date(SYSTEM_NOW);
+                const dAEnd = new Date(anchor);
+                const dAStart = new Date(anchor); dAStart.setDate(dAStart.getDate() - 6);
                 const dBEnd = new Date(dAStart); dBEnd.setDate(dBEnd.getDate() - 1);
                 const dBStart = new Date(dBEnd); dBStart.setDate(dBStart.getDate() - 6);
 
@@ -1774,6 +1788,10 @@
                 const bSelect = document.getElementById('filter-branch');
                 config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
 
+                // Populate Region + Channel dropdowns from the ACTUAL data so their
+                // values always match what the sheet produces (no hardcoded mismatch).
+                this.populateRegionChannelFilters();
+
                 compareEngine.init();
                 if(typeof branchCompare !== 'undefined') branchCompare.init();
                 this.updateGreeting();
@@ -1789,6 +1807,27 @@
 
             updateGreeting() {
                 // Greeting removed from new design — no-op kept for compat
+            },
+
+            // Fill Region + Channel selects from real data (branches' regions and the
+            // channel values present on submissions). Keeps whatever is selected if possible.
+            populateRegionChannelFilters() {
+                const regSel = document.getElementById('filter-region');
+                if (regSel) {
+                    const prev = regSel.value;
+                    const regions = [...new Set(config.branches.map(b => b.region).filter(Boolean))].sort();
+                    regSel.length = 1; // keep "All Regions"
+                    regions.forEach(r => regSel.add(new Option(r, r)));
+                    if ([...regSel.options].some(o => o.value === prev)) regSel.value = prev;
+                }
+                const chSel = document.getElementById('filter-channel');
+                if (chSel) {
+                    const prev = chSel.value;
+                    const channels = [...new Set((rawData.submissions || []).map(s => s.channel).filter(Boolean))].sort();
+                    chSel.length = 1; // keep "All Channels"
+                    channels.forEach(c => chSel.add(new Option(c, c)));
+                    if ([...chSel.options].some(o => o.value === prev)) chSel.value = prev;
+                }
             },
 
             toggleSearch() {
@@ -2656,9 +2695,9 @@
                 const avgSmileDisplay = (avgSmile * 20).toFixed(0); // 1–5 → 0–100
                 const posFB = sL ? (s.filter(x => x.smileScore >= 4).length / sL) * 100 : 0;
                 const res = iL ? (i.filter(x => x.resolved).length / iL) * 100 : 100;
-                const statusClass = rate < 3 ? 'good' : rate < 6 ? 'warn' : 'crit';
-                const rateColor = rate < 3 ? 'var(--status-good)' : rate < 6 ? 'var(--status-warn)' : 'var(--status-critical)';
-                const rateBg = rate < 3 ? 'var(--status-good-bg)' : rate < 6 ? 'var(--status-warn-bg)' : 'var(--status-critical-bg)';
+                const statusClass = rate < 3 ? 'good' : rate < 5 ? 'warn' : 'crit';
+                const rateColor = rate < 3 ? 'var(--status-good)' : rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
+                const rateBg = rate < 3 ? 'var(--status-good-bg)' : rate < 5 ? 'var(--status-warn-bg)' : 'var(--status-critical-bg)';
                 const smileColor = avgSmile >= 4 ? 'var(--status-good)' : avgSmile >= 3 ? 'var(--status-warn)' : 'var(--status-critical)';
 
                 // AI bot note based on metrics
@@ -2728,8 +2767,8 @@
 
             grid.innerHTML = forms.map(f => {
                 const d = getSurveyData(f.key);
-                const rateColor = d.rate < 2 ? 'var(--status-good)' : d.rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
-                const perfMsg = d.rate < 2 ? 'Performing well — incident rate is within healthy range.'
+                const rateColor = d.rate < 3 ? 'var(--status-good)' : d.rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
+                const perfMsg = d.rate < 3 ? 'Performing well — incident rate is within healthy range.'
                     : d.rate < 5 ? 'Moderate friction detected — review common complaints.'
                     : 'High incident rate — immediate operational review needed.';
                 return `
@@ -2805,7 +2844,7 @@
 
             container.innerHTML = Object.entries(formGroups).map(([formName, data]) => {
                 const rate = data.subs ? ((data.incs/data.subs)*100).toFixed(2) : '0.00';
-                const rateColor = parseFloat(rate) < 2 ? 'var(--status-good)' : parseFloat(rate) < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
+                const rateColor = parseFloat(rate) < 3 ? 'var(--status-good)' : parseFloat(rate) < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
                 const color = colorMap[formName] || '#64748B';
                 const icon = iconMap[formName] || 'fa-tag';
 
