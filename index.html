@@ -101,19 +101,58 @@
         .main-content { width: 100%; display: flex; flex-direction: column; overflow: hidden; position: relative; height: 100vh; }
         
         /* Header matches sidebar color */
-        .header { background: var(--sidebar-bg); padding: 0 32px; display: flex; align-items: stretch; gap: 0; flex-shrink: 0; transition: 0.3s; height: 56px; }
-        .brand-top { display:flex; align-items:center; gap:0; flex-shrink:0; padding-right: 24px; border-right: 1px solid rgba(255,255,255,0.12); margin-right: 8px; }
+        .header {
+            background: linear-gradient(180deg, #0505c8 0%, #010197 100%);
+            padding: 0 24px; display: flex; align-items: center; gap: 0;
+            flex-shrink: 0; height: 58px;
+            border-bottom: 1px solid rgba(0,0,0,0.25);
+            box-shadow:
+                0 1px 0 rgba(255,255,255,0.08) inset,
+                0 6px 32px rgba(0,0,0,0.3);
+            transition: 0.3s; position: relative; z-index: 100;
+        }
+        .brand-top {
+            display:flex; align-items:center; flex-shrink:0;
+            padding-right: 20px; margin-right: 4px; position: relative;
+        }
+        .brand-top::after {
+            content:''; position:absolute; right:0; top:50%; transform:translateY(-50%);
+            height:18px; width:1px;
+            background: linear-gradient(180deg, transparent, rgba(255,255,255,0.15), transparent);
+        }
         .brand-top .brand-mark { display:none; }
-        .brand-name { color:#fff; font-weight:800; font-size:1.18rem; letter-spacing:1.5px; text-transform:uppercase; font-style:italic; }
-        .topnav-links { display:flex; align-items:center; gap:2px; flex:1; overflow-x:auto; scrollbar-width:none; }
+        .brand-name {
+            font-weight:900; font-size:1.15rem; letter-spacing:3px;
+            text-transform:uppercase; font-style:italic;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(100,208,255,0.6), 0 0 40px rgba(100,208,255,0.2);
+        }
+        .topnav-links {
+            display:flex; align-items:center; gap:2px; flex:1;
+            overflow-x:auto; scrollbar-width:none; padding: 0 4px;
+        }
         .topnav-links::-webkit-scrollbar { display:none; }
-        .topnav-link { padding:8px 13px; border-radius:8px; color:rgba(255,255,255,.60); font-size:.82rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:.18s; }
-        .topnav-link:hover { color:#fff; background:rgba(255,255,255,.08); }
-        .topnav-link.active { color:#fff; background:rgba(100,208,255,.20); border-bottom: 2px solid var(--brand-button); }
-        
-        .header-controls { display: flex; align-items: center; gap: 8px; }
-        .btn-icon { background: none; border: none; color: #FFFFFF; cursor: pointer; font-size: 1.05rem; padding: 7px; transition: 0.2s; border-radius: 50%; }
-        .btn-icon:hover { background: rgba(255,255,255,0.1); }
+        .topnav-link {
+            padding: 6px 13px; border-radius: 7px;
+            color: rgba(255,255,255,.48); font-size:.78rem; font-weight:600;
+            cursor:pointer; white-space:nowrap; transition: all .2s cubic-bezier(.4,0,.2,1);
+            border: 1px solid transparent; letter-spacing:0.2px; position: relative;
+        }
+        .topnav-link:hover {
+            color: rgba(255,255,255,.88);
+            background: rgba(255,255,255,.06);
+        }
+        .topnav-link.active {
+            color: #010197;
+            font-weight: 700;
+            background: #ffffff;
+            border: 1px solid rgba(255,255,255,0.9);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.05);
+            letter-spacing: 0.1px;
+        }
+        .header-controls { display: flex; align-items: center; gap: 5px; padding-left: 6px; }
+        .btn-icon { background: none; border: none; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 0.9rem; padding: 0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; transition: all .18s cubic-bezier(.4,0,.2,1); border-radius: 8px; }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); color:#fff; }
         
         .search-container { display: flex; align-items: center; background: rgba(255,255,255,0.1); border-radius: 20px; padding: 0; opacity: 0; width: 0; transition: all 0.3s ease; overflow: hidden; }
         .search-container.open { width: 220px; opacity: 1; padding: 6px 14px; margin-right: 8px; }
@@ -122,12 +161,13 @@
 
         /* Filter Controls Wrapper */
         .controls-wrapper { 
-            padding: 10px 36px; 
+            padding: 9px 28px; 
             display: flex; 
             flex-direction: row;
             align-items: center;
             gap: 12px; 
             flex-shrink: 0; 
+            border-top: 3px solid var(--accent-blue);
             border-bottom: 1px solid var(--border-color); 
             background: var(--white); 
             z-index: 40; 
@@ -141,7 +181,8 @@
             padding-top: 0; 
             padding-bottom: 0; 
             opacity: 0; 
-            border-bottom-color: transparent; 
+            border-bottom-color: transparent;
+            border-top-color: transparent;
         }
         
         .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex: 1; }
@@ -149,9 +190,9 @@
         /* Modern date range pill */
         .date-range-pill { display: flex; align-items: center; background: var(--bg-light); border: 1.5px solid var(--border-color); border-radius: 10px; padding: 6px 14px; gap: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: border-color 0.2s; }
         .date-presets { display:flex; gap:6px; align-items:center; }
-        .preset-chip { padding:7px 13px; border-radius:9px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-muted); font-size:0.8rem; font-weight:700; cursor:pointer; transition:.15s; white-space:nowrap; }
-        .preset-chip:hover { color:var(--text-main); border-color:var(--accent-blue); }
-        .preset-chip.active { background:var(--primary-navy); color:#fff; border-color:var(--primary-navy); }
+        .preset-chip { padding:6px 13px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-muted); font-size:0.78rem; font-weight:700; cursor:pointer; transition:.15s; white-space:nowrap; }
+        .preset-chip:hover { color:var(--text-main); border-color:var(--accent-blue); background:rgba(1,1,151,.04); }
+        .preset-chip.active { background:#0F172A; color:#fff; border-color:#0F172A; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
         /* Incidents-by-form monitor */
         .mon-form { border:1px solid var(--border-color); border-radius:10px; overflow:hidden; }
         .mon-form-head { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; cursor:pointer; background:var(--white); transition:.15s; }
@@ -191,10 +232,9 @@
         
         .view-toggles { display: flex; align-items: center; background: var(--white); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
         .view-toggle-label { font-size: 0.75rem; font-weight: 700; padding: 10px 14px; border-right: 1px solid var(--border-color); color: var(--text-muted); background: var(--bg-light); text-transform: uppercase; letter-spacing: 0.5px; }
-        .view-btn { padding: 10px 20px; font-size: 0.8rem; font-weight: 600; border: none; border-right: 1px solid var(--border-color); background: var(--white); color: var(--text-muted); cursor: pointer; transition: 0.2s; }
-        .view-btn:hover { background: var(--bg-light); color: var(--text-main); }
-        .view-btn.active { background: rgba(1,1,151,0.08); color: #010197; }
-        .view-btn:last-child { border-right: none; }
+        .view-btn { padding: 5px 13px; font-size: 0.74rem; font-weight: 600; border: none; background: transparent; color: var(--text-muted); cursor: pointer; transition: all .2s cubic-bezier(.16,1,.3,1); border-radius: 7px; white-space: nowrap; }
+        .view-btn:hover { background: var(--white); color: var(--text-main); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+        .view-btn.active { background: var(--white); color: #010197; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
         .content-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px 36px 40px 36px; scroll-behavior: smooth; }
         
@@ -626,6 +666,7 @@
         .topnav-link         { transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.16,1,.3,1) !important; }
         .topnav-link:hover   { transform:translateY(-1px) !important; }
         .topnav-link:active  { transform:translateY(0) scale(.97) !important; }
+        .topnav-link.active  { transform:none !important; }
 
         /* Buttons */
         .btn-icon            { transition: background .18s cubic-bezier(.4,0,.2,1), color .18s, transform .15s cubic-bezier(.16,1,.3,1) !important; }
@@ -1007,21 +1048,44 @@
             }
         }
         /* ═══════════ PREMIUM TOP BAR ═══════════ */
-        .header-controls { display: flex; align-items: center; gap: 4px; padding-left: 6px; }
-        .btn-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(255,255,255,0.82); cursor: pointer; font-size: 0.98rem; padding: 0; transition: 0.18s; border-radius: 9px; }
-        .btn-icon:hover { background: rgba(255,255,255,0.12); color: #fff; }
-        .header-divider { width: 1px; height: 26px; background: rgba(255,255,255,0.14); margin: 0 8px; }
-        /* fade the nav's right edge instead of hard-clipping scrolled items */
+        .header-controls { display: flex; align-items: center; gap: 5px; padding-left: 8px; }
+        .btn-icon { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 0.92rem; padding: 0; transition: 0.18s; border-radius: 9px; }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); color: #fff; }
+        .header-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 6px; }
+        /* fade nav right edge */
         .topnav-links { -webkit-mask-image: linear-gradient(to right, #000 94%, transparent); mask-image: linear-gradient(to right, #000 94%, transparent); }
 
-        .user-chip { display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 5px; border-radius: 30px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); }
-        .user-avatar { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; background: linear-gradient(135deg, #64D0FF, #010197); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.74rem; letter-spacing: 0.5px; box-shadow: 0 2px 7px rgba(0,0,0,0.28); }
+        .user-chip {
+            display: flex; align-items: center; gap: 9px;
+            padding: 4px 10px 4px 4px; border-radius: 30px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: background .2s, border-color .2s;
+            cursor: default;
+        }
+        .user-chip:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.16); }
+        .user-avatar {
+            width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+            background: linear-gradient(135deg, #64D0FF 0%, #010197 100%);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.72rem; letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 0 0 2px rgba(100,208,255,0.2);
+        }
         .user-meta { display: flex; flex-direction: column; line-height: 1.2; }
-        .user-name { font-size: 0.82rem; font-weight: 700; color: #fff; white-space: nowrap; }
-        .user-sub { font-size: 0.64rem; font-weight: 600; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 6px; margin-top: 1px; }
-        .user-role { font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 20px; }
-        .btn-logout { width: 34px; height: 34px; flex-shrink: 0; margin-left: 2px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: rgba(255,255,255,0.85); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.18s; font-size: 0.85rem; }
-        .btn-logout:hover { background: rgba(239,68,68,0.9); border-color: transparent; color: #fff; transform: translateY(-1px); }
+        .user-name { font-size: 0.8rem; font-weight: 700; color: #fff; white-space: nowrap; }
+        .user-sub { font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+        .user-role {
+            font-size: 0.58rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.6px; padding: 2px 6px; border-radius: 20px;
+        }
+        .btn-logout {
+            width: 30px; height: 30px; flex-shrink: 0; margin-left: 2px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.7); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all .2s cubic-bezier(.16,1,.3,1); font-size: 0.8rem;
+        }
+        .btn-logout:hover { background: rgba(239,68,68,0.85); border-color: transparent; color: #fff; transform: scale(1.08); }
         /* ═══════════ INCIDENTS VIEW ═══════════ */
         .inc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
         @media (max-width: 1100px){ .inc-stats { grid-template-columns: repeat(2, 1fr); } }
@@ -1108,7 +1172,7 @@
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
             <div class="header-controls">
-                <button id="refresh-btn" onclick="appRefresh()" title="Refresh data" style="display:flex;align-items:center;gap:7px;padding:7px 14px;border:1.5px solid rgba(255,255,255,0.18);border-radius:10px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;backdrop-filter:blur(4px);" onmouseover="this.style.background='rgba(255,255,255,0.16)';this.style.borderColor='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.18)'">
+                <button id="refresh-btn" onclick="appRefresh()" title="Refresh data" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid rgba(255,255,255,0.22);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.18)';this.style.borderColor='rgba(255,255,255,0.38)'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.22)'">
                     <i id="refresh-icon" class="fas fa-rotate-right" style="font-size:0.8rem;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
                     <span id="refresh-label">Refresh</span>
                 </button>
@@ -1158,15 +1222,15 @@
                 </select>
 
                 <!-- View mode toggles inline in filter bar -->
-                <div style="margin-left: auto; display:flex; align-items:center; gap:10px;">
-                    <div class="view-toggles" id="exec-view-toggles" style="box-shadow:none;">
-                        <div class="view-toggle-label" style="font-size:0.68rem;">Mode:</div>
-                        <button class="view-btn active" onclick="app.setExecMode('overview', this)" style="font-size:0.75rem; padding:7px 14px;">Overview</button>
-                        <button class="view-btn" onclick="app.setExecMode('compare', this)" style="font-size:0.75rem; padding:7px 14px;">Compare</button>
-                        <button class="view-btn" onclick="app.setExecMode('trend', this)" style="font-size:0.75rem; padding:7px 14px;">Trend</button>
-                        <button class="view-btn" onclick="app.setExecMode('breakdown', this)" style="font-size:0.75rem; padding:7px 14px;">Breakdown</button>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+                    <div id="exec-view-toggles" style="display:flex;align-items:center;gap:0;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:10px;overflow:hidden;padding:3px;">
+                        <button class="view-btn active" onclick="app.setExecMode('overview', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Overview</button>
+                        <button class="view-btn" onclick="app.setExecMode('compare', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Compare</button>
+                        <button class="view-btn" onclick="app.setExecMode('trend', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Trend</button>
+                        <button class="view-btn" onclick="app.setExecMode('breakdown', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Breakdown</button>
                     </div>
-                    <span class="text-xs text-muted" id="lastUpdated" style="font-weight:600; letter-spacing:0.3px; white-space:nowrap;">Last sync: --</span>
+                    <!-- lastUpdated kept for JS but hidden -->
+                    <span id="lastUpdated" style="display:none;"></span>
                 </div>
             </div>
         </div>
@@ -1442,10 +1506,6 @@
                                 <span class="ai-spark" style="background:linear-gradient(135deg,#010197,#64D0FF);width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(1,1,151,0.25);"><i class="fas fa-wand-magic-sparkles"></i></span>
                                 <div>
                                     <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);letter-spacing:.3px;">AI INSIGHTS</div>
-                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:5px;">
-                                        <span style="width:6px;height:6px;border-radius:50%;background:#64D0FF;display:inline-block;animation:pulse 2s infinite;"></span>
-                                        Live AI · Auto-updated daily
-                                    </div>
                                 </div>
                             </div>
                             <span class="collapse-chevron" id="ai-card-chevron" style="width:28px;height:28px;border-radius:8px;background:var(--bg-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s;flex-shrink:0;">
