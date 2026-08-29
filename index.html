@@ -2899,31 +2899,43 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
-                    // Show skeleton immediately so tab never looks blank
+                    // Reset chip init flag so preset styles are reapplied on each visit
+                    window._slPresetInited = false;
+
+                    // Show skeleton immediately
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
-                    if(feed && !slMentions.length){
+                    if(feed){
                         if(kpi) kpi.innerHTML = [1,2,3].map(()=>`
                             <div class="sl-kpi">
                                 <div class="skel" style="height:10px;width:60%;border-radius:6px;margin-bottom:8px;"></div>
                                 <div class="skel" style="height:28px;width:40%;border-radius:6px;margin-bottom:6px;"></div>
                                 <div class="skel" style="height:8px;width:70%;border-radius:6px;"></div>
                             </div>`).join('');
-                        feed.innerHTML = [1,2,3].map(()=>`
+                        feed.innerHTML = [1,2,3,4].map(()=>`
                             <div class="sl-mention-card" style="border-left:4px solid var(--border-color);">
-                                <div class="skel" style="height:12px;width:30%;border-radius:6px;margin-bottom:12px;"></div>
+                                <div style="display:flex;gap:8px;margin-bottom:12px;">
+                                    <div class="skel" style="height:20px;width:80px;border-radius:20px;"></div>
+                                    <div class="skel" style="height:20px;width:60px;border-radius:20px;"></div>
+                                    <div class="skel" style="height:20px;width:70px;border-radius:20px;"></div>
+                                </div>
                                 <div class="skel" style="height:10px;width:90%;border-radius:6px;margin-bottom:6px;"></div>
-                                <div class="skel" style="height:10px;width:70%;border-radius:6px;margin-bottom:14px;"></div>
+                                <div class="skel" style="height:10px;width:75%;border-radius:6px;margin-bottom:6px;"></div>
+                                <div class="skel" style="height:10px;width:55%;border-radius:6px;margin-bottom:14px;"></div>
                                 <div class="skel" style="height:8px;width:40%;border-radius:6px;"></div>
                             </div>`).join('');
                     }
-                    loadSocialFromSheet().then(loaded => {
-                        if(!loaded && !slMentions.length) slLoadData();
-                        renderSocialListening();
-                    }).catch(() => {
-                        if(!slMentions.length) slLoadData();
-                        renderSocialListening();
-                    });
+
+                    // Load data then render
+                    loadSocialFromSheet()
+                        .then(loaded => {
+                            if(!loaded && !slMentions.length) slLoadData();
+                            renderSocialListening();
+                        })
+                        .catch(() => {
+                            if(!slMentions.length) slLoadData();
+                            renderSocialListening();
+                        });
                 }
                 else this.renderUniversalAnalytics(state.currentView);
             },
@@ -4794,9 +4806,11 @@
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            // Init chip styles on first render
-            if(!document.getElementById('slp-all')?.style.background){
-                slSetPreset('all'); return; // slSetPreset calls renderSocialListening again
+            // Init chip styles once using a flag — not a DOM style check
+            if(!window._slPresetInited){
+                window._slPresetInited = true;
+                slSetPreset('all');
+                return; // slSetPreset calls renderSocialListening again
             }
 
             const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
