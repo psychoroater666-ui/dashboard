@@ -1382,11 +1382,6 @@
         /* Entrance rise — uses 'backwards' fill so it never locks the transform,
            keeping the existing hover lifts on .kpi-card/.card fully working. */
         @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
-        /* ── Suppress ALL card/tile entrance animations during background refresh ──
-           The auto-refresh adds body.no-anim before re-rendering and removes it
-           after. This single rule silences every riseIn / slCardIn / fadeIn that
-           fires on re-render so numbers update invisibly with zero visual flash. */
         body.no-anim *,
         body.no-anim .view.active > *,
         body.no-anim .kpi-grid > .kpi-card,
@@ -1394,10 +1389,7 @@
         body.no-anim .ai-suite-grid > .ai-tile,
         body.no-anim .form-perf-grid > .form-perf-card,
         body.no-anim .sl-mention-card,
-        body.no-anim .sl-kpi {
-            animation: none !important;
-            transition: none !important;
-        }
+        body.no-anim .sl-kpi { animation: none !important; transition: none !important; }
 
         .view.active > .card,
         .exec-mode-container.active > .card {
@@ -2782,13 +2774,13 @@
             if(kind==='complaint' && !config.complaints.includes(name)) config.complaints.push(name);
         }
         function _isoDate(v){
-            if(v==null)return '';let s=String(v).trim();if(!s)return '';
-            function _applyShift(yr,mo,da,h){yr=String(yr);mo=String(mo).padStart(2,'0');da=String(da).padStart(2,'0');if(h!==undefined&&h!==null&&typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&+h<NIGHT_SHIFT_CUTOFF_HOUR){const d=new Date(`${yr}-${mo}-${da}T00:00:00`);d.setDate(d.getDate()-1);yr=String(d.getFullYear());mo=String(d.getMonth()+1).padStart(2,'0');da=String(d.getDate()).padStart(2,'0');}return `${yr}-${mo}-${da}`;}
-            let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):\d{2})?/);if(m)return _applyShift(m[1],m[2],m[3],m[4]);
-            m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):\d{2})?/);if(m){let a=+m[1],b=+m[2],y=m[3],mo,da;if(a>12){da=a;mo=b;}else if(b>12){mo=a;da=b;}else{mo=a;da=b;}return _applyShift(y,mo,da,m[4]);}
-            m=s.match(/^Date\((\d+),(\d+),(\d+)/);if(m)return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-            const t=new Date(s.replace(' ','T'));if(isNaN(t))return s;
-            if(typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&t.getHours()<NIGHT_SHIFT_CUTOFF_HOUR)t.setDate(t.getDate()-1);
+            if(v==null) return ''; let s=String(v).trim(); if(!s) return '';
+            function _sh(yr,mo,da,h){ yr=String(yr);mo=String(mo).padStart(2,'0');da=String(da).padStart(2,'0'); if(h!==undefined&&h!==null&&NIGHT_SHIFT_CUTOFF_HOUR>0&&+h<NIGHT_SHIFT_CUTOFF_HOUR){const d=new Date(`${yr}-${mo}-${da}T00:00:00`);d.setDate(d.getDate()-1);yr=String(d.getFullYear());mo=String(d.getMonth()+1).padStart(2,'0');da=String(d.getDate()).padStart(2,'0');} return `${yr}-${mo}-${da}`; }
+            let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):\d{2})?/); if(m) return _sh(m[1],m[2],m[3],m[4]);
+            m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):\d{2})?/); if(m){let a=+m[1],b=+m[2],y=m[3],mo,da;if(a>12){da=a;mo=b;}else if(b>12){mo=a;da=b;}else{mo=a;da=b;}return _sh(y,mo,da,m[4]);}
+            m=s.match(/^Date\((\d+),(\d+),(\d+)/); if(m) return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            const t=new Date(s.replace(' ','T')); if(isNaN(t)) return s;
+            if(NIGHT_SHIFT_CUTOFF_HOUR>0&&t.getHours()<NIGHT_SHIFT_CUTOFF_HOUR) t.setDate(t.getDate()-1);
             return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         }
         // Map the raw Harlyy feedback export (one row per submission) into
@@ -3310,30 +3302,16 @@
                     renderAlerts();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
-                        // ── Smart silent background refresh — 30 second interval ──────────
-                        // body.no-anim is added before any re-render and removed after.
-                        // This suppresses every riseIn / slCardIn / fadeIn CSS animation
-                        // across the entire app so data updates happen invisibly.
-                        // If counts haven't changed → does nothing at all.
-                        let _lastSubCount = -1, _lastIncCount = -1;
-                        const _self = this;
-                        setInterval(async () => {
-                            const ok = await loadLive();
-                            if(!ok) return;
+                        let _lsc=-1,_lic=-1; const _s=this;
+                        setInterval(async()=>{
+                            if(!await loadLive()) return;
                             applyGlobalFilters();
-                            const newSubs = state.p1.subs.length;
-                            const newIncs = state.p1.incs.length;
-                            if(newSubs === _lastSubCount && newIncs === _lastIncCount) return;
-                            _lastSubCount = newSubs;
-                            _lastIncCount = newIncs;
-                            // Kill all animations for the duration of this render
+                            const ns=state.p1.subs.length, ni=state.p1.incs.length;
+                            if(ns===_lsc&&ni===_lic) return;
+                            _lsc=ns; _lic=ni;
                             document.body.classList.add('no-anim');
-                            _self.applyFilters();
-                            renderAlerts();
-                            // Remove after one frame — animations stay off only during the render
-                            requestAnimationFrame(() => requestAnimationFrame(() => {
-                                document.body.classList.remove('no-anim');
-                            }));
+                            _s.applyFilters(); renderAlerts();
+                            requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('no-anim')));
                         }, 30000);
                     }
                 } finally {
@@ -3508,10 +3486,10 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
-                    // Reset chip init flag so preset styles are reapplied on each visit
                     window._slPresetInited = false;
-
-                    // Show skeleton immediately
+                    // Background refresh — skip skeleton, just silently repaint
+                    if(document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // User-navigated: show skeleton then load
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
                     if(feed){
@@ -4961,23 +4939,23 @@
         }
 
         // ── Resolution stage handler ──────────────────────────────────────────
+        // One-way resolution pipeline: none → contacted → progress → closed (permanent)
+        const SL_RES_ORDER = ['none','contacted','progress','closed'];
         function slSetResolution(id, stage){
             const m = slMentions.find(x=>x.id===id);
             if(!m) return;
-            // Toggle: clicking active stage clears it back to 'none'
-            m.resolutionStatus = m.resolutionStatus === stage ? 'none' : stage;
+            const cur = m.resolutionStatus||'none';
+            if(cur==='closed') return;
+            const ci=SL_RES_ORDER.indexOf(cur), ti=SL_RES_ORDER.indexOf(stage);
+            if(ti!==ci+1) return; // only advance exactly one step forward
+            m.resolutionStatus = stage;
             slSaveData();
             renderSocialListening();
-            // Persist to Google Sheet (fire-and-forget, mirrors slAddMention)
             if(LIVE.slScriptUrl){
-                fetch(LIVE.slScriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'sl_resolution', id: id, status: m.resolutionStatus })
-                })
-                .then(() => console.log('Resolution saved to Google Sheet ✓'))
-                .catch(err => console.warn('Resolution save failed (kept locally):', err));
+                fetch(LIVE.slScriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({action:'sl_resolution',id:id,status:m.resolutionStatus})})
+                .then(()=>console.log('Resolution saved ✓'))
+                .catch(e=>console.warn('Resolution save failed (kept locally):',e));
             }
         }
 
@@ -5669,21 +5647,27 @@
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
                     </div>
-                    ${m.sentiment === 'Complaint' ? `
-                    <div class="sl-res-track">
-                        <span class="sl-res-label"><i class="fas fa-circle-nodes" style="font-size:0.6rem;margin-right:3px;"></i>Resolution</span>
-                        <button class="sl-res-stage ${m.resolutionStatus==='contacted'?'active-contacted':'inactive'}" onclick="slSetResolution('${m.id}','contacted')" title="Mark as Contacted">
-                            <i class="fas fa-phone" style="font-size:0.6rem;"></i> Contacted
-                        </button>
-                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
-                        <button class="sl-res-stage ${m.resolutionStatus==='progress'?'active-progress':'inactive'}" onclick="slSetResolution('${m.id}','progress')" title="Mark as In Progress">
-                            <i class="fas fa-spinner" style="font-size:0.6rem;"></i> In Progress
-                        </button>
-                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
-                        <button class="sl-res-stage ${m.resolutionStatus==='closed'?'active-closed':'inactive'}" onclick="slSetResolution('${m.id}','closed')" title="Mark as Closed">
-                            <i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Closed
-                        </button>
-                    </div>` : ''}
+                    ${m.sentiment==='Complaint' ? (()=>{
+                        const rs=m.resolutionStatus||'none';
+                        if(rs==='closed') return `<div class="sl-res-track"><span class="sl-res-label">Resolution</span><span style="display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;font-size:0.72rem;font-weight:800;background:rgba(5,150,105,.1);border:1.5px solid rgba(5,150,105,.3);color:#059669;"><i class="fas fa-circle-check" style="font-size:0.65rem;"></i> Resolved &amp; Closed</span></div>`;
+                        const stageStyle=(active,done,next)=>active?'background:rgba(59,130,246,.12);border-color:#3B82F6;color:#2563EB;cursor:not-allowed;':done?'background:rgba(245,158,11,.1);border-color:#F59E0B;color:#B45309;cursor:not-allowed;':next?'background:var(--white);border-color:var(--border-color);color:var(--text-main);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);':'background:var(--bg-light);border-color:var(--border-color);color:var(--text-muted);opacity:.4;cursor:not-allowed;';
+                        const s1=stageStyle(rs==='contacted'||rs==='progress',false,rs==='none');
+                        const s2=stageStyle(false,rs==='progress',rs==='contacted');
+                        const s3=stageStyle(false,false,rs==='progress');
+                        const a1=rs==='none'?`onclick="slSetResolution('${m.id}','contacted')"`:'' ;
+                        const a2=rs==='contacted'?`onclick="slSetResolution('${m.id}','progress')"`:'' ;
+                        const a3=rs==='progress'?`onclick="slSetResolution('${m.id}','closed')"`:'' ;
+                        const i1=(rs==='contacted'||rs==='progress')?'fa-check':'fa-phone';
+                        const i2=rs==='progress'?'fa-check':'fa-arrow-right';
+                        return `<div class="sl-res-track">
+                            <span class="sl-res-label">Resolution</span>
+                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s1}" ${a1}><i class="fas ${i1}" style="font-size:0.6rem;"></i> Contacted</button>
+                            <i class="fas fa-chevron-right" style="font-size:0.5rem;color:var(--border-color);margin:0 2px;"></i>
+                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s2}" ${a2}><i class="fas ${i2}" style="font-size:0.6rem;"></i> In Progress</button>
+                            <i class="fas fa-chevron-right" style="font-size:0.5rem;color:var(--border-color);margin:0 2px;"></i>
+                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s3}" ${a3}><i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Close</button>
+                        </div>`;
+                    })() : ''}
                 </div>`;
             }).join('');
 
