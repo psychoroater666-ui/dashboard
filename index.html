@@ -2067,6 +2067,12 @@
                             <option value="2">Rating 2</option>
                             <option value="3">Rating 3</option>
                         </select>
+                        <select class="select-input" id="inc-valid-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
+                            <option value="all">All cases</option>
+                            <option value="verified">✓ Verified</option>
+                            <option value="fake">✕ Fake</option>
+                            <option value="review">⚑ Needs review</option>
+                        </select>
                         <select class="select-input" id="inc-chan-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
                             <option value="all">All channels</option>
                         </select>
@@ -2481,6 +2487,34 @@
         const BUILD = 'P4.3-breakdown';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
+
+        // ── CASE VALIDITY CLASSIFIER (Verified / Fake / Needs-Review) ─────────────
+        // Per-row so all filters + date ranges keep working. Rules:
+        //  FAKE  = mismatched sentiment (bad/neutral rating but clearly positive comment),
+        //          OR missing context (terrible/bad rating with no meaningful comment & no negative category).
+        //  REVIEW= Foodpanda + (Food Quality | Wrong/Missing) → needs a human (bypasses auto-logic).
+        //  VERIFIED = anything else (a real, relevant complaint). Default = verified.
+        // Edit the word lists freely to tune. A sheet `verified` column, if present, overrides all of this.
+        const _POS_RE  = /\b(best|amazing|awesome|great|good|love|loved|loving|perfect|nice|yummy|delicious|tasty|excellent|fantastic|wonderful|recommend|recommended|obsessed|worth|favou?rite|satisf(y|ied)|happy|sahi|zabardast|mazedar|lajawab|acha|achi|umda|behtareen)\b|10\/10/i;
+        const _NEG_RE  = /\b(cold|stale|hard|dry|soggy|raw|missing|wrong|incorrect|late|delay|delayed|slow|rude|bad|worst|dirty|unhygienic|hygiene|burnt|thin|watery|expensive|overpriced|disappoint(ed|ing)?|terrible|horrible|awful|poor|unprofessional|ganda|kharab|bakwas|bura|buri|ghalat|tameez)\b|too sweet|not good|not fresh|not nice|not clean/i;
+        const _JUNK_RE = /^(n\/?a|na|no|none|nothing|nope|nil|ok|okay|fine|test(ing)?|asdf+|[.\-—\s]*)$/i;
+
+        function classifyCaseValidity(rating, comment, category, channel){
+            const ch  = String(channel  || '').toLowerCase();
+            const cat = String(category || '').toLowerCase();
+            // Foodpanda exception → manual review
+            if((ch.includes('foodpanda') || ch.includes('panda')) && /food quality|quality|wrong|missing/.test(cat)) return 'review';
+            const c = String(comment || '').trim();
+            const hasComment = c.length >= 3 && /[a-zA-Z\u0600-\u06FF]/.test(c) && !_JUNK_RE.test(c);
+            const pos = hasComment && _POS_RE.test(c);
+            const neg = hasComment && _NEG_RE.test(c);
+            const negCategory = !!cat && !/good|great|excellent|love|nice|clean|fresh|fast|friendly|perfect/.test(cat);
+            // FAKE — mismatched sentiment: bad/neutral rating but the comment is clearly positive
+            if(rating <= 3 && pos && !neg) return 'fake';
+            // FAKE — missing context: terrible/bad rating, nothing to justify it
+            if(rating <= 2 && !hasComment && !negCategory) return 'fake';
+            return 'verified';
+        }
         const _get  = (row,...names) => { const keys=Object.keys(row); for(const w of names){ const k=keys.find(k=>k.trim().toLowerCase()===w.trim().toLowerCase()); if(k!==undefined) return row[k]; } return ''; };
         // Fuzzy column finder: matches a header that CONTAINS all given keywords (order-independent),
         // so tiny differences in spacing/punctuation/wording in the export don't break the mapping.
@@ -2576,11 +2610,15 @@
                         const verifiedRaw = _find(r,'verified') || _find(r,'genuine') || _find(r,'is verified');
                         const resMinsRaw  = _find(r,'resolution time') || _find(r,'resolution mins') || _find(r,'time to resolve');
                         const resolved = resolvedRaw !== '' ? _bool(resolvedRaw) : false;
-                        const verified = verifiedRaw !== '' ? _bool(verifiedRaw) : true;
                         const resolutionMins = resMinsRaw !== '' ? _num(resMinsRaw) : 0;
+                        const catVal = String(_find(r,'complaint category') || _find(r,'issue type') || _find(r,'category') || '').trim();
+                        // caseStatus: sheet `verified` column wins; else classify per the spec
+                        let caseStatus, verified;
+                        if(verifiedRaw !== ''){ verified = _bool(verifiedRaw); caseStatus = verified ? 'verified' : 'fake'; }
+                        else { caseStatus = classifyCaseValidity(rating, comment, catVal, channel); verified = caseStatus === 'verified'; }
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
-                            complaintType, verified, resolved, resolutionMins, product: prod || '—', smileScore:rating,
-                            category: String(_find(r,'complaint category') || _find(r,'issue type') || _find(r,'category') || '').trim(),
+                            complaintType, verified, caseStatus, resolved, resolutionMins, product: prod || '—', smileScore:rating,
+                            category: catVal,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
                             note: comment });
                     }
@@ -2784,7 +2822,7 @@
                             rawData.incidents.push({
                                 id: `INC-${incId++}`, date: dateStr, branch: b.name, form: formObj.name, channel: channelObj.name, surveyForm,
                                 complaintType: config.complaints[Math.floor(Math.random() * config.complaints.length)],
-                                verified: Math.random() > 0.2, resolved: Math.random() > 0.25, product: 'Classic Chocolate Chip', orderId: `ORD-${Math.floor(Math.random()*90000)+10000}`
+                                verified: Math.random() > 0.2, caseStatus: (Math.random() > 0.2 ? 'verified' : (Math.random() > 0.5 ? 'fake' : 'review')), resolved: Math.random() > 0.25, product: 'Classic Chocolate Chip', orderId: `ORD-${Math.floor(Math.random()*90000)+10000}`
                             });
                         }
                     }
@@ -3283,9 +3321,18 @@
                     countUp(document.getElementById('kpi-incs'), tIncs);
                     document.getElementById('trend-incs').innerHTML = `<span class="${iTrend<=0?'trend-good':'trend-bad'}"><i class="fas ${iTrend>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(iTrend).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
 
-                    const ver = p1.incs.filter(i=>i.verified).length, fake = tIncs - ver;
-                    countUp(document.getElementById('kpi-ver'), ver); 
+                    const ver    = p1.incs.filter(i => (i.caseStatus||'verified') === 'verified').length;
+                    const fake   = p1.incs.filter(i => i.caseStatus === 'fake').length;
+                    const review = p1.incs.filter(i => i.caseStatus === 'review').length;
+                    countUp(document.getElementById('kpi-ver'), ver);
                     countUp(document.getElementById('kpi-fake'), fake);
+                    // Surface the Foodpanda "needs review" count under the Fake card (if the element exists)
+                    const trendFake = document.getElementById('trend-fake');
+                    if(trendFake) trendFake.innerHTML = review > 0
+                        ? `<span style="color:var(--status-warn);font-weight:700;"><i class="fas fa-user-magnifying-glass"></i> ${review} need review</span>`
+                        : `<span class="trend-text">no manual reviews</span>`;
+                    const trendVer = document.getElementById('trend-ver');
+                    if(trendVer) trendVer.innerHTML = `<span class="trend-text">${tIncs?((ver/tIncs)*100).toFixed(0):0}% of incidents</span>`;
 
                     const branchMetrics = config.branches.map(b => {
                         const s = p1.subs.filter(x=>x.branch===b.name).length;
@@ -3493,13 +3540,17 @@
                 const trendColor = trendDir==='up' ? 'var(--status-critical)' : trendDir==='down' ? 'var(--status-good)' : 'var(--text-muted)';
                 const trendIcon = trendDir==='up' ? 'fa-arrow-up' : trendDir==='down' ? 'fa-arrow-down' : 'fa-minus';
 
+                const verCount = incs.filter(i => (i.caseStatus||'verified')==='verified').length;
+                const fakeCount = incs.filter(i => i.caseStatus==='fake').length;
+                const reviewCount = incs.filter(i => i.caseStatus==='review').length;
+
                 const statsEl = document.getElementById('inc-stats');
                 if(statsEl) statsEl.innerHTML = `
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value" style="color:var(--status-critical);">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-store"></i> Most-Hit Branch</div><div class="inc-stat-value" style="font-size:1.15rem;">${topBranch?topBranch[0]:'—'}</div><div class="inc-stat-sub">${topBranch?topBranch[1]+' incidents':'no data'}</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-signal"></i> Top Channel</div><div class="inc-stat-value" style="font-size:1.15rem;">${topChannel?topChannel[0]:'—'}</div><div class="inc-stat-sub">${topChannel?topChannel[1]+' incidents':'no data'}</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-comment-dots"></i> With Comments</div><div class="inc-stat-value">${incs.filter(i=>i.note && i.note.trim()).length}</div><div class="inc-stat-sub">have customer text</div></div>`;
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-check"></i> Verified</div><div class="inc-stat-value" style="color:var(--status-good);">${verCount.toLocaleString()}</div><div class="inc-stat-sub">${total?((verCount/total)*100).toFixed(0):0}% are real complaints</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-xmark"></i> Fake / Invalid</div><div class="inc-stat-value" style="color:var(--status-critical);">${fakeCount.toLocaleString()}</div><div class="inc-stat-sub">mismatched or no context</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-flag"></i> Needs Review</div><div class="inc-stat-value" style="color:var(--status-warn);">${reviewCount.toLocaleString()}</div><div class="inc-stat-sub">Foodpanda quality / wrong-missing</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>`;
 
                 // ── Breakdown bars ──
                 const barBlock = (obj, el) => {
@@ -3529,10 +3580,12 @@
                 const q = (document.getElementById('inc-search')?.value || '').toLowerCase().trim();
                 const rf = document.getElementById('inc-rating-filter')?.value || 'all';
                 const cf = document.getElementById('inc-chan-filter')?.value || 'all';
+                const vf = document.getElementById('inc-valid-filter')?.value || 'all';
                 const filtered = incs.filter(i => {
                     const score = i.smileScore || i.rating || 0;
                     if(rf !== 'all' && String(score) !== rf) return false;
                     if(cf !== 'all' && (i.channel||'—') !== cf) return false;
+                    if(vf !== 'all' && (i.caseStatus||'verified') !== vf) return false;
                     if(q){
                         const hay = `${i.branch} ${i.product} ${i.complaintType} ${i.note||''}`.toLowerCase();
                         if(!hay.includes(q)) return false;
@@ -3563,8 +3616,11 @@
                         <span class="inc-tl-line" style="background:${resolved?'#059669':'var(--border-color)'};"></span>
                         <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-idle'}" title="${resolved?'Resolved':'Not resolved'}"><i class="fas fa-thumbs-up"></i></span>
                     </div>`;
+                    const cs = inc.caseStatus || 'verified';
+                    const csMap = { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
+                    const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr style="cursor:pointer;" onclick="app.toggleIncidentDetail(this, ${idx})">
-                        <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span></td>
+                        <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
                         <td>${tl}</td>
                         <td style="white-space:nowrap;">${dateStr}</td>
                         <td><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.8rem;">${score||'—'}</span></td>
@@ -3600,6 +3656,7 @@
                     ${field('Date', dateStr)}
                     ${field('Order ID', inc.orderId)}
                     ${field('Resolved', inc.resolved ? 'Yes' : 'No')}
+                    ${field('Case Validity', (inc.caseStatus||'verified').charAt(0).toUpperCase()+(inc.caseStatus||'verified').slice(1))}
                     <div class="inc-detail-field full"><div class="inc-df-label">Customer Comment</div><div class="inc-df-val inc-df-comment">${comment}</div></div>
                 </div></td>`;
                 rowEl.after(tr);
