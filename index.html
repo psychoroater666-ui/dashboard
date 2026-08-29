@@ -611,6 +611,12 @@
 
         .skel-line { height: 12px; margin-bottom: 10px; }
 
+        /* Social Listening card animation */
+        @keyframes slCardIn {
+            from { opacity:0; transform:translateY(16px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
         /* ═══════════ SOCIAL LISTENING ═══════════ */
         .sl-mention-card {
             background: var(--white);
@@ -2777,7 +2783,24 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
-                    // Always try to pull fresh data from Google Sheet when opening Social tab
+                    // Show skeleton immediately so tab never looks blank
+                    const feed = document.getElementById('sl-feed');
+                    const kpi  = document.getElementById('sl-kpi-strip');
+                    if(feed && !slMentions.length){
+                        if(kpi) kpi.innerHTML = [1,2,3].map(()=>`
+                            <div class="sl-kpi">
+                                <div class="skel" style="height:10px;width:60%;border-radius:6px;margin-bottom:8px;"></div>
+                                <div class="skel" style="height:28px;width:40%;border-radius:6px;margin-bottom:6px;"></div>
+                                <div class="skel" style="height:8px;width:70%;border-radius:6px;"></div>
+                            </div>`).join('');
+                        feed.innerHTML = [1,2,3].map(()=>`
+                            <div class="sl-mention-card" style="border-left:4px solid var(--border-color);">
+                                <div class="skel" style="height:12px;width:30%;border-radius:6px;margin-bottom:12px;"></div>
+                                <div class="skel" style="height:10px;width:90%;border-radius:6px;margin-bottom:6px;"></div>
+                                <div class="skel" style="height:10px;width:70%;border-radius:6px;margin-bottom:14px;"></div>
+                                <div class="skel" style="height:8px;width:40%;border-radius:6px;"></div>
+                            </div>`).join('');
+                    }
                     loadSocialFromSheet().then(loaded => {
                         if(!loaded && !slMentions.length) slLoadData();
                         renderSocialListening();
@@ -4702,14 +4725,21 @@
                     { label:'Total Mentions', val:total, sub:'across all platforms', color:'var(--accent-blue)', icon:'fa-hashtag' },
                     { label:'Complaints', val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
                     { label:'Praise', val:praises, sub:'positive mentions', color:'var(--status-good)', icon:'fa-star' },
-                ].map(k=>`
-                    <div class="sl-kpi">
+                ].map((k,i)=>`
+                    <div class="sl-kpi" style="animation:slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both;">
                         <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
                             <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}
                         </div>
-                        <div class="sl-kpi-val" style="color:${k.color};">${k.val}</div>
+                        <div class="sl-kpi-val" style="color:${k.color};" data-target="${k.val}">0</div>
                         <div class="sl-kpi-sub">${k.sub}</div>
                     </div>`).join('');
+
+                // Count-up animation for KPI values using easeOutCubic
+                setTimeout(() => {
+                    kpiStrip.querySelectorAll('.sl-kpi-val[data-target]').forEach(el => {
+                        countUp(el, parseInt(el.dataset.target) || 0);
+                    });
+                }, 50);
             }
 
             // ── Feed ──
@@ -4724,7 +4754,7 @@
             }
             if(emptyEl) emptyEl.style.display='none';
 
-            feed.innerHTML = filtered.map(m => {
+            feed.innerHTML = filtered.map((m, idx) => {
                 const platIcon  = SL_PLATFORM_ICONS[m.platform]||'fa-globe';
                 const platClass = SL_PLATFORM_CLASS[m.platform]||'sl-platform-default';
                 const sentChip  = SL_SENTIMENT_CHIPS[m.sentiment]||SL_SENTIMENT_CHIPS['Mention'];
@@ -4834,7 +4864,7 @@
                     </div>` : '';
 
                 return `
-                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}">
+                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06, 0.5)}s both;">
                     <div class="sl-card-top">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="sl-platform-badge ${platClass}"><i class="fab ${platIcon}"></i> ${m.platform}</span>
@@ -5501,8 +5531,13 @@
             setTimeout(() => {
                 try { app.refreshData(); } catch(e){}
 
-                // Remove shimmer
-                shimmerTargets.forEach(el => el.classList.remove('kpi-refreshing'));
+                // Animate KPI cards on refresh
+                document.querySelectorAll('.kpi-card').forEach((el, i) => {
+                    el.classList.remove('kpi-refreshing');
+                    el.style.animation = 'none';
+                    el.offsetHeight; // reflow
+                    el.style.animation = `slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.05}s both`;
+                });
 
                 // ── Phase 3: Success state — checkmark ──
                 icon.style.animation = 'none';
