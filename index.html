@@ -1391,17 +1391,14 @@
         body.no-anim .sl-mention-card,
         body.no-anim .sl-kpi { animation: none !important; transition: none !important; }
 
-        /* bg-refresh: permanently suppress ALL entrance animations during silent background refresh */
-        body.bg-refresh *,
-        body.bg-refresh .view.active > *,
-        body.bg-refresh .view.active > .card,
-        body.bg-refresh .exec-mode-container.active > .card,
-        body.bg-refresh .kpi-grid > .kpi-card,
-        body.bg-refresh .branch-cards-grid > .branch-kpi-card,
-        body.bg-refresh .ai-suite-grid > .ai-tile,
-        body.bg-refresh .form-perf-grid > .form-perf-card,
-        body.bg-refresh .sl-mention-card,
-        body.bg-refresh .sl-kpi { animation: none !important; }
+        /* bg-refresh: kill every animation/transition on every element during silent background refresh */
+        body.bg-refresh *, body.bg-refresh *::before, body.bg-refresh *::after {
+            animation-duration:        0.001ms !important;
+            animation-delay:           0ms     !important;
+            animation-iteration-count: 1       !important;
+            transition-duration:       0.001ms !important;
+            transition-delay:          0ms     !important;
+        }
 
         .view.active > .card,
         .exec-mode-container.active > .card {
@@ -3316,8 +3313,9 @@
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
                         setInterval(async()=>{
-                            // Lock animations BEFORE any async work so DOM writes are always covered
+                            // Step 1: add class + force browser to compute styles NOW before any DOM writes
                             document.body.classList.add('bg-refresh');
+                            void document.body.offsetHeight; // force synchronous style recalc
                             try {
                                 if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
@@ -3326,8 +3324,8 @@
                                 _lsc=ns; _lic=ni;
                                 _s.applyFilters(); renderAlerts();
                             } finally {
-                                // Remove only after the browser has finished painting all new DOM nodes
-                                setTimeout(() => document.body.classList.remove('bg-refresh'), 1200);
+                                // Step 2: keep suppressor on until browser finishes painting all rewritten nodes
+                                setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
                         }, 30000);
                     }
