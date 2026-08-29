@@ -704,8 +704,9 @@
         }
         .branch-comp-side:hover { box-shadow: 0 12px 32px rgba(0,0,0,.09); }
         .branch-comp-header {
-            padding: 16px 20px; display: flex; align-items: center;
+            padding: 0 20px; height: 64px; display: flex; align-items: center;
             justify-content: space-between; border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
         .branch-comp-name { font-size: 1rem; font-weight: 800; color: var(--text-main); }
         .branch-comp-badge { font-size: 0.65rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -4080,7 +4081,7 @@
                             ${rowsA}
                         </div>
                         <div class="branch-comp-divider">
-                            <div style="height:54px;"></div>
+                            <div style="height:64px;border-bottom:1px solid var(--border-color);width:100%;display:flex;align-items:center;justify-content:center;"><span style="font-size:0.6rem;font-weight:800;color:var(--border-color);letter-spacing:1px;">│</span></div>
                             ${rowsMiddle}
                         </div>
                         <div class="branch-comp-side" style="border-color:rgba(245,158,11,.3);">
