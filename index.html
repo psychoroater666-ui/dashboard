@@ -1391,6 +1391,18 @@
         body.no-anim .sl-mention-card,
         body.no-anim .sl-kpi { animation: none !important; transition: none !important; }
 
+        /* bg-refresh: permanently suppress ALL entrance animations during silent background refresh */
+        body.bg-refresh *,
+        body.bg-refresh .view.active > *,
+        body.bg-refresh .view.active > .card,
+        body.bg-refresh .exec-mode-container.active > .card,
+        body.bg-refresh .kpi-grid > .kpi-card,
+        body.bg-refresh .branch-cards-grid > .branch-kpi-card,
+        body.bg-refresh .ai-suite-grid > .ai-tile,
+        body.bg-refresh .form-perf-grid > .form-perf-card,
+        body.bg-refresh .sl-mention-card,
+        body.bg-refresh .sl-kpi { animation: none !important; }
+
         .view.active > .card,
         .exec-mode-container.active > .card {
             animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
@@ -2710,7 +2722,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'P4.3-breakdown';
+        const BUILD = 'v1.01';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3304,16 +3316,19 @@
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
                         setInterval(async()=>{
-                            if(!await loadLive()) return;
-                            applyGlobalFilters();
-                            const ns=state.p1.subs.length, ni=state.p1.incs.length;
-                            if(ns===_lsc&&ni===_lic) return;
-                            _lsc=ns; _lic=ni;
-                            // Silent background refresh — suppress ALL animations for the full render cycle
-                            document.body.classList.add('no-anim');
-                            _s.applyFilters(); renderAlerts();
-                            // Keep no-anim on long enough for the entire DOM repaint to finish
-                            setTimeout(() => document.body.classList.remove('no-anim'), 800);
+                            // Lock animations BEFORE any async work so DOM writes are always covered
+                            document.body.classList.add('bg-refresh');
+                            try {
+                                if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
+                                applyGlobalFilters();
+                                const ns=state.p1.subs.length, ni=state.p1.incs.length;
+                                if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
+                                _lsc=ns; _lic=ni;
+                                _s.applyFilters(); renderAlerts();
+                            } finally {
+                                // Remove only after the browser has finished painting all new DOM nodes
+                                setTimeout(() => document.body.classList.remove('bg-refresh'), 1200);
+                            }
                         }, 30000);
                     }
                 } finally {
@@ -6511,6 +6526,11 @@
                                     <span style="width:26px;height:26px;border-radius:7px;background:rgba(220,38,38,.08);color:#DC2626;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas fa-sign-out-alt"></i></span>
                                     Sign out
                                 </button>
+                            </div>
+                            <!-- Dashboard version -->
+                            <div style="padding:8px 14px 10px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+                                <span style="font-size:0.62rem;color:var(--text-muted);font-weight:500;">Dashboard Version</span>
+                                <span style="font-size:0.62rem;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(1,1,151,.07);color:#010197;letter-spacing:0.3px;">${BUILD}</span>
                             </div>
                         </div>
                         <!-- Hidden file input store -->
