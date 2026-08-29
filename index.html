@@ -3309,9 +3309,11 @@
                             const ns=state.p1.subs.length, ni=state.p1.incs.length;
                             if(ns===_lsc&&ni===_lic) return;
                             _lsc=ns; _lic=ni;
+                            // Silent background refresh — suppress ALL animations for the full render cycle
                             document.body.classList.add('no-anim');
                             _s.applyFilters(); renderAlerts();
-                            requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('no-anim')));
+                            // Keep no-anim on long enough for the entire DOM repaint to finish
+                            setTimeout(() => document.body.classList.remove('no-anim'), 800);
                         }, 30000);
                     }
                 } finally {
