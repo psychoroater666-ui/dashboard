@@ -170,7 +170,7 @@
             .branch-cards-grid { grid-template-columns: repeat(2,1fr) !important; }
             .ai-suite-grid { grid-template-columns: 1fr !important; }
             #view-social > div:last-child { grid-template-columns: 1fr !important; }
-            .sl-kpi-strip { grid-template-columns: repeat(2,1fr) !important; }
+            .sl-kpi-strip { grid-template-columns: repeat(3,1fr) !important; }
             .controls-wrapper { padding: 8px 16px !important; gap: 8px !important; flex-wrap: wrap !important; }
             .filter-row { flex-wrap: wrap !important; gap: 8px !important; }
         }
@@ -1084,28 +1084,20 @@
         /* ═══════════ SOCIAL LISTENING ═══════════ */
         .sl-mention-card {
             background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 20px 22px;
-            transition: box-shadow .25s cubic-bezier(.4,0,.2,1), transform .25s cubic-bezier(.16,1,.3,1), border-color .2s;
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px 20px;
+            transition: box-shadow .2s, transform .2s;
             position: relative;
-            overflow: hidden;
         }
-        .sl-mention-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 4px;
-            border-radius: 16px 0 0 16px;
-        }
-        .sl-mention-card:hover { box-shadow: 0 12px 32px -4px rgba(0,0,0,.1); transform: translateY(-2px); border-color: rgba(1,1,151,.12); }
-        .sl-mention-card.sentiment-complaint::before { background: var(--status-critical); }
-        .sl-mention-card.sentiment-praise::before    { background: var(--status-good); }
-        .sl-mention-card.sentiment-query::before     { background: #3B82F6; }
-        .sl-mention-card.sentiment-mention::before   { background: var(--border-color); }
+        .sl-mention-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
+        .sl-mention-card.sentiment-complaint { border-left: 4px solid var(--status-critical); }
+        .sl-mention-card.sentiment-praise    { border-left: 4px solid var(--status-good); }
+        .sl-mention-card.sentiment-query     { border-left: 4px solid #3B82F6; }
+        .sl-mention-card.sentiment-mention   { border-left: 4px solid var(--text-muted); }
 
-        .sl-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px; }
-        .sl-platform-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 11px; border-radius:20px; font-size:0.71rem; font-weight:800; letter-spacing:.1px; }
+        .sl-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+        .sl-platform-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
         .sl-platform-instagram { background:#fce4ec; color:#C2185B; }
         .sl-platform-facebook  { background:#E3F2FD; color:#1565C0; }
         .sl-platform-twitterx  { background:#E8EAF6; color:#311B92; }
@@ -1114,9 +1106,9 @@
         .sl-platform-default   { background:var(--bg-light); color:var(--text-muted); }
 
         .sl-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
-        .sl-time { font-size:0.71rem; color:var(--text-muted); font-weight:600; display:flex; align-items:center; gap:4px; }
+        .sl-time { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
 
-        .sl-sentiment-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.71rem; font-weight:800; }
+        .sl-sentiment-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
         .sl-chip-complaint { background:var(--status-critical-bg); color:var(--status-critical); }
         .sl-chip-praise    { background:var(--status-good-bg); color:var(--status-good); }
         .sl-chip-query     { background:rgba(59,130,246,.1); color:#2563EB; }
@@ -1125,13 +1117,13 @@
         .sl-branch-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(1,1,151,.08); color:#010197; border:1px solid rgba(1,1,151,.12); }
         .sl-urgency { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#FEF2F2; color:#DC2626; border:1px solid rgba(220,38,38,.2); animation: pulse 2s infinite; }
 
-        .sl-content { font-size:0.86rem; line-height:1.7; color:var(--text-main); margin:10px 0 14px; font-weight:500; }
+        .sl-content { font-size:0.85rem; line-height:1.65; color:var(--text-main); margin:10px 0 12px; font-weight:500; }
         .sl-content a { color:#010197; text-decoration:none; }
         .sl-content a:hover { text-decoration:underline; }
 
-        .sl-meta-row { display:flex; align-items:center; gap:18px; }
-        .sl-stat { display:flex; align-items:center; gap:5px; font-size:0.74rem; font-weight:600; color:var(--text-muted); }
-        .sl-stat i { font-size:0.68rem; }
+        .sl-meta-row { display:flex; align-items:center; gap:16px; }
+        .sl-stat { display:flex; align-items:center; gap:5px; font-size:0.75rem; font-weight:600; color:var(--text-muted); }
+        .sl-stat i { font-size:0.7rem; }
 
         .sl-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
         .sl-action-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:7px; font-size:0.73rem; font-weight:700; cursor:pointer; transition:.15s; border:1px solid var(--border-color); background:var(--white); color:var(--text-main); }
@@ -1140,97 +1132,13 @@
         .sl-action-btn.primary:hover { opacity:.9; }
         .sl-action-btn.resolved { background:var(--status-good-bg); color:var(--status-good); border-color:rgba(5,150,105,.2); }
 
-        .sl-author { font-size:0.74rem; font-weight:800; color:var(--text-muted); margin-bottom:8px; letter-spacing:.1px; }
+        .sl-author { font-size:0.75rem; font-weight:800; color:var(--text-main); }
 
-        /* ── KPI strip — premium glassmorphism tiles ── */
-        .sl-kpi {
-            background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 18px 20px;
-            position: relative;
-            overflow: hidden;
-            transition: box-shadow .2s, transform .2s;
-        }
-        .sl-kpi::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            border-radius: 14px 14px 0 0;
-            background: var(--sl-kpi-accent, var(--border-color));
-        }
-        .sl-kpi:hover { box-shadow: 0 8px 24px -4px rgba(0,0,0,.08); transform: translateY(-1px); }
-        .sl-kpi-label { font-size:0.67rem; font-weight:800; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; gap:5px; }
-        .sl-kpi-val { font-size:1.75rem; font-weight:900; line-height:1; margin-bottom:4px; }
-        .sl-kpi-sub { font-size:0.71rem; color:var(--text-muted); font-weight:600; }
-
-        /* ── Resolution pipeline — premium one-way stepper ── */
-        .sl-res-track {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            margin-top: 14px;
-            padding-top: 14px;
-            border-top: 1px solid var(--border-color);
-        }
-        .sl-res-label {
-            font-size: 0.63rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            color: var(--text-muted);
-            margin-right: 10px;
-            white-space: nowrap;
-        }
-        .sl-res-pipeline {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            background: var(--bg-light);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 3px;
-        }
-        .sl-res-stage {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 14px;
-            border-radius: 8px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            transition: background .18s cubic-bezier(.4,0,.2,1), color .18s, transform .15s cubic-bezier(.16,1,.3,1), box-shadow .18s;
-            white-space: nowrap;
-            position: relative;
-        }
-        .sl-res-stage:active { transform: scale(.96); }
-        /* Inactive — not yet reachable, greyed out */
-        .sl-res-stage.inactive { background: transparent; color: var(--text-muted); opacity: .45; cursor: not-allowed; }
-        /* Next — the clickable next step */
-        .sl-res-stage.next-step { background: var(--white); color: var(--text-main); box-shadow: 0 1px 4px rgba(0,0,0,.1); cursor: pointer; opacity: 1; }
-        .sl-res-stage.next-step:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
-        /* Done — completed past stage */
-        .sl-res-stage.done-contacted { background: rgba(59,130,246,.1); color: #2563EB; cursor: not-allowed; opacity: .7; }
-        .sl-res-stage.done-progress  { background: rgba(245,158,11,.1); color: #B45309; cursor: not-allowed; opacity: .7; }
-        /* Permanent closed banner */
-        .sl-res-closed-banner {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 6px 16px;
-            border-radius: 10px;
-            font-size: 0.72rem;
-            font-weight: 800;
-            background: rgba(5,150,105,.1);
-            border: 1.5px solid rgba(5,150,105,.25);
-            color: #059669;
-            cursor: default;
-            letter-spacing: .1px;
-        }
-        .sl-res-divider { width: 1px; height: 16px; background: var(--border-color); margin: 0 1px; flex-shrink: 0; }
+        /* KPI strip */
+        .sl-kpi { background:var(--white); border:1.5px solid var(--border-color); border-radius:12px; padding:16px 18px; }
+        .sl-kpi-label { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:6px; }
+        .sl-kpi-val { font-size:1.5rem; font-weight:800; color:var(--text-main); }
+        .sl-kpi-sub { font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
 
         /* Keyword chip */
         .sl-keyword { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:default; border:1px solid var(--border-color); background:var(--bg-light); color:var(--text-main); transition:.15s; }
@@ -1251,6 +1159,16 @@
         .sl-field { display:flex; flex-direction:column; gap:5px; }
         .sl-field label { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
         .sl-field input:focus, .sl-field textarea:focus, .sl-field select:focus { border-color:var(--accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+
+        /* Resolution stage tracker */
+        .sl-res-track { display:flex; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); flex-wrap:wrap; }
+        .sl-res-label { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-right:2px; }
+        .sl-res-stage { display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:20px; font-size:0.72rem; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; }
+        .sl-res-stage.inactive { background:var(--bg-light); border-color:var(--border-color); color:var(--text-muted); }
+        .sl-res-stage.active-contacted { background:rgba(59,130,246,.1); border-color:#3B82F6; color:#2563EB; }
+        .sl-res-stage.active-progress  { background:rgba(245,158,11,.1); border-color:#F59E0B; color:#B45309; }
+        .sl-res-stage.active-closed    { background:rgba(5,150,105,.1);  border-color:#059669; color:#059669; }
+        .sl-res-stage:hover { opacity:.8; transform:scale(.97); }
         .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
 
         /* Create Submission step animations */
@@ -1324,8 +1242,7 @@
         #login-screen {
             display: none; position: fixed; inset: 0; z-index: 99999;
             align-items: center; justify-content: center;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+            font-family: 'Inter', sans-serif; overflow: hidden;
         }
         #login-screen.visible { display: flex; }
 
@@ -1465,6 +1382,22 @@
         /* Entrance rise — uses 'backwards' fill so it never locks the transform,
            keeping the existing hover lifts on .kpi-card/.card fully working. */
         @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        /* ── Suppress ALL card/tile entrance animations during background refresh ──
+           The auto-refresh adds body.no-anim before re-rendering and removes it
+           after. This single rule silences every riseIn / slCardIn / fadeIn that
+           fires on re-render so numbers update invisibly with zero visual flash. */
+        body.no-anim *,
+        body.no-anim .view.active > *,
+        body.no-anim .kpi-grid > .kpi-card,
+        body.no-anim .branch-cards-grid > .branch-kpi-card,
+        body.no-anim .ai-suite-grid > .ai-tile,
+        body.no-anim .form-perf-grid > .form-perf-card,
+        body.no-anim .sl-mention-card,
+        body.no-anim .sl-kpi {
+            animation: none !important;
+            transition: none !important;
+        }
 
         .view.active > .card,
         .exec-mode-container.active > .card {
@@ -2531,7 +2464,7 @@
                 </div>
 
                 <!-- KPI strip -->
-                <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;"></div>
+                <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;"></div>
 
                 <!-- Main content: mentions feed + right panel -->
                 <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
@@ -2849,26 +2782,13 @@
             if(kind==='complaint' && !config.complaints.includes(name)) config.complaints.push(name);
         }
         function _isoDate(v){
-            if(v==null) return '';
-            let s = String(v).trim();
-            if(!s) return '';
-            function _applyShift(yr, mo, da, hourStr){
-                yr=String(yr); mo=String(mo).padStart(2,'0'); da=String(da).padStart(2,'0');
-                if(hourStr!==undefined&&hourStr!==null&&typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&+hourStr<NIGHT_SHIFT_CUTOFF_HOUR){
-                    const d=new Date(`${yr}-${mo}-${da}T00:00:00`); d.setDate(d.getDate()-1);
-                    yr=String(d.getFullYear()); mo=String(d.getMonth()+1).padStart(2,'0'); da=String(d.getDate()).padStart(2,'0');
-                }
-                return `${yr}-${mo}-${da}`;
-            }
-            let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):\d{2})?/);
-            if(m){ return _applyShift(m[1],m[2],m[3],m[4]); }
-            m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):\d{2})?/);
-            if(m){ let a=+m[1],b=+m[2],y=m[3],mo,da; if(a>12){da=a;mo=b;}else if(b>12){mo=a;da=b;}else{mo=a;da=b;} return _applyShift(y,mo,da,m[4]); }
-            m=s.match(/^Date\((\d+),(\d+),(\d+)/);
-            if(m){ return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; }
-            const t=new Date(s.replace(' ','T'));
-            if(isNaN(t)) return s;
-            if(typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&t.getHours()<NIGHT_SHIFT_CUTOFF_HOUR){ t.setDate(t.getDate()-1); }
+            if(v==null)return '';let s=String(v).trim();if(!s)return '';
+            function _applyShift(yr,mo,da,h){yr=String(yr);mo=String(mo).padStart(2,'0');da=String(da).padStart(2,'0');if(h!==undefined&&h!==null&&typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&+h<NIGHT_SHIFT_CUTOFF_HOUR){const d=new Date(`${yr}-${mo}-${da}T00:00:00`);d.setDate(d.getDate()-1);yr=String(d.getFullYear());mo=String(d.getMonth()+1).padStart(2,'0');da=String(d.getDate()).padStart(2,'0');}return `${yr}-${mo}-${da}`;}
+            let m=s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):\d{2})?/);if(m)return _applyShift(m[1],m[2],m[3],m[4]);
+            m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):\d{2})?/);if(m){let a=+m[1],b=+m[2],y=m[3],mo,da;if(a>12){da=a;mo=b;}else if(b>12){mo=a;da=b;}else{mo=a;da=b;}return _applyShift(y,mo,da,m[4]);}
+            m=s.match(/^Date\((\d+),(\d+),(\d+)/);if(m)return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            const t=new Date(s.replace(' ','T'));if(isNaN(t))return s;
+            if(typeof NIGHT_SHIFT_CUTOFF_HOUR!=='undefined'&&NIGHT_SHIFT_CUTOFF_HOUR>0&&t.getHours()<NIGHT_SHIFT_CUTOFF_HOUR)t.setDate(t.getDate()-1);
             return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         }
         // Map the raw Harlyy feedback export (one row per submission) into
@@ -3390,6 +3310,11 @@
                     renderAlerts();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
+                        // ── Smart silent background refresh — 30 second interval ──────────
+                        // body.no-anim is added before any re-render and removed after.
+                        // This suppresses every riseIn / slCardIn / fadeIn CSS animation
+                        // across the entire app so data updates happen invisibly.
+                        // If counts haven't changed → does nothing at all.
                         let _lastSubCount = -1, _lastIncCount = -1;
                         const _self = this;
                         setInterval(async () => {
@@ -3401,9 +3326,15 @@
                             if(newSubs === _lastSubCount && newIncs === _lastIncCount) return;
                             _lastSubCount = newSubs;
                             _lastIncCount = newIncs;
+                            // Kill all animations for the duration of this render
+                            document.body.classList.add('no-anim');
                             _self.applyFilters();
                             renderAlerts();
-                        }, 2000);
+                            // Remove after one frame — animations stay off only during the render
+                            requestAnimationFrame(() => requestAnimationFrame(() => {
+                                document.body.classList.remove('no-anim');
+                            }));
+                        }, 30000);
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
@@ -5029,25 +4960,24 @@
             }catch(e){}
         }
 
-        // ── Resolution stage handler — one-way linear flow ────────────────────
-        // Pipeline: none → contacted → progress → closed (permanent, irreversible)
-        const SL_RES_ORDER = ['none','contacted','progress','closed'];
+        // ── Resolution stage handler ──────────────────────────────────────────
         function slSetResolution(id, stage){
             const m = slMentions.find(x=>x.id===id);
             if(!m) return;
-            const current = m.resolutionStatus || 'none';
-            if(current === 'closed') return; // permanent
-            const currentIdx = SL_RES_ORDER.indexOf(current);
-            const targetIdx  = SL_RES_ORDER.indexOf(stage);
-            if(targetIdx !== currentIdx + 1) return; // only advance one step
-            m.resolutionStatus = stage;
+            // Toggle: clicking active stage clears it back to 'none'
+            m.resolutionStatus = m.resolutionStatus === stage ? 'none' : stage;
             slSaveData();
             renderSocialListening();
+            // Persist to Google Sheet (fire-and-forget, mirrors slAddMention)
             if(LIVE.slScriptUrl){
-                fetch(LIVE.slScriptUrl, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify({ action:'sl_resolution', id:id, status:m.resolutionStatus }) })
-                .then(()=>console.log('Resolution saved ✓'))
-                .catch(err=>console.warn('Resolution save failed (kept locally):',err));
+                fetch(LIVE.slScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'sl_resolution', id: id, status: m.resolutionStatus })
+                })
+                .then(() => console.log('Resolution saved to Google Sheet ✓'))
+                .catch(err => console.warn('Resolution save failed (kept locally):', err));
             }
         }
 
@@ -5571,12 +5501,13 @@
             const kpiStrip = document.getElementById('sl-kpi-strip');
             if(kpiStrip){
                 kpiStrip.innerHTML = [
-                    { label:'Total Mentions', val:total,      sub:'across all platforms',   color:'var(--accent-blue)',      icon:'fa-hashtag' },
-                    { label:'Complaints',     val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
+                    { label:'Total Mentions', val:total, sub:'across all platforms', color:'var(--accent-blue)', icon:'fa-hashtag' },
+                    { label:'Complaints', val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
+                    { label:'Praise', val:praises, sub:'positive mentions', color:'var(--status-good)', icon:'fa-star' },
                 ].map((k,i)=>`
-                    <div class="sl-kpi" style="--sl-kpi-accent:${k.color}; animation:slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both;">
-                        <div class="sl-kpi-label">
-                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.68rem;"></i>${k.label}
+                    <div class="sl-kpi" style="animation:${document.body.classList.contains('no-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};">
+                        <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
+                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}
                         </div>
                         <div class="sl-kpi-val" style="color:${k.color};" data-target="${k.val}">0</div>
                         <div class="sl-kpi-sub">${k.sub}</div>
@@ -5712,7 +5643,7 @@
                     </div>` : '';
 
                 return `
-                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06, 0.5)}s both;">
+                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:${document.body.classList.contains('no-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06,0.5)}s both`};">
                     <div class="sl-card-top">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="sl-platform-badge ${platClass}"><i class="fab ${platIcon}"></i> ${m.platform}</span>
@@ -5738,39 +5669,21 @@
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
                     </div>
-                    ${m.sentiment === 'Complaint' ? (() => {
-                        const rs = m.resolutionStatus || 'none';
-                        if(rs === 'closed'){
-                            return `<div class="sl-res-track">
-                                <span class="sl-res-label">Resolution</span>
-                                <span class="sl-res-closed-banner"><i class="fas fa-circle-check"></i> Resolved &amp; Closed</span>
-                            </div>`;
-                        }
-                        const c1 = rs==='contacted'||rs==='progress' ? 'done-contacted' : (rs==='none' ? 'next-step' : 'inactive');
-                        const c2 = rs==='progress' ? 'done-progress' : (rs==='contacted' ? 'next-step' : 'inactive');
-                        const c3 = rs==='progress' ? 'next-step' : 'inactive';
-                        const a1 = rs==='none'      ? `onclick="slSetResolution('${m.id}','contacted')"` : '';
-                        const a2 = rs==='contacted' ? `onclick="slSetResolution('${m.id}','progress')"` : '';
-                        const a3 = rs==='progress'  ? `onclick="slSetResolution('${m.id}','closed')"` : '';
-                        const i1 = (rs==='contacted'||rs==='progress') ? 'fa-check' : 'fa-phone';
-                        const i2 = rs==='progress' ? 'fa-check' : 'fa-arrow-right';
-                        return `<div class="sl-res-track">
-                            <span class="sl-res-label">Resolution</span>
-                            <div class="sl-res-pipeline">
-                                <button class="sl-res-stage ${c1}" ${a1} title="${rs==='none'?'Mark as Contacted':rs==='contacted'?'Contacted ✓':'Contacted ✓'}">
-                                    <i class="fas ${i1}" style="font-size:0.6rem;"></i> Contacted
-                                </button>
-                                <div class="sl-res-divider"></div>
-                                <button class="sl-res-stage ${c2}" ${a2} title="${rs==='contacted'?'Mark as In Progress':rs==='progress'?'In Progress ✓':'Complete previous step first'}">
-                                    <i class="fas ${i2}" style="font-size:0.6rem;"></i> In Progress
-                                </button>
-                                <div class="sl-res-divider"></div>
-                                <button class="sl-res-stage ${c3}" ${a3} title="${rs==='progress'?'Mark as Closed — this is permanent':'Complete previous steps first'}">
-                                    <i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Close
-                                </button>
-                            </div>
-                        </div>`;
-                    })() : ''}
+                    ${m.sentiment === 'Complaint' ? `
+                    <div class="sl-res-track">
+                        <span class="sl-res-label"><i class="fas fa-circle-nodes" style="font-size:0.6rem;margin-right:3px;"></i>Resolution</span>
+                        <button class="sl-res-stage ${m.resolutionStatus==='contacted'?'active-contacted':'inactive'}" onclick="slSetResolution('${m.id}','contacted')" title="Mark as Contacted">
+                            <i class="fas fa-phone" style="font-size:0.6rem;"></i> Contacted
+                        </button>
+                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
+                        <button class="sl-res-stage ${m.resolutionStatus==='progress'?'active-progress':'inactive'}" onclick="slSetResolution('${m.id}','progress')" title="Mark as In Progress">
+                            <i class="fas fa-spinner" style="font-size:0.6rem;"></i> In Progress
+                        </button>
+                        <i class="fas fa-chevron-right" style="font-size:0.55rem;color:var(--border-color);"></i>
+                        <button class="sl-res-stage ${m.resolutionStatus==='closed'?'active-closed':'inactive'}" onclick="slSetResolution('${m.id}','closed')" title="Mark as Closed">
+                            <i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Closed
+                        </button>
+                    </div>` : ''}
                 </div>`;
             }).join('');
 
@@ -6776,7 +6689,7 @@
                 const ls = document.getElementById('login-screen');
                 if(ls) ls.classList.add('visible');
                 document.body.classList.add('app-ready');
-                setTimeout(() => { const el = document.getElementById('login-email'); if(el) el.focus(); }, 300);
+                setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },300);
             }
         });
 
