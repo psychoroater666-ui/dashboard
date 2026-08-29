@@ -2802,7 +2802,13 @@
             if(dates.length){ DATA_MIN_DATE = dates[0]; DATA_MAX_DATE = dates[dates.length-1]; }
             else { const t = SYSTEM_NOW.toISOString().split('T')[0]; DATA_MIN_DATE = t; DATA_MAX_DATE = t; }
         }
-        const _fmtDate = d => (d instanceof Date ? d.toISOString().split('T')[0] : d);
+        const _fmtDate = d => {
+            if (!(d instanceof Date)) return d;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;   // local calendar day — avoids UTC toISOString() off-by-one in +offset timezones
+        };
         const _shiftDays = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return _fmtDate(d); };
 
         function initGlobalDates() {
