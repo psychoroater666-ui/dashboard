@@ -2702,11 +2702,11 @@
 
         // ── NIGHT SHIFT OFFSET ────────────────────────────────────────────────
         // Submissions timestamped between midnight (00:00) and this hour (exclusive)
-        // are attributed to the PREVIOUS calendar day, so a 1 AM submission from
-        // a night shift that started on the 27th still shows under the 27th.
-        // Set to 0 to disable. Adjust to match when your last night shift ends.
-        // Example: 4 means 12:00 AM–3:59 AM → rolled back to previous day.
-        const NIGHT_SHIFT_CUTOFF_HOUR = 4;
+        // are attributed to the PREVIOUS calendar day.
+        // Set to 9 because the next business day starts at 10 AM —
+        // so anything before 9:00 AM belongs to the previous day's operations.
+        // Set to 0 to disable.
+        const NIGHT_SHIFT_CUTOFF_HOUR = 9;
 
         let LIVE_MODE = false;
         const BUILD = 'P4.3-breakdown';
@@ -2776,16 +2776,17 @@
             if(v==null) return '';
             let s = String(v).trim();
             if(!s) return '';
-            // Already YYYY-MM-DD or YYYY-MM-DD HH:MM:SS (Google Sheets export format).
-            // Capture the optional time part so we can apply the night shift rollback.
-            let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):(\d{2}))?/);
-            if(m){
-                let yr = m[1], mo = String(m[2]).padStart(2,'0'), da = String(m[3]).padStart(2,'0');
-                // m[4] = hour — only present when the raw string included a time component.
-                // Apply night shift rollback: if the hour is within the cutoff window,
-                // attribute this record to the previous calendar day.
-                if(m[4] !== undefined && typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined'
-                    && NIGHT_SHIFT_CUTOFF_HOUR > 0 && +m[4] < NIGHT_SHIFT_CUTOFF_HOUR){
+
+            // Helper: roll back by one calendar day if the hour falls within the
+            // night-shift window (00:00 up to but not including NIGHT_SHIFT_CUTOFF_HOUR).
+            // hourStr is the raw captured hour string from the regex (may be undefined
+            // when the raw value had no time component — in that case no rollback).
+            function _applyShift(yr, mo, da, hourStr){
+                yr = String(yr); mo = String(mo).padStart(2,'0'); da = String(da).padStart(2,'0');
+                if(hourStr !== undefined && hourStr !== null
+                    && typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined'
+                    && NIGHT_SHIFT_CUTOFF_HOUR > 0
+                    && +hourStr < NIGHT_SHIFT_CUTOFF_HOUR){
                     const d = new Date(`${yr}-${mo}-${da}T00:00:00`);
                     d.setDate(d.getDate() - 1);
                     yr = String(d.getFullYear());
@@ -2794,22 +2795,33 @@
                 }
                 return `${yr}-${mo}-${da}`;
             }
-            // DD/MM/YYYY or MM/DD/YYYY -> detect which by value; default to M/D/Y (Google's common export)
-            m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+
+            // Path 1: YYYY-MM-DD or YYYY-MM-DD HH:MM:SS (standard ISO / Harlyy export)
+            let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})(?:[\sT](\d{1,2}):\d{2})?/);
+            if(m){ return _applyShift(m[1], m[2], m[3], m[4]); }
+
+            // Path 2: M/D/YYYY H:MM or DD/MM/YYYY HH:MM (Google Sheets default export)
+            // e.g. "8/29/2026 0:02" or "8/29/2026 8:15"
+            m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):\d{2})?/);
             if(m){
                 let a = +m[1], b = +m[2], y = m[3], mo, da;
-                if(a > 12){ da = a; mo = b; }            // first part must be the day
-                else if(b > 12){ mo = a; da = b; }       // second part must be the day
-                else { mo = a; da = b; }                 // ambiguous -> assume M/D/Y
-                return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
+                if(a > 12){ da = a; mo = b; }       // first part must be day
+                else if(b > 12){ mo = a; da = b; }  // second part must be day
+                else { mo = a; da = b; }            // ambiguous → assume M/D/Y (Google default)
+                return _applyShift(y, mo, da, m[4]);
             }
-            // gviz "Date(2026,7,20,...)" form
+
+            // Path 3: gviz "Date(2026,7,20,...)" form — no time component, no rollback needed
             m = s.match(/^Date\((\d+),(\d+),(\d+)/);
             if(m){ return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`; }
-            // Last resort: let the engine try, normalising the space to a 'T'.
-            // Use LOCAL calendar day (not toISOString/UTC) to avoid off-by-one in +offset timezones.
+
+            // Last resort: let the JS engine parse it, use LOCAL calendar day
+            // (not toISOString/UTC) to avoid off-by-one in Pakistan's +5 timezone.
             const t = new Date(s.replace(' ','T'));
             if(isNaN(t)) return s;
+            if(typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined' && NIGHT_SHIFT_CUTOFF_HOUR > 0 && t.getHours() < NIGHT_SHIFT_CUTOFF_HOUR){
+                t.setDate(t.getDate() - 1);
+            }
             return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         }
         // Map the raw Harlyy feedback export (one row per submission) into
