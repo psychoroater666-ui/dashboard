@@ -1054,14 +1054,14 @@
         table tbody tr       { transition: background .15s cubic-bezier(.4,0,.2,1) !important; }
         table tbody tr:hover { background: rgba(1,1,151,.03) !important; }
 
-        /* Improve page entry animation */
+        /* Improve page entry animation — only fires when body.do-anim is set by navigate() */
         @keyframes fadeIn    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .view.active > *     { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both; }
-        .view.active > *:nth-child(1) { animation-delay:.03s; }
-        .view.active > *:nth-child(2) { animation-delay:.07s; }
-        .view.active > *:nth-child(3) { animation-delay:.11s; }
-        .view.active > *:nth-child(4) { animation-delay:.15s; }
-        .view.active > *:nth-child(5) { animation-delay:.19s; }
+        body.do-anim .view.active > *     { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both; }
+        body.do-anim .view.active > *:nth-child(1) { animation-delay:.03s; }
+        body.do-anim .view.active > *:nth-child(2) { animation-delay:.07s; }
+        body.do-anim .view.active > *:nth-child(3) { animation-delay:.11s; }
+        body.do-anim .view.active > *:nth-child(4) { animation-delay:.15s; }
+        body.do-anim .view.active > *:nth-child(5) { animation-delay:.19s; }
 
         /* Smooth collapsible expand */
         @keyframes collapseIn { from { opacity:0; transform:translateY(-10px) scaleY(.97); transform-origin:top; } to { opacity:1; transform:translateY(0) scaleY(1); } }
@@ -1400,47 +1400,48 @@
             transition-delay:          0ms     !important;
         }
 
-        .view.active > .card,
-        .exec-mode-container.active > .card {
+        /* Cards / tiles / KPIs only animate when body.do-anim is present (set by navigate, removed after) */
+        body.do-anim .view.active > .card,
+        body.do-anim .exec-mode-container.active > .card {
             animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
         }
-        .view.active > .card:nth-child(1),  .exec-mode-container.active > .card:nth-child(1)  { animation-delay: 0.04s; }
-        .view.active > .card:nth-child(2),  .exec-mode-container.active > .card:nth-child(2)  { animation-delay: 0.09s; }
-        .view.active > .card:nth-child(3),  .exec-mode-container.active > .card:nth-child(3)  { animation-delay: 0.14s; }
-        .view.active > .card:nth-child(4),  .exec-mode-container.active > .card:nth-child(4)  { animation-delay: 0.19s; }
-        .view.active > .card:nth-child(5),  .exec-mode-container.active > .card:nth-child(5)  { animation-delay: 0.24s; }
-        .view.active > .card:nth-child(n+6),.exec-mode-container.active > .card:nth-child(n+6){ animation-delay: 0.28s; }
+        body.do-anim .view.active > .card:nth-child(1),  body.do-anim .exec-mode-container.active > .card:nth-child(1)  { animation-delay: 0.04s; }
+        body.do-anim .view.active > .card:nth-child(2),  body.do-anim .exec-mode-container.active > .card:nth-child(2)  { animation-delay: 0.09s; }
+        body.do-anim .view.active > .card:nth-child(3),  body.do-anim .exec-mode-container.active > .card:nth-child(3)  { animation-delay: 0.14s; }
+        body.do-anim .view.active > .card:nth-child(4),  body.do-anim .exec-mode-container.active > .card:nth-child(4)  { animation-delay: 0.19s; }
+        body.do-anim .view.active > .card:nth-child(5),  body.do-anim .exec-mode-container.active > .card:nth-child(5)  { animation-delay: 0.24s; }
+        body.do-anim .view.active > .card:nth-child(n+6),body.do-anim .exec-mode-container.active > .card:nth-child(n+6){ animation-delay: 0.28s; }
 
         /* AI tiles stagger in */
-        .ai-suite-grid > .ai-tile { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .ai-suite-grid > .ai-tile:nth-child(1) { animation-delay: .06s; }
-        .ai-suite-grid > .ai-tile:nth-child(2) { animation-delay: .12s; }
-        .ai-suite-grid > .ai-tile:nth-child(3) { animation-delay: .18s; }
-        .ai-suite-grid > .ai-tile:nth-child(4) { animation-delay: .24s; }
+        body.do-anim .ai-suite-grid > .ai-tile { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(1) { animation-delay: .06s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(2) { animation-delay: .12s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(3) { animation-delay: .18s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(4) { animation-delay: .24s; }
 
         /* Form perf cards stagger in */
-        .form-perf-grid > .form-perf-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .form-perf-grid > .form-perf-card:nth-child(1) { animation-delay: .05s; }
-        .form-perf-grid > .form-perf-card:nth-child(2) { animation-delay: .10s; }
-        .form-perf-grid > .form-perf-card:nth-child(3) { animation-delay: .15s; }
+        body.do-anim .form-perf-grid > .form-perf-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(1) { animation-delay: .05s; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(2) { animation-delay: .10s; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(3) { animation-delay: .15s; }
 
         /* Branch KPI cards stagger in */
-        .branch-cards-grid > .branch-kpi-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(1) { animation-delay: .04s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(2) { animation-delay: .09s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(3) { animation-delay: .14s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(4) { animation-delay: .19s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(5) { animation-delay: .23s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(n+6) { animation-delay: .27s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(1) { animation-delay: .04s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(2) { animation-delay: .09s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(3) { animation-delay: .14s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(4) { animation-delay: .19s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(5) { animation-delay: .23s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(n+6) { animation-delay: .27s; }
 
         /* KPI cards cascade in */
-        .kpi-grid > .kpi-card { animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
-        .kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0.03s; }
-        .kpi-grid > .kpi-card:nth-child(2) { animation-delay: 0.08s; }
-        .kpi-grid > .kpi-card:nth-child(3) { animation-delay: 0.13s; }
-        .kpi-grid > .kpi-card:nth-child(4) { animation-delay: 0.18s; }
-        .kpi-grid > .kpi-card:nth-child(5) { animation-delay: 0.23s; }
-        .kpi-grid > .kpi-card:nth-child(6) { animation-delay: 0.28s; }
+        body.do-anim .kpi-grid > .kpi-card { animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0.03s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(2) { animation-delay: 0.08s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(3) { animation-delay: 0.13s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(4) { animation-delay: 0.18s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(5) { animation-delay: 0.23s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(6) { animation-delay: 0.28s; }
 
         /* Nav: smooth hover lift + active indicator */
         .topnav-link { transition: color .18s ease, background .18s ease, transform .12s ease; }
@@ -2719,7 +2720,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.01';
+        const BUILD = 'v1.02';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3307,6 +3308,8 @@
                     compareEngine.init();
                     if(typeof branchCompare !== 'undefined') branchCompare.init();
                     this.updateGreeting();
+                    document.body.classList.add('do-anim');
+                    setTimeout(() => document.body.classList.remove('do-anim'), 900);
                     this.applyFilters();
                     renderAlerts();
 
@@ -3449,11 +3452,15 @@
                         if(targetView){
                             targetView.style.opacity    = '0';
                             targetView.classList.add('active');
+                            // Enable entrance animations for this user-initiated navigation
+                            document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
                                 targetView.style.transition = 'opacity .22s cubic-bezier(.4,0,.2,1)';
                                 targetView.style.opacity    = '1';
                                 setTimeout(() => { targetView.style.opacity = ''; targetView.style.transition = ''; }, 250);
                             });
+                            // Remove do-anim after all animations finish (~600ms max)
+                            setTimeout(() => document.body.classList.remove('do-anim'), 700);
                         }
                         const gc = document.getElementById('global-controls');
                         if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
@@ -3464,6 +3471,9 @@
                     if(targetView) targetView.classList.add('active');
                     const gc = document.getElementById('global-controls');
                     if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                    // Enable entrance animations for this user-initiated navigation
+                    document.body.classList.add('do-anim');
+                    setTimeout(() => document.body.classList.remove('do-anim'), 700);
                     this.renderCurrentView();
                 }
             },
