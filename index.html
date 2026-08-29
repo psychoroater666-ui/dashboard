@@ -5452,73 +5452,84 @@
             const label = document.getElementById('refresh-label');
             if(!btn || btn.disabled) return;
 
-            // Disable button + spin icon
+            // ── Phase 1: Loading state ──
             btn.disabled = true;
-            btn.style.opacity = '.7';
-            btn.style.cursor  = 'not-allowed';
+            btn.style.cursor = 'not-allowed';
+            btn.style.borderColor = 'rgba(100,208,255,0.5)';
+            btn.style.background  = 'rgba(100,208,255,0.12)';
             label.textContent = 'Refreshing…';
-            icon.style.transform = 'rotate(360deg)';
 
-            // Show loading toast
-            const toast = document.createElement('div');
-            toast.id = 'refresh-toast';
-            toast.innerHTML = `
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:18px;height:18px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:toastSpin .7s linear infinite;flex-shrink:0;"></div>
-                    <span style="font-size:0.85rem;font-weight:700;">Syncing latest data…</span>
-                </div>`;
-            toast.style.cssText = `
-                position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);
-                background:linear-gradient(135deg,#010197,#3B5BDB);
-                color:#fff;padding:13px 22px;border-radius:12px;
-                font-family:'Inter',sans-serif;z-index:99999;
-                box-shadow:0 8px 32px rgba(1,1,151,.35);
-                opacity:0;transition:opacity .3s ease,transform .35s cubic-bezier(.16,1,.3,1);
-                pointer-events:none;white-space:nowrap;`;
-            document.body.appendChild(toast);
+            // Continuous spin on icon
+            icon.className = 'fas fa-rotate-right';
+            icon.style.transition = 'none';
+            icon.style.animation  = 'appRefreshSpin .6s linear infinite';
 
-            // Add spin keyframe if not already there
-            if(!document.getElementById('toast-spin-style')){
+            // Add spin keyframe once
+            if(!document.getElementById('app-refresh-style')){
                 const s = document.createElement('style');
-                s.id = 'toast-spin-style';
-                s.textContent = '@keyframes toastSpin{to{transform:rotate(360deg)}}';
+                s.id = 'app-refresh-style';
+                s.textContent = `
+                    @keyframes appRefreshSpin { to { transform:rotate(360deg); } }
+                    @keyframes kpiShimmer {
+                        0%   { background-position: -200% center; }
+                        100% { background-position: 200% center; }
+                    }
+                    .kpi-refreshing {
+                        position:relative;overflow:hidden;
+                    }
+                    .kpi-refreshing::after {
+                        content:'';
+                        position:absolute;inset:0;
+                        background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.18) 50%,transparent 100%);
+                        background-size:200% 100%;
+                        animation:kpiShimmer 1s ease-in-out infinite;
+                        border-radius:inherit;
+                        pointer-events:none;
+                    }`;
                 document.head.appendChild(s);
             }
 
-            // Animate toast in
-            requestAnimationFrame(() => {
-                toast.style.opacity   = '1';
-                toast.style.transform = 'translateX(-50%) translateY(0)';
-            });
+            // ── Shimmer all KPI + data cards ──
+            const shimmerTargets = [
+                ...document.querySelectorAll('.kpi-card'),
+                ...document.querySelectorAll('.kpi-grid .kpi-card'),
+                ...document.querySelectorAll('.card:not(.collapsible-card)'),
+            ].slice(0, 12); // limit to visible cards
+            shimmerTargets.forEach(el => el.classList.add('kpi-refreshing'));
 
-            // Actually refresh data
+            // ── Phase 2: Refresh data after 1s ──
             setTimeout(() => {
                 try { app.refreshData(); } catch(e){}
 
-                // Update toast to success
-                toast.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <i class="fas fa-circle-check" style="font-size:0.9rem;"></i>
-                        <span style="font-size:0.85rem;font-weight:700;">Data refreshed successfully</span>
-                    </div>`;
-                toast.style.background = 'linear-gradient(135deg,#059669,#10B981)';
-                toast.style.boxShadow  = '0 8px 32px rgba(5,150,105,.35)';
+                // Remove shimmer
+                shimmerTargets.forEach(el => el.classList.remove('kpi-refreshing'));
 
-                // Reset button
-                btn.disabled = false;
-                btn.style.opacity = '1';
-                btn.style.cursor  = 'pointer';
-                label.textContent = 'Refresh';
-                icon.style.transform = 'rotate(0deg)';
+                // ── Phase 3: Success state — checkmark ──
+                icon.style.animation = 'none';
+                icon.className = 'fas fa-circle-check';
+                icon.style.color = '#64D0FF';
+                icon.style.transform = 'scale(1.2)';
+                icon.style.transition = 'transform .3s cubic-bezier(.16,1,.3,1), color .2s';
+                label.textContent = 'Updated';
+                btn.style.borderColor = 'rgba(100,208,255,0.6)';
+                btn.style.background  = 'rgba(100,208,255,0.15)';
 
-                // Dismiss toast
+                // ── Phase 4: Reset after 1.5s ──
                 setTimeout(() => {
-                    toast.style.opacity   = '0';
-                    toast.style.transform = 'translateX(-50%) translateY(12px)';
-                    setTimeout(() => toast.remove(), 350);
-                }, 2200);
+                    icon.style.transform  = 'scale(1)';
+                    icon.style.color      = '';
+                    setTimeout(() => {
+                        icon.className        = 'fas fa-rotate-right';
+                        icon.style.transition = '';
+                        label.textContent     = 'Refresh';
+                        btn.style.borderColor = 'rgba(255,255,255,0.18)';
+                        btn.style.background  = 'rgba(255,255,255,0.08)';
+                        btn.style.cursor      = 'pointer';
+                        btn.disabled          = false;
+                    }, 300);
+                }, 1500);
 
-            }, 1200);
+            }, 1000);
         }
 
         // ═══════════════════════════════════════════
