@@ -713,7 +713,8 @@
         .badge-b { background: rgba(245,158,11,0.1); color: var(--status-warn); }
         .branch-comp-row {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 11px 20px; border-bottom: 1px solid var(--border-color);
+            padding: 0 20px; height: 45px;
+            border-bottom: 1px solid var(--border-color);
             transition: background .15s;
         }
         .branch-comp-row:hover { background: rgba(1,1,151,.025); }
@@ -730,8 +731,9 @@
             font-size: 0.68rem; font-weight: 900; letter-spacing: 1px; flex-shrink: 0;
             box-shadow: 0 4px 16px rgba(1,1,151,.35), 0 0 0 4px rgba(1,1,151,.08);
         }
-        .vs-metric-spacer { height: 43px; display: flex; align-items: center; justify-content: center; width: 100%; }
-        .vs-label { font-size: 0.6rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; white-space: nowrap; }
+        .vs-metric-spacer { height: 45px; display: flex; align-items: center; justify-content: center; width: 100%; border-bottom: 1px solid var(--border-color); }
+        .vs-metric-spacer:last-child { border-bottom: none; }
+        .vs-label { font-size: 0.58rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; text-align: center; white-space: nowrap; }
         .winner-crown { font-size: 0.65rem; display: flex; align-items: center; justify-content: center; gap: 2px; }
         .winner-left { color: var(--accent-blue); }
         .winner-right { color: var(--status-warn); }
