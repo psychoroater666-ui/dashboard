@@ -609,6 +609,95 @@
         @keyframes collapseIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
         .collapsible-card.is-open { box-shadow: 0 8px 32px rgba(1,1,151,.1); border-color: rgba(1,1,151,.18); }
 
+        /* ═══════════════════════════════════════════════════
+           PREMIUM ANIMATION SYSTEM — unified timing tokens
+           Spring: cubic-bezier(.16,1,.3,1)  — elastic settle
+           Smooth: cubic-bezier(.4,0,.2,1)   — material ease
+           Snappy: cubic-bezier(.25,.46,.45,.94) — quick out
+        ═══════════════════════════════════════════════════ */
+
+        /* Standardise all base transitions */
+        .card                { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s cubic-bezier(.4,0,.2,1), background-color .3s cubic-bezier(.4,0,.2,1) !important; }
+        .kpi-card            { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.16,1,.3,1) !important; }
+        .kpi-card:hover      { transform:translateY(-4px) !important; box-shadow:0 20px 40px -8px rgba(1,1,151,.13), 0 8px 16px -4px rgba(0,0,0,.06) !important; border-color:rgba(1,1,151,.2) !important; }
+        .kpi-card:active     { transform:translateY(-1px) scale(.99) !important; transition-duration:.1s !important; }
+
+        /* Nav links */
+        .topnav-link         { transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.16,1,.3,1) !important; }
+        .topnav-link:hover   { transform:translateY(-1px) !important; }
+        .topnav-link:active  { transform:translateY(0) scale(.97) !important; }
+
+        /* Buttons */
+        .btn-icon            { transition: background .18s cubic-bezier(.4,0,.2,1), color .18s, transform .15s cubic-bezier(.16,1,.3,1) !important; }
+        .btn-icon:hover      { transform:scale(1.08) !important; }
+        .btn-icon:active     { transform:scale(.93) !important; transition-duration:.08s !important; }
+
+        button:active:not(:disabled) { transform:scale(.97) !important; transition:transform .08s cubic-bezier(.4,0,.2,1) !important; }
+
+        /* Select inputs */
+        .select-input        { transition: border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1) !important; }
+        .select-input:focus  { border-color: var(--accent-blue) !important; box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important; outline:none !important; }
+        .select-input:hover  { border-color: rgba(37,99,235,.4) !important; }
+
+        /* Form perf cards */
+        .form-perf-card      { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .3s cubic-bezier(.16,1,.3,1) !important; }
+        .form-perf-card:hover{ transform:translateY(-4px) !important; box-shadow:0 20px 40px -8px rgba(0,0,0,.1) !important; }
+        .form-perf-card:active{ transform:translateY(-1px) scale(.99) !important; }
+
+        /* AI tiles */
+        .ai-tile             { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .3s cubic-bezier(.16,1,.3,1) !important; }
+        .ai-tile:hover       { transform:translateY(-4px) !important; }
+
+        /* Social mention cards */
+        .sl-mention-card     { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .25s cubic-bezier(.16,1,.3,1) !important; }
+        .sl-mention-card:hover { transform:translateY(-3px) !important; box-shadow:0 16px 32px -6px rgba(0,0,0,.1) !important; }
+
+        /* Resolution stage buttons */
+        .sl-res-stage        { transition: all .2s cubic-bezier(.16,1,.3,1) !important; }
+        .sl-res-stage:hover  { transform:translateY(-1px) scale(1.03) !important; opacity:1 !important; }
+        .sl-res-stage:active { transform:scale(.96) !important; }
+
+        /* Collapse headers */
+        .collapse-header     { transition: background .2s cubic-bezier(.4,0,.2,1) !important; }
+        .collapse-chevron    { transition: transform .4s cubic-bezier(.16,1,.3,1), background .2s, color .2s !important; }
+        .collapsible-card.is-open { box-shadow: 0 12px 40px -8px rgba(1,1,151,.12), 0 4px 12px -2px rgba(0,0,0,.05) !important; }
+
+        /* VOC items */
+        .voc-praise-item,.voc-complaint-item,.voc-suggest-item { transition: transform .2s cubic-bezier(.16,1,.3,1), background .2s !important; }
+        .voc-praise-item:hover,.voc-complaint-item:hover,.voc-suggest-item:hover { transform:translateX(5px) !important; }
+
+        /* Preset chips */
+        .preset-chip         { transition: all .2s cubic-bezier(.16,1,.3,1) !important; }
+        .preset-chip:hover   { transform:translateY(-1px) !important; }
+        .preset-chip:active  { transform:scale(.96) !important; }
+
+        /* Notification items */
+        .notif-item          { transition: background .18s cubic-bezier(.4,0,.2,1) !important; }
+        .notif-item:hover    { background:var(--bg-light) !important; }
+
+        /* Table rows */
+        table tbody tr       { transition: background .15s cubic-bezier(.4,0,.2,1) !important; }
+        table tbody tr:hover { background: rgba(1,1,151,.03) !important; }
+
+        /* Improve page entry animation */
+        @keyframes fadeIn    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .view.active > *     { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both; }
+        .view.active > *:nth-child(1) { animation-delay:.03s; }
+        .view.active > *:nth-child(2) { animation-delay:.07s; }
+        .view.active > *:nth-child(3) { animation-delay:.11s; }
+        .view.active > *:nth-child(4) { animation-delay:.15s; }
+        .view.active > *:nth-child(5) { animation-delay:.19s; }
+
+        /* Smooth collapsible expand */
+        @keyframes collapseIn { from { opacity:0; transform:translateY(-10px) scaleY(.97); transform-origin:top; } to { opacity:1; transform:translateY(0) scaleY(1); } }
+        .collapse-body { animation: collapseIn .38s cubic-bezier(.16,1,.3,1) both !important; }
+
+        /* Social card entry */
+        @keyframes slCardIn  { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Login slide up */
+        @keyframes loginSlideUp { from { opacity:0; transform:translateY(28px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
         .skel-line { height: 12px; margin-bottom: 10px; }
 
         /* Social Listening card animation */
@@ -2740,14 +2829,41 @@
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
-                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-                
+                // Fade out current view, then switch
+                const currentActive = document.querySelector('.view.active');
                 const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social', 'complaints'];
-                document.getElementById(dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics').classList.add('active');
-                
-                const gc = document.getElementById('global-controls');
-                if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
-                this.renderCurrentView();
+                const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
+                const targetView = document.getElementById(targetId);
+
+                if(currentActive && currentActive !== targetView){
+                    currentActive.style.transition = 'opacity .18s cubic-bezier(.4,0,.2,1)';
+                    currentActive.style.opacity    = '0';
+                    setTimeout(() => {
+                        document.querySelectorAll('.view').forEach(el => {
+                            el.classList.remove('active');
+                            el.style.opacity    = '';
+                            el.style.transition = '';
+                        });
+                        if(targetView){
+                            targetView.style.opacity    = '0';
+                            targetView.classList.add('active');
+                            requestAnimationFrame(() => {
+                                targetView.style.transition = 'opacity .22s cubic-bezier(.4,0,.2,1)';
+                                targetView.style.opacity    = '1';
+                                setTimeout(() => { targetView.style.opacity = ''; targetView.style.transition = ''; }, 250);
+                            });
+                        }
+                        const gc = document.getElementById('global-controls');
+                        if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                        this.renderCurrentView();
+                    }, 160);
+                } else {
+                    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                    if(targetView) targetView.classList.add('active');
+                    const gc = document.getElementById('global-controls');
+                    if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                    this.renderCurrentView();
+                }
             },
 
             setExecMode(mode, btnElement) {
