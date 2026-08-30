@@ -1123,6 +1123,93 @@
         .sl-res-stage:hover  { transform:translateY(-1px) scale(1.03) !important; opacity:1 !important; }
         .sl-res-stage:active { transform:scale(.96) !important; }
 
+        /* ═══════════════════════════════════════════════════════════════
+           HAPTIC FEEL SYSTEM  v1.09
+           Global ripple + spring physics + press depth on every surface
+        ═══════════════════════════════════════════════════════════════ */
+
+        /* ── Global ripple engine ───────────────────────────────────── */
+        .crumble-ripple-host { position:relative; overflow:hidden; }
+        @keyframes crumbleRipple {
+            0%   { transform:scale(0);   opacity:.32; }
+            60%  { opacity:.18; }
+            100% { transform:scale(2.8); opacity:0;   }
+        }
+        .crumble-ripple {
+            position:absolute; border-radius:50%; pointer-events:none;
+            transform:scale(0); animation:crumbleRipple .55s cubic-bezier(.4,0,.2,1) forwards;
+            background:rgba(255,255,255,.55);
+        }
+        /* Dark ripple for light surfaces */
+        .crumble-ripple.dark { background:rgba(1,1,151,.12); }
+
+        /* ── Press depth — every tappable surface ───────────────────── */
+        /* Cards depress slightly and lose shadow on click — like a physical button */
+        .kpi-card:active        { transform:translateY(0) scale(.975) !important; box-shadow:0 2px 6px -2px rgba(0,0,0,.06) !important; transition-duration:.09s !important; }
+        .branch-kpi-card:active { transform:translateY(0) scale(.975) !important; box-shadow:0 2px 6px -2px rgba(0,0,0,.06) !important; transition-duration:.09s !important; }
+        .form-perf-card:active  { transform:translateY(0) scale(.975) !important; box-shadow:0 2px 6px -2px rgba(0,0,0,.06) !important; transition-duration:.09s !important; }
+        .ai-tile:active         { transform:translateY(0) scale(.975) !important; box-shadow:0 2px 6px -2px rgba(0,0,0,.06) !important; transition-duration:.09s !important; }
+        .card:active            { transform:translateY(0) scale(.988) !important; box-shadow:0 1px 4px -1px rgba(0,0,0,.06) !important; transition-duration:.09s !important; }
+        .sl-mention-card:active { transform:translateY(0) scale(.978) !important; transition-duration:.09s !important; }
+        .sl-kpi:active          { transform:translateY(0) scale(.975) !important; transition-duration:.09s !important; }
+        .bd-item:active         { transform:translateY(0) scale(.978) !important; transition-duration:.09s !important; }
+        .form-card:active       { transform:translateY(0) scale(.975) !important; transition-duration:.09s !important; }
+        .insight-block:active   { transform:translateY(0) scale(.978) !important; transition-duration:.09s !important; }
+        .notif-item:active      { background:rgba(1,1,151,.06) !important; transition-duration:.06s !important; }
+        .collapse-header:active { background:rgba(1,1,151,.05) !important; transition-duration:.06s !important; }
+        .branch-inc-row:active  { background:rgba(1,1,151,.06) !important; transition-duration:.06s !important; }
+        tbody tr:active td      { background:rgba(1,1,151,.07) !important; transition-duration:.06s !important; }
+
+        /* ── Spring hover — tuned per element weight ────────────────── */
+        /* Heavy cards — slower, more weight */
+        .kpi-card        { transition: transform .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.4,0,.2,1), border-color .25s cubic-bezier(.4,0,.2,1) !important; }
+        .branch-kpi-card { transition: transform .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.4,0,.2,1), border-color .25s !important; }
+        .form-perf-card  { transition: transform .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.4,0,.2,1), border-color .25s !important; }
+        .ai-tile         { transition: transform .38s cubic-bezier(.16,1,.3,1), box-shadow .38s cubic-bezier(.4,0,.2,1), border-color .25s !important; }
+        /* Medium cards — slightly faster */
+        .card            { transition: transform .32s cubic-bezier(.16,1,.3,1), box-shadow .32s cubic-bezier(.4,0,.2,1), border-color .22s, background-color .3s !important; }
+        .sl-mention-card { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .2s !important; }
+        .sl-kpi          { transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .2s !important; }
+        /* Light elements — fast & snappy */
+        .preset-chip     { transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, background .18s, border-color .18s, color .18s !important; }
+        .sl-keyword      { transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .18s, background .18s, color .18s !important; }
+        .notif-item      { transition: background .16s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.16,1,.3,1) !important; }
+        .collapse-header { transition: background .18s cubic-bezier(.4,0,.2,1) !important; }
+        .branch-inc-row  { transition: background .16s cubic-bezier(.4,0,.2,1) !important; }
+        table tbody tr   { transition: background .16s cubic-bezier(.4,0,.2,1) !important; }
+
+        /* ── Hover lifts — consistent per category ──────────────────── */
+        .kpi-card:hover        { transform:translateY(-5px) scale(1.005) !important; }
+        .branch-kpi-card:hover { transform:translateY(-5px) scale(1.005) !important; }
+        .form-perf-card:hover  { transform:translateY(-5px) scale(1.005) !important; }
+        .ai-tile:hover         { transform:translateY(-5px) scale(1.005) !important; }
+        .card:hover            { transform:translateY(-2px) !important; }
+        .sl-mention-card:hover { transform:translateY(-4px) !important; }
+        .sl-kpi:hover          { transform:translateY(-3px) !important; }
+        .bd-item:hover         { transform:translateY(-3px) !important; }
+        .form-card:hover       { transform:translateY(-3px) !important; }
+        .insight-block:hover   { transform:translateY(-2px) !important; }
+        .notif-item:hover      { transform:translateX(2px) !important; }
+        .branch-inc-row:hover  { transform:translateX(2px) !important; background:rgba(1,1,151,.03) !important; }
+
+        /* ── Button press feel ──────────────────────────────────────── */
+        .btn-icon:active   { transform:scale(.88) !important; transition-duration:.07s !important; }
+        .topnav-link:active{ transform:scale(.93) !important; transition-duration:.07s !important; }
+        .preset-chip:active{ transform:scale(.92) !important; transition-duration:.07s !important; }
+        .sl-keyword:active { transform:scale(.92) !important; transition-duration:.07s !important; }
+
+        /* ── Focus ring — keyboard nav feels premium ────────────────── */
+        *:focus-visible {
+            outline: 2px solid rgba(100,208,255,.75) !important;
+            outline-offset: 3px !important;
+            border-radius: 6px !important;
+        }
+
+        /* ── Scrollbar — ultra slim ─────────────────────────────────── */
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-thumb { background:rgba(100,116,139,.18); border-radius:99px; transition:background .2s; }
+        ::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,.45); }
+
 
         /* Improve page entry animation */
         @keyframes fadeIn    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -2825,7 +2912,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.08';
+        const BUILD = 'v1.09';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -6545,6 +6632,58 @@
         }
 
         slLoadData();
+
+        // ═══════════════════════════════════════════════════════════════
+        // GLOBAL RIPPLE ENGINE — haptic feel on every interactive surface
+        // Attaches to: cards, buttons, nav links, chips, rows, KPIs, icons
+        // ═══════════════════════════════════════════════════════════════
+        (function initRippleEngine(){
+            // Elements that get a DARK ripple (light bg)
+            const DARK_SELECTORS = [
+                '.kpi-card','.branch-kpi-card','.form-perf-card','.ai-tile',
+                '.card','.sl-mention-card','.sl-kpi','.bd-item','.form-card',
+                '.insight-block','.notif-item','.collapse-header',
+                '.branch-inc-row','.preset-chip','.sl-keyword',
+                'tbody tr','td','th','.inc-stat','.ci-card','.ai-row',
+                '.voc-praise-item','.voc-complaint-item','.voc-suggest-item'
+            ].join(',');
+
+            // Elements that get a LIGHT ripple (dark bg — nav, buttons)
+            const LIGHT_SELECTORS = [
+                '.topnav-link','.btn-icon','.refresh-btn-el',
+                '.res-stage-btn','button.login-btn'
+            ].join(',');
+
+            function spawnRipple(el, e, isDark){
+                // Don't ripple on disabled or during bg-refresh
+                if(el.disabled || document.body.classList.contains('bg-refresh')) return;
+
+                const rect = el.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height) * 1.8;
+                const x = (e.clientX - rect.left) - size/2;
+                const y = (e.clientY - rect.top)  - size/2;
+
+                const rip = document.createElement('span');
+                rip.className = 'crumble-ripple' + (isDark ? ' dark' : '');
+                rip.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px;`;
+
+                // Ensure host has relative positioning
+                const pos = getComputedStyle(el).position;
+                if(pos === 'static') el.style.position = 'relative';
+                if(getComputedStyle(el).overflow === 'visible') el.style.overflow = 'hidden';
+
+                el.appendChild(rip);
+                setTimeout(() => rip.remove(), 600);
+            }
+
+            document.addEventListener('pointerdown', function(e){
+                const darkEl  = e.target.closest(DARK_SELECTORS);
+                const lightEl = e.target.closest(LIGHT_SELECTORS);
+
+                if(lightEl){ spawnRipple(lightEl, e, false); return; }
+                if(darkEl) { spawnRipple(darkEl,  e, true);  return; }
+            }, { passive:true });
+        })();
 
         // ═══════════════════════════════════════════
         // AUTH — Google Sheets login system
