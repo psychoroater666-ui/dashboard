@@ -3732,9 +3732,14 @@
             },
 
             renderCurrentView() {
-                // Scroll content area to top on every view switch
-                const cs = document.querySelector('.content-scroll');
-                if(cs) cs.scrollTo({ top:0, behavior:'smooth' });
+                // Scroll content area to top only on a genuine view switch —
+                // not during a silent background auto-refresh (bg-refresh),
+                // which re-renders the current view in place and shouldn't
+                // yank the user's scroll position while they're reading.
+                if(!document.body.classList.contains('bg-refresh')){
+                    const cs = document.querySelector('.content-scroll');
+                    if(cs) cs.scrollTo({ top:0, behavior:'smooth' });
+                }
                 if (state.currentView === 'executive') this.renderExecutive();
                 else if (state.currentView === 'branches') this.renderBranchesView();
                 else if (state.currentView === 'incidents') this.renderIncidentsView();
