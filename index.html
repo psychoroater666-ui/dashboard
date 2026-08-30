@@ -2723,7 +2723,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.03';
+        const BUILD = 'v1.04';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3514,9 +3514,10 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
+                    // Background refresh — skip skeleton, preserve filter state, just silently repaint
+                    if(document.body.classList.contains('bg-refresh') || document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // User-navigated: reset preset so date chips reinitialise
                     window._slPresetInited = false;
-                    // Background refresh — skip skeleton, just silently repaint
-                    if(document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
                     // User-navigated: show skeleton then load
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
@@ -3849,6 +3850,11 @@
 
                 const rows = filtered.slice(0, 300);
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
+
+                // Remember which row is open so we can restore it after tbody rewrite
+                const openDetailRow = document.querySelector('.inc-detail-row');
+                const openIdx = openDetailRow ? parseInt(openDetailRow.dataset.incIdx || '-1') : -1;
+
                 document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
                     const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
@@ -3880,13 +3886,20 @@
                     </tr>`;
                 }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 this._incFiltered = rows;
+
+                // Silently restore the previously expanded row (so auto-refresh doesn't collapse it)
+                if(openIdx >= 0 && rows[openIdx]){
+                    const tbody = document.querySelector('#inc-detail-table tbody');
+                    const targetRow = tbody ? tbody.rows[openIdx] : null;
+                    if(targetRow) this.toggleIncidentDetail(targetRow, openIdx, true);
+                }
             },
 
-            toggleIncidentDetail(rowEl, idx) {
+            toggleIncidentDetail(rowEl, idx, silent) {
                 // collapse if already open
                 const next = rowEl.nextElementSibling;
-                if(next && next.classList.contains('inc-detail-row')){ next.remove(); return; }
-                document.querySelectorAll('.inc-detail-row').forEach(r => r.remove());
+                if(next && next.classList.contains('inc-detail-row')){ if(!silent){ next.remove(); } return; }
+                if(!silent) document.querySelectorAll('.inc-detail-row').forEach(r => r.remove());
                 const inc = (this._incFiltered || [])[idx];
                 if(!inc) return;
                 const score = inc.smileScore || inc.rating || 0;
@@ -3895,6 +3908,7 @@
                 const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
                 const tr = document.createElement('tr');
                 tr.className = 'inc-detail-row';
+                tr.dataset.incIdx = idx;
                 tr.innerHTML = `<td colspan="8"><div class="inc-detail-inner">
                     ${field('Branch', inc.branch)}
                     ${field('Product', inc.product)}
