@@ -452,10 +452,12 @@
         /* Content scroll managed above */
         
         /* Views */
-        .view { display: none; flex-direction: column; gap: 24px; animation: fadeIn 0.25s ease; }
+        .view { display: none; flex-direction: column; gap: 24px; }
         .view.active { display: flex; }
-        .exec-mode-container { display: none; flex-direction: column; gap: 24px; animation: fadeIn 0.25s ease; }
+        body.do-anim .view.active { animation: fadeIn 0.25s ease; }
+        .exec-mode-container { display: none; flex-direction: column; gap: 24px; }
         .exec-mode-container.active { display: flex; }
+        body.do-anim .exec-mode-container.active { animation: fadeIn 0.25s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
         /* ================= CARDS & COMPONENTS ================= */
@@ -512,7 +514,7 @@
         td { padding: 12px 16px; font-size: 0.84rem; border-bottom: 1px solid var(--border-color); color: var(--text-main); white-space: nowrap; font-weight: 500; }
         tbody tr:last-child td { border-bottom: none; }
         tbody tr:nth-child(even) { background: rgba(0,0,0,.014); }
-        tbody tr:hover td { background: rgba(1,1,151,.04) !important; cursor: pointer; }
+        tbody tr:hover td { background: rgba(1,1,151,.04) !important; cursor: pointer; transition: background .18s cubic-bezier(.4,0,.2,1); }
         body.dark-theme tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
         body.dark-theme tbody tr:hover td { background: rgba(255,255,255,.04) !important; }
 
@@ -983,85 +985,206 @@
         @keyframes collapseIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
         .collapsible-card.is-open { box-shadow: 0 8px 32px rgba(1,1,151,.1); border-color: rgba(1,1,151,.18); }
 
-        /* ═══════════════════════════════════════════════════
-           PREMIUM ANIMATION SYSTEM — unified timing tokens
-           Spring: cubic-bezier(.16,1,.3,1)  — elastic settle
-           Smooth: cubic-bezier(.4,0,.2,1)   — material ease
-           Snappy: cubic-bezier(.25,.46,.45,.94) — quick out
-        ═══════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           PREMIUM INTERACTION SYSTEM  v1.06
+           Timing tokens
+             Spring  cubic-bezier(.16,1,.3,1)    elastic settle
+             Smooth  cubic-bezier(.4,0,.2,1)     material ease
+             Snappy  cubic-bezier(.25,.46,.45,.94) quick out
+        ═══════════════════════════════════════════════════════════════ */
 
-        /* Standardise all base transitions */
-        .card                { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s cubic-bezier(.4,0,.2,1), background-color .3s cubic-bezier(.4,0,.2,1) !important; }
-        .kpi-card            { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.16,1,.3,1) !important; }
-        .kpi-card:hover      { transform:translateY(-4px) !important; box-shadow:0 20px 40px -8px rgba(1,1,151,.13), 0 8px 16px -4px rgba(0,0,0,.06) !important; border-color:rgba(1,1,151,.2) !important; }
-        .kpi-card:active     { transform:translateY(-1px) scale(.99) !important; transition-duration:.1s !important; }
+        /* ── Cards ─────────────────────────────────────────────────── */
+        .card {
+            transition: box-shadow .35s cubic-bezier(.4,0,.2,1),
+                        border-color .35s cubic-bezier(.4,0,.2,1),
+                        background-color .35s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .card:hover { transform:translateY(-2px) !important; box-shadow:0 8px 28px -4px rgba(0,0,0,.1), 0 2px 8px -2px rgba(0,0,0,.04) !important; }
 
-        /* Nav links */
-        .topnav-link         { transition: color .2s cubic-bezier(.4,0,.2,1), background .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.16,1,.3,1) !important; }
-        .topnav-link:hover   { transform:translateY(-1px) !important; }
-        .topnav-link:active  { transform:translateY(0) scale(.97) !important; }
-        .topnav-link.active  { transform:none !important; }
+        /* KPI cards — more pronounced lift */
+        .kpi-card {
+            transition: box-shadow .35s cubic-bezier(.4,0,.2,1),
+                        border-color .3s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .kpi-card:hover  { transform:translateY(-5px) translateZ(0) !important; box-shadow:0 24px 48px -8px rgba(1,1,151,.15), 0 8px 16px -4px rgba(0,0,0,.07) !important; border-color:rgba(1,1,151,.22) !important; }
+        .kpi-card:active { transform:translateY(-2px) scale(.985) !important; transition-duration:.1s !important; }
 
-        /* Buttons */
-        .btn-icon            { transition: background .18s cubic-bezier(.4,0,.2,1), color .18s, transform .15s cubic-bezier(.16,1,.3,1) !important; }
-        .btn-icon:hover      { transform:scale(1.08) !important; }
-        .btn-icon:active     { transform:scale(.93) !important; transition-duration:.08s !important; }
-
-        button:active:not(:disabled) { transform:scale(.97) !important; transition:transform .08s cubic-bezier(.4,0,.2,1) !important; }
-
-        /* Select inputs */
-        .select-input        { transition: border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .2s cubic-bezier(.4,0,.2,1) !important; }
-        .select-input:focus  { border-color: var(--accent-blue) !important; box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important; outline:none !important; }
-        .select-input:hover  { border-color: rgba(37,99,235,.4) !important; }
+        /* Branch KPI cards */
+        .branch-kpi-card {
+            transition: box-shadow .35s cubic-bezier(.4,0,.2,1),
+                        border-color .3s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .branch-kpi-card:hover  { transform:translateY(-5px) !important; box-shadow:0 20px 44px -8px rgba(1,1,151,.13), 0 6px 14px -3px rgba(0,0,0,.06) !important; border-color:rgba(1,1,151,.18) !important; }
+        .branch-kpi-card:active { transform:translateY(-2px) scale(.985) !important; transition-duration:.1s !important; }
 
         /* Form perf cards */
-        .form-perf-card      { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .3s cubic-bezier(.16,1,.3,1) !important; }
-        .form-perf-card:hover{ transform:translateY(-4px) !important; box-shadow:0 20px 40px -8px rgba(0,0,0,.1) !important; }
-        .form-perf-card:active{ transform:translateY(-1px) scale(.99) !important; }
+        .form-perf-card {
+            transition: box-shadow .35s cubic-bezier(.4,0,.2,1),
+                        border-color .3s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .form-perf-card:hover  { transform:translateY(-5px) !important; box-shadow:0 24px 48px -8px rgba(0,0,0,.12) !important; border-color:rgba(37,99,235,.25) !important; }
+        .form-perf-card:active { transform:translateY(-2px) scale(.985) !important; transition-duration:.1s !important; }
 
         /* AI tiles */
-        .ai-tile             { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .3s cubic-bezier(.16,1,.3,1) !important; }
-        .ai-tile:hover       { transform:translateY(-4px) !important; }
+        .ai-tile {
+            transition: box-shadow .35s cubic-bezier(.4,0,.2,1),
+                        border-color .3s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .ai-tile:hover  { transform:translateY(-5px) !important; box-shadow:0 20px 44px -8px rgba(1,1,151,.12) !important; border-color:rgba(1,1,151,.2) !important; }
+        .ai-tile:active { transform:translateY(-2px) scale(.985) !important; transition-duration:.1s !important; }
 
         /* Social mention cards */
-        .sl-mention-card     { transition: box-shadow .3s cubic-bezier(.4,0,.2,1), border-color .3s, transform .25s cubic-bezier(.16,1,.3,1) !important; }
-        .sl-mention-card:hover { transform:translateY(-3px) !important; box-shadow:0 16px 32px -6px rgba(0,0,0,.1) !important; }
+        .sl-mention-card {
+            transition: box-shadow .3s cubic-bezier(.4,0,.2,1),
+                        border-color .3s cubic-bezier(.4,0,.2,1),
+                        transform .3s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .sl-mention-card:hover  { transform:translateY(-4px) !important; box-shadow:0 16px 36px -6px rgba(0,0,0,.12) !important; border-color:rgba(1,1,151,.15) !important; }
+        .sl-mention-card:active { transform:translateY(-1px) scale(.99) !important; transition-duration:.1s !important; }
 
-        /* Resolution stage buttons */
-        .sl-res-stage        { transition: all .2s cubic-bezier(.16,1,.3,1) !important; }
-        .sl-res-stage:hover  { transform:translateY(-1px) scale(1.03) !important; opacity:1 !important; }
-        .sl-res-stage:active { transform:scale(.96) !important; }
+        /* ── Navigation ─────────────────────────────────────────────── */
+        .topnav-link {
+            transition: color .18s cubic-bezier(.4,0,.2,1),
+                        background .18s cubic-bezier(.4,0,.2,1),
+                        transform .2s cubic-bezier(.16,1,.3,1),
+                        box-shadow .2s cubic-bezier(.4,0,.2,1) !important;
+        }
+        .topnav-link:hover  { transform:translateY(-1px) !important; background:rgba(255,255,255,.09) !important; }
+        .topnav-link:active { transform:translateY(0) scale(.96) !important; transition-duration:.08s !important; }
+        .topnav-link.active { transform:none !important; }
 
-        /* Collapse headers */
-        .collapse-header     { transition: background .2s cubic-bezier(.4,0,.2,1) !important; }
-        .collapse-chevron    { transition: transform .4s cubic-bezier(.16,1,.3,1), background .2s, color .2s !important; }
-        .collapsible-card.is-open { box-shadow: 0 12px 40px -8px rgba(1,1,151,.12), 0 4px 12px -2px rgba(0,0,0,.05) !important; }
+        /* ── Icon buttons ───────────────────────────────────────────── */
+        .btn-icon {
+            transition: background .18s cubic-bezier(.4,0,.2,1),
+                        color .18s,
+                        transform .2s cubic-bezier(.16,1,.3,1),
+                        box-shadow .2s cubic-bezier(.4,0,.2,1) !important;
+        }
+        .btn-icon:hover  { transform:scale(1.1) !important; background:rgba(255,255,255,.13) !important; }
+        .btn-icon:active { transform:scale(.9) !important; transition-duration:.07s !important; }
 
-        /* VOC items */
-        .voc-praise-item,.voc-complaint-item,.voc-suggest-item { transition: transform .2s cubic-bezier(.16,1,.3,1), background .2s !important; }
-        .voc-praise-item:hover,.voc-complaint-item:hover,.voc-suggest-item:hover { transform:translateX(5px) !important; }
+        /* ── General buttons ────────────────────────────────────────── */
+        button:not(.res-stage-btn):not(.kpi-card):not(.topnav-link):not(:disabled):active {
+            transform:scale(.96) !important; transition:transform .07s cubic-bezier(.4,0,.2,1) !important;
+        }
 
-        /* Preset chips */
-        .preset-chip         { transition: all .2s cubic-bezier(.16,1,.3,1) !important; }
-        .preset-chip:hover   { transform:translateY(-1px) !important; }
-        .preset-chip:active  { transform:scale(.96) !important; }
+        /* ── Select / inputs ────────────────────────────────────────── */
+        .select-input {
+            transition: border-color .2s cubic-bezier(.4,0,.2,1),
+                        box-shadow .2s cubic-bezier(.4,0,.2,1),
+                        background .2s cubic-bezier(.4,0,.2,1) !important;
+        }
+        .select-input:hover { border-color:rgba(37,99,235,.35) !important; }
+        .select-input:focus { border-color:var(--accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,.12) !important; outline:none !important; }
 
-        /* Notification items */
-        .notif-item          { transition: background .18s cubic-bezier(.4,0,.2,1) !important; }
-        .notif-item:hover    { background:var(--bg-light) !important; }
+        /* ── Collapse / accordion ───────────────────────────────────── */
+        .collapse-header  { transition: background .22s cubic-bezier(.4,0,.2,1) !important; cursor:pointer; }
+        .collapse-header:hover { background:rgba(1,1,151,.025) !important; }
+        .collapse-chevron { transition: transform .38s cubic-bezier(.16,1,.3,1), background .2s, color .2s !important; }
+        .collapsible-card { transition: box-shadow .35s cubic-bezier(.4,0,.2,1) !important; }
+        .collapsible-card.is-open { box-shadow:0 14px 44px -8px rgba(1,1,151,.13), 0 4px 12px -2px rgba(0,0,0,.05) !important; }
 
-        /* Table rows */
-        table tbody tr       { transition: background .15s cubic-bezier(.4,0,.2,1) !important; }
-        table tbody tr:hover { background: rgba(1,1,151,.03) !important; }
+        /* ── Preset date chips ──────────────────────────────────────── */
+        .preset-chip {
+            transition: all .22s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .preset-chip:hover  { transform:translateY(-1px) !important; box-shadow:0 4px 12px rgba(0,0,0,.1) !important; }
+        .preset-chip:active { transform:scale(.94) !important; transition-duration:.08s !important; }
 
-        /* Improve page entry animation */
+        /* ── VOC list items ─────────────────────────────────────────── */
+        .voc-praise-item,.voc-complaint-item,.voc-suggest-item {
+            transition: transform .22s cubic-bezier(.16,1,.3,1),
+                        background .2s cubic-bezier(.4,0,.2,1),
+                        box-shadow .22s cubic-bezier(.4,0,.2,1) !important;
+        }
+        .voc-praise-item:hover,.voc-complaint-item:hover,.voc-suggest-item:hover {
+            transform:translateX(6px) !important; background:var(--bg-light) !important;
+            box-shadow:inset 3px 0 0 var(--accent-blue) !important;
+        }
+
+        /* ── Notification items ─────────────────────────────────────── */
+        .notif-item { transition: background .18s cubic-bezier(.4,0,.2,1) !important; }
+        .notif-item:hover { background:var(--bg-light) !important; }
+
+        /* ── Table rows ─────────────────────────────────────────────── */
+        table tbody tr { transition: background .18s cubic-bezier(.4,0,.2,1) !important; }
+        table tbody tr:hover { background:rgba(1,1,151,.035) !important; }
+        table tbody tr:hover td { background:transparent !important; cursor:pointer; }
+
+        /* ── Scrollbar refinement ───────────────────────────────────── */
+        ::-webkit-scrollbar { width:5px; height:5px; }
+        ::-webkit-scrollbar-track { background:transparent; }
+        ::-webkit-scrollbar-thumb { background:rgba(100,116,139,.22); border-radius:99px; transition:background .2s; }
+        ::-webkit-scrollbar-thumb:hover { background:rgba(100,116,139,.5); }
+        body.dark-theme ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); }
+        body.dark-theme ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.22); }
+
+        /* ── Refresh button hover (CSS replaces inline JS handlers) ── */
+        .refresh-btn-el { transition: background .2s cubic-bezier(.4,0,.2,1), border-color .2s, transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s !important; }
+        .refresh-btn-el:hover { background:rgba(255,255,255,.18) !important; border-color:rgba(255,255,255,.4) !important; transform:translateY(-1px) !important; box-shadow:0 4px 14px rgba(0,0,0,.2) !important; }
+        .refresh-btn-el:active { transform:scale(.96) !important; transition-duration:.08s !important; }
+
+        /* ── dp-menu rows hover ─────────────────────────────────────── */
+        .dp-menu-row { transition: background .16s cubic-bezier(.4,0,.2,1), color .16s !important; }
+        .dp-menu-row:hover { background:var(--bg-light) !important; }
+
+        /* ── View source link (social) ──────────────────────────────── */
+        a[href][target="_blank"] { transition: opacity .15s, transform .15s cubic-bezier(.16,1,.3,1) !important; }
+        a[href][target="_blank"]:hover { opacity:.82 !important; transform:translateY(-1px) !important; }
+
+        /* ── Focus rings ────────────────────────────────────────────── */
+        button:focus-visible, a:focus-visible, .topnav-link:focus-visible, select:focus-visible {
+            outline: 2px solid rgba(100,208,255,.7) !important;
+            outline-offset: 2px !important;
+            border-radius: 6px;
+        }
+
+        /* ── Badge / chip hover ─────────────────────────────────────── */
+        .inc-label-chip {
+            transition: transform .18s cubic-bezier(.16,1,.3,1), box-shadow .18s !important;
+        }
+        .inc-label-chip:hover { transform:scale(1.06) !important; box-shadow:0 2px 8px rgba(0,0,0,.1) !important; }
+
+        /* ── KPI icon wrapper pulse on hover ────────────────────────── */
+        .kpi-card:hover .kpi-icon-wrapper {
+            transform: scale(1.12) rotate(-6deg);
+            transition: transform .35s cubic-bezier(.16,1,.3,1);
+        }
+        .kpi-icon-wrapper { transition: transform .35s cubic-bezier(.16,1,.3,1); }
+
+        /* ── Section header accent line animation ───────────────────── */
+        .section-header h3::before {
+            transition: width .4s cubic-bezier(.16,1,.3,1) !important;
+        }
+        .card:hover .section-header h3::before { width: 5px !important; }
+
+        /* ── Global cursor upgrade ──────────────────────────────────── */
+        a, button, [onclick], .topnav-link, .kpi-card, .preset-chip,
+        .collapse-header, .sl-mention-card, .notif-item, select {
+            cursor: pointer;
+        }
+
+        /* ── Smooth theme toggle ────────────────────────────────────── */
+        body, .card, .kpi-card, .form-perf-card, .ai-tile, .branch-kpi-card,
+        .sl-mention-card, table, th, td, .select-input, .header, .content-scroll {
+            transition-property: background-color, border-color, color, box-shadow !important;
+            transition-duration: .3s !important;
+            transition-timing-function: cubic-bezier(.4,0,.2,1) !important;
+        }
+
+        /* Improve page entry animation — only fires when body.do-anim is set by navigate() */
         @keyframes fadeIn    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        .view.active > *     { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both; }
-        .view.active > *:nth-child(1) { animation-delay:.03s; }
-        .view.active > *:nth-child(2) { animation-delay:.07s; }
-        .view.active > *:nth-child(3) { animation-delay:.11s; }
-        .view.active > *:nth-child(4) { animation-delay:.15s; }
-        .view.active > *:nth-child(5) { animation-delay:.19s; }
+        body.do-anim .view.active > *     { animation: fadeIn .4s cubic-bezier(.16,1,.3,1) both; }
+        body.do-anim .view.active > *:nth-child(1) { animation-delay:.03s; }
+        body.do-anim .view.active > *:nth-child(2) { animation-delay:.07s; }
+        body.do-anim .view.active > *:nth-child(3) { animation-delay:.11s; }
+        body.do-anim .view.active > *:nth-child(4) { animation-delay:.15s; }
+        body.do-anim .view.active > *:nth-child(5) { animation-delay:.19s; }
 
         /* Smooth collapsible expand */
         @keyframes collapseIn { from { opacity:0; transform:translateY(-10px) scaleY(.97); transform-origin:top; } to { opacity:1; transform:translateY(0) scaleY(1); } }
@@ -1136,8 +1259,6 @@
 
         /* KPI strip */
         .sl-kpi { background:var(--white); border:1.5px solid var(--border-color); border-radius:12px; padding:16px 18px; }
-        .sl-kpi-clickable { cursor:pointer; transition:box-shadow .18s, transform .18s, border-color .18s; }
-        .sl-kpi-clickable:hover { box-shadow:0 6px 20px -4px rgba(217,119,6,.25); transform:translateY(-2px); border-color:#D97706; }
         .sl-kpi-label { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:6px; }
         .sl-kpi-val { font-size:1.5rem; font-weight:800; color:var(--text-main); }
         .sl-kpi-sub { font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
@@ -1163,14 +1284,30 @@
         .sl-field input:focus, .sl-field textarea:focus, .sl-field select:focus { border-color:var(--accent-blue) !important; box-shadow:0 0 0 3px rgba(37,99,235,.1); }
 
         /* Resolution stage tracker */
-        .sl-res-track { display:flex; align-items:center; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); flex-wrap:wrap; }
+        .sl-res-track { display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); flex-wrap:wrap; }
         .sl-res-label { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-right:2px; }
-        .sl-res-stage { display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:20px; font-size:0.72rem; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; }
-        .sl-res-stage.inactive { background:var(--bg-light); border-color:var(--border-color); color:var(--text-muted); }
-        .sl-res-stage.active-contacted { background:rgba(59,130,246,.1); border-color:#3B82F6; color:#2563EB; }
-        .sl-res-stage.active-progress  { background:rgba(245,158,11,.1); border-color:#F59E0B; color:#B45309; }
-        .sl-res-stage.active-closed    { background:rgba(5,150,105,.1);  border-color:#059669; color:#059669; }
-        .sl-res-stage:hover { opacity:.8; transform:scale(.97); }
+        /* Premium morphing resolution button */
+        .res-stage-btn {
+            position:relative; display:inline-flex; align-items:center; gap:8px;
+            padding:7px 18px 7px 14px; border-radius:30px; font-size:0.73rem; font-weight:800;
+            border:none; cursor:pointer; letter-spacing:0.2px; overflow:hidden;
+            font-family:'Inter',sans-serif;
+            transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1), background .4s ease;
+        }
+        .res-stage-btn::before { content:''; position:absolute; inset:0; border-radius:inherit; background:rgba(255,255,255,0.15); opacity:0; transition:opacity .2s ease; }
+        .res-stage-btn:hover::before { opacity:1; }
+        .res-stage-btn:hover { transform:translateY(-2px) scale(1.04); }
+        .res-stage-btn:active { transform:scale(.95) !important; transition-duration:.1s !important; }
+        .res-stage-btn.stage-none      { background:linear-gradient(135deg,#1D4ED8,#3B82F6); color:#fff; box-shadow:0 4px 16px rgba(37,99,235,.4); }
+        .res-stage-btn.stage-contacted { background:linear-gradient(135deg,#B45309,#F59E0B); color:#fff; box-shadow:0 4px 16px rgba(217,119,6,.4); }
+        .res-stage-btn.stage-progress  { background:linear-gradient(135deg,#047857,#10B981); color:#fff; box-shadow:0 4px 16px rgba(5,150,105,.4); }
+        .res-stage-btn .res-btn-icon   { font-size:0.72rem; transition:transform .35s cubic-bezier(.16,1,.3,1); }
+        .res-stage-btn:hover .res-btn-icon { transform:scale(1.25) rotate(-10deg); }
+        @keyframes resRipple { 0%{transform:scale(0);opacity:.4;} 100%{transform:scale(3);opacity:0;} }
+        .res-ripple { position:absolute; border-radius:50%; background:rgba(255,255,255,.45); width:50px; height:50px; margin-top:-25px; margin-left:-25px; animation:resRipple .6s cubic-bezier(.16,1,.3,1) forwards; pointer-events:none; }
+        @keyframes resBtnPop { 0%{transform:scale(.88);opacity:.5;} 60%{transform:scale(1.08);} 100%{transform:scale(1);opacity:1;} }
+        .res-stage-btn.pop { animation:resBtnPop .42s cubic-bezier(.16,1,.3,1) both; }
+        .res-closed-pill { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border-radius:30px; font-size:0.73rem; font-weight:800; background:linear-gradient(135deg,rgba(5,150,105,.12),rgba(16,185,129,.06)); border:1.5px solid rgba(5,150,105,.3); color:#059669; }
         .sl-brand-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; cursor:help; border:1px solid transparent; }
 
         /* Create Submission step animations */
@@ -1239,13 +1376,12 @@
         .ct-unc-item { font-size:0.78rem; color:var(--text-main); padding:8px 12px; background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; margin-bottom:6px; }
         .ct-unc-item .ct-unc-meta { font-size:0.68rem; color:var(--text-muted); font-weight:700; }
         /* ═══════════ LOGIN SCREEN ═══════════ */
-        body { opacity:0; }
-        body.app-ready { opacity:1; transition:opacity 0.22s ease; }
+        body { opacity: 0; }
+        body.app-ready { opacity: 1; transition: opacity 0.22s ease; }
         #login-screen {
             display: none; position: fixed; inset: 0; z-index: 99999;
             align-items: center; justify-content: center;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+            font-family: 'Inter', sans-serif; overflow: hidden;
         }
         #login-screen.visible { display: flex; }
 
@@ -1385,49 +1521,66 @@
         /* Entrance rise — uses 'backwards' fill so it never locks the transform,
            keeping the existing hover lifts on .kpi-card/.card fully working. */
         @keyframes riseIn { from { opacity: 0; transform: translateY(14px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        body.no-anim *,body.no-anim .view.active > *,body.no-anim .kpi-grid > .kpi-card,body.no-anim .branch-cards-grid > .branch-kpi-card,body.no-anim .ai-suite-grid > .ai-tile,body.no-anim .form-perf-grid > .form-perf-card,body.no-anim .sl-mention-card,body.no-anim .sl-kpi { animation:none !important; transition:none !important; }
+        body.no-anim *,
+        body.no-anim .view.active > *,
+        body.no-anim .kpi-grid > .kpi-card,
+        body.no-anim .branch-cards-grid > .branch-kpi-card,
+        body.no-anim .ai-suite-grid > .ai-tile,
+        body.no-anim .form-perf-grid > .form-perf-card,
+        body.no-anim .sl-mention-card,
+        body.no-anim .sl-kpi { animation: none !important; transition: none !important; }
 
-        .view.active > .card,
-        .exec-mode-container.active > .card {
+        /* bg-refresh: kill every animation/transition on every element during silent background refresh */
+        body.bg-refresh *, body.bg-refresh *::before, body.bg-refresh *::after {
+            animation-duration:        0.001ms !important;
+            animation-delay:           0ms     !important;
+            animation-iteration-count: 1       !important;
+            transition-duration:       0.001ms !important;
+            transition-delay:          0ms     !important;
+        }
+
+        /* Cards / tiles / KPIs only animate when body.do-anim is present (set by navigate, removed after) */
+        body.do-anim .view.active > .card,
+        body.do-anim .exec-mode-container.active > .card {
             animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
         }
-        .view.active > .card:nth-child(1),  .exec-mode-container.active > .card:nth-child(1)  { animation-delay: 0.04s; }
-        .view.active > .card:nth-child(2),  .exec-mode-container.active > .card:nth-child(2)  { animation-delay: 0.09s; }
-        .view.active > .card:nth-child(3),  .exec-mode-container.active > .card:nth-child(3)  { animation-delay: 0.14s; }
-        .view.active > .card:nth-child(4),  .exec-mode-container.active > .card:nth-child(4)  { animation-delay: 0.19s; }
-        .view.active > .card:nth-child(5),  .exec-mode-container.active > .card:nth-child(5)  { animation-delay: 0.24s; }
-        .view.active > .card:nth-child(n+6),.exec-mode-container.active > .card:nth-child(n+6){ animation-delay: 0.28s; }
+        body.do-anim .view.active > .card:nth-child(1),  body.do-anim .exec-mode-container.active > .card:nth-child(1)  { animation-delay: 0.04s; }
+        body.do-anim .view.active > .card:nth-child(2),  body.do-anim .exec-mode-container.active > .card:nth-child(2)  { animation-delay: 0.09s; }
+        body.do-anim .view.active > .card:nth-child(3),  body.do-anim .exec-mode-container.active > .card:nth-child(3)  { animation-delay: 0.14s; }
+        body.do-anim .view.active > .card:nth-child(4),  body.do-anim .exec-mode-container.active > .card:nth-child(4)  { animation-delay: 0.19s; }
+        body.do-anim .view.active > .card:nth-child(5),  body.do-anim .exec-mode-container.active > .card:nth-child(5)  { animation-delay: 0.24s; }
+        body.do-anim .view.active > .card:nth-child(n+6),body.do-anim .exec-mode-container.active > .card:nth-child(n+6){ animation-delay: 0.28s; }
 
         /* AI tiles stagger in */
-        .ai-suite-grid > .ai-tile { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .ai-suite-grid > .ai-tile:nth-child(1) { animation-delay: .06s; }
-        .ai-suite-grid > .ai-tile:nth-child(2) { animation-delay: .12s; }
-        .ai-suite-grid > .ai-tile:nth-child(3) { animation-delay: .18s; }
-        .ai-suite-grid > .ai-tile:nth-child(4) { animation-delay: .24s; }
+        body.do-anim .ai-suite-grid > .ai-tile { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(1) { animation-delay: .06s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(2) { animation-delay: .12s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(3) { animation-delay: .18s; }
+        body.do-anim .ai-suite-grid > .ai-tile:nth-child(4) { animation-delay: .24s; }
 
         /* Form perf cards stagger in */
-        .form-perf-grid > .form-perf-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .form-perf-grid > .form-perf-card:nth-child(1) { animation-delay: .05s; }
-        .form-perf-grid > .form-perf-card:nth-child(2) { animation-delay: .10s; }
-        .form-perf-grid > .form-perf-card:nth-child(3) { animation-delay: .15s; }
+        body.do-anim .form-perf-grid > .form-perf-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(1) { animation-delay: .05s; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(2) { animation-delay: .10s; }
+        body.do-anim .form-perf-grid > .form-perf-card:nth-child(3) { animation-delay: .15s; }
 
         /* Branch KPI cards stagger in */
-        .branch-cards-grid > .branch-kpi-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(1) { animation-delay: .04s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(2) { animation-delay: .09s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(3) { animation-delay: .14s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(4) { animation-delay: .19s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(5) { animation-delay: .23s; }
-        .branch-cards-grid > .branch-kpi-card:nth-child(n+6) { animation-delay: .27s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card { animation: riseIn 0.45s cubic-bezier(.16,1,.3,1) backwards; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(1) { animation-delay: .04s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(2) { animation-delay: .09s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(3) { animation-delay: .14s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(4) { animation-delay: .19s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(5) { animation-delay: .23s; }
+        body.do-anim .branch-cards-grid > .branch-kpi-card:nth-child(n+6) { animation-delay: .27s; }
 
         /* KPI cards cascade in */
-        .kpi-grid > .kpi-card { animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
-        .kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0.03s; }
-        .kpi-grid > .kpi-card:nth-child(2) { animation-delay: 0.08s; }
-        .kpi-grid > .kpi-card:nth-child(3) { animation-delay: 0.13s; }
-        .kpi-grid > .kpi-card:nth-child(4) { animation-delay: 0.18s; }
-        .kpi-grid > .kpi-card:nth-child(5) { animation-delay: 0.23s; }
-        .kpi-grid > .kpi-card:nth-child(6) { animation-delay: 0.28s; }
+        body.do-anim .kpi-grid > .kpi-card { animation: riseIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) backwards; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(1) { animation-delay: 0.03s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(2) { animation-delay: 0.08s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(3) { animation-delay: 0.13s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(4) { animation-delay: 0.18s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(5) { animation-delay: 0.23s; }
+        body.do-anim .kpi-grid > .kpi-card:nth-child(6) { animation-delay: 0.28s; }
 
         /* Nav: smooth hover lift + active indicator */
         .topnav-link { transition: color .18s ease, background .18s ease, transform .12s ease; }
@@ -1515,7 +1668,8 @@
         .inc-menu-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: .15s; }
         .inc-menu-btn:hover { background: var(--bg-light); color: var(--text-main); }
         .inc-detail-row > td { background: var(--bg-light); padding: 0 !important; }
-        .inc-detail-inner { padding: 16px 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 26px; animation: fadeIn .2s ease; }
+        .inc-detail-inner { padding: 16px 22px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 26px; }
+        body.do-anim .inc-detail-inner { animation: fadeIn .2s ease; }
         .inc-detail-field .inc-df-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
         .inc-detail-field .inc-df-val { font-size: 0.85rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
         .inc-detail-field.full { grid-column: 1 / -1; }
@@ -1602,7 +1756,7 @@
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
             <div class="header-controls">
-                <button id="refresh-btn" onclick="appRefresh()" title="Refresh data" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid rgba(255,255,255,0.22);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.18)';this.style.borderColor='rgba(255,255,255,0.38)'" onmouseout="this.style.background='rgba(255,255,255,0.1)';this.style.borderColor='rgba(255,255,255,0.22)'">
+                <button id="refresh-btn" onclick="appRefresh()" title="Refresh data" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid rgba(255,255,255,0.22);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
                     <i id="refresh-icon" class="fas fa-rotate-right" style="font-size:0.8rem;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
                     <span id="refresh-label">Refresh</span>
                 </button>
@@ -2706,7 +2860,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'P4.3-breakdown';
+        const BUILD = 'v1.06';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3294,20 +3448,28 @@
                     compareEngine.init();
                     if(typeof branchCompare !== 'undefined') branchCompare.init();
                     this.updateGreeting();
+                    document.body.classList.add('do-anim');
+                    setTimeout(() => document.body.classList.remove('do-anim'), 900);
                     this.applyFilters();
                     renderAlerts();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
                         setInterval(async()=>{
-                            if(!await loadLive()) return;
-                            applyGlobalFilters();
-                            const ns=state.p1.subs.length,ni=state.p1.incs.length;
-                            if(ns===_lsc&&ni===_lic) return;
-                            _lsc=ns; _lic=ni;
-                            document.body.classList.add('no-anim');
-                            _s.applyFilters(); renderAlerts();
-                            requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.remove('no-anim')));
+                            // Step 1: add class + force browser to compute styles NOW before any DOM writes
+                            document.body.classList.add('bg-refresh');
+                            void document.body.offsetHeight; // force synchronous style recalc
+                            try {
+                                if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
+                                applyGlobalFilters();
+                                const ns=state.p1.subs.length, ni=state.p1.incs.length;
+                                if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
+                                _lsc=ns; _lic=ni;
+                                _s.applyFilters(); renderAlerts();
+                            } finally {
+                                // Step 2: keep suppressor on until browser finishes painting all rewritten nodes
+                                setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
+                            }
                         }, 30000);
                     }
                 } finally {
@@ -3430,11 +3592,15 @@
                         if(targetView){
                             targetView.style.opacity    = '0';
                             targetView.classList.add('active');
+                            // Enable entrance animations for this user-initiated navigation
+                            document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
                                 targetView.style.transition = 'opacity .22s cubic-bezier(.4,0,.2,1)';
                                 targetView.style.opacity    = '1';
                                 setTimeout(() => { targetView.style.opacity = ''; targetView.style.transition = ''; }, 250);
                             });
+                            // Remove do-anim after all animations finish (~600ms max)
+                            setTimeout(() => document.body.classList.remove('do-anim'), 700);
                         }
                         const gc = document.getElementById('global-controls');
                         if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
@@ -3445,6 +3611,9 @@
                     if(targetView) targetView.classList.add('active');
                     const gc = document.getElementById('global-controls');
                     if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                    // Enable entrance animations for this user-initiated navigation
+                    document.body.classList.add('do-anim');
+                    setTimeout(() => document.body.classList.remove('do-anim'), 700);
                     this.renderCurrentView();
                 }
             },
@@ -3482,8 +3651,11 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
+                    // Background refresh — skip skeleton, preserve filter state, just silently repaint
+                    if(document.body.classList.contains('bg-refresh') || document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // User-navigated: reset preset so date chips reinitialise
                     window._slPresetInited = false;
-                    if(document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // User-navigated: show skeleton then load
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
                     if(feed){
@@ -3815,6 +3987,11 @@
 
                 const rows = filtered.slice(0, 300);
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
+
+                // Remember which row is open so we can restore it after tbody rewrite
+                const openDetailRow = document.querySelector('.inc-detail-row');
+                const openIdx = openDetailRow ? parseInt(openDetailRow.dataset.incIdx || '-1') : -1;
+
                 document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
                     const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
@@ -3846,13 +4023,20 @@
                     </tr>`;
                 }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 this._incFiltered = rows;
+
+                // Silently restore the previously expanded row (so auto-refresh doesn't collapse it)
+                if(openIdx >= 0 && rows[openIdx]){
+                    const tbody = document.querySelector('#inc-detail-table tbody');
+                    const targetRow = tbody ? tbody.rows[openIdx] : null;
+                    if(targetRow) this.toggleIncidentDetail(targetRow, openIdx, true);
+                }
             },
 
-            toggleIncidentDetail(rowEl, idx) {
+            toggleIncidentDetail(rowEl, idx, silent) {
                 // collapse if already open
                 const next = rowEl.nextElementSibling;
-                if(next && next.classList.contains('inc-detail-row')){ next.remove(); return; }
-                document.querySelectorAll('.inc-detail-row').forEach(r => r.remove());
+                if(next && next.classList.contains('inc-detail-row')){ if(!silent){ next.remove(); } return; }
+                if(!silent) document.querySelectorAll('.inc-detail-row').forEach(r => r.remove());
                 const inc = (this._incFiltered || [])[idx];
                 if(!inc) return;
                 const score = inc.smileScore || inc.rating || 0;
@@ -3861,6 +4045,7 @@
                 const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
                 const tr = document.createElement('tr');
                 tr.className = 'inc-detail-row';
+                tr.dataset.incIdx = idx;
                 tr.innerHTML = `<td colspan="8"><div class="inc-detail-inner">
                     ${field('Branch', inc.branch)}
                     ${field('Product', inc.product)}
@@ -4933,14 +5118,37 @@
         }
 
         // ── Resolution stage handler ──────────────────────────────────────────
-        const SL_RES_ORDER=['none','contacted','progress','closed'];
-        function slSetResolution(id,stage){
-            const m=slMentions.find(x=>x.id===id); if(!m) return;
-            const cur=m.resolutionStatus||'none'; if(cur==='closed') return;
-            const ci=SL_RES_ORDER.indexOf(cur),ti=SL_RES_ORDER.indexOf(stage);
-            if(ti!==ci+1) return;
-            m.resolutionStatus=stage; slSaveData(); renderSocialListening();
-            if(LIVE.slScriptUrl){ fetch(LIVE.slScriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'sl_resolution',id:id,status:m.resolutionStatus})}).then(()=>console.log('Resolution saved ✓')).catch(e=>console.warn('Resolution save failed:',e)); }
+        // One-way resolution pipeline: none → contacted → progress → closed (permanent)
+        const SL_RES_ORDER = ['none','contacted','progress','closed'];
+        function slSetResolutionBtn(e, btn, id, stage){
+            // Ripple effect
+            const rect = btn.getBoundingClientRect();
+            const ripple = document.createElement('span');
+            ripple.className = 'res-ripple';
+            ripple.style.left = (e.clientX - rect.left) + 'px';
+            ripple.style.top  = (e.clientY - rect.top)  + 'px';
+            btn.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 700);
+            // Slight delay so ripple is seen before re-render
+            setTimeout(() => slSetResolution(id, stage), 180);
+        }
+
+        function slSetResolution(id, stage){
+            const m = slMentions.find(x=>x.id===id);
+            if(!m) return;
+            const cur = m.resolutionStatus||'none';
+            if(cur==='closed') return;
+            const ci=SL_RES_ORDER.indexOf(cur), ti=SL_RES_ORDER.indexOf(stage);
+            if(ti!==ci+1) return; // only advance exactly one step forward
+            m.resolutionStatus = stage;
+            slSaveData();
+            renderSocialListening();
+            if(LIVE.slScriptUrl){
+                fetch(LIVE.slScriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({action:'sl_resolution',id:id,status:m.resolutionStatus})})
+                .then(()=>console.log('Resolution saved ✓'))
+                .catch(e=>console.warn('Resolution save failed (kept locally):',e));
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -5413,13 +5621,6 @@
             }
         }
 
-        // Toggle unresolved-only filter — called by the Unresolved KPI tile
-        window._slUnresolvedOnly = false;
-        function slToggleUnresolved(){
-            window._slUnresolvedOnly = !window._slUnresolvedOnly;
-            renderSocialListening();
-        }
-
         function renderSocialListening(){
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
@@ -5440,8 +5641,6 @@
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
                 if(dateFrom && m.date && m.date < dateFrom) return false;
                 if(dateTo   && m.date && m.date > dateTo)   return false;
-                // Unresolved-only filter: complaints not yet closed
-                if(window._slUnresolvedOnly && !(m.sentiment==='Complaint' && m.resolutionStatus!=='closed')) return false;
                 return true;
             });
 
@@ -5470,18 +5669,15 @@
             const reach      = filtered.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
 
             const kpiStrip = document.getElementById('sl-kpi-strip');
-            const _isUnresOnly = !!window._slUnresolvedOnly;
             if(kpiStrip){
                 kpiStrip.innerHTML = [
-                    { label:'Total Mentions', val:total,      sub:'across all platforms',            color:'var(--accent-blue)',      icon:'fa-hashtag',           click:false },
-                    { label:'Complaints',     val:complaints, sub:`${unresolved} need attention`,    color:'var(--status-critical)',   icon:'fa-circle-exclamation',click:false },
-                    { label:'Unresolved',     val:unresolved, sub:_isUnresOnly?'click to clear':'click to filter', color:'#D97706', icon:'fa-clock-rotate-left', click:true  },
+                    { label:'Total Mentions', val:total, sub:'across all platforms', color:'var(--accent-blue)', icon:'fa-hashtag' },
+                    { label:'Complaints', val:complaints, sub:`${unresolved} unresolved`, color:'var(--status-critical)', icon:'fa-circle-exclamation' },
+                    { label:'Praise', val:praises, sub:'positive mentions', color:'var(--status-good)', icon:'fa-star' },
                 ].map((k,i)=>`
-                    <div class="sl-kpi${k.click?' sl-kpi-clickable':''}" data-unres="${k.click}"
-                         style="animation:${document.body.classList.contains('no-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};${k.click&&_isUnresOnly?'outline:2px solid #D97706;outline-offset:2px;':''}"
-                         ${k.click?'onclick="slToggleUnresolved()"':''} title="${k.click?(_isUnresOnly?'Clear filter':'Show only unresolved complaints'):''}">
+                    <div class="sl-kpi" style="animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};">
                         <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
-                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}${k.click&&_isUnresOnly?' <span style="font-size:0.6rem;padding:1px 5px;background:#D97706;color:#fff;border-radius:6px;font-weight:900;">ACTIVE</span>':''}
+                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}
                         </div>
                         <div class="sl-kpi-val" style="color:${k.color};" data-target="${k.val}">0</div>
                         <div class="sl-kpi-sub">${k.sub}</div>
@@ -5525,7 +5721,7 @@
                 };
                 const pc = platformColors[m.platform] || { bg:'#64748B', icon:'fa-globe' };
                 const sourceBtn = m.url
-                    ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" onmouseover="this.style.opacity='.82'" onmouseout="this.style.opacity='1'"><i class="fab ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
+                    ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" ><i class="fab ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
                     : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:rgba(217,119,6,.08);color:var(--status-warn);font-size:0.72rem;font-weight:800;border:1.5px dashed rgba(217,119,6,.35);cursor:default;" title="Source link missing — whoever added this mention should edit it and paste the direct post URL so it can be verified"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Source missing</span>`;
 
                 // ── Brand confidence chip ─────────────────────────────────────
@@ -5617,7 +5813,7 @@
                     </div>` : '';
 
                 return `
-                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:${document.body.classList.contains('no-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06,0.5)}s both`};">
+                <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06,0.5)}s both`};">
                     <div class="sl-card-top">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span class="sl-platform-badge ${platClass}"><i class="fab ${platIcon}"></i> ${m.platform}</span>
@@ -5643,27 +5839,24 @@
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
                     </div>
-                    ${m.sentiment==='Complaint'?(()=>{
+                    ${m.sentiment==='Complaint' ? (()=>{
                         const rs=m.resolutionStatus||'none';
-                        if(rs==='closed') return `<div class="sl-res-track"><span class="sl-res-label">Resolution</span><span style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:0.72rem;font-weight:800;background:rgba(5,150,105,.1);border:1.5px solid rgba(5,150,105,.3);color:#059669;"><i class="fas fa-circle-check" style="font-size:0.65rem;"></i> Resolved &amp; Closed</span></div>`;
-                        const sty=(active,prev,next)=>active?'background:rgba(59,130,246,.12);border-color:#3B82F6;color:#2563EB;cursor:not-allowed;':prev?'background:rgba(245,158,11,.1);border-color:#F59E0B;color:#B45309;cursor:not-allowed;':next?'background:var(--white);border-color:var(--border-color);color:var(--text-main);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);':'background:var(--bg-light);border-color:var(--border-color);color:var(--text-muted);opacity:.35;cursor:not-allowed;pointer-events:none;';
-                        const s1=sty(rs==='contacted'||rs==='progress',false,rs==='none');
-                        const s2=sty(false,rs==='progress',rs==='contacted');
-                        const s3=sty(false,false,rs==='progress');
-                        const a1=rs==='none'?`onclick="slSetResolution('${m.id}','contacted')"`:'' ;
-                        const a2=rs==='contacted'?`onclick="slSetResolution('${m.id}','progress')"`:'' ;
-                        const a3=rs==='progress'?`onclick="slSetResolution('${m.id}','closed')"`:'' ;
-                        const i1=(rs==='contacted'||rs==='progress')?'fa-check':'fa-phone';
-                        const i2=rs==='progress'?'fa-check':'fa-arrow-right';
+                        if(rs==='closed') return `<div class="sl-res-track"><span class="sl-res-label">Resolution</span><span class="res-closed-pill"><i class="fas fa-circle-check" style="font-size:0.68rem;"></i> Resolved &amp; Closed</span></div>`;
+                        // Single morphing button — stage-none→contacted→progress→closed
+                        const stageMap = {
+                            none:      { cls:'stage-none',      icon:'fa-phone',        label:'Contact Customer',  next:'contacted' },
+                            contacted: { cls:'stage-contacted',  icon:'fa-arrow-trend-up',label:'Mark In Progress', next:'progress'  },
+                            progress:  { cls:'stage-progress',   icon:'fa-circle-check', label:'Close Case',        next:'closed'    }
+                        };
+                        const st = stageMap[rs] || stageMap.none;
                         return `<div class="sl-res-track">
                             <span class="sl-res-label">Resolution</span>
-                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s1}" ${a1}><i class="fas ${i1}" style="font-size:0.6rem;"></i> Contacted</button>
-                            <i class="fas fa-chevron-right" style="font-size:0.5rem;color:var(--border-color);margin:0 3px;"></i>
-                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s2}" ${a2}><i class="fas ${i2}" style="font-size:0.6rem;"></i> In Progress</button>
-                            <i class="fas fa-chevron-right" style="font-size:0.5rem;color:var(--border-color);margin:0 3px;"></i>
-                            <button style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid;transition:all .15s;${s3}" ${a3}><i class="fas fa-circle-check" style="font-size:0.6rem;"></i> Close</button>
+                            <button class="res-stage-btn ${st.cls}" onclick="slSetResolutionBtn(event,this,'${m.id}','${st.next}')">
+                                <i class="fas ${st.icon} res-btn-icon"></i>
+                                <span>${st.label}</span>
+                            </button>
                         </div>`;
-                    })():''}
+                    })() : ''}
                 </div>`;
             }).join('');
 
@@ -6489,22 +6682,27 @@
                             </div>
                             <!-- Photo options -->
                             <div style="padding:6px;">
-                                <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;cursor:pointer;transition:.15s;font-size:0.82rem;font-weight:600;color:var(--text-main);border-radius:8px;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
+                                <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;cursor:pointer;transition:.15s;font-size:0.82rem;font-weight:600;color:var(--text-main);border-radius:8px;" class="dp-menu-row">
                                     <span style="width:26px;height:26px;border-radius:7px;background:rgba(1,1,151,.07);color:#010197;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas fa-camera"></i></span>
                                     Change photo
                                     <input type="file" accept="image/*" onchange="handleDpUpload(event)" style="display:none;">
                                 </label>
-                                <button onclick="removeDp()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--text-muted);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='var(--bg-light)';this.style.color='var(--text-main)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-muted)'">
+                                <button onclick="removeDp()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--text-muted);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" class="dp-menu-row">
                                     <span style="width:26px;height:26px;border-radius:7px;background:rgba(100,116,139,.08);color:var(--text-muted);display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas fa-image-portrait"></i></span>
                                     Remove photo
                                 </button>
                             </div>
                             <!-- Sign out -->
                             <div style="padding:0 6px 6px;border-top:1px solid var(--border-color);margin-top:2px;padding-top:6px;">
-                                <button onclick="authLogout()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:#DC2626;text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='rgba(220,38,38,.06)'" onmouseout="this.style.background='transparent'">
+                                <button onclick="authLogout()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:#DC2626;text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" >
                                     <span style="width:26px;height:26px;border-radius:7px;background:rgba(220,38,38,.08);color:#DC2626;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas fa-sign-out-alt"></i></span>
                                     Sign out
                                 </button>
+                            </div>
+                            <!-- Dashboard version -->
+                            <div style="padding:8px 14px 10px;border-top:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+                                <span style="font-size:0.62rem;color:var(--text-muted);font-weight:500;">Dashboard Version</span>
+                                <span style="font-size:0.62rem;font-weight:800;padding:2px 8px;border-radius:20px;background:rgba(1,1,151,.07);color:#010197;letter-spacing:0.3px;">${BUILD}</span>
                             </div>
                         </div>
                         <!-- Hidden file input store -->
@@ -6664,17 +6862,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const session = authGetSession();
             if(session && session.email){
-                // Already logged in — skip login screen
                 authShowApp(session);
             } else {
-                // Show login screen, focus email field
                 const ls = document.getElementById('login-screen');
                 if(ls) ls.classList.add('visible');
                 document.body.classList.add('app-ready');
-                setTimeout(() => {
-                    const el = document.getElementById('login-email');
-                    if(el) el.focus();
-                }, 300);
+                setTimeout(()=>{ const el=document.getElementById('login-email'); if(el) el.focus(); },300);
             }
         });
 
