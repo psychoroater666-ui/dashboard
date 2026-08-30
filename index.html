@@ -5549,6 +5549,7 @@
                 id:'sl'+Date.now(), platform, type, sentiment, branch, author, content,
                 likes, comments, shares:0,
                 date: new Date(SYSTEM_NOW).toISOString().split('T')[0],
+                sortTs: Date.now(),
                 url, resolved:false, tags:[],
                 resolutionStatus: sentiment === 'Complaint' ? 'none' : null,
                 region: (config.branches.find(b=>b.name===branch)||{}).region || 'Pakistan',
@@ -5664,6 +5665,14 @@
                     const platform  = get('Platform')  || 'Instagram';
                     const analysis  = slAnalyseContent(content);
 
+                    // Precise sort timestamp: prefer the sheet's Timestamp column
+                    // (has time-of-day) so same-day posts order correctly; fall
+                    // back to row index (rows are appended oldest→newest, so a
+                    // later index means a more recently added post).
+                    const tsRaw    = get('Timestamp');
+                    const parsedTs = tsRaw ? Date.parse(tsRaw) : NaN;
+                    const sortTs   = isNaN(parsedTs) ? idx : parsedTs;
+
                     return {
                         id:         slStableId(platform, get('Author'), get('Date') || get('Timestamp').split('T')[0]),
                         platform,
@@ -5676,6 +5685,7 @@
                         comments:   parseInt(get('Comments')) || 0,
                         shares:     0,
                         date:       get('Date')      || get('Timestamp').split('T')[0] || '',
+                        sortTs,
                         url:        get('URL')        || '',
                         resolved:   false,
                         tags:       [],
@@ -5769,9 +5779,20 @@
             });
 
             // ── Sort: newest first (highest date) by default ──
+            // Primary key: date (day-level). Secondary key: sortTs (precise
+            // timestamp) so same-day posts are still ordered by true recency
+            // instead of falling back to whatever order they were merged in.
             filtered.sort((a, b) => {
                 const da = a.date || '2000-01-01', db = b.date || '2000-01-01';
-                return slSortNewestFirst ? (db > da ? 1 : db < da ? -1 : 0) : (da > db ? 1 : da < db ? -1 : 0);
+                if(da !== db){
+                    return slSortNewestFirst ? (db > da ? 1 : -1) : (da > db ? 1 : -1);
+                }
+                const ta = (typeof a.sortTs === 'number') ? a.sortTs : 0;
+                const tb = (typeof b.sortTs === 'number') ? b.sortTs : 0;
+                if(ta !== tb){
+                    return slSortNewestFirst ? (tb - ta) : (ta - tb);
+                }
+                return 0;
             });
 
             // ── Showing label ──
