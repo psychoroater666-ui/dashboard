@@ -1062,8 +1062,9 @@
         .btn-icon:active { transform:scale(.9) !important; transition-duration:.07s !important; }
 
         /* ── Refresh button (CSS replaces inline JS handlers) ────────── */
-        .refresh-btn-el { transition: background .2s cubic-bezier(.4,0,.2,1), border-color .2s, transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s !important; }
-        .refresh-btn-el:hover { background:rgba(255,255,255,.18) !important; border-color:rgba(255,255,255,.4) !important; transform:translateY(-1px) !important; box-shadow:0 4px 14px rgba(0,0,0,.2) !important; }
+        /* Lives in the light controls bar — plain white pill, black icon/text, subtle hover */
+        .refresh-btn-el { transition: background .2s cubic-bezier(.4,0,.2,1), color .2s, border-color .2s, transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s !important; }
+        .refresh-btn-el:hover { background:var(--bg-light) !important; border-color:#000 !important; transform:translateY(-1px) !important; box-shadow:0 4px 14px rgba(0,0,0,.12) !important; }
         .refresh-btn-el:active { transform:scale(.96) !important; transition-duration:.08s !important; }
 
         /* ── General buttons ────────────────────────────────────────── */
@@ -1850,10 +1851,6 @@
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
             <div class="header-controls">
-                <button id="refresh-btn" onclick="appRefresh()" data-tip="Refresh data" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1px solid rgba(255,255,255,0.22);border-radius:8px;background:rgba(255,255,255,0.1);color:#fff;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
-                    <i id="refresh-icon" class="fas fa-rotate-right" style="font-size:0.8rem;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
-                    <span id="refresh-label">Refresh</span>
-                </button>
                 <div style="position:relative;">
                     <button class="btn-icon" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
                         <i class="fas fa-bell"></i>
@@ -1900,13 +1897,17 @@
                 </select>
 
                 <!-- View mode toggles inline in filter bar -->
-                <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+                <div style="margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
                     <div id="exec-view-toggles" style="display:flex;align-items:center;gap:0;background:var(--bg-light);border:1.5px solid var(--border-color);border-radius:10px;overflow:hidden;padding:3px;">
                         <button class="view-btn active" onclick="app.setExecMode('overview', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Overview</button>
                         <button class="view-btn" onclick="app.setExecMode('compare', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Compare</button>
                         <button class="view-btn" onclick="app.setExecMode('trend', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Trend</button>
                         <button class="view-btn" onclick="app.setExecMode('breakdown', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Breakdown</button>
                     </div>
+                    <button id="refresh-btn" onclick="appRefresh()" data-tip="Refresh data" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:#000;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
+                        <i id="refresh-icon" class="fas fa-infinity" style="font-size:0.85rem;color:#000;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
+                        <span id="refresh-label">Refresh</span>
+                    </button>
                     <!-- lastUpdated kept for JS but hidden -->
                     <span id="lastUpdated" style="display:none;"></span>
                 </div>
@@ -6597,12 +6598,13 @@
             // ── Phase 1: Loading state ──
             btn.disabled = true;
             btn.style.cursor = 'not-allowed';
-            btn.style.borderColor = 'rgba(100,208,255,0.5)';
-            btn.style.background  = 'rgba(100,208,255,0.12)';
+            btn.style.borderColor = '#000';
+            btn.style.background  = 'var(--white)';
             label.textContent = 'Refreshing…';
 
             // Continuous spin on icon
-            icon.className = 'fas fa-rotate-right';
+            icon.className = 'fas fa-infinity';
+            icon.style.color = '#000';
             icon.style.transition = 'none';
             icon.style.animation  = 'appRefreshSpin .6s linear infinite';
 
@@ -6654,23 +6656,23 @@
                 // ── Phase 3: Success state — checkmark ──
                 icon.style.animation = 'none';
                 icon.className = 'fas fa-circle-check';
-                icon.style.color = '#64D0FF';
+                icon.style.color = '#000';
                 icon.style.transform = 'scale(1.2)';
                 icon.style.transition = 'transform .3s cubic-bezier(.16,1,.3,1), color .2s';
                 label.textContent = 'Updated';
-                btn.style.borderColor = 'rgba(100,208,255,0.6)';
-                btn.style.background  = 'rgba(100,208,255,0.15)';
+                btn.style.borderColor = '#000';
+                btn.style.background  = 'var(--white)';
 
                 // ── Phase 4: Reset after 1.5s ──
                 setTimeout(() => {
                     icon.style.transform  = 'scale(1)';
-                    icon.style.color      = '';
                     setTimeout(() => {
-                        icon.className        = 'fas fa-rotate-right';
+                        icon.className        = 'fas fa-infinity';
+                        icon.style.color      = '#000';
                         icon.style.transition = '';
                         label.textContent     = 'Refresh';
-                        btn.style.borderColor = 'rgba(255,255,255,0.18)';
-                        btn.style.background  = 'rgba(255,255,255,0.08)';
+                        btn.style.borderColor = 'var(--border-color)';
+                        btn.style.background  = 'var(--white)';
                         btn.style.cursor      = 'pointer';
                         btn.disabled          = false;
                     }, 300);
