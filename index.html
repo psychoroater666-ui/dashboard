@@ -1204,6 +1204,13 @@
             outline-offset: 3px !important;
             border-radius: 6px !important;
         }
+        /* Kill ALL browser-native focus rings on inputs — we handle it via parent border */
+        input:focus, input:focus-visible,
+        textarea:focus, textarea:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+            -webkit-box-shadow: none !important;
+        }
 
         /* ── Scrollbar — ultra slim ─────────────────────────────────── */
         ::-webkit-scrollbar { width:4px; height:4px; }
@@ -2912,7 +2919,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.11';
+        const BUILD = 'v1.12';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -6355,7 +6362,7 @@
         function csInputField(id, type, placeholder, icon, value){
             return `<div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-color);border-radius:10px;padding:12px 14px;background:var(--white);transition:border-color .2s;" onfocusin="this.style.borderColor='#010197'" onfocusout="this.style.borderColor='var(--border-color)'">
                 <i class="fas ${icon}" style="color:var(--text-muted);font-size:0.82rem;flex-shrink:0;"></i>
-                <input id="${id}" type="${type}" placeholder="${placeholder}" value="${value}" style="border:none;outline:none;box-shadow:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
+                <input id="${id}" type="${type}" placeholder="${placeholder}" value="${value}" style="border:none;outline:none !important;box-shadow:none !important;-webkit-appearance:none;appearance:none;font-size:0.88rem;color:var(--text-main);background:transparent;width:100%;font-family:'Inter',sans-serif;">
             </div>`;
         }
 
