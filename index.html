@@ -2912,7 +2912,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.09';
+        const BUILD = 'v1.09b';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -6649,8 +6649,9 @@
             ].join(',');
 
             // Elements that get a LIGHT ripple (dark bg — nav, buttons)
+            // Note: .topnav-link excluded — its ::after underline is the feedback
             const LIGHT_SELECTORS = [
-                '.topnav-link','.btn-icon','.refresh-btn-el',
+                '.btn-icon','.refresh-btn-el',
                 '.res-stage-btn','button.login-btn'
             ].join(',');
 
@@ -6670,7 +6671,10 @@
                 // Ensure host has relative positioning
                 const pos = getComputedStyle(el).position;
                 if(pos === 'static') el.style.position = 'relative';
-                if(getComputedStyle(el).overflow === 'visible') el.style.overflow = 'hidden';
+                // Only force overflow:hidden on elements that can safely clip
+                // Never on nav links (clips ::after underline) or elements with CSS overflow already set
+                const noClip = el.matches('.topnav-link, .collapse-chevron, .branch-inc-row, tbody tr, td, th');
+                if(!noClip && getComputedStyle(el).overflow === 'visible') el.style.overflow = 'hidden';
 
                 el.appendChild(rip);
                 setTimeout(() => rip.remove(), 600);
