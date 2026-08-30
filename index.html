@@ -5579,6 +5579,12 @@
             })
             .then(() => {
                 console.log('Social mention saved to Google Sheets ✓');
+                // Re-sync from the sheet shortly after so this entry's date/time
+                // reflects the backend's actual recorded value (not the local
+                // placeholder date used for the optimistic UI update above).
+                setTimeout(() => {
+                    loadSocialFromSheet().then(() => renderSocialListening());
+                }, 1500);
             })
             .catch(err => {
                 console.warn('Sheet save failed (mention kept locally):', err);
