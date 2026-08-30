@@ -1769,6 +1769,283 @@
         .inc-detail-field .inc-df-val { font-size: 0.85rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
         .inc-detail-field.full { grid-column: 1 / -1; }
         .inc-df-comment { font-style: italic; color: var(--text-main); background: var(--white); border-left: 3px solid var(--accent-blue); padding: 10px 14px; border-radius: 0 8px 8px 0; }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           PREMIUM MICRO-INTERACTIONS — additive polish layer.
+           Pure hover / active / focus states on existing elements only.
+           Nothing above this block is modified; nothing structural changes.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* Smooth global scrolling + tabular numbers so KPI values never jitter */
+        html { scroll-behavior: smooth; }
+        .kpi-value, .inc-stat-value, .bkc-stat-val, .sl-stat, .ci-mon-val,
+        .form-perf-stat-val, .inc-bar-val, .inc-df-val { font-variant-numeric: tabular-nums; }
+
+        /* Branded text selection */
+        ::selection { background: rgba(1,1,151,.16); color: var(--text-main); }
+
+        /* Branded, slimmer scrollbars (webkit) for a more considered feel */
+        ::-webkit-scrollbar { width: 9px; height: 9px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(1,1,151,.18); border-radius: 20px; border: 2px solid transparent; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(1,1,151,.32); background-clip: padding-box; }
+        body.dark-theme ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); background-clip: padding-box; }
+        body.dark-theme ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.24); background-clip: padding-box; }
+
+        /* Universal, consistent easing for anything still using default transitions */
+        a, button, input, select, textarea, .kpi-card, .card, [class*="btn"] {
+            transition-timing-function: cubic-bezier(.4,0,.2,1);
+        }
+
+        /* Every interactive element gets a real pointer + a gentle press-down.
+           NOTE: deliberately NOT using a bare [onclick] selector here — several large
+           wrapper elements (e.g. #mainScroll, the whole content area) also carry an
+           onclick handler, and CSS :active bubbles up through ancestors, so a generic
+           [onclick]:active rule would visually shrink the entire page on any tap inside
+           it. Listing only the actual small, tappable elements avoids that entirely. */
+        .btn, .btn-icon, .btn-link, .btn-logout, .view-btn,
+        .preset-chip, .topnav-link, .comp-tag, .sl-sentiment-chip, .inc-menu-btn,
+        .ms-option, .voc-section-header, .collapse-header, table tbody tr[onclick],
+        .branch-inc-row, .mon-branch, .mon-form-head, .form-inc-header, .user-chip {
+            cursor: pointer;
+        }
+        .btn:active, .btn-icon:active, .btn-link:active, .preset-chip:active, .comp-tag:active,
+        .ms-option:active, .sl-sentiment-chip:active, table tbody tr[onclick]:active {
+            transform: scale(.97);
+            transition-duration: .09s !important;
+        }
+
+        /* Buttons — soft depth on hover, crisp press, consistent everywhere */
+        button:not(.res-stage-btn):not(.kpi-card):not(.topnav-link):not(:disabled) {
+            transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1),
+                        background-color .18s ease, border-color .18s ease, filter .18s ease;
+        }
+        button:not(:disabled):hover { filter: brightness(1.03); }
+        button:disabled { cursor: not-allowed; opacity: .55; filter: saturate(.6); }
+
+        /* Chips / pills / tags — tactile bounce + smoother active swap */
+        .preset-chip, .comp-tag, .sl-sentiment-chip, .inc-label-chip, .smile-pill {
+            transition: transform .2s cubic-bezier(.34,1.56,.64,1), background-color .2s ease,
+                        color .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .preset-chip:hover, .sl-sentiment-chip:hover { transform: translateY(-1px); }
+
+        /* Inputs & selects — glowing focus ring instead of a hard outline flip */
+        .select-input, .login-input, .sl-field, input[type="text"], input[type="email"],
+        input[type="password"], input[type="date"], input[type="search"], textarea {
+            transition: border-color .2s cubic-bezier(.4,0,.2,1), box-shadow .25s cubic-bezier(.4,0,.2,1),
+                        background-color .2s ease;
+        }
+        .select-input:focus, .login-input:focus, .sl-field:focus, input:focus, textarea:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 4px rgba(1,1,151,.1) !important;
+            outline: none !important;
+        }
+        .date-range-pill { transition: border-color .2s ease, box-shadow .2s ease, transform .2s cubic-bezier(.16,1,.3,1); }
+        .date-range-pill:hover { border-color: rgba(1,1,151,.25); transform: translateY(-1px); }
+        .date-range-pill:focus-within { box-shadow: 0 0 0 4px rgba(1,1,151,.1); border-color: var(--accent-blue); }
+
+        /* Dropdown menus — fade + scale from the anchor instead of an instant pop */
+        .ms-dropdown, .notif-dropdown, .dp-menu, #dp-menu {
+            animation: crumbleMenuIn .18s cubic-bezier(.16,1,.3,1) both;
+            transform-origin: top;
+        }
+        @keyframes crumbleMenuIn {
+            0%   { opacity: 0; transform: translateY(-10px) scale(.96); }
+            60%  { opacity: 1; transform: translateY(1px) scale(1.005); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .ms-option { transition: background-color .15s ease, padding-left .18s cubic-bezier(.4,0,.2,1); }
+        .ms-option:hover { padding-left: 4px; }
+
+        /* Table rows — smoother hover glide + subtle affordance on clickable rows */
+        table tbody tr { transition: background-color .18s ease; }
+        table tbody tr[onclick]:hover { background: var(--accent-blue-light) !important; }
+        table tbody tr[onclick] td:first-child { position: relative; }
+
+        /* Chevrons / expand-collapse icons — smooth rotation, no snap */
+        .collapse-chevron, .fa-chevron-down, .fa-chevron-right, .ms-header i {
+            transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+        }
+        .voc-section-header.collapsed .fa-chevron-down,
+        .collapse-header.collapsed .collapse-chevron { transform: rotate(-90deg); }
+
+        /* Icon wrappers inside tiles/cards — lively hover without moving layout */
+        .ai-tile-ico, .insight-icon, .voc-section-icon {
+            transition: transform .3s cubic-bezier(.34,1.56,.64,1), background-color .2s ease;
+        }
+        .ai-tile:hover .ai-tile-ico, .voc-section:hover .voc-section-icon { transform: scale(1.08) rotate(-4deg); }
+
+        /* Trend indicators — colour settles smoothly rather than flipping instantly */
+        .trend-indicator, .trend-text { transition: color .25s ease; }
+
+        /* Progress / bar fills already animate width — add a soft shimmer sweep for a living feel */
+        .inc-bar-fill, .sl-bar-fill { position: relative; overflow: hidden; }
+        .inc-bar-fill::after, .sl-bar-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+            transform: translateX(-100%); animation: crumbleBarSheen 2.2s ease-in-out infinite;
+        }
+        @keyframes crumbleBarSheen { 0%,60% { transform: translateX(-100%); } 100% { transform: translateX(160%); } }
+
+        /* Modal panels — consistent, refined entrance wherever a modal overlay exists */
+        .modal-overlay, [class*="modal-overlay"] { transition: opacity .25s ease; }
+        .modal-overlay .modal, [class*="modal-overlay"] [class*="modal-panel"], [class*="modal-overlay"] > div > div {
+            animation: crumbleModalIn .3s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes crumbleModalIn {
+            0%   { opacity: 0; transform: translateY(28px) scale(.94); }
+            55%  { opacity: 1; transform: translateY(-4px) scale(1.008); }
+            80%  { transform: translateY(1px) scale(.998); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Accessible, on-brand focus ring for keyboard users everywhere */
+        a:focus-visible, button:focus-visible, .kpi-card:focus-visible, .card:focus-visible,
+        input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid var(--brand-button) !important;
+            outline-offset: 2px !important;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           MICRO-LEVEL REFINEMENT PASS — spring-tuned feedback + a visual
+           "haptic pulse" (crumble-tap class, toggled briefly by JS below)
+           that reads as tactile even on devices without a vibration motor.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* Toggle-style controls (view switch, resolution stage, sentiment chip)
+           get a snappier spring instead of a linear ease — feels like a physical flip */
+        .view-btn, .res-stage-btn, .sl-sentiment-chip, .preset-chip {
+            transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+                        background-color .18s cubic-bezier(.4,0,.2,1),
+                        color .18s cubic-bezier(.4,0,.2,1),
+                        border-color .18s cubic-bezier(.4,0,.2,1),
+                        box-shadow .22s cubic-bezier(.4,0,.2,1) !important;
+        }
+        .view-btn.active, .preset-chip.active { transform: scale(1.02); }
+
+        /* Primary / confirming actions (login, next-step, add, save) get a touch
+           more lift on hover and a firmer press — they should feel the most "solid" */
+        .login-btn, #cs-next-btn, .btn-logout, button[type="submit"] {
+            transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), filter .18s ease !important;
+        }
+        .login-btn:hover, #cs-next-btn:hover, button[type="submit"]:hover { transform: translateY(-1px); filter: brightness(1.05); }
+        .login-btn:active, #cs-next-btn:active, button[type="submit"]:active { transform: translateY(0) scale(.97); transition-duration: .08s !important; }
+
+        /* Visual "haptic pulse" — a quick, tight scale+glow flash applied by JS
+           at the instant of tap, on top of whatever hover/active state is already running.
+           This is what reads as a "click" even where the OS gives no real vibration. */
+        .crumble-tap { animation: crumbleTapPulse .22s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes crumbleTapPulse {
+            0%   { filter: brightness(1); }
+            35%  { filter: brightness(1.08); }
+            100% { filter: brightness(1); }
+        }
+        .crumble-tap-strong { animation: crumbleTapPulseStrong .28s cubic-bezier(.34,1.56,.64,1); }
+        @keyframes crumbleTapPulseStrong {
+            0%   { transform: scale(1); }
+            30%  { transform: scale(1.035); }
+            100% { transform: scale(1); }
+        }
+
+        /* Checkboxes / radios / switches, if present anywhere — smooth check-in */
+        input[type="checkbox"], input[type="radio"] {
+            transition: transform .15s cubic-bezier(.34,1.56,.64,1);
+        }
+        input[type="checkbox"]:active, input[type="radio"]:active { transform: scale(.85); }
+
+        /* ═══════════ FILTER CONTROLS — SAME PREMIUM TAP FEEDBACK AS THE BELL ICON ═══════════
+           Applies to every .select-input (region/branch/channel filters, incident filters,
+           branch-compare selects, social listening sentiment filter, Add Mention modal fields),
+           the date range pill, and the Social Listening "Add" button. Paired with the ripple +
+           haptic-pulse entries added in the RIPPLE ENGINE / HAPTIC ENGINE scripts below. */
+        .select-input, .date-range-pill {
+            transition: transform .18s cubic-bezier(.16,1,.3,1),
+                        border-color .2s cubic-bezier(.4,0,.2,1),
+                        box-shadow .2s cubic-bezier(.4,0,.2,1),
+                        background .2s ease !important;
+        }
+        .select-input:hover  { transform: translateY(-1px); }
+        .select-input:active { transform: scale(.97); transition-duration: .08s !important; }
+        .date-range-pill:active { transform: scale(.98); transition-duration: .08s !important; }
+
+        .sl-add-btn { transition: transform .18s cubic-bezier(.4,0,.2,1), box-shadow .22s cubic-bezier(.4,0,.2,1), filter .18s ease !important; }
+        .sl-add-btn:hover  { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 5px 14px rgba(1,1,151,.32) !important; }
+        .sl-add-btn:active { transform: translateY(0) scale(.96); transition-duration: .08s !important; }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           PHYSICS PASS — weighted, gravity-like settling instead of linear motion.
+           Everything here is an overshoot-then-settle spring curve, which is what
+           reads as "real" physical weight rather than a mechanical fade/slide.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* Chevrons now overshoot past their resting angle and settle back —
+           a flick, not a mechanical rotation */
+        .collapse-chevron, .fa-chevron-down, .fa-chevron-right, .ms-header i,
+        .voc-section-icon, .sl-toggle-icon {
+            transition: transform .5s cubic-bezier(.34,1.56,.64,1) !important;
+        }
+
+        /* Notification / alert items drop in one after another with a soft
+           gravity bounce, like objects settling onto a shelf */
+        @keyframes crumbleDropIn {
+            0%   { opacity: 0; transform: translateY(-14px); }
+            55%  { opacity: 1; transform: translateY(3px); }
+            80%  { transform: translateY(-1px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .notif-item { animation: crumbleDropIn .45s cubic-bezier(.34,1.56,.64,1) both; }
+        .notif-item:nth-child(1){ animation-delay: .02s; } .notif-item:nth-child(2){ animation-delay: .06s; }
+        .notif-item:nth-child(3){ animation-delay: .10s; } .notif-item:nth-child(4){ animation-delay: .14s; }
+        .notif-item:nth-child(5){ animation-delay: .18s; } .notif-item:nth-child(6){ animation-delay: .22s; }
+        .notif-item:nth-child(7){ animation-delay: .26s; }
+
+        /* Perspective containers for the cursor-reactive tilt (JS sets --rx/--ry/--mx/--my
+           on pointermove; these variables default to a flat, centred state so nothing
+           moves until JS actually runs, and nothing breaks if it doesn't) */
+        .kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card {
+            --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%;
+            transform-style: preserve-3d;
+            perspective: 900px;
+        }
+        @media (pointer: fine) {
+            .kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card {
+                transform: rotateX(var(--rx)) rotateY(var(--ry)) translateZ(0) !important;
+                transition: transform .5s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease, border-color .3s ease !important;
+            }
+            /* Soft light spotlight that follows the cursor, reinforcing the tilt as
+               a physical, lit surface rather than a flat image */
+            /* NOTE: .ai-tile already owns ::before for its own top-accent-bar hover effect,
+               and .form-perf-card / .branch-kpi-card already own ::after for their accent
+               bars — so the spotlight uses whichever pseudo-slot is free per class to avoid
+               silently overriding those existing effects. */
+            .kpi-card::before, .form-perf-card::before, .branch-kpi-card::before, .ai-tile::after {
+                content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+                background: radial-gradient(circle at var(--mx) var(--my), rgba(1,1,151,.08), transparent 55%);
+                opacity: 0; transition: opacity .25s ease; z-index: -1;
+            }
+            .kpi-card:hover::before, .form-perf-card:hover::before, .branch-kpi-card:hover::before, .ai-tile:hover::after { opacity: 1; }
+            body.dark-theme .kpi-card::before, body.dark-theme .form-perf-card::before,
+            body.dark-theme .branch-kpi-card::before, body.dark-theme .ai-tile::after {
+                background: radial-gradient(circle at var(--mx) var(--my), rgba(100,208,255,.12), transparent 55%);
+            }
+        }
+
+        /* Magnetic primary buttons — JS nudges them a few px toward the cursor;
+           this transition makes the nudge (and the snap-back) feel elastic */
+        .login-btn, #cs-next-btn {
+            transition: transform .35s cubic-bezier(.34,1.56,.64,1), box-shadow .22s ease, filter .18s ease !important;
+        }
+
+        /* Respect reduced-motion preference across all of the above */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .ms-dropdown, .notif-dropdown, .dp-menu, #dp-menu,
+            .modal-overlay .modal, [class*="modal-overlay"] [class*="modal-panel"], [class*="modal-overlay"] > div > div,
+            .inc-bar-fill::after, .sl-bar-fill::after,
+            .crumble-tap, .crumble-tap-strong, .notif-item { animation: none !important; }
+            .kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card { transform: none !important; }
+        }
     </style>
 </head>
 <body class="app-loading">
@@ -2693,7 +2970,7 @@
                             </button>
 
                             <!-- Add mention -->
-                            <button onclick="document.getElementById('sl-add-modal').classList.add('open')" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(1,1,151,.25);">
+                            <button class="sl-add-btn" onclick="document.getElementById('sl-add-modal').classList.add('open')" style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#010197,#3B5BDB);color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:0.8rem;font-weight:700;cursor:pointer;box-shadow:0 3px 8px rgba(1,1,151,.25);">
                                 <i class="fas fa-plus"></i> Add
                             </button>
                         </div>
@@ -6729,14 +7006,18 @@
                 '.insight-block','.notif-item','.collapse-header',
                 '.branch-inc-row','.preset-chip','.sl-keyword',
                 'tbody tr','td','th','.inc-stat','.ci-card','.ai-row',
-                '.voc-praise-item','.voc-complaint-item','.voc-suggest-item'
+                '.voc-praise-item','.voc-complaint-item','.voc-suggest-item',
+                '.date-range-pill'
             ].join(',');
 
             // Elements that get a LIGHT ripple (dark bg — nav, buttons)
             // Note: .topnav-link excluded — its ::after underline is the feedback
+            // Note: native <select> elements (.select-input) are intentionally excluded —
+            // browsers don't allow arbitrary child nodes inside <select>, so a ripple span
+            // can't be spawned inside one. They still get the haptic pulse + press-scale below.
             const LIGHT_SELECTORS = [
                 '.btn-icon','.refresh-btn-el',
-                '.res-stage-btn','button.login-btn'
+                '.res-stage-btn','button.login-btn','.sl-add-btn'
             ].join(',');
 
             function spawnRipple(el, e, isDark){
@@ -6770,6 +7051,141 @@
 
                 if(lightEl){ spawnRipple(lightEl, e, false); return; }
                 if(darkEl) { spawnRipple(darkEl,  e, true);  return; }
+            }, { passive:true });
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        // HAPTIC ENGINE — real device vibration on touch, plus a visual
+        // "tap pulse" fallback everywhere (so desktop/no-vibrate devices
+        // still get a tactile-feeling confirmation). Purely additive:
+        // listens on top of existing markup, doesn't call into or modify
+        // any app logic above.
+        // ═══════════════════════════════════════════════════════════════
+        (function initHapticEngine(){
+            const canVibrate = 'vibrate' in navigator;
+            function buzz(pattern){
+                if(!canVibrate) return;
+                try { navigator.vibrate(pattern); } catch(_){}
+            }
+
+            // Light tap — general taps: cards, chips, rows, icon buttons, nav
+            const LIGHT_TAP = [
+                '.kpi-card','.branch-kpi-card','.form-perf-card','.ai-tile','.card',
+                '.sl-mention-card','.sl-kpi','.bd-item','.form-card','.insight-block',
+                '.notif-item','.collapse-header','.branch-inc-row','.btn-icon',
+                'tbody tr[onclick]','.inc-stat','.ci-card','.ai-row','.topnav-link',
+                '.ms-option','.voc-praise-item','.voc-complaint-item','.voc-suggest-item'
+            ].join(',');
+
+            // Medium tap — state toggles/selections: switching a real setting
+            const MEDIUM_TAP = [
+                '.view-btn','.res-stage-btn','.sl-sentiment-chip','.preset-chip',
+                'input[type="checkbox"]','input[type="radio"]','.collapse-chevron',
+                '.select-input','.date-range-pill','.sl-add-btn'
+            ].join(',');
+
+            // Confirm tap — primary/committing actions
+            const CONFIRM_TAP = [
+                '.login-btn','#cs-next-btn','button[type="submit"]','.btn-logout',
+                '#sl-add-modal button.login-btn','.cs-submit-btn'
+            ].join(',');
+
+            function pulse(el, strong){
+                if(!el) return;
+                const cls = strong ? 'crumble-tap-strong' : 'crumble-tap';
+                el.classList.remove(cls);
+                // Force reflow so the animation can restart on rapid repeat taps
+                void el.offsetWidth;
+                el.classList.add(cls);
+                setTimeout(() => el.classList.remove(cls), 320);
+            }
+
+            document.addEventListener('pointerdown', function(e){
+                // Only vibrate for actual touch/pen input — mouse clicks stay silent on devices that support it,
+                // but the visual pulse still plays everywhere for consistent feel.
+                const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
+
+                const confirmEl = e.target.closest(CONFIRM_TAP);
+                const mediumEl  = e.target.closest(MEDIUM_TAP);
+                const lightEl   = e.target.closest(LIGHT_TAP);
+
+                if(confirmEl && !confirmEl.disabled){
+                    if(isTouch) buzz([12, 30, 14]);
+                    pulse(confirmEl, true);
+                } else if(mediumEl && !mediumEl.disabled){
+                    if(isTouch) buzz(16);
+                    pulse(mediumEl, false);
+                } else if(lightEl){
+                    if(isTouch) buzz(8);
+                    pulse(lightEl, false);
+                }
+            }, { passive:true });
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        // TILT ENGINE — cursor-reactive 3D tilt + spotlight on cards/tiles.
+        // Desktop/mouse only (skips touch devices, where tilt makes no sense).
+        // Sets CSS custom properties consumed by the "PHYSICS PASS" rules
+        // above; never touches any app state or existing DOM structure.
+        // ═══════════════════════════════════════════════════════════════
+        (function initTiltEngine(){
+            if(!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+            if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const TILT_SELECTOR = '.kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card';
+            const MAX_TILT = 6; // degrees — subtle, not gimmicky
+
+            document.addEventListener('pointermove', function(e){
+                const el = e.target.closest(TILT_SELECTOR);
+                if(!el) return;
+                const rect = el.getBoundingClientRect();
+                const px = (e.clientX - rect.left) / rect.width;   // 0..1
+                const py = (e.clientY - rect.top)  / rect.height;  // 0..1
+                const ry = (px - 0.5) * MAX_TILT * 2;
+                const rx = (0.5 - py) * MAX_TILT * 2;
+                el.style.setProperty('--rx', rx.toFixed(2) + 'deg');
+                el.style.setProperty('--ry', ry.toFixed(2) + 'deg');
+                el.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+                el.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+            }, { passive:true });
+
+            document.addEventListener('pointerout', function(e){
+                const el = e.target.closest(TILT_SELECTOR);
+                if(!el) return;
+                // Only reset once the pointer has actually left the card (not a child->child move)
+                if(el.contains(e.relatedTarget)) return;
+                el.style.setProperty('--rx', '0deg');
+                el.style.setProperty('--ry', '0deg');
+                el.style.setProperty('--mx', '50%');
+                el.style.setProperty('--my', '50%');
+            }, { passive:true });
+        })();
+
+        // ═══════════════════════════════════════════════════════════════
+        // MAGNETIC BUTTON ENGINE — primary CTAs drift a few px toward the
+        // cursor while hovered, then spring back on leave. Desktop only.
+        // ═══════════════════════════════════════════════════════════════
+        (function initMagneticEngine(){
+            if(!window.matchMedia || !window.matchMedia('(pointer: fine)').matches) return;
+            if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const MAG_SELECTOR = '.login-btn, #cs-next-btn';
+            const PULL = 6; // max px drift — subtle magnetism, not a jump
+
+            document.addEventListener('pointermove', function(e){
+                const el = e.target.closest(MAG_SELECTOR);
+                if(!el || el.disabled) return;
+                const rect = el.getBoundingClientRect();
+                const dx = ((e.clientX - rect.left) / rect.width  - 0.5) * PULL;
+                const dy = ((e.clientY - rect.top)  / rect.height - 0.5) * PULL;
+                el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+            }, { passive:true });
+
+            document.addEventListener('pointerout', function(e){
+                const el = e.target.closest(MAG_SELECTOR);
+                if(!el) return;
+                if(el.contains(e.relatedTarget)) return;
+                el.style.transform = '';
             }, { passive:true });
         })();
 
