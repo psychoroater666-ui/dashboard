@@ -1184,17 +1184,42 @@
         .sl-author { font-size:0.75rem; font-weight:800; color:var(--text-main); }
 
         /* KPI strip */
-        .sl-kpi { background:var(--white); border:1.5px solid var(--border-color); border-radius:12px; padding:16px 18px; }
-        .sl-kpi-clickable { cursor:pointer; transition:box-shadow .18s, transform .18s, border-color .18s; }
-        .sl-kpi-clickable:hover { box-shadow:0 6px 20px -4px rgba(217,119,6,.25); transform:translateY(-2px); border-color:#D97706; }
+        .sl-kpi {
+            background:var(--white); border:1.5px solid var(--border-color); border-radius:14px;
+            padding:16px 18px; cursor:pointer; position:relative; overflow:hidden;
+            transition: transform .28s cubic-bezier(.16,1,.3,1),
+                        box-shadow .28s cubic-bezier(.4,0,.2,1),
+                        border-color .22s cubic-bezier(.4,0,.2,1);
+        }
+        .sl-kpi::before {
+            content:''; position:absolute; inset:0; border-radius:inherit;
+            background:rgba(255,255,255,0.6); opacity:0;
+            transition:opacity .2s ease; pointer-events:none;
+        }
+        .sl-kpi:hover { transform:translateY(-3px); box-shadow:0 10px 28px -6px rgba(0,0,0,.1); }
+        .sl-kpi:hover::before { opacity:1; }
+        .sl-kpi:active { transform:translateY(-1px) scale(.98) !important; transition-duration:.1s !important; }
+        .sl-kpi.sl-kpi-active {
+            border-color:var(--sl-kpi-active-color, #D97706) !important;
+            box-shadow:0 0 0 3px color-mix(in srgb, var(--sl-kpi-active-color, #D97706) 15%, transparent) !important;
+        }
         .sl-kpi-label { font-size:0.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:6px; }
         .sl-kpi-val { font-size:1.5rem; font-weight:800; color:var(--text-main); }
         .sl-kpi-sub { font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
 
         /* Keyword chip */
-        .sl-keyword { padding:4px 12px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:default; border:1px solid var(--border-color); background:var(--bg-light); color:var(--text-main); transition:.15s; }
-        .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; }
-        .sl-keyword.hot { background:rgba(245,158,11,.1); border-color:rgba(245,158,11,.3); color:#B45309; }
+        .sl-keyword {
+            padding:5px 13px; border-radius:20px; font-size:0.72rem; font-weight:700; cursor:pointer;
+            border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-main);
+            transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .18s, background .18s, color .18s;
+            user-select:none; display:inline-flex; align-items:center; gap:4px;
+        }
+        .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; transform:translateY(-2px); box-shadow:0 4px 12px rgba(1,1,151,.12); background:rgba(1,1,151,.04); }
+        .sl-keyword:active { transform:scale(.95) !important; transition-duration:.08s !important; }
+        .sl-keyword.hot { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.4); color:#B45309; }
+        .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#D97706; box-shadow:0 4px 12px rgba(217,119,6,.18); }
+        .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
+        .sl-keyword.sl-kw-active.hot { background:rgba(245,158,11,.2) !important; border-color:#B45309 !important; color:#B45309 !important; box-shadow:0 0 0 2px rgba(217,119,6,.25) !important; }
 
         /* Platform/branch bar */
         .sl-bar-row { display:flex; align-items:center; gap:10px; font-size:0.78rem; }
@@ -2779,7 +2804,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.06';
+        const BUILD = 'v1.07';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3565,8 +3590,13 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
-                    window._slPresetInited = false;
                     if(document.body.classList.contains('bg-refresh') || document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // User-navigated: reset preset and clear all keyword/kpi filters
+                    window._slPresetInited    = false;
+                    window._slKeywordFilter   = '';
+                    window._slMentionFilter   = false;
+                    window._slComplaintFilter = false;
+                    window._slUnresolvedOnly  = false;
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
                     if(feed){
@@ -5518,9 +5548,31 @@
         }
 
         // Toggle unresolved-only filter — called by the Unresolved KPI tile
-        window._slUnresolvedOnly = false;
+        window._slKeywordFilter    = '';
+        window._slUnresolvedOnly   = false;
+        window._slMentionFilter    = false;
+        window._slComplaintFilter  = false;
+
+        function slFilterByKeyword(word){
+            window._slKeywordFilter = (window._slKeywordFilter === word) ? '' : word;
+            renderSocialListening();
+        }
+        function slToggleMentionFilter(){
+            window._slMentionFilter   = !window._slMentionFilter;
+            window._slComplaintFilter = false; // exclusive
+            window._slUnresolvedOnly  = false;
+            renderSocialListening();
+        }
+        function slToggleComplaintFilter(){
+            window._slComplaintFilter = !window._slComplaintFilter;
+            window._slMentionFilter   = false; // exclusive
+            window._slUnresolvedOnly  = false;
+            renderSocialListening();
+        }
         function slToggleUnresolved(){
-            window._slUnresolvedOnly = !window._slUnresolvedOnly;
+            window._slUnresolvedOnly  = !window._slUnresolvedOnly;
+            window._slMentionFilter   = false; // exclusive
+            window._slComplaintFilter = false;
             renderSocialListening();
         }
 
@@ -5544,8 +5596,16 @@
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
                 if(dateFrom && m.date && m.date < dateFrom) return false;
                 if(dateTo   && m.date && m.date > dateTo)   return false;
-                // Unresolved-only filter: complaints not yet closed
-                if(window._slUnresolvedOnly && !(m.sentiment==='Complaint' && m.resolutionStatus!=='closed')) return false;
+                // Keyword filter
+                if(window._slKeywordFilter){
+                    const kw = window._slKeywordFilter.toLowerCase();
+                    const txt = ((m.content||'')+' '+(m.tags||[]).join(' ')).toLowerCase();
+                    if(!txt.includes(kw)) return false;
+                }
+                // KPI card filters (mutually exclusive)
+                if(window._slMentionFilter   && m.sentiment !== 'Mention')   return false;
+                if(window._slComplaintFilter  && m.sentiment !== 'Complaint') return false;
+                if(window._slUnresolvedOnly  && !(m.sentiment==='Complaint' && m.resolutionStatus!=='closed')) return false;
                 return true;
             });
 
@@ -5576,16 +5636,18 @@
             const kpiStrip = document.getElementById('sl-kpi-strip');
             const _isUnresOnly = !!window._slUnresolvedOnly;
             if(kpiStrip){
+                const _isMentionOnly  = !!window._slMentionFilter;
+                const _isComplaintOnly= !!window._slComplaintFilter;
                 kpiStrip.innerHTML = [
-                    { label:'Total Mentions', val:total,      sub:'across all platforms',            color:'var(--accent-blue)',      icon:'fa-hashtag',           click:false },
-                    { label:'Complaints',     val:complaints, sub:`${unresolved} need attention`,    color:'var(--status-critical)',   icon:'fa-circle-exclamation',click:false },
-                    { label:'Unresolved',     val:unresolved, sub:_isUnresOnly?'click to clear':'click to filter', color:'#D97706', icon:'fa-clock-rotate-left', click:true  },
+                    { label:'Total Mentions', val:total,      sub:'across all platforms',         color:'var(--accent-blue)',    icon:'fa-hashtag',            fn:'slToggleMentionFilter',    active:_isMentionOnly   },
+                    { label:'Complaints',     val:complaints, sub:`${unresolved} need attention`, color:'var(--status-critical)',icon:'fa-circle-exclamation', fn:'slToggleComplaintFilter',  active:_isComplaintOnly  },
+                    { label:'Unresolved',     val:unresolved, sub:unresolved > 0 ? `${unresolved} open` : 'all resolved', color:'#D97706', icon:'fa-clock-rotate-left', fn:'slToggleUnresolved', active:_isUnresOnly },
                 ].map((k,i)=>`
-                    <div class="sl-kpi${k.click?' sl-kpi-clickable':''}" data-unres="${k.click}"
-                         style="animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};${k.click&&_isUnresOnly?'outline:2px solid #D97706;outline-offset:2px;':''}"
-                         ${k.click?'onclick="slToggleUnresolved()"':''} title="${k.click?(_isUnresOnly?'Clear filter':'Show only unresolved complaints'):''}">
+                    <div class="sl-kpi${k.active?' sl-kpi-active':''}"
+                         style="--sl-kpi-active-color:${k.color};animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};"
+                         onclick="${k.fn}()" title="${k.active?'Click to clear filter':'Click to filter'}">
                         <div class="sl-kpi-label" style="display:flex;align-items:center;gap:5px;">
-                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}${k.click&&_isUnresOnly?' <span style="font-size:0.6rem;padding:1px 5px;background:#D97706;color:#fff;border-radius:6px;font-weight:900;">ACTIVE</span>':''}
+                            <i class="fas ${k.icon}" style="color:${k.color};font-size:0.7rem;"></i>${k.label}${k.active?` <span style="font-size:0.58rem;padding:1px 6px;background:${k.color};color:#fff;border-radius:6px;font-weight:900;letter-spacing:.3px;opacity:.9;">ON</span>`:''}
                         </div>
                         <div class="sl-kpi-val" style="color:${k.color};" data-target="${k.val}">0</div>
                         <div class="sl-kpi-sub">${k.sub}</div>
@@ -5777,7 +5839,8 @@
             const topWords = Object.entries(wordCount).sort((a,b)=>b[1]-a[1]).slice(0,18);
             const kwEl = document.getElementById('sl-keywords');
             if(kwEl){
-                kwEl.innerHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}" title="${c} mentions">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
+                const _activeKw = window._slKeywordFilter || '';
+                kwEl.innerHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}${_activeKw===w?' sl-kw-active':''}" onclick="slFilterByKeyword('${w}')" title="${_activeKw===w?'Click to clear':'Filter by: '+w}">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
             }
 
             // ── Platform breakdown ──
