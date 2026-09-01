@@ -1300,6 +1300,11 @@
         .sl-platform-twitterx  { background:#E8EAF6; color:#311B92; }
         .sl-platform-google    { background:#FFF3E0; color:#E65100; }
         .sl-platform-tiktok    { background:#F3E5F5; color:#6A1B9A; }
+        .sl-platform-linkedin  { background:#E1F0FA; color:#0A66C2; }
+        .sl-platform-reddit    { background:#FDEEE9; color:#FF4500; }
+        .sl-platform-playstore { background:#E6F6EE; color:#00875F; }
+        .sl-platform-blink     { background:#F3E8FF; color:#7C3AED; }
+        .sl-platform-foodpanda { background:#FCE4EE; color:#D6006C; }
         .sl-platform-default   { background:var(--bg-light); color:var(--text-muted); }
 
         .sl-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
@@ -3039,13 +3044,23 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                         <div class="sl-field">
                             <label>Platform</label>
-                            <select id="sl-m-platform" class="select-input" style="width:100%;">
+                            <select id="sl-m-platform" class="select-input" style="width:100%;" onchange="slOnPlatformChange()">
                                 <option>Instagram</option>
                                 <option>Facebook</option>
                                 <option>Twitter/X</option>
                                 <option>Google</option>
                                 <option>TikTok</option>
+                                <option>LinkedIn</option>
+                                <option>Reddit</option>
+                                <option>Play Store Reviews</option>
+                                <option>Blink Reviews</option>
+                                <option>Foodpanda Reviews</option>
+                                <option value="Other">Other</option>
                             </select>
+                        </div>
+                        <div class="sl-field" id="sl-m-platform-other-wrap" style="display:none;grid-column:1/-1;">
+                            <label>Specify Platform</label>
+                            <input id="sl-m-platform-other" type="text" placeholder="Type the platform name…" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.85rem;color:var(--text-main);background:var(--white);outline:none;font-family:'Inter',sans-serif;">
                         </div>
                         <div class="sl-field">
                             <label>Type</label>
@@ -5522,12 +5537,26 @@
         // ── Helpers ───────────────────────────────────────────────────────────
         const SL_PLATFORM_ICONS = {
             'Instagram':'fa-instagram', 'Facebook':'fa-facebook', 'Twitter/X':'fa-x-twitter',
-            'Google':'fa-google', 'TikTok':'fa-tiktok'
+            'Google':'fa-google', 'TikTok':'fa-tiktok', 'LinkedIn':'fa-linkedin',
+            'Reddit':'fa-reddit-alien', 'Play Store Reviews':'fa-google-play',
+            'Blink Reviews':'fa-star', 'Foodpanda Reviews':'fa-star', 'Other':'fa-globe'
+        };
+        // Font Awesome prefix per platform — brand logos use 'fab', platforms with no
+        // official FA brand glyph (Blink/Foodpanda reviews, Other) fall back to 'fas'
+        // solid icons. Without this, anything not explicitly listed here would render
+        // a broken icon (the old code always hardcoded 'fab').
+        const SL_PLATFORM_STYLE = {
+            'Instagram':'fab','Facebook':'fab','Twitter/X':'fab','Google':'fab','TikTok':'fab',
+            'LinkedIn':'fab','Reddit':'fab','Play Store Reviews':'fab',
+            'Blink Reviews':'fas','Foodpanda Reviews':'fas','Other':'fas'
         };
         const SL_PLATFORM_CLASS = {
             'Instagram':'sl-platform-instagram','Facebook':'sl-platform-facebook',
             'Twitter/X':'sl-platform-twitterx','Google':'sl-platform-google',
-            'TikTok':'sl-platform-tiktok'
+            'TikTok':'sl-platform-tiktok','LinkedIn':'sl-platform-linkedin',
+            'Reddit':'sl-platform-reddit','Play Store Reviews':'sl-platform-playstore',
+            'Blink Reviews':'sl-platform-blink','Foodpanda Reviews':'sl-platform-foodpanda',
+            'Other':'sl-platform-default'
         };
         const SL_SENTIMENT_CHIPS = {
             'Complaint':'<span class="sl-sentiment-chip sl-chip-complaint"><i class="fas fa-circle-exclamation"></i> Complaint</span>',
@@ -5718,12 +5747,22 @@
             else if(lower.includes('x.com') || lower.includes('twitter.com')) detected = '✓ Twitter / X link detected';
             else if(lower.includes('facebook.com') || lower.includes('fb.com')) detected = '✓ Facebook link detected';
             else if(lower.includes('maps.app.goo') || lower.includes('google.com/maps')) detected = '✓ Google Maps link detected';
+            else if(lower.includes('linkedin.com')) detected = '✓ LinkedIn link detected';
+            else if(lower.includes('reddit.com')) detected = '✓ Reddit link detected';
+            else if(lower.includes('play.google.com')) detected = '✓ Play Store link detected';
+            else if(lower.includes('foodpanda')) detected = '✓ Foodpanda link detected';
             else if(lower.startsWith('http')) detected = '✓ Link added';
             else { detected = '⚠ Doesn\'t look like a valid URL'; input.style.borderColor = 'var(--status-warn)'; hint.style.color = 'var(--status-warn)'; return; }
 
             hint.textContent = detected;
             hint.style.color = 'var(--status-good)';
             input.style.borderColor = 'var(--status-good)';
+        }
+
+        function slOnPlatformChange(){
+            const val  = (document.getElementById('sl-m-platform')||{}).value || '';
+            const wrap = document.getElementById('sl-m-platform-other-wrap');
+            if(wrap) wrap.style.display = (val === 'Other') ? 'block' : 'none';
         }
 
         function slOnTypeChange(){
@@ -5772,7 +5811,12 @@
 
         // ── Add mention from modal ────────────────────────────────────────────
         function slAddMention(){
-            const platform  = document.getElementById('sl-m-platform').value;
+            let platform    = document.getElementById('sl-m-platform').value;
+            if(platform === 'Other'){
+                const custom = (document.getElementById('sl-m-platform-other')||{}).value.trim();
+                if(!custom){ alert('Please specify the platform name.'); return; }
+                platform = custom;
+            }
             const type      = document.getElementById('sl-m-type').value;
             const sentiment = document.getElementById('sl-m-sentiment').value;
             const branch    = document.getElementById('sl-m-branch').value;
@@ -5877,9 +5921,11 @@
             });
             document.getElementById('sl-add-modal').classList.remove('open');
             // reset fields
-            ['sl-m-author','sl-m-content','sl-m-url'].forEach(id => document.getElementById(id).value='');
+            ['sl-m-author','sl-m-content','sl-m-url','sl-m-platform-other'].forEach(id => document.getElementById(id).value='');
             document.getElementById('sl-m-likes').value='0';
             document.getElementById('sl-m-comments').value='0';
+            const otherWrap = document.getElementById('sl-m-platform-other-wrap');
+            if(otherWrap) otherWrap.style.display='none';
             const ar = document.getElementById('sl-analyse-result');
             if(ar){ ar.innerHTML=''; ar.style.display='none'; }
             const urlHint = document.getElementById('sl-url-hint');
@@ -6157,10 +6203,15 @@
                     'Twitter/X': { bg:'#000000', icon:'fa-x-twitter' },
                     'Google':    { bg:'#EA4335', icon:'fa-google'    },
                     'TikTok':    { bg:'#010101', icon:'fa-tiktok'    },
+                    'LinkedIn':  { bg:'#0A66C2', icon:'fa-linkedin'  },
+                    'Reddit':    { bg:'#FF4500', icon:'fa-reddit-alien' },
+                    'Play Store Reviews': { bg:'#00875F', icon:'fa-google-play' },
+                    'Blink Reviews':      { bg:'#7C3AED', icon:'fa-star' },
+                    'Foodpanda Reviews':  { bg:'#D6006C', icon:'fa-star' },
                 };
                 const pc = platformColors[m.platform] || { bg:'#64748B', icon:'fa-globe' };
                 const sourceBtn = m.url
-                    ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" ><i class="fab ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
+                    ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" ><i class="${SL_PLATFORM_STYLE[m.platform]||'fas'} ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
                     : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:rgba(217,119,6,.08);color:var(--status-warn);font-size:0.72rem;font-weight:800;border:1.5px dashed rgba(217,119,6,.35);cursor:default;" title="Source link missing — whoever added this mention should edit it and paste the direct post URL so it can be verified"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Source missing</span>`;
 
                 // ── Brand confidence chip ─────────────────────────────────────
@@ -6255,7 +6306,7 @@
                 <div class="sl-mention-card ${cardClass}" id="slcard-${m.id}" style="animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${Math.min(idx*0.06,0.5)}s both`};">
                     <div class="sl-card-top">
                         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <span class="sl-platform-badge ${platClass}"><i class="fab ${platIcon}"></i> ${m.platform}</span>
+                            <span class="sl-platform-badge ${platClass}"><i class="${SL_PLATFORM_STYLE[m.platform]||'fas'} ${platIcon}"></i> ${m.platform}</span>
                             <span class="sl-type-badge"><i class="fas fa-tag" style="font-size:0.6rem;"></i>${m.type}</span>
                             ${sentChip}
                             ${brandChip}
@@ -6315,7 +6366,8 @@
             const pfCounts = {};
             slMentions.forEach(m=>{ pfCounts[m.platform]=(pfCounts[m.platform]||0)+1; });
             const pfMax = Math.max(...Object.values(pfCounts),1);
-            const pfColors = { Instagram:'#E1306C', Facebook:'#1877F2', 'Twitter/X':'#000000', Google:'#EA4335', TikTok:'#69C9D0' };
+            const pfColors = { Instagram:'#E1306C', Facebook:'#1877F2', 'Twitter/X':'#000000', Google:'#EA4335', TikTok:'#69C9D0',
+                LinkedIn:'#0A66C2', Reddit:'#FF4500', 'Play Store Reviews':'#00875F', 'Blink Reviews':'#7C3AED', 'Foodpanda Reviews':'#D6006C' };
             const pfEl = document.getElementById('sl-platform-breakdown');
             if(pfEl){
                 pfEl.innerHTML = Object.entries(pfCounts).sort((a,b)=>b[1]-a[1]).map(([p,c])=>`
@@ -6536,11 +6588,11 @@
         const CS_CITIES = {
             'Faisalabad'  : ['Canal Road FSD'],
             'Gujranwala'  : ['Gujranwala'],
-            'Islamabad'   : ['F-11','I-8','Bahria Phase 4','Blue Area','Chaklala Scheme 3'],
-            'Lahore'      : ['DHA','Johar Town','MM Alam Road','Lake City','Saddar'],
+            'Islamabad'   : ['F-11','I-8','Blue Area'],
+            'Lahore'      : ['DHA','Johar Town','MM Alam Road','Lake City'],
             'Multan'      : ['Multan'],
             'Peshawar'    : ['Peshawar'],
-            'Rawalpindi'  : ['Saddar'],
+            'Rawalpindi'  : ['Saddar','Chaklala Scheme 3','Bahria Phase 4'],
         };
 
         // Dynamic step builder based on rating
