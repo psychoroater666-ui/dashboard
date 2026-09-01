@@ -1318,6 +1318,7 @@
 
         .sl-branch-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(1,1,151,.08); color:#010197; border:1px solid rgba(1,1,151,.12); }
         .sl-urgency { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#FEF2F2; color:#DC2626; border:1px solid rgba(220,38,38,.2); animation: pulse 2s infinite; }
+        .sl-dup-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#F3E8FF; color:#7C3AED; border:1px solid rgba(124,58,237,.25); }
 
         .sl-content { font-size:0.85rem; line-height:1.65; color:var(--text-main); margin:10px 0 12px; font-weight:500; }
         .sl-content a { color:#010197; text-decoration:none; }
@@ -2960,6 +2961,13 @@
                                 <input type="date" id="sl-date-to"   onchange="renderSocialListening()" style="border:none;background:transparent;font-size:0.78rem;font-weight:600;color:var(--text-main);outline:none;font-family:'Inter',sans-serif;cursor:pointer;">
                             </div>
 
+                            <!-- Search -->
+                            <div style="position:relative;">
+                                <i class="fas fa-magnifying-glass" style="position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:0.72rem;pointer-events:none;"></i>
+                                <input id="sl-search" type="text" oninput="renderSocialListening()" placeholder="Search complaints, mentions, authors, branches…"
+                                    style="padding:7px 12px 7px 30px;border:1.5px solid var(--border-color);border-radius:8px;font-size:0.8rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);outline:none;width:230px;max-width:100%;">
+                            </div>
+
                             <!-- Sentiment filter -->
                             <select id="sl-filter-sentiment" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
                                 <option value="all">All Types</option>
@@ -2968,6 +2976,11 @@
                                 <option value="Query">🔵 Queries</option>
                                 <option value="Mention">⚪ Mentions</option>
                             </select>
+
+                            <!-- Clear filters — only shown when something is active -->
+                            <button id="sl-clear-filters" onclick="slClearAllFilters()" style="display:none;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--status-critical);border-radius:8px;background:var(--status-critical-bg);color:var(--status-critical);font-size:0.78rem;font-weight:700;cursor:pointer;">
+                                <i class="fas fa-filter-circle-xmark"></i> Clear filters
+                            </button>
 
                             <!-- Sort toggle -->
                             <button id="sl-sort-btn" onclick="slToggleSort()" style="display:flex;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-size:0.78rem;font-weight:700;cursor:pointer;transition:.15s;">
@@ -2984,6 +2997,21 @@
 
                 <!-- KPI strip -->
                 <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;"></div>
+
+                <!-- Complaint status breakdown for the selected date range -->
+                <div id="sl-status-strip" class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 20px;"></div>
+
+                <!-- BRANCH-WISE COMPLAINT COMPARISON -->
+                <div class="card" style="padding:18px 24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-store" style="color:#DC2626;font-size:0.85rem;"></i>
+                            <span style="font-size:0.85rem;font-weight:800;color:var(--text-main);">Branch-Wise Complaint Comparison</span>
+                        </div>
+                        <span id="sl-branch-comp-sub" style="font-size:0.72rem;color:var(--text-muted);"></span>
+                    </div>
+                    <div id="sl-branch-comparison" style="display:flex;flex-direction:column;gap:10px;"></div>
+                </div>
 
                 <!-- Main content: mentions feed + right panel -->
                 <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
@@ -4048,6 +4076,9 @@
                     window._slMentionFilter   = false;
                     window._slComplaintFilter = false;
                     window._slUnresolvedOnly  = false;
+                    window._slPlatformFilter  = '';
+                    window._slBranchFilter    = '';
+                    const searchBox = document.getElementById('sl-search'); if(searchBox) searchBox.value = '';
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
                     if(feed){
@@ -5986,6 +6017,28 @@
             return 'sl_' + Math.abs(h).toString(36);
         }
 
+        // Normalize whatever date format the sheet exports (Date column, Timestamp
+        // column, GViz serial "Date(y,m,d)" strings, slash or dash separated, with or
+        // without a time-of-day) into a clean "YYYY-MM-DD" string. Every date-range
+        // filter in this tab (Today / Yesterday / 7 days / 30 days / Custom) compares
+        // dates as plain strings, so if this normalization doesn't happen, a raw sheet
+        // value like "8/25/2026 14:30:00" never matches an input date of "2026-08-25"
+        // and the range filters silently fail to narrow anything down. Deliberately
+        // does NOT apply the submissions/incidents "night shift" business-day cutoff —
+        // that's a restaurant-close-time concept, not relevant to social post dates.
+        function slNormalizeDate(v){
+            if(v==null) return ''; let s=String(v).trim(); if(!s) return '';
+            let m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/);
+            if(m) return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+            m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+            if(m){ let a=+m[1], b=+m[2], y=m[3], mo, da; if(a>12){ da=a; mo=b; } else if(b>12){ mo=a; da=b; } else { mo=a; da=b; } return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`; }
+            m = s.match(/^Date\((\d+),(\d+),(\d+)/);
+            if(m) return `${m[1]}-${String(+m[2]+1).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+            const t = new Date(s.replace(' ','T'));
+            if(isNaN(t)) return s;
+            return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+        }
+
         async function loadSocialFromSheet(){
             try {
                 const res  = await _fetch(LIVE.slSheetUrl);
@@ -6000,16 +6053,21 @@
                     const platform  = get('Platform')  || 'Instagram';
                     const analysis  = slAnalyseContent(content);
 
+                    // Normalized calendar date — this is what every date-range filter
+                    // compares against, so it MUST be plain "YYYY-MM-DD".
+                    const normDate = slNormalizeDate(get('Date') || get('Timestamp'));
+
                     // Precise sort timestamp: prefer the sheet's Timestamp column
-                    // (has time-of-day) so same-day posts order correctly; fall
-                    // back to row index (rows are appended oldest→newest, so a
-                    // later index means a more recently added post).
+                    // (has time-of-day) so same-day posts order correctly; fall back
+                    // to the normalized date at noon, then to row index (rows are
+                    // appended oldest→newest, so a later index = more recently added).
                     const tsRaw    = get('Timestamp');
-                    const parsedTs = tsRaw ? Date.parse(tsRaw) : NaN;
+                    let   parsedTs = tsRaw ? Date.parse(tsRaw.replace(' ','T')) : NaN;
+                    if(isNaN(parsedTs) && normDate) parsedTs = Date.parse(normDate + 'T12:00:00');
                     const sortTs   = isNaN(parsedTs) ? idx : parsedTs;
 
                     return {
-                        id:         slStableId(platform, get('Author'), get('Date') || get('Timestamp').split('T')[0]),
+                        id:         slStableId(platform, get('Author'), normDate),
                         platform,
                         type:       get('Type')      || 'Post',
                         sentiment:  get('Sentiment') || 'Mention',
@@ -6019,7 +6077,7 @@
                         likes:      parseInt(get('Likes'))    || 0,
                         comments:   parseInt(get('Comments')) || 0,
                         shares:     0,
-                        date:       get('Date')      || get('Timestamp').split('T')[0] || '',
+                        date:       normDate,
                         sortTs,
                         url:        get('URL')        || '',
                         resolved:   false,
@@ -6056,6 +6114,8 @@
         window._slUnresolvedOnly   = false;
         window._slMentionFilter    = false;
         window._slComplaintFilter  = false;
+        window._slPlatformFilter   = '';   // set by clicking a bar in "By Platform"
+        window._slBranchFilter     = '';   // set by clicking a bar in "Branch Mentions" / comparison card
 
         function slFilterByKeyword(word){
             window._slKeywordFilter = (window._slKeywordFilter === word) ? '' : word;
@@ -6079,6 +6139,130 @@
             window._slComplaintFilter = false;
             renderSocialListening();
         }
+        function slTogglePlatformFilter(platform){
+            window._slPlatformFilter = (window._slPlatformFilter === platform) ? '' : platform;
+            renderSocialListening();
+        }
+        function slToggleBranchFilter(branch){
+            window._slBranchFilter = (window._slBranchFilter === branch) ? '' : branch;
+            renderSocialListening();
+        }
+        // Reset every active filter/search/toggle back to defaults (date range is
+        // left alone — that's the reporting window the person is looking at, not
+        // a "filter" in the same sense as the ones this button clears).
+        function slClearAllFilters(){
+            window._slKeywordFilter   = '';
+            window._slUnresolvedOnly  = false;
+            window._slMentionFilter   = false;
+            window._slComplaintFilter = false;
+            window._slPlatformFilter  = '';
+            window._slBranchFilter    = '';
+            const sn = document.getElementById('sl-filter-sentiment'); if(sn) sn.value = 'all';
+            const sq = document.getElementById('sl-search');           if(sq) sq.value = '';
+            renderSocialListening();
+        }
+
+        // ── Duplicate detection — same complaint, posted on more than one platform ──
+        // Strips links/@mentions/#hashtags/punctuation so wording is compared on its
+        // own merits, then measures word-overlap between two pieces of content.
+        function slNormalizeTextForCompare(s){
+            return String(s||'')
+                .toLowerCase()
+                .replace(/https?:\/\/\S+/g,' ')
+                .replace(/[@#]\w+/g,' ')
+                .replace(/[^\w\s]/g,' ')
+                .replace(/\s+/g,' ')
+                .trim();
+        }
+        function slTextSimilarity(a,b){
+            const wa = new Set(slNormalizeTextForCompare(a).split(' ').filter(w=>w.length>2));
+            const wb = new Set(slNormalizeTextForCompare(b).split(' ').filter(w=>w.length>2));
+            if(!wa.size || !wb.size) return 0;
+            let shared = 0;
+            wa.forEach(w => { if(wb.has(w)) shared++; });
+            // Divide by the SMALLER set so a short cross-post excerpt can still match
+            // a longer version of the same complaint on another platform.
+            return shared / Math.min(wa.size, wb.size);
+        }
+        // Returns { [mentionId]: { count, platforms:[otherPlatformNames] } } for every
+        // mention that appears to be part of a cross-platform duplicate cluster.
+        // Only compares Complaints, only across DIFFERENT platforms, and only within
+        // a ±3 day window (the same complaint re-posted months apart is a new event,
+        // not a duplicate of the original).
+        function slDetectDuplicates(list){
+            const SIM_THRESHOLD = 0.55;
+            const DAY_WINDOW_MS = 3 * 86400000;
+            const candidates = list.filter(m => m.sentiment === 'Complaint' && m.content && slNormalizeTextForCompare(m.content).length > 8);
+            const parent = {}; // union-find
+            candidates.forEach(m => { parent[m.id] = m.id; });
+            const find = id => { while(parent[id] !== id){ id = parent[id]; } return id; };
+            const union = (a,b) => { const ra=find(a), rb=find(b); if(ra!==rb) parent[ra]=rb; };
+
+            for(let i=0;i<candidates.length;i++){
+                for(let j=i+1;j<candidates.length;j++){
+                    const a = candidates[i], b = candidates[j];
+                    if(a.platform === b.platform) continue; // must be cross-platform
+                    if(a.date && b.date){
+                        const diff = Math.abs(new Date(a.date+'T00:00:00') - new Date(b.date+'T00:00:00'));
+                        if(!isNaN(diff) && diff > DAY_WINDOW_MS) continue;
+                    }
+                    if(slTextSimilarity(a.content, b.content) >= SIM_THRESHOLD) union(a.id, b.id);
+                }
+            }
+
+            const clusters = {}; // root -> [mention,...]
+            candidates.forEach(m => { const r = find(m.id); (clusters[r] = clusters[r]||[]).push(m); });
+
+            const out = {};
+            Object.entries(clusters).forEach(([root, cluster]) => {
+                if(cluster.length < 2) return;
+                const platforms = cluster.map(m => m.platform);
+                cluster.forEach(m => {
+                    out[m.id] = { count: cluster.length, platforms: platforms.filter(p => p !== m.platform), clusterId: root };
+                });
+            });
+            return out;
+        }
+
+        // ── Shared filter pipeline — every panel in this tab (feed, KPI strip,
+        // status strip, branch comparison, keywords, by-platform, branch mentions)
+        // reads from THIS function so a date/search/sentiment change updates
+        // everything at once instead of some panels quietly staying all-time.
+        // `skip` lets a facet panel exclude only ITS OWN filter (e.g. the platform
+        // breakdown ignores window._slPlatformFilter) while still respecting every
+        // other active filter — so clicking Instagram doesn't collapse the platform
+        // list down to just Instagram.
+        function slApplyFilters(list, skip){
+            skip = skip || {};
+            const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const dateFrom = (document.getElementById('sl-date-from')||{}).value||'';
+            const dateTo   = (document.getElementById('sl-date-to')||{}).value||'';
+            const searchQ  = ((document.getElementById('sl-search')||{}).value||'').trim().toLowerCase();
+            return list.filter(m => {
+                if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
+                if(dateFrom && m.date && m.date < dateFrom) return false;
+                if(dateTo   && m.date && m.date > dateTo)   return false;
+                // Free-text search — author, content, branch, platform, tags
+                if(searchQ){
+                    const hay = `${m.author||''} ${m.content||''} ${m.branch||''} ${m.platform||''} ${(m.tags||[]).join(' ')}`.toLowerCase();
+                    if(!hay.includes(searchQ)) return false;
+                }
+                // Keyword filter
+                if(!skip.keyword && window._slKeywordFilter){
+                    const kw = window._slKeywordFilter.toLowerCase();
+                    const txt = ((m.content||'')+' '+(m.tags||[]).join(' ')).toLowerCase();
+                    if(!txt.includes(kw)) return false;
+                }
+                // Click-to-filter from the "By Platform" / branch panels
+                if(!skip.platform && window._slPlatformFilter && m.platform !== window._slPlatformFilter) return false;
+                if(!skip.branch   && window._slBranchFilter   && m.branch   !== window._slBranchFilter)   return false;
+                // KPI card filters (mutually exclusive)
+                if(window._slMentionFilter    && m.sentiment !== 'Mention')   return false;
+                if(window._slComplaintFilter  && m.sentiment !== 'Complaint') return false;
+                if(window._slUnresolvedOnly   && !(m.sentiment==='Complaint' && m.resolutionStatus!=='closed')) return false;
+                return true;
+            });
+        }
 
         function renderSocialListening(){
             if(!slMentions.length) slLoadData();
@@ -6094,24 +6278,10 @@
             const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
             const dateFrom = (document.getElementById('sl-date-from')||{}).value||'';
             const dateTo   = (document.getElementById('sl-date-to')||{}).value||'';
+            const searchQ  = ((document.getElementById('sl-search')||{}).value||'').trim().toLowerCase();
 
-            // ── Filter ──
-            let filtered = slMentions.slice().filter(m => {
-                if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
-                if(dateFrom && m.date && m.date < dateFrom) return false;
-                if(dateTo   && m.date && m.date > dateTo)   return false;
-                // Keyword filter
-                if(window._slKeywordFilter){
-                    const kw = window._slKeywordFilter.toLowerCase();
-                    const txt = ((m.content||'')+' '+(m.tags||[]).join(' ')).toLowerCase();
-                    if(!txt.includes(kw)) return false;
-                }
-                // KPI card filters (mutually exclusive)
-                if(window._slMentionFilter   && m.sentiment !== 'Mention')   return false;
-                if(window._slComplaintFilter  && m.sentiment !== 'Complaint') return false;
-                if(window._slUnresolvedOnly  && !(m.sentiment==='Complaint' && m.resolutionStatus!=='closed')) return false;
-                return true;
-            });
+            // ── Filter — full facet set (feed, KPI strip, status strip, branch comparison) ──
+            let filtered = slApplyFilters(slMentions.slice(), {});
 
             // ── Sort: newest first (highest date) by default ──
             // Primary key: date (day-level). Secondary key: sortTs (precise
@@ -6129,6 +6299,28 @@
                 }
                 return 0;
             });
+
+            // ── Duplicate detection — same complaint across platforms, within the
+            // currently filtered (date/sentiment/search-aware) set ──
+            const dupMap = slDetectDuplicates(filtered);
+            const dupClusterCount = new Set(Object.values(dupMap).map(d => d.clusterId)).size;
+
+            // ── Active-filter count, for the "Clear filters" chip ──
+            const activeFilterCount = [
+                snFilter !== 'all',
+                !!searchQ,
+                !!window._slKeywordFilter,
+                !!window._slMentionFilter,
+                !!window._slComplaintFilter,
+                !!window._slUnresolvedOnly,
+                !!window._slPlatformFilter,
+                !!window._slBranchFilter,
+            ].filter(Boolean).length;
+            const clearBtn = document.getElementById('sl-clear-filters');
+            if(clearBtn){
+                clearBtn.style.display = activeFilterCount ? 'flex' : 'none';
+                clearBtn.innerHTML = `<i class="fas fa-filter-circle-xmark"></i> Clear filters (${activeFilterCount})`;
+            }
 
             // ── Showing label ──
             const showingEl = document.getElementById('sl-showing-label');
@@ -6176,6 +6368,69 @@
                 }, 50);
             }
 
+            // ── Complaint status strip — Contacted / In Progress / Closed, for the
+            // selected date range specifically (this is what makes "Today" actually
+            // mean today's complaints and their live status, not an all-time total) ──
+            const rangeLabels = { all:'All time', today:'Today', yesterday:'Yesterday', '7d':'Last 7 days', '30d':'Last 30 days', custom:'Selected range' };
+            const rangeLabel  = rangeLabels[slActivePreset] || 'Selected range';
+            const statusEl = document.getElementById('sl-status-strip');
+            if(statusEl){
+                const complaintsInRange = filtered.filter(m=>m.sentiment==='Complaint');
+                const sc = { none:0, contacted:0, progress:0, closed:0 };
+                complaintsInRange.forEach(m => { const s = m.resolutionStatus||'none'; sc[s] = (sc[s]||0)+1; });
+                const chip = (label, cls, val) => `<span class="sl-res-stage ${cls}" style="cursor:default;">${label} <b style="margin-left:3px;">${val}</b></span>`;
+                statusEl.innerHTML = `
+                    <span style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);white-space:nowrap;">
+                        <i class="fas fa-chart-simple" style="margin-right:4px;"></i>${rangeLabel} · ${complaintsInRange.length} complaint${complaintsInRange.length!==1?'s':''}
+                    </span>
+                    ${chip('Not Contacted','inactive',sc.none)}
+                    ${chip('Contacted','active-contacted',sc.contacted)}
+                    ${chip('In Progress','active-progress',sc.progress)}
+                    ${chip('Closed','active-closed',sc.closed)}
+                    ${dupClusterCount ? `<span class="sl-dup-tag" style="margin-left:auto;" title="Complaints whose wording closely matches another complaint on a different platform, within 3 days"><i class="fas fa-clone"></i> ${dupClusterCount} possible duplicate cluster${dupClusterCount!==1?'s':''} detected</span>` : ''}
+                `;
+            }
+
+            // ── Branch-Wise Complaint Comparison — ranked worst-first so the
+            // branch needing the most attention is immediately obvious ──
+            const branchCompEl  = document.getElementById('sl-branch-comparison');
+            const branchCompSub = document.getElementById('sl-branch-comp-sub');
+            if(branchCompEl){
+                const complaintsInRange = filtered.filter(m=>m.sentiment==='Complaint');
+                const byBranch = {};
+                complaintsInRange.forEach(m => {
+                    const key = m.branch || 'Unspecified / General';
+                    if(!byBranch[key]) byBranch[key] = { total:0, resolved:0, unresolved:0 };
+                    byBranch[key].total++;
+                    if(m.resolutionStatus === 'closed') byBranch[key].resolved++; else byBranch[key].unresolved++;
+                });
+                const rows = Object.entries(byBranch).sort((a,b)=>b[1].total-a[1].total);
+                if(branchCompSub) branchCompSub.textContent = rows.length ? `${complaintsInRange.length} complaints across ${rows.length} branch${rows.length!==1?'es':''} · ${rangeLabel}` : rangeLabel;
+                if(!rows.length){
+                    branchCompEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.82rem;">No complaints in the selected range — nothing to compare yet.</div>`;
+                } else {
+                    const maxV = rows[0][1].total;
+                    branchCompEl.innerHTML = rows.map(([branch, d]) => {
+                        const sev = d.total >= 3 ? 'crit' : d.total === 2 ? 'warn' : 'good';
+                        const sevColor = sev==='crit' ? 'var(--status-critical)' : sev==='warn' ? 'var(--status-warn)' : 'var(--status-good)';
+                        const sevBg    = sev==='crit' ? 'var(--status-critical-bg)' : sev==='warn' ? 'var(--status-warn-bg)' : 'var(--status-good-bg)';
+                        const sevLabel = sev==='crit' ? 'Needs attention' : sev==='warn' ? 'Watch closely' : 'Within range';
+                        const isActive = window._slBranchFilter === branch;
+                        return `<div onclick="slToggleBranchFilter('${branch.replace(/'/g,"\\'")}')" style="cursor:pointer;padding:10px 12px;border-radius:10px;border:1.5px solid ${isActive?'var(--accent-blue)':'var(--border-color)'};background:${isActive?'var(--accent-blue-light)':'transparent'};">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+                                <span style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${branch}</span>
+                                <span style="font-size:0.65rem;font-weight:800;padding:2px 9px;border-radius:20px;color:${sevColor};background:${sevBg};white-space:nowrap;">${sevLabel}</span>
+                            </div>
+                            <div class="sl-bar-row">
+                                <span class="sl-bar-label" style="min-width:auto;font-weight:800;color:${sevColor};">${d.total} complaint${d.total!==1?'s':''}</span>
+                                <div class="sl-bar-wrap"><div class="sl-bar-fill" style="width:${Math.round(d.total/maxV*100)}%;background:${sevColor};"></div></div>
+                                <span class="sl-bar-count" style="color:var(--text-muted);">${d.unresolved} open · ${d.resolved} closed</span>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            }
+
             // ── Feed ──
             const feed = document.getElementById('sl-feed');
             const emptyEl = document.getElementById('sl-empty');
@@ -6196,6 +6451,8 @@
                 const urgent    = slIsUrgent(m);
                 const branchTag = m.branch ? `<span class="sl-branch-tag"><i class="fas fa-store" style="font-size:0.58rem;"></i>${m.branch}</span>` : '';
                 const urgentTag = urgent ? `<span class="sl-urgency"><i class="fas fa-bolt" style="font-size:0.58rem;"></i> Urgent</span>` : '';
+                const dupInfo = dupMap[m.id];
+                const dupTag  = dupInfo ? `<span class="sl-dup-tag" title="Same complaint also detected on: ${dupInfo.platforms.join(', ')} — respond once, then close the duplicates as part of the same case"><i class="fas fa-clone"></i> Also on ${dupInfo.platforms.join(', ')}</span>` : '';
                 // ── Source button — platform-coloured, in card header ─────────
                 const platformColors = {
                     'Instagram': { bg:'#E1306C', icon:'fa-instagram' },
@@ -6312,6 +6569,7 @@
                             ${brandChip}
                             ${branchTag}
                             ${urgentTag}
+                            ${dupTag}
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
                             ${sourceBtn}
@@ -6348,8 +6606,11 @@
                 </div>`;
             }).join('');
 
-            // ── Keywords panel ──
-            const allText = slMentions.map(m=>m.content+' '+(m.tags||[]).join(' ')).join(' ');
+            // ── Keywords panel — respects the active filters (excluding its own
+            // keyword facet, so clicking a keyword doesn't collapse the list to
+            // just itself) instead of always showing the all-time word cloud ──
+            const kwSource = slApplyFilters(slMentions, {keyword:true});
+            const allText = kwSource.map(m=>m.content+' '+(m.tags||[]).join(' ')).join(' ');
             const stopwords = new Set(['the','and','for','was','that','this','with','have','are','your','from','they','you','not','but','been','just','had','all','one','out','can','has','its','our','their','will','very','get','would','his','her','about','his','more','into','also','said','than','do','my','we','so','if','it','at','by','be','in','is','on','or','to','of','a','an','i','me','he','she','we','us','my','am','as','no','did','up','even']);
             const wordCount = {};
             allText.toLowerCase().replace(/[^a-z0-9#@\s]/g,'').split(/\s+/).forEach(w=>{
@@ -6362,9 +6623,12 @@
                 kwEl.innerHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}${_activeKw===w?' sl-kw-active':''}" onclick="slFilterByKeyword('${w}')" title="${_activeKw===w?'Click to clear':'Filter by: '+w}">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
             }
 
-            // ── Platform breakdown ──
+            // ── Platform breakdown — respects the active filters (excluding its
+            // own platform facet) so it matches the selected date range instead of
+            // always showing an all-time total ──
+            const pfSource = slApplyFilters(slMentions, {platform:true});
             const pfCounts = {};
-            slMentions.forEach(m=>{ pfCounts[m.platform]=(pfCounts[m.platform]||0)+1; });
+            pfSource.forEach(m=>{ pfCounts[m.platform]=(pfCounts[m.platform]||0)+1; });
             const pfMax = Math.max(...Object.values(pfCounts),1);
             const pfColors = { Instagram:'#E1306C', Facebook:'#1877F2', 'Twitter/X':'#000000', Google:'#EA4335', TikTok:'#69C9D0',
                 LinkedIn:'#0A66C2', Reddit:'#FF4500', 'Play Store Reviews':'#00875F', 'Blink Reviews':'#7C3AED', 'Foodpanda Reviews':'#D6006C' };
@@ -6378,9 +6642,12 @@
                     </div>`).join('');
             }
 
-            // ── Branch breakdown ──
+            // ── Branch breakdown — respects the active filters (excluding its own
+            // branch facet) so it matches the selected date range instead of
+            // always showing an all-time total ──
+            const brSource = slApplyFilters(slMentions, {branch:true});
             const brCounts = {};
-            slMentions.filter(m=>m.branch).forEach(m=>{ brCounts[m.branch]=(brCounts[m.branch]||0)+1; });
+            brSource.filter(m=>m.branch).forEach(m=>{ brCounts[m.branch]=(brCounts[m.branch]||0)+1; });
             const brMax = Math.max(...Object.values(brCounts),1);
             const brEl = document.getElementById('sl-branch-breakdown');
             if(brEl){
