@@ -2998,19 +2998,25 @@
                 <!-- KPI strip -->
                 <div id="sl-kpi-strip" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;"></div>
 
-                <!-- Complaint status breakdown for the selected date range -->
-                <div id="sl-status-strip" class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 20px;"></div>
-
-                <!-- BRANCH-WISE COMPLAINT COMPARISON -->
-                <div class="card" style="padding:18px 24px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <i class="fas fa-store" style="color:#DC2626;font-size:0.85rem;"></i>
-                            <span style="font-size:0.85rem;font-weight:800;color:var(--text-main);">Branch-Wise Complaint Comparison</span>
+                <!-- BRANCH-WISE COMPLAINT COMPARISON — collapsible, folded by default -->
+                <div class="card collapsible-card" id="sl-branch-comp-card" style="padding:0;overflow:hidden;">
+                    <div class="collapse-header" onclick="toggleSection('sl-branch-comp-card')" style="padding:16px 22px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#DC2626,#F87171);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.8rem;box-shadow:0 3px 8px rgba(220,38,38,.25);flex-shrink:0;">
+                                <i class="fas fa-store"></i>
+                            </span>
+                            <div>
+                                <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);">Branch-Wise Complaint Comparison</div>
+                                <span id="sl-branch-comp-sub" style="font-size:0.7rem;color:var(--text-muted);"></span>
+                            </div>
                         </div>
-                        <span id="sl-branch-comp-sub" style="font-size:0.72rem;color:var(--text-muted);"></span>
+                        <span class="collapse-chevron" id="sl-branch-comp-card-chevron" style="width:28px;height:28px;border-radius:8px;background:var(--bg-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s;flex-shrink:0;">
+                            <i class="fas fa-chevron-down"></i>
+                        </span>
                     </div>
-                    <div id="sl-branch-comparison" style="display:flex;flex-direction:column;gap:10px;"></div>
+                    <div class="collapse-body" id="sl-branch-comp-card-body" style="display:none;">
+                        <div id="sl-branch-comparison" style="display:flex;flex-direction:column;gap:10px;padding:0 22px 20px;"></div>
+                    </div>
                 </div>
 
                 <!-- Main content: mentions feed + right panel -->
@@ -6301,9 +6307,9 @@
             });
 
             // ── Duplicate detection — same complaint across platforms, within the
-            // currently filtered (date/sentiment/search-aware) set ──
+            // currently filtered (date/sentiment/search-aware) set. Surfaced per-card
+            // below via the dupTag badge. ──
             const dupMap = slDetectDuplicates(filtered);
-            const dupClusterCount = new Set(Object.values(dupMap).map(d => d.clusterId)).size;
 
             // ── Active-filter count, for the "Clear filters" chip ──
             const activeFilterCount = [
@@ -6368,28 +6374,9 @@
                 }, 50);
             }
 
-            // ── Complaint status strip — Contacted / In Progress / Closed, for the
-            // selected date range specifically (this is what makes "Today" actually
-            // mean today's complaints and their live status, not an all-time total) ──
+            // rangeLabel is still used by the Branch-Wise Comparison subtitle below
             const rangeLabels = { all:'All time', today:'Today', yesterday:'Yesterday', '7d':'Last 7 days', '30d':'Last 30 days', custom:'Selected range' };
             const rangeLabel  = rangeLabels[slActivePreset] || 'Selected range';
-            const statusEl = document.getElementById('sl-status-strip');
-            if(statusEl){
-                const complaintsInRange = filtered.filter(m=>m.sentiment==='Complaint');
-                const sc = { none:0, contacted:0, progress:0, closed:0 };
-                complaintsInRange.forEach(m => { const s = m.resolutionStatus||'none'; sc[s] = (sc[s]||0)+1; });
-                const chip = (label, cls, val) => `<span class="sl-res-stage ${cls}" style="cursor:default;">${label} <b style="margin-left:3px;">${val}</b></span>`;
-                statusEl.innerHTML = `
-                    <span style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);white-space:nowrap;">
-                        <i class="fas fa-chart-simple" style="margin-right:4px;"></i>${rangeLabel} · ${complaintsInRange.length} complaint${complaintsInRange.length!==1?'s':''}
-                    </span>
-                    ${chip('Not Contacted','inactive',sc.none)}
-                    ${chip('Contacted','active-contacted',sc.contacted)}
-                    ${chip('In Progress','active-progress',sc.progress)}
-                    ${chip('Closed','active-closed',sc.closed)}
-                    ${dupClusterCount ? `<span class="sl-dup-tag" style="margin-left:auto;" title="Complaints whose wording closely matches another complaint on a different platform, within 3 days"><i class="fas fa-clone"></i> ${dupClusterCount} possible duplicate cluster${dupClusterCount!==1?'s':''} detected</span>` : ''}
-                `;
-            }
 
             // ── Branch-Wise Complaint Comparison — ranked worst-first so the
             // branch needing the most attention is immediately obvious ──
