@@ -1828,6 +1828,10 @@
         .inc-detail-field .inc-df-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
         .inc-detail-field .inc-df-val { font-size: 0.85rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
         .inc-detail-field.full { grid-column: 1 / -1; }
+        .inc-contact-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); font-size:0.78rem; font-weight:700; text-decoration:none; cursor:pointer; }
+        .inc-contact-btn:hover { background:var(--bg-light); }
+        .inc-contact-wa { border-color:rgba(37,211,102,.4); color:#25D366; }
+        .inc-contact-wa:hover { background:rgba(37,211,102,.08); }
         .inc-df-comment { font-style: italic; color: var(--text-main); background: var(--white); border-left: 3px solid var(--accent-blue); padding: 10px 14px; border-radius: 0 8px 8px 0; }
 
         /* ═══════════════════════════════════════════════════════════════════
@@ -4293,6 +4297,69 @@
             return `${inc.surveyForm || inc.form || ''}|${inc.branch || ''}|${ts}`;
         }
 
+        // ── Notification sound ──────────────────────────────────────────────
+        // Generated directly via the Web Audio API rather than an external
+        // sound file — this published page's security policy blocks loading
+        // remote audio, and a synthesized tone needs no network request at
+        // all, so it works reliably even in a background tab.
+        //
+        // Browsers block audio until the user has interacted with the page at
+        // least once (autoplay policy) — since incident checks fire from a
+        // background timer, not a click, this proactively "unlocks" audio on
+        // the very first click/keypress/touch anywhere on the page, so it's
+        // already ready by the time a real incident comes in.
+        let _incidentAudioCtx = null;
+        function _ensureIncidentAudioUnlocked(){
+            if(_incidentAudioCtx) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if(!AudioCtx) return;
+                _incidentAudioCtx = new AudioCtx();
+            } catch(e){}
+        }
+        ['click','keydown','touchstart'].forEach(evt => {
+            document.addEventListener(evt, _ensureIncidentAudioUnlocked, { once:true, passive:true });
+        });
+
+        function playIncidentAlertSound(){
+            try {
+                _ensureIncidentAudioUnlocked();
+                const ctx = _incidentAudioCtx;
+                if(!ctx) return;
+                if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+
+                const playTone = (freq, startTime, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration + 0.05);
+                };
+
+                const now = ctx.currentTime;
+                playTone(880,     now,        0.18); // A5
+                playTone(1174.66, now + 0.16, 0.28); // D6 — classic two-tone "ding-dong" notification chime
+            } catch(e){ console.warn('Could not play incident alert sound:', e); }
+        }
+
+        // Keeps ringing every 2.5s until the alert is actually acknowledged
+        // (View Incident, Close, or the X) — not just a one-shot notification.
+        let _incidentSoundInterval = null;
+        function startRepeatingIncidentSound(){
+            if(_incidentSoundInterval) return; // already ringing
+            playIncidentAlertSound();
+            _incidentSoundInterval = setInterval(playIncidentAlertSound, 2500);
+        }
+        function stopRepeatingIncidentSound(){
+            if(_incidentSoundInterval){ clearInterval(_incidentSoundInterval); _incidentSoundInterval = null; }
+        }
+
         let _seenIncidentKeys = null; // lazy-loaded from localStorage
         let _incidentAlertQueue = [];
         let _incidentAlertShowing = false;
@@ -4334,6 +4401,7 @@
             if(!_incidentAlertQueue.length){ _incidentAlertShowing = false; return; }
             _incidentAlertShowing = true;
             const inc = _incidentAlertQueue.shift();
+            startRepeatingIncidentSound();
 
             const emojiFor = (score) => (score === undefined || score === null) ? '❓' : score <= 1 ? '😠' : score === 2 ? '🙁' : '😐';
             const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
@@ -4359,11 +4427,13 @@
         }
 
         function closeIncidentAlert(){
+            stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
             showNextIncidentAlert();
         }
 
         function viewIncidentFromAlert(){
+            stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
             _incidentAlertShowing = false;
             _incidentAlertQueue = [];
@@ -4376,13 +4446,16 @@
         }
 
         function showIncidentAlertSummary(count){
+            startRepeatingIncidentSound();
             document.getElementById('ia-summary-count').textContent = count;
             document.getElementById('incident-alert-summary-modal').style.display = 'flex';
         }
         function closeIncidentAlertSummary(){
+            stopRepeatingIncidentSound();
             document.getElementById('incident-alert-summary-modal').style.display = 'none';
         }
         function viewIncidentsFromSummary(){
+            stopRepeatingIncidentSound();
             document.getElementById('incident-alert-summary-modal').style.display = 'none';
             if(typeof app !== 'undefined' && app.navigate) app.navigate('incidents');
         }
@@ -5004,24 +5077,66 @@
                 const inc = (this._incFiltered || [])[idx];
                 if(!inc) return;
                 const score = inc.smileScore || inc.rating || 0;
-                const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+                // Precise timestamp — same reliable parser used everywhere else
+                // tonight, instead of the day-only date this used to show.
+                const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
+                const parsedTs = _parseSheetDateTime(rawCreatedAt);
+                const dateStr = !isNaN(parsedTs)
+                    ? new Date(parsedTs).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                    : (inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—');
+
                 const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : 'No comment provided.';
                 const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
+
+                // Customer contact — Name/Phone aren't in the normalized fields,
+                // pulled straight from the raw sheet row. Delivery submissions
+                // never collect a name, so this gracefully shows phone-only.
+                const custName  = _rawFieldExact(inc._raw, 'Name');
+                const custPhone = _rawFieldExact(inc._raw, 'Phone Number');
+                const waNumber  = custPhone ? custPhone.replace(/[^\d]/g, '') : '';
+                const customerBlock = (custName || custPhone) ? `
+                    <div class="inc-detail-field full" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <div class="inc-df-label">Customer</div>
+                            <div class="inc-df-val">${custName || '—'}${custPhone ? ' · ' + custPhone : ''}</div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn"><i class="fas fa-phone"></i> Call</a>` : ''}
+                            ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : ''}
+                        </div>
+                    </div>` : '';
+
+                // Full survey Q&A straight from the raw sheet row — every
+                // question the customer actually answered, skipping the
+                // administrative columns already shown as their own fields
+                // above (Created At, Location, Name, Phone, Status, etc).
+                const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
+                let qaHtml = '';
+                if(inc._raw){
+                    qaHtml = Object.entries(inc._raw)
+                        .filter(([k, v]) => v && String(v).trim() && !SKIP_KEYS.has(k.toLowerCase().trim()))
+                        .map(([k, v]) => `<div class="inc-detail-field full"><div class="inc-df-label">${k}</div><div class="inc-df-val">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
+                        .join('');
+                }
+
                 const tr = document.createElement('tr');
                 tr.className = 'inc-detail-row';
                 tr.dataset.incIdx = idx;
                 tr.innerHTML = `<td colspan="8"><div class="inc-detail-inner">
+                    ${customerBlock}
                     ${field('Branch', inc.branch)}
                     ${field('Product', inc.product)}
                     ${field('Complaint Type', inc.complaintType)}
                     ${field('Channel', inc.channel)}
                     ${field('Survey Form', inc.surveyForm)}
                     ${field('Rating', score)}
-                    ${field('Date', dateStr)}
+                    ${field('Created At', dateStr)}
                     ${field('Order ID', inc.orderId)}
                     ${field('Resolved', inc.resolved ? 'Yes' : 'No')}
                     ${field('Case Validity', (inc.caseStatus||'verified').charAt(0).toUpperCase()+(inc.caseStatus||'verified').slice(1))}
                     <div class="inc-detail-field full"><div class="inc-df-label">Customer Comment</div><div class="inc-df-val inc-df-comment">${comment}</div></div>
+                    ${qaHtml}
                 </div></td>`;
                 rowEl.after(tr);
             },
