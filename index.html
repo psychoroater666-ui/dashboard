@@ -2584,14 +2584,10 @@
                                     <option value="">— Select Branch B —</option>
                                 </select>
                             </div>
-                            <div style="flex-shrink:0; display:flex; gap:10px; align-items:center;">
-                                <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px;">Date Range</div>
-                                <div class="date-range-pill">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <input type="date" id="comp-da-s">
-                                    <span class="date-separator">→</span>
-                                    <input type="date" id="comp-da-e">
-                                </div>
+                            <div style="flex-shrink:0; display:flex; align-items:center; gap:6px; max-width:220px;">
+                                <span style="font-size:0.66rem; color:var(--text-muted); font-style:italic; line-height:1.3;">
+                                    <i class="fas fa-arrow-down" style="font-size:0.58rem;"></i> Uses "Period A" dates — set below in Timeline Comparison
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -2606,14 +2602,28 @@
 
                     <!-- Timeline Comparison -->
                     <div class="card" style="border-top: 3px solid var(--accent-blue);">
-                        <div class="section-header" style="margin-bottom:20px;">
+                        <div class="section-header" style="margin-bottom:20px; flex-wrap:wrap; row-gap:14px;">
                             <h3><i class="fas fa-chart-area" style="color:var(--accent-blue); margin-right:6px;"></i> TIMELINE COMPARISON</h3>
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Compare Period</div>
-                                <div class="date-range-pill">
-                                    <input type="date" id="comp-db-s">
-                                    <span class="date-separator">→</span>
-                                    <input type="date" id="comp-db-e">
+                            <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <div style="font-size:0.68rem; font-weight:800; color:var(--accent-blue); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap;">
+                                        <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-blue);display:inline-block;margin-right:4px;"></span>Period A
+                                    </div>
+                                    <div class="date-range-pill">
+                                        <input type="date" id="comp-da-s">
+                                        <span class="date-separator">→</span>
+                                        <input type="date" id="comp-da-e">
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <div style="font-size:0.68rem; font-weight:800; color:var(--status-warn); text-transform:uppercase; letter-spacing:.3px; white-space:nowrap;">
+                                        <span style="width:8px;height:8px;border-radius:50%;background:var(--status-warn);display:inline-block;margin-right:4px;"></span>Period B
+                                    </div>
+                                    <div class="date-range-pill">
+                                        <input type="date" id="comp-db-s">
+                                        <span class="date-separator">→</span>
+                                        <input type="date" id="comp-db-e">
+                                    </div>
                                 </div>
                                 <select id="comp-group-by" class="select-input" onchange="compareEngine.render()" style="background-color: var(--white); font-size:0.8rem; padding: 7px 28px 7px 12px;">
                                     <option value="branch">By Branch</option>
@@ -3795,8 +3805,13 @@
             },
 
             render() {
-                const sA = new Date(document.getElementById('comp-da-s').value); const eA = new Date(document.getElementById('comp-da-e').value);
-                const sB = new Date(document.getElementById('comp-db-s').value); const eB = new Date(document.getElementById('comp-db-e').value);
+                let sA = new Date(document.getElementById('comp-da-s').value); let eA = new Date(document.getElementById('comp-da-e').value);
+                let sB = new Date(document.getElementById('comp-db-s').value); let eB = new Date(document.getElementById('comp-db-e').value);
+                // Tolerate the range being picked in either click order — without
+                // this, start-after-end silently matches zero rows instead of
+                // erroring or auto-correcting.
+                if(sA > eA){ const t = sA; sA = eA; eA = t; }
+                if(sB > eB){ const t = sB; sB = eB; eB = t; }
                 
                 const br = this.getSelectedOptions('branch');
                 const co = this.getSelectedOptions('complaint');
@@ -4825,8 +4840,11 @@
             const inRange = (item) => {
                 if(!startDate || !endDate) return true;
                 const d = new Date(item.date); d.setHours(0,0,0,0);
-                const s = new Date(startDate); s.setHours(0,0,0,0);
-                const e = new Date(endDate);   e.setHours(23,59,59,999);
+                let sRaw = new Date(startDate), eRaw = new Date(endDate);
+                // Tolerate the range being picked in either click order.
+                if(sRaw > eRaw){ const t = sRaw; sRaw = eRaw; eRaw = t; }
+                const s = new Date(sRaw); s.setHours(0,0,0,0);
+                const e = new Date(eRaw); e.setHours(23,59,59,999);
                 return d >= s && d <= e;
             };
             const subs = rawData.submissions.filter(x => x.branch === branchName && inRange(x));
