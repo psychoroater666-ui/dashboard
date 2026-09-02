@@ -3068,8 +3068,11 @@
                 <!-- Main content: mentions feed + right panel -->
                 <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
 
-                    <!-- MENTIONS FEED -->
-                    <div style="display:flex;flex-direction:column;gap:12px;">
+                    <!-- MENTIONS FEED — independently scrollable, so the right
+                         panel (Trending Keywords, By Platform) stays fully
+                         visible without needing to scroll through potentially
+                         hundreds of mention cards to reach it. -->
+                    <div style="display:flex;flex-direction:column;gap:12px; max-height:calc(100vh - 220px); overflow-y:auto; padding-right:8px;">
                         <div id="sl-feed" style="display:flex;flex-direction:column;gap:12px;">
                             <!-- Filled by JS -->
                         </div>
