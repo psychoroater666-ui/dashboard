@@ -1401,6 +1401,24 @@
         .sl-res-stage.active-progress  { background:rgba(245,158,11,.1); border-color:#F59E0B; color:#B45309; }
         .sl-res-stage.active-closed    { background:rgba(5,150,105,.1);  border-color:#059669; color:#059669; }
         .sl-res-stage:hover { opacity:.8; transform:scale(.97); }
+        .sl-close-note-box { display:flex; align-items:center; gap:6px; flex:1; min-width:200px; }
+        .sl-close-note-input { flex:1; min-width:140px; padding:6px 10px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-main); font-size:0.78rem; font-weight:500; outline:none; }
+        .sl-close-note-input:focus { border-color:#059669; box-shadow:0 0 0 3px rgba(5,150,105,.12); }
+        .sl-close-note-confirm, .sl-close-note-cancel { width:28px; height:28px; border-radius:8px; border:1.5px solid; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; flex-shrink:0; }
+        .sl-close-note-confirm { background:rgba(5,150,105,.1); border-color:#059669; color:#059669; }
+        .sl-close-note-confirm:hover { background:rgba(5,150,105,.18); }
+        .sl-close-note-cancel { background:var(--bg-light); border-color:var(--border-color); color:var(--text-muted); }
+        .sl-close-note-cancel:hover { background:rgba(220,38,38,.08); border-color:#DC2626; color:#DC2626; }
+        .sl-res-note { margin-top:6px; padding:8px 12px; border-radius:8px; background:var(--bg-light); border:1px solid var(--border-color); font-size:0.78rem; font-weight:500; color:var(--text-main); font-style:italic; }
+        .sl-res-note i { color:var(--text-muted); font-size:0.68rem; margin-right:4px; }
+        .sl-close-attach-btn { width:28px; height:28px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; flex-shrink:0; }
+        .sl-close-attach-btn:hover { border-color:#2563EB; color:#2563EB; background:rgba(37,99,235,.08); }
+        .sl-close-preview { align-items:center; gap:8px; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg-light); border:1px dashed var(--border-color); }
+        .sl-close-thumb { width:36px; height:36px; border-radius:6px; object-fit:cover; }
+        .sl-close-thumb-name { font-size:0.75rem; font-weight:600; color:var(--text-muted); flex:1; }
+        .sl-close-thumb-remove { width:24px; height:24px; border-radius:6px; border:none; background:rgba(220,38,38,.1); color:#DC2626; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.68rem; flex-shrink:0; }
+        .sl-close-thumb-remove:hover { background:rgba(220,38,38,.18); }
+        .sl-res-photo { display:block; margin-top:6px; max-width:180px; max-height:140px; border-radius:8px; border:1px solid var(--border-color); object-fit:cover; cursor:pointer; }
         /* Premium morphing resolution button */
         .res-stage-btn { position:relative; display:inline-flex; align-items:center; gap:8px; padding:7px 18px 7px 14px; border-radius:30px; font-size:0.73rem; font-weight:800; border:none; cursor:pointer; letter-spacing:0.2px; overflow:hidden; font-family:'Inter',sans-serif; transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1), background .4s ease; }
         .res-stage-btn::before { content:''; position:absolute; inset:0; border-radius:inherit; background:rgba(255,255,255,0.15); opacity:0; transition:opacity .2s ease; }
@@ -5562,13 +5580,98 @@
             setTimeout(() => slSetResolution(id, stage), 180);
         }
 
-        function slSetResolution(id,stage){
+        // ── Inline "what resolution was given?" box, shown only when closing a case ──
+        let _slPendingCloseImage = {}; // id -> base64 data URI, local-only until the server confirms and returns the permanent Drive URL
+
+        function slShowCloseNoteBox(id){
+            const track = document.getElementById('sl-res-track-'+id);
+            if(!track) return;
+            delete _slPendingCloseImage[id];
+            track.innerHTML = `<div class="sl-close-note-box">
+                <input type="text" id="sl-close-note-input-${id}" class="sl-close-note-input"
+                       placeholder="What resolution was given? (paste or attach a photo too)" maxlength="200"
+                       onkeydown="if(event.key==='Enter') slConfirmClose('${id}')"
+                       onpaste="slHandleClosePaste(event,'${id}')">
+                <button class="sl-close-attach-btn" onclick="document.getElementById('sl-close-file-${id}').click()" title="Attach photo"><i class="fas fa-paperclip"></i></button>
+                <input type="file" id="sl-close-file-${id}" accept="image/*" style="display:none;" onchange="slHandleCloseFile(event,'${id}')">
+                <button class="sl-close-note-confirm" onclick="slConfirmClose('${id}')" title="Confirm"><i class="fas fa-check"></i></button>
+                <button class="sl-close-note-cancel" onclick="renderSocialListening()" title="Cancel"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div id="sl-close-preview-${id}" class="sl-close-preview" style="display:none;"></div>`;
+            const inputEl = document.getElementById('sl-close-note-input-'+id);
+            if(inputEl) inputEl.focus();
+        }
+        function slShowClosePreview(id, dataUri){
+            const prev = document.getElementById('sl-close-preview-'+id);
+            if(!prev) return;
+            prev.style.display = 'flex';
+            prev.innerHTML = `<img src="${dataUri}" class="sl-close-thumb">
+                <span class="sl-close-thumb-name">Photo attached</span>
+                <button class="sl-close-thumb-remove" onclick="delete _slPendingCloseImage['${id}']; const p=document.getElementById('sl-close-preview-${id}'); p.style.display='none'; p.innerHTML='';" title="Remove"><i class="fas fa-trash"></i></button>`;
+        }
+        function slReadCloseImage(file, id){
+            if(!file) return;
+            if(file.size > 2 * 1024 * 1024){ alert('Photo must be under 2MB.'); return; }
+            const reader = new FileReader();
+            reader.onload = ev => { _slPendingCloseImage[id] = ev.target.result; slShowClosePreview(id, ev.target.result); };
+            reader.readAsDataURL(file);
+        }
+        function slHandleCloseFile(e, id){ slReadCloseImage(e.target.files[0], id); }
+        function slHandleClosePaste(e, id){
+            const items = (e.clipboardData || window.clipboardData).items;
+            for(const item of items){
+                if(item.type.indexOf('image') === 0){ e.preventDefault(); slReadCloseImage(item.getAsFile(), id); break; }
+            }
+        }
+        function slConfirmClose(id){
+            const inputEl = document.getElementById('sl-close-note-input-'+id);
+            const note  = inputEl ? inputEl.value.trim() : '';
+            const image = _slPendingCloseImage[id] || '';
+            delete _slPendingCloseImage[id];
+            slSetResolution(id, 'closed', note, image);
+        }
+
+        function slSetResolution(id,stage,note,image){
             const m=slMentions.find(x=>x.id===id); if(!m) return;
             const cur=m.resolutionStatus||'none'; if(cur==='closed') return;
             const ci=SL_RES_ORDER.indexOf(cur),ti=SL_RES_ORDER.indexOf(stage);
             if(ti!==ci+1) return;
-            m.resolutionStatus=stage; slSaveData(); renderSocialListening();
-            if(LIVE.slScriptUrl){ fetch(LIVE.slScriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'sl_resolution',id:id,status:m.resolutionStatus})}).then(()=>console.log('Resolution saved ✓')).catch(e=>console.warn('Resolution save failed:',e)); }
+            const prevStatus=m.resolutionStatus, prevNote=m.resolutionNote, prevImage=m.resolutionImageUrl;
+            m.resolutionStatus=stage;
+            if(stage==='closed'){
+                m.resolutionNote = note || '';
+                // Show the local preview immediately; swapped for the real, permanent
+                // Drive URL below once the server confirms the upload, since only the
+                // server can actually store the photo somewhere persistent/shareable.
+                if(image) m.resolutionImageUrl = image;
+            }
+            slSaveData(); renderSocialListening();
+            if(LIVE.slScriptUrl){
+                // NOTE: no `mode:'no-cors'` here on purpose — that mode silently
+                // strips/rejects a JSON content-type and makes the response
+                // unreadable, so a failed save looked identical to a successful
+                // one and the optimistic UI update above would get silently
+                // overwritten back to the old status on the next refresh.
+                // text/plain is a CORS-safelisted content type Apps Script still
+                // parses fine via e.postData.contents, and lets us actually
+                // confirm success and roll back the UI if the save truly fails.
+                fetch(LIVE.slScriptUrl, {
+                    method:'POST',
+                    headers:{'Content-Type':'text/plain;charset=utf-8'},
+                    body: JSON.stringify({ action:'sl_resolution', id:id, status:m.resolutionStatus, note:m.resolutionNote||'', image: image||'' })
+                })
+                .then(r=>r.json())
+                .then(r=>{
+                    if(r.status!=='success') throw new Error(r.message||'save failed');
+                    if(r.imageUrl){ m.resolutionImageUrl = r.imageUrl; slSaveData(); renderSocialListening(); }
+                    console.log('Resolution saved ✓');
+                })
+                .catch(e=>{
+                    console.warn('Resolution save failed, rolling back:', e);
+                    m.resolutionStatus=prevStatus; m.resolutionNote=prevNote; m.resolutionImageUrl=prevImage; slSaveData(); renderSocialListening();
+                    alert('Could not save this update — please try again.');
+                });
+            }
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
@@ -6000,18 +6103,25 @@
                 const map = {};
                 res.forEach(row => {
                     const keys = Object.keys(row);
-                    const idKey = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
-                    const stKey = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
-                    const id = idKey ? String(row[idKey]||'').trim() : '';
-                    const st = stKey ? String(row[stKey]||'').trim() : '';
-                    if(id && st) map[id] = st;
+                    const idKey   = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
+                    const stKey   = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
+                    const noteKey = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
+                    const imgKey  = keys.find(k => k.toLowerCase().trim() === 'image url') || keys.find(k => k.toLowerCase().includes('image'));
+                    const id    = idKey   ? String(row[idKey]||'').trim()   : '';
+                    const st    = stKey   ? String(row[stKey]||'').trim()   : '';
+                    const note  = noteKey ? String(row[noteKey]||'').trim() : '';
+                    const image = imgKey  ? String(row[imgKey]||'').trim()  : '';
+                    if(id && st) map[id] = { status: st, note: note, image: image };
                 });
                 return map;
             } catch(err){ console.warn('Resolution read-back failed:', err); return null; }
         }
         function slApplyResolutions(map){
             if(!map) return;
-            slMentions.forEach(m => { if(map[m.id]) m.resolutionStatus = map[m.id]; });
+            slMentions.forEach(m => {
+                const entry = map[m.id];
+                if(entry){ m.resolutionStatus = entry.status; if(entry.note) m.resolutionNote = entry.note; if(entry.image) m.resolutionImageUrl = entry.image; }
+            });
         }
 
         // Deterministic id from a mention's content so a saved resolution
@@ -6098,11 +6208,14 @@
 
                 if(!fromSheet.length) return false;
 
-                // Merge: sheet rows first (newest at top), then seed data after
-                // Remove any seed entries that duplicate sheet content (by author+date)
-                const sheetKeys = new Set(fromSheet.map(m => m.author+'|'+m.date));
-                const seedOnly  = SL_SEED.filter(s => !sheetKeys.has(s.author+'|'+s.date));
-                slMentions = [...fromSheet, ...seedOnly];
+                // Once real sheet data has loaded, use ONLY that data — seed/demo
+                // mentions were only ever meant as an empty-state placeholder (see
+                // slLoadData's fallback), not something to blend in permanently.
+                // Blending them in here was silently inflating every real count
+                // (Total Mentions, Complaints, etc.) by up to SL_SEED.length fake
+                // entries forever, since fictional seed author+date pairs never
+                // match real ones.
+                slMentions = fromSheet;
                 // Merge saved resolution statuses from SL_Resolution (persist across sessions)
                 slApplyResolutions(await loadResolutionsFromSheet());
                 slSaveData();
@@ -6575,16 +6688,29 @@
                     </div>
                     ${m.sentiment==='Complaint'?(()=>{
                         const rs=m.resolutionStatus||'none';
-                        if(rs==='closed') return `<div class="sl-res-track"><span class="sl-res-label">Resolution</span><span class="res-closed-pill"><i class="fas fa-circle-check" style="font-size:0.68rem;"></i> Resolved &amp; Closed</span></div>`;
+                        if(rs==='closed'){
+                            const noteHtml = m.resolutionNote
+                                ? `<div class="sl-res-note"><i class="fas fa-quote-left"></i> ${String(m.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+                                : '';
+                            const imgHtml = m.resolutionImageUrl
+                                ? `<a href="${m.resolutionImageUrl}" target="_blank" rel="noopener"><img src="${m.resolutionImageUrl}" class="sl-res-photo" alt="Resolution photo"></a>`
+                                : '';
+                            return `<div class="sl-res-track"><span class="sl-res-label">Resolution</span><span class="res-closed-pill"><i class="fas fa-circle-check" style="font-size:0.68rem;"></i> Resolved &amp; Closed</span></div>${noteHtml}${imgHtml}`;
+                        }
                         const stageMap = {
                             none:      { cls:'stage-none',       icon:'fa-phone',         label:'Contact Customer',  next:'contacted' },
                             contacted: { cls:'stage-contacted',   icon:'fa-arrow-trend-up', label:'Mark In Progress', next:'progress'  },
                             progress:  { cls:'stage-progress',    icon:'fa-circle-check',  label:'Close Case',        next:'closed'    }
                         };
                         const st = stageMap[rs] || stageMap.none;
-                        return `<div class="sl-res-track">
+                        // Closing a case asks for a short note first (what resolution was
+                        // given), instead of closing instantly like the other two stages.
+                        const btnOnClick = rs==='progress'
+                            ? `slShowCloseNoteBox('${m.id}')`
+                            : `slSetResolutionBtn(event,this,'${m.id}','${st.next}')`;
+                        return `<div class="sl-res-track" id="sl-res-track-${m.id}">
                             <span class="sl-res-label">Resolution</span>
-                            <button class="res-stage-btn ${st.cls}" onclick="slSetResolutionBtn(event,this,'${m.id}','${st.next}')">
+                            <button class="res-stage-btn ${st.cls}" onclick="${btnOnClick}">
                                 <i class="fas ${st.icon} res-btn-icon"></i>
                                 <span>${st.label}</span>
                             </button>
