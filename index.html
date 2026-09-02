@@ -3463,6 +3463,11 @@
             // Published CSV of the SL_Resolution tab. Paste the link after you publish that tab
             // (File → Share → Publish to web → SL_Resolution → CSV). Leave '' to keep resolutions local-only.
             slResolutionUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1071104677&single=true&output=csv',
+            // Fill this in once the "Incident_Resolution" tab exists and is
+            // published to web (File → Share → Publish to web, pick that tab,
+            // CSV format, copy the link) — leave blank until then, everything
+            // below no-ops gracefully without it.
+            incidentResolutionUrl: '',
             // AI Executive Summary tab (published CSV), written by the Gemini Apps Script
             summaryUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1550342651&single=true&output=csv',
             actionPlanUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1996393145&single=true&output=csv',
@@ -3729,6 +3734,9 @@
                 rawData.submissions.length = 0; rawData.incidents.length = 0;
                 out.subs.forEach(x=>rawData.submissions.push(x));
                 out.incs.forEach(x=>rawData.incidents.push(x));
+                if(LIVE.incidentResolutionUrl){
+                    try { applyIncidentResolutions(await loadIncidentResolutionsFromSheet()); } catch(e){ console.warn('Incident resolution apply failed:', e); }
+                }
                 LIVE_MODE = true;
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 if(typeof app !== 'undefined' && app.applyFilters){ try{ app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); }catch(e){} }   // repaint with fresh data
@@ -4361,6 +4369,7 @@
         }
 
         let _seenIncidentKeys = null; // lazy-loaded from localStorage
+        let _lastAlertedIncidentKey = null;
         let _incidentAlertQueue = [];
         let _incidentAlertShowing = false;
 
@@ -4401,6 +4410,7 @@
             if(!_incidentAlertQueue.length){ _incidentAlertShowing = false; return; }
             _incidentAlertShowing = true;
             const inc = _incidentAlertQueue.shift();
+            _lastAlertedIncidentKey = _incidentStableKey(inc);
             startRepeatingIncidentSound();
 
             const emojiFor = (score) => (score === undefined || score === null) ? '❓' : score <= 1 ? '😠' : score === 2 ? '🙁' : '😐';
@@ -4436,6 +4446,7 @@
             stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
             _incidentAlertShowing = false;
+            window._pendingIncidentHighlightKey = _lastAlertedIncidentKey;
             _incidentAlertQueue = [];
             if(typeof app !== 'undefined' && app.navigate) app.navigate('incidents');
         }
@@ -4528,6 +4539,65 @@
                 state.pendingConfirms = 1;
             }
             return state.stable;
+        }
+
+        // ── Incident resolution (remarks + close) ───────────────────────────
+        // Same pattern as Social Listening's resolution system — a dedicated
+        // tracking sheet, read back and applied onto rawData.incidents on
+        // every refresh, keyed by the same stable key used for alert dedup
+        // (our own INC-xxx ids aren't stable across refreshes, so they can't
+        // be used to persist anything long-term).
+        async function loadIncidentResolutionsFromSheet(){
+            if(!LIVE.incidentResolutionUrl) return null;
+            try {
+                const res = await _fetch(LIVE.incidentResolutionUrl);
+                if(!res || !res.length) return null;
+                const map = {};
+                res.forEach(row => {
+                    const keys = Object.keys(row);
+                    const idKey   = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
+                    const stKey   = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
+                    const noteKey = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
+                    const id   = idKey   ? String(row[idKey]||'').trim()   : '';
+                    const st   = stKey   ? String(row[stKey]||'').trim()   : '';
+                    const note = noteKey ? String(row[noteKey]||'').trim() : '';
+                    if(id && st) map[id] = { status: st, note: note };
+                });
+                return map;
+            } catch(err){ console.warn('Incident resolution read-back failed:', err); return null; }
+        }
+
+        function applyIncidentResolutions(map){
+            if(!map) return;
+            (rawData.incidents||[]).forEach(inc => {
+                const entry = map[_incidentStableKey(inc)];
+                if(entry){
+                    inc.resolved = (entry.status === 'closed');
+                    if(entry.note) inc.resolutionNote = entry.note;
+                }
+            });
+        }
+
+        function saveIncidentResolution(stableKey, note, btnEl){
+            if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '' })
+            })
+            .then(r => r.json())
+            .then(r => {
+                if(r.status !== 'success') throw new Error(r.message || 'save failed');
+                (rawData.incidents||[]).forEach(inc => {
+                    if(_incidentStableKey(inc) === stableKey){ inc.resolved = true; inc.resolutionNote = note || ''; }
+                });
+                if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
+            })
+            .catch(err => {
+                console.warn('Incident resolution save failed:', err);
+                alert('Could not save this — please try again.');
+                if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Mark as Closed'; }
+            });
         }
 
         const app = {
@@ -5019,7 +5089,17 @@
             },
 
             renderIncidentsView() {
-                const incs = state.p1.incs.slice();
+                // No sort was being applied at all here — this shows incidents
+                // in raw sheet order (oldest-appended-first), not just a
+                // same-day tie-break issue like the earlier Social Listening
+                // bug. Sorted newest-first using the real precise timestamp.
+                const incs = state.p1.incs.slice().sort((a, b) => {
+                    const ta = _parseSheetDateTime(_rawFieldExact(a._raw, 'Created At'));
+                    const tb = _parseSheetDateTime(_rawFieldExact(b._raw, 'Created At'));
+                    const va = isNaN(ta) ? (a.date ? Date.parse(a.date+'T12:00:00') : 0) : ta;
+                    const vb = isNaN(tb) ? (b.date ? Date.parse(b.date+'T12:00:00') : 0) : tb;
+                    return vb - va;
+                });
                 this._incAll = incs; // cache for search/filter/export
 
                 // ── Summary stats ──
@@ -5140,6 +5220,22 @@
                     const targetRow = tbody ? tbody.rows[openIdx] : null;
                     if(targetRow) this.toggleIncidentDetail(targetRow, openIdx, true);
                 }
+                // Auto-open the specific incident that triggered a "View
+                // Incident" click from the alert popup — matched by stable
+                // key since our own INC-xxx ids aren't stable across refreshes.
+                if(window._pendingIncidentHighlightKey){
+                    const key = window._pendingIncidentHighlightKey;
+                    window._pendingIncidentHighlightKey = null;
+                    const matchIdx = rows.findIndex(inc => _incidentStableKey(inc) === key);
+                    if(matchIdx >= 0){
+                        const tbody2 = document.querySelector('#inc-detail-table tbody');
+                        const targetRow2 = tbody2 ? tbody2.rows[matchIdx] : null;
+                        if(targetRow2){
+                            this.toggleIncidentDetail(targetRow2, matchIdx, true);
+                            targetRow2.scrollIntoView({ behavior:'smooth', block:'center' });
+                        }
+                    }
+                }
             },
 
             toggleIncidentDetail(rowEl, idx, silent) {
@@ -5161,6 +5257,24 @@
 
                 const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : 'No comment provided.';
                 const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
+
+                // Remarks + close — new incidents start open; once closed, this
+                // shows the resolution note instead of the input, and closing
+                // is one-way (matches the sheet: no "reopen" written back).
+                const stableKey = _incidentStableKey(inc);
+                const escKey = stableKey.replace(/'/g, "\\'");
+                const isClosed = !!inc.resolved;
+                const remarksBlock = isClosed ? `
+                    <div class="inc-detail-field full">
+                        <div class="inc-df-label">Resolution</div>
+                        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;background:rgba(5,150,105,.1);color:#059669;font-size:0.75rem;font-weight:800;"><i class="fas fa-circle-check"></i> Closed</span>
+                        ${inc.resolutionNote ? `<div class="inc-df-val" style="font-style:italic;background:var(--bg-light);padding:10px 12px;border-radius:8px;margin-top:8px;">"${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</div>` : ''}
+                    </div>` : `
+                    <div class="inc-detail-field full">
+                        <div class="inc-df-label">Add Remarks &amp; Close</div>
+                        <textarea id="inc-remarks-${idx}" placeholder="What was done to resolve this?" style="width:100%;min-height:60px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border-color);font-size:0.82rem;font-family:inherit;resize:vertical;margin-top:4px;background:var(--white);color:var(--text-main);"></textarea>
+                        <button class="ia-btn-view" style="margin-top:8px;" onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
+                    </div>`;
 
                 // Customer contact — Name/Phone aren't in the normalized fields,
                 // pulled straight from the raw sheet row. Delivery submissions
@@ -5209,6 +5323,7 @@
                     ${field('Resolved', inc.resolved ? 'Yes' : 'No')}
                     ${field('Case Validity', (inc.caseStatus||'verified').charAt(0).toUpperCase()+(inc.caseStatus||'verified').slice(1))}
                     <div class="inc-detail-field full"><div class="inc-df-label">Customer Comment</div><div class="inc-df-val inc-df-comment">${comment}</div></div>
+                    ${remarksBlock}
                     ${qaHtml}
                 </div></td>`;
                 rowEl.after(tr);
