@@ -1824,6 +1824,39 @@
         .inc-menu-btn:hover { background: var(--bg-light); color: var(--text-main); }
         .inc-detail-row > td { background: var(--bg-light); padding: 0 !important; }
         .inc-detail-inner { padding: 16px 22px; display: grid; grid-template-columns: repeat(auto-fill, 190px); justify-content: start; gap: 14px 22px; }
+        /* Incident detail v2 — matches Harlyy's own layout: status pill,
+           timeline (created → resolved), remarks section, right sidebar. */
+        .inc-detail-v2 { padding: 22px 26px; }
+        .inc-status-badge-v2 { display:inline-block; padding:4px 13px; border-radius:20px; font-size:0.72rem; font-weight:700; margin-bottom:18px; }
+        .inc-status-badge-v2.inc-status-resolved { background:rgba(5,150,105,.12); color:#059669; }
+        .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#D97706; }
+        .inc-columns-v2 { display:grid; grid-template-columns: 1fr 300px; gap:30px; align-items:start; }
+        .inc-tl-entry-v2 { display:flex; gap:14px; align-items:flex-start; }
+        .inc-tl-icon-v2 { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; }
+        .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
+        .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
+        .inc-tl-connector { width:2px; height:22px; background:var(--border-color); margin-left:17px; }
+        .inc-tl-content-v2 { flex:1; padding-top:4px; }
+        .inc-tl-title-v2 { font-size:0.9rem; font-weight:800; color:var(--text-main); }
+        .inc-tl-time-v2 { font-size:0.72rem; font-weight:600; color:var(--text-muted); margin-left:8px; }
+        .inc-tl-sub-v2 { font-size:0.82rem; color:var(--text-muted); margin-top:3px; }
+        .inc-tl-sub-v2 strong { color:var(--text-main); font-weight:700; }
+        .inc-tl-comment-bubble { background:var(--bg-light); border-radius:10px; padding:12px 14px; margin-top:8px; font-size:0.85rem; color:var(--text-main); font-style:italic; }
+        .inc-add-comment-v2 { margin-top:22px; padding-top:18px; border-top:1px solid var(--border-color); }
+        .inc-add-comment-label-v2 { font-size:0.85rem; font-weight:800; color:var(--text-main); margin-bottom:8px; }
+        .inc-add-comment-v2 textarea { width:100%; min-height:70px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border-color); font-size:0.85rem; font-family:inherit; resize:vertical; background:var(--white); color:var(--text-main); }
+        .inc-close-btn-v2 { margin-top:10px; padding:9px 18px; border-radius:9px; border:none; background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.83rem; font-weight:700; cursor:pointer; }
+        .inc-sidebar-v2 { display:flex; flex-direction:column; gap:14px; }
+        .inc-sb-card-v2 { background:var(--bg-light); border-radius:12px; padding:14px 16px; }
+        .inc-sb-2col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .inc-sb-label-v2 { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:3px; }
+        .inc-sb-val-v2 { font-size:0.85rem; font-weight:700; color:var(--text-main); word-break:break-word; }
+        .inc-sb-qa-item { margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); }
+        .inc-sb-qa-item:first-child { margin-top:0; padding-top:0; border-top:none; }
+        .inc-sb-id-row-v2 { display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border-radius:8px; padding:8px 10px; margin-top:10px; }
+        .inc-sb-id-row-v2 span { font-size:0.72rem; color:var(--text-muted); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .inc-sb-id-row-v2 button { border:none; background:none; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
+        @media (max-width: 900px) { .inc-columns-v2 { grid-template-columns: 1fr; } }
         body.do-anim .inc-detail-inner { animation: fadeIn .2s ease; }
         .inc-detail-field .inc-df-label { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 3px; }
         .inc-detail-field .inc-df-val { font-size: 0.85rem; font-weight: 600; color: var(--text-main); word-break: break-word; }
@@ -5254,78 +5287,105 @@
                 const dateStr = !isNaN(parsedTs)
                     ? new Date(parsedTs).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
                     : (inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—');
+                const timeTaken = _rawFieldExact(inc._raw, 'Time Taken') || '—';
 
-                const comment = (inc.note && inc.note.trim()) ? inc.note.trim() : 'No comment provided.';
-                const field = (label, val) => `<div class="inc-detail-field"><div class="inc-df-label">${label}</div><div class="inc-df-val">${val || '—'}</div></div>`;
-
-                // Remarks + close — new incidents start open; once closed, this
-                // shows the resolution note instead of the input, and closing
-                // is one-way (matches the sheet: no "reopen" written back).
                 const stableKey = _incidentStableKey(inc);
                 const escKey = stableKey.replace(/'/g, "\\'");
                 const isClosed = !!inc.resolved;
-                const remarksBlock = isClosed ? `
-                    <div class="inc-detail-field full">
-                        <div class="inc-df-label">Resolution</div>
-                        <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;background:rgba(5,150,105,.1);color:#059669;font-size:0.75rem;font-weight:800;"><i class="fas fa-circle-check"></i> Closed</span>
-                        ${inc.resolutionNote ? `<div class="inc-df-val" style="font-style:italic;background:var(--bg-light);padding:10px 12px;border-radius:8px;margin-top:8px;">"${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</div>` : ''}
-                    </div>` : `
-                    <div class="inc-detail-field full">
-                        <div class="inc-df-label">Add Remarks &amp; Close</div>
-                        <textarea id="inc-remarks-${idx}" placeholder="What was done to resolve this?" style="width:100%;min-height:60px;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border-color);font-size:0.82rem;font-family:inherit;resize:vertical;margin-top:4px;background:var(--white);color:var(--text-main);"></textarea>
-                        <button class="ia-btn-view" style="margin-top:8px;" onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
-                    </div>`;
 
-                // Customer contact — Name/Phone aren't in the normalized fields,
-                // pulled straight from the raw sheet row. Delivery submissions
-                // never collect a name, so this gracefully shows phone-only.
                 const custName  = _rawFieldExact(inc._raw, 'Name');
                 const custPhone = _rawFieldExact(inc._raw, 'Phone Number');
                 const waNumber  = custPhone ? custPhone.replace(/[^\d]/g, '') : '';
-                const customerBlock = (custName || custPhone) ? `
-                    <div class="inc-detail-field full" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
-                        <div>
-                            <div class="inc-df-label">Customer</div>
-                            <div class="inc-df-val">${custName || '—'}${custPhone ? ' · ' + custPhone : ''}</div>
+
+                // Timeline: created (always), resolved (only if closed)
+                const timelineHtml = `
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-created"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident created <span class="inc-tl-time-v2">${dateStr}</span></div>
+                            <div class="inc-tl-sub-v2">Submission at <strong>${inc.branch||'—'}</strong>${custName ? ` by customer <strong>${custName}</strong>` : ''} with survey <strong>${inc.surveyForm||inc.form||'—'}</strong></div>
                         </div>
-                        <div style="display:flex; gap:8px;">
-                            ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn"><i class="fas fa-phone"></i> Call</a>` : ''}
-                            ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : ''}
+                    </div>
+                    ${isClosed ? `
+                    <div class="inc-tl-connector"></div>
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident resolved</div>
+                            ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
+                    </div>` : ''}
+                `;
+
+                // Remarks + close — one-way (matches the sheet: no "reopen" written back)
+                const addCommentHtml = !isClosed ? `
+                    <div class="inc-add-comment-v2">
+                        <div class="inc-add-comment-label-v2">Add Remarks</div>
+                        <textarea id="inc-remarks-${idx}" placeholder="What was done to resolve this?"></textarea>
+                        <button class="inc-close-btn-v2" onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
                     </div>` : '';
 
                 // Full survey Q&A straight from the raw sheet row — every
                 // question the customer actually answered, skipping the
-                // administrative columns already shown as their own fields
-                // above (Created At, Location, Name, Phone, Status, etc).
+                // administrative columns shown as their own sidebar fields.
                 const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
-                let qaHtml = '';
+                let qaHtmlSidebar = '';
                 if(inc._raw){
-                    qaHtml = Object.entries(inc._raw)
+                    qaHtmlSidebar = Object.entries(inc._raw)
                         .filter(([k, v]) => v && String(v).trim() && !SKIP_KEYS.has(k.toLowerCase().trim()))
-                        .map(([k, v]) => `<div class="inc-detail-field full"><div class="inc-df-label">${k}</div><div class="inc-df-val">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
+                        .map(([k, v]) => `<div class="inc-sb-qa-item"><div class="inc-sb-label-v2">${k}</div><div class="inc-sb-val-v2">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
                         .join('');
                 }
+
+                const sidebarHtml = `
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-2col">
+                            <div><div class="inc-sb-label-v2">Survey</div><div class="inc-sb-val-v2">${inc.surveyForm||inc.form||'—'}</div></div>
+                            <div><div class="inc-sb-label-v2">Location</div><div class="inc-sb-val-v2">${inc.branch||'—'}</div></div>
+                        </div>
+                    </div>
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-label-v2">Order ID</div><div class="inc-sb-val-v2" style="margin-bottom:${qaHtmlSidebar?'10px':'0'};">${inc.orderId||'—'}</div>
+                        ${qaHtmlSidebar}
+                    </div>
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-2col">
+                            <div><div class="inc-sb-label-v2">Created At</div><div class="inc-sb-val-v2">${dateStr}</div></div>
+                            <div><div class="inc-sb-label-v2">Time Taken</div><div class="inc-sb-val-v2">${timeTaken}</div></div>
+                        </div>
+                        <div class="inc-sb-id-row-v2">
+                            <span>${inc.id}</span>
+                            <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${inc.id}')" title="Copy"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    ${(custName || custPhone) ? `
+                    <div class="inc-sb-card-v2">
+                        ${custName ? `<div class="inc-sb-label-v2">Name</div><div class="inc-sb-val-v2" style="margin-bottom:8px;">${custName}</div>` : ''}
+                        ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:10px;">${custPhone}</div>` : ''}
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
+                            ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa" style="justify-content:center;"><i class="fab fa-whatsapp"></i> WhatsApp Customer</a>` : ''}
+                        </div>
+                    </div>` : ''}
+                `;
 
                 const tr = document.createElement('tr');
                 tr.className = 'inc-detail-row';
                 tr.dataset.incIdx = idx;
-                tr.innerHTML = `<td colspan="8"><div class="inc-detail-inner">
-                    ${customerBlock}
-                    ${field('Branch', inc.branch)}
-                    ${field('Product', inc.product)}
-                    ${field('Complaint Type', inc.complaintType)}
-                    ${field('Channel', inc.channel)}
-                    ${field('Survey Form', inc.surveyForm)}
-                    ${field('Rating', score)}
-                    ${field('Created At', dateStr)}
-                    ${field('Order ID', inc.orderId)}
-                    ${field('Resolved', inc.resolved ? 'Yes' : 'No')}
-                    ${field('Case Validity', (inc.caseStatus||'verified').charAt(0).toUpperCase()+(inc.caseStatus||'verified').slice(1))}
-                    <div class="inc-detail-field full"><div class="inc-df-label">Customer Comment</div><div class="inc-df-val inc-df-comment">${comment}</div></div>
-                    ${remarksBlock}
-                    ${qaHtml}
-                </div></td>`;
+                tr.innerHTML = `<td colspan="8">
+                    <div class="inc-detail-v2">
+                        <div class="inc-status-badge-v2 ${isClosed?'inc-status-resolved':'inc-status-open'}">${isClosed?'resolved':'open'}</div>
+                        <div class="inc-columns-v2">
+                            <div class="inc-main-col-v2">
+                                ${timelineHtml}
+                                ${addCommentHtml}
+                            </div>
+                            <div class="inc-sidebar-v2">
+                                ${sidebarHtml}
+                            </div>
+                        </div>
+                    </div>
+                </td>`;
                 rowEl.after(tr);
             },
 
