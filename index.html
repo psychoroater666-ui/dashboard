@@ -3736,8 +3736,8 @@
                 document.getElementById('comp-db-s').value = formatStr(dBStart);
                 document.getElementById('comp-db-e').value = formatStr(dBEnd);
 
-                document.getElementById('comp-da-s').addEventListener('change', () => this.render());
-                document.getElementById('comp-da-e').addEventListener('change', () => this.render());
+                document.getElementById('comp-da-s').addEventListener('change', () => { this.render(); if(typeof branchCompare!=='undefined') branchCompare.render(); });
+                document.getElementById('comp-da-e').addEventListener('change', () => { this.render(); if(typeof branchCompare!=='undefined') branchCompare.render(); });
                 document.getElementById('comp-db-s').addEventListener('change', () => this.render());
                 document.getElementById('comp-db-e').addEventListener('change', () => this.render());
 
@@ -4821,9 +4821,16 @@
             { key: 'totalVolumeScore',label: 'Total Volume',         fmt: v => v.toLocaleString(),    lowerBetter: false },
         ];
 
-        function getBranchMetrics(branchName) {
-            const subs = state.p1.subs.filter(x => x.branch === branchName);
-            const incs = state.p1.incs.filter(x => x.branch === branchName);
+        function getBranchMetrics(branchName, startDate, endDate) {
+            const inRange = (item) => {
+                if(!startDate || !endDate) return true;
+                const d = new Date(item.date); d.setHours(0,0,0,0);
+                const s = new Date(startDate); s.setHours(0,0,0,0);
+                const e = new Date(endDate);   e.setHours(23,59,59,999);
+                return d >= s && d <= e;
+            };
+            const subs = rawData.submissions.filter(x => x.branch === branchName && inRange(x));
+            const incs = rawData.incidents.filter(x => x.branch === branchName && inRange(x));
             const s = subs.length, i = incs.length;
             const avgSmile = s ? subs.reduce((a,c)=>a+c.smileScore,0)/s : 0;
             const posFb = s ? (subs.filter(x=>x.smileScore>=4).length/s)*100 : 0;
@@ -4869,6 +4876,8 @@
             render() {
                 const bA = document.getElementById('comp-branch-a')?.value;
                 const bB = document.getElementById('comp-branch-b')?.value;
+                const startDate = document.getElementById('comp-da-s')?.value;
+                const endDate   = document.getElementById('comp-da-e')?.value;
                 const out = document.getElementById('branch-comp-output');
                 if (!out) return;
 
@@ -4877,8 +4886,8 @@
                     return;
                 }
 
-                const mA = getBranchMetrics(bA);
-                const mB = getBranchMetrics(bB);
+                const mA = getBranchMetrics(bA, startDate, endDate);
+                const mB = getBranchMetrics(bB, startDate, endDate);
 
                 // Build row HTML
                 let flatRows = '';
