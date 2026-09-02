@@ -3301,14 +3301,25 @@
                      Submissions tab; Channels/Forms/Products/Complaints share
                      this same container and stay aggregate-only. -->
                 <div class="card" id="submissions-detail-card" style="display:none;">
-                    <div class="section-header" style="margin-bottom:16px;">
+                    <div class="section-header" style="margin-bottom:16px; flex-wrap:wrap; row-gap:12px;">
                         <h3><i class="fas fa-list" style="color:var(--accent-blue);margin-right:6px;"></i> All Submissions</h3>
-                        <div style="font-size:0.72rem;color:var(--text-muted);" id="submissions-detail-count"></div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="position:relative;">
+                                <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.75rem;color:var(--text-muted);"></i>
+                                <input type="text" id="submissions-search-input" placeholder="Search name, phone, branch, comment…"
+                                       oninput="submissionsSearch(this.value)"
+                                       style="padding:8px 12px 8px 32px; border-radius:8px; border:1.5px solid var(--border-color); font-size:0.8rem; min-width:260px; background:var(--white); color:var(--text-main);">
+                            </div>
+                            <button class="btn-export" id="submissions-refresh-btn" onclick="submissionsManualRefresh()">
+                                <i class="fas fa-rotate"></i> Refresh
+                            </button>
+                        </div>
+                        <div style="font-size:0.72rem;color:var(--text-muted); width:100%;" id="submissions-detail-count"></div>
                     </div>
                     <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
                         <table id="submissions-detail-table">
                             <thead style="position:sticky;top:0;background:var(--white);z-index:1;">
-                                <tr><th>Date</th><th>Branch</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
+                                <tr><th>Created At</th><th>Name</th><th>Phone Number</th><th>Location</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
                             </thead>
                             <tbody id="submissions-detail-tbody"></tbody>
                         </table>
@@ -4017,6 +4028,33 @@
             const headers  = ['Source Form', ...rawCols];
             const rows     = rawItems.map(x => [x.surveyForm || x.form || '', ...rawCols.map(c => x._raw[c] ?? '')]);
             _exportCSV(`${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+        }
+
+        // Exact (not fuzzy-substring) header match — needed specifically for
+        // "Name", since a substring match would also catch unrelated columns
+        // like "Menu Item Name Here".
+        function _rawFieldExact(raw, label) {
+            if(!raw) return '';
+            const target = label.toLowerCase().trim();
+            const k = Object.keys(raw).find(key => key.toLowerCase().trim() === target);
+            return k ? String(raw[k] || '').trim() : '';
+        }
+
+        let _submissionsSearchTerm = '';
+        function submissionsSearch(term) {
+            _submissionsSearchTerm = term || '';
+            if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
+        }
+
+        function submissionsManualRefresh() {
+            const btn = document.getElementById('submissions-refresh-btn');
+            if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Refreshing…'; }
+            loadLive().then(() => {
+                applyGlobalFilters();
+                app.applyFilters();
+            }).finally(() => {
+                if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Refresh'; }
+            });
         }
 
         const app = {
@@ -4746,32 +4784,49 @@
 
                 // Detailed, row-level submissions log — respects the same global
                 // filters (date range, branch, region, channel) as the breakdown
-                // table above, so narrowing those narrows this too. Capped for
-                // render performance (Feedback alone can be 25,000+ rows) — sorted
-                // newest first, so the cap only ever trims older rows, never the
-                // most recent ones you actually landed here to check.
+                // table above, plus the search box. Capped for render performance
+                // (Feedback alone can be 25,000+ rows) — sorted newest first, so
+                // the cap only ever trims older rows, never the ones you're
+                // actually looking for.
                 const detailCard = document.getElementById('submissions-detail-card');
                 if(detailCard){
                     if(view === 'submissions'){
                         detailCard.style.display = '';
                         const DISPLAY_CAP = 300;
-                        const sorted = state.p1.subs.slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+                        let sorted = state.p1.subs.slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+                        const term = (_submissionsSearchTerm || '').toLowerCase().trim();
+                        if(term){
+                            sorted = sorted.filter(s => {
+                                const nm = _rawFieldExact(s._raw, 'Name').toLowerCase();
+                                const ph = _rawFieldExact(s._raw, 'Phone Number').toLowerCase();
+                                return nm.includes(term) || ph.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
+                            });
+                        }
                         const shown = sorted.slice(0, DISPLAY_CAP);
                         const countEl = document.getElementById('submissions-detail-count');
                         if(countEl){
                             countEl.textContent = sorted.length > DISPLAY_CAP
-                                ? `Showing latest ${DISPLAY_CAP.toLocaleString()} of ${sorted.length.toLocaleString()} — narrow the date filter above to see more`
-                                : `${sorted.length.toLocaleString()} submission${sorted.length===1?'':'s'}`;
+                                ? `Showing latest ${DISPLAY_CAP.toLocaleString()} of ${sorted.length.toLocaleString()}${term?' matching your search':''} — narrow the date filter above to see more`
+                                : `${sorted.length.toLocaleString()} submission${sorted.length===1?'':'s'}${term?' matching your search':''}`;
                         }
                         const tbody = document.getElementById('submissions-detail-tbody');
                         if(tbody){
                             tbody.innerHTML = shown.length ? shown.map(s => {
-                                const dateDisp = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+                                const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
+                                let dateDisp;
+                                if(rawCreatedAt){
+                                    const dt = new Date(rawCreatedAt.replace(' ','T'));
+                                    dateDisp = !isNaN(dt) ? dt.toLocaleString('en-US', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : rawCreatedAt;
+                                } else {
+                                    dateDisp = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+                                }
+                                const name  = _rawFieldExact(s._raw, 'Name')         || '<span style="color:var(--text-muted);">—</span>';
+                                const phone = _rawFieldExact(s._raw, 'Phone Number') || '<span style="color:var(--text-muted);">—</span>';
                                 const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore}/5` : '—';
                                 const commentRaw = s.comment ? String(s.comment).replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
                                 const commentDisp = commentRaw || '<span style="color:var(--text-muted);">—</span>';
-                                return `<tr><td>${dateDisp}</td><td class="font-semibold">${s.branch||'—'}</td><td>${s.surveyForm||s.form||'—'}</td><td>${ratingDisp}</td><td>${commentDisp}</td></tr>`;
-                            }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions in the current filter</td></tr>`;
+                                return `<tr><td>${dateDisp}</td><td class="font-semibold">${name}</td><td>${phone}</td><td>${s.branch||'—'}</td><td>${s.surveyForm||s.form||'—'}</td><td>${ratingDisp}</td><td>${commentDisp}</td></tr>`;
+                            }).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions match${term?' your search':' the current filter'}</td></tr>`;
                         }
                     } else {
                         detailCard.style.display = 'none';
