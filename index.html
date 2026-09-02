@@ -3263,28 +3263,6 @@
 
             <!-- FALLBACK ANALYTICS -->
             <div id="view-analytics" class="view">
-                <div class="card">
-                    <div class="section-header"><h3 id="analytics-current-title">Current Category Metrics</h3></div>
-                    <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
-                </div>
-
-                <!-- Detailed, row-level submissions log — only shown on the
-                     Submissions tab; Channels/Forms/Products/Complaints share
-                     this same container and stay aggregate-only. -->
-                <div class="card" id="submissions-detail-card" style="display:none;">
-                    <div class="section-header" style="margin-bottom:16px;">
-                        <h3><i class="fas fa-list" style="color:var(--accent-blue);margin-right:6px;"></i> All Submissions</h3>
-                        <div style="font-size:0.72rem;color:var(--text-muted);" id="submissions-detail-count"></div>
-                    </div>
-                    <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
-                        <table id="submissions-detail-table">
-                            <thead style="position:sticky;top:0;background:var(--white);z-index:1;">
-                                <tr><th>Date</th><th>Branch</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
-                            </thead>
-                            <tbody id="submissions-detail-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
                 <!-- Export center — only shown on the Submissions tab -->
                 <div class="card" id="submissions-export-card" style="display:none;">
                     <div class="section-header" style="margin-bottom:16px;">
@@ -3318,6 +3296,33 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Detailed, row-level submissions log — only shown on the
+                     Submissions tab; Channels/Forms/Products/Complaints share
+                     this same container and stay aggregate-only. -->
+                <div class="card" id="submissions-detail-card" style="display:none;">
+                    <div class="section-header" style="margin-bottom:16px;">
+                        <h3><i class="fas fa-list" style="color:var(--accent-blue);margin-right:6px;"></i> All Submissions</h3>
+                        <div style="font-size:0.72rem;color:var(--text-muted);" id="submissions-detail-count"></div>
+                    </div>
+                    <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
+                        <table id="submissions-detail-table">
+                            <thead style="position:sticky;top:0;background:var(--white);z-index:1;">
+                                <tr><th>Date</th><th>Branch</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
+                            </thead>
+                            <tbody id="submissions-detail-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Shared aggregate breakdown — used by Channels/Forms/Products/
+                     Complaints as their only content; hidden on Submissions
+                     specifically, since the detail log + export above replace it there. -->
+                <div class="card" id="universal-metrics-card">
+                    <div class="section-header"><h3 id="analytics-current-title">Current Category Metrics</h3></div>
+                    <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
+                </div>
+
             </div>
 
         </div>
@@ -3486,7 +3491,7 @@
                         _find(r,'improve') || ''
                     ).trim();
                     _ensure('branch',branch); _ensure('form',form); _ensure('channel',channel); _ensure('survey',src.form);
-                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore:rating, comment });
+                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore:rating, comment, _raw:r });
                     pushed++;
                     if(rating <= INCIDENT_MAX_RATING){
                         const complaintType = prod || (src.form + ' Issue');
@@ -3508,7 +3513,7 @@
                             complaintType, verified, caseStatus, resolved, resolutionMins, product: prod || '—', smileScore:rating,
                             category: catVal,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
-                            note: comment });
+                            note: comment, _raw:r });
                     }
                 } catch(e){ /* skip a bad row, keep going */ }
             });
@@ -3979,27 +3984,39 @@
 
         function exportSubmissionsByForm(formName) {
             const subs = state.p1.subs.filter(s => (s.surveyForm || s.form) === formName);
-            if(!subs.length){ alert(`No ${formName} submissions in the current filter.`); return; }
-            const headers = ['Date','Branch','Channel','Form','Rating','Comment'];
-            const rows = subs.map(s => [s.date, s.branch, s.channel||'', s.surveyForm||s.form||'', s.smileScore??'', s.comment||'']);
-            _exportCSV(`${formName.replace(/\s+/g,'_')}_Submissions_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+            _exportRawCSV(subs, `${formName.replace(/\s+/g,'_')}_Submissions_RAW`);
         }
 
         function exportSubmissionsByBranch(branchName) {
             if(!branchName){ alert('Select a branch first.'); return; }
             const subs = state.p1.subs.filter(s => s.branch === branchName);
-            if(!subs.length){ alert(`No submissions for ${branchName} in the current filter.`); return; }
-            const headers = ['Date','Branch','Channel','Form','Rating','Comment'];
-            const rows = subs.map(s => [s.date, s.branch, s.channel||'', s.surveyForm||s.form||'', s.smileScore??'', s.comment||'']);
-            _exportCSV(`${branchName.replace(/\s+/g,'_')}_Submissions_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+            _exportRawCSV(subs, `${branchName.replace(/\s+/g,'_')}_Submissions_RAW`);
         }
 
         function exportIncidentsByValidity(statusValue) {
             const incs = state.p1.incs.filter(i => (i.caseStatus || 'verified') === statusValue);
-            if(!incs.length){ alert(`No ${statusValue} incidents in the current filter.`); return; }
-            const headers = ['Date','Branch','Channel','Form','Complaint Type','Rating','Order ID','Resolved'];
-            const rows = incs.map(i => [i.date, i.branch, i.channel||'', i.surveyForm||i.form||'', i.complaintType||'', i.smileScore??'', i.orderId||'', i.resolved ? 'Yes' : 'No']);
-            _exportCSV(`Incidents_${statusValue}_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+            _exportRawCSV(incs, `Incidents_${statusValue}_RAW`);
+        }
+
+        // Exports the EXACT original sheet columns (every header, verbatim),
+        // not the reduced set of fields the dashboard normalizes internally.
+        // Because a branch or validity-status export can span multiple forms
+        // (Dine In + Delivery + Call Center, each with different columns), this
+        // builds the UNION of every raw column seen across the matched rows —
+        // so the CSV stays one consistent table, with a leading "Source Form"
+        // column and blank cells wherever a given row's form doesn't have that
+        // particular column. A single-form export (exportSubmissionsByForm)
+        // naturally only ever sees its own columns, so nothing is padded there.
+        function _exportRawCSV(items, filenamePrefix) {
+            if(!items.length){ alert('Nothing to export in the current filter.'); return; }
+            const rawItems = items.filter(x => x._raw);
+            if(!rawItems.length){ alert('Raw sheet columns are not available for these rows (they appear to be from generated sample data, not a live sheet).'); return; }
+            const colSet = new Set();
+            rawItems.forEach(x => Object.keys(x._raw).forEach(k => colSet.add(k)));
+            const rawCols  = Array.from(colSet);
+            const headers  = ['Source Form', ...rawCols];
+            const rows     = rawItems.map(x => [x.surveyForm || x.form || '', ...rawCols.map(c => x._raw[c] ?? '')]);
+            _exportCSV(`${filenamePrefix}_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
         }
 
         const app = {
@@ -4711,7 +4728,13 @@
                 const mapKey = { submissions:'branch', channels:'channel', forms:'form', products:'product', complaints:'complaintType' };
                 const key = mapKey[view] || 'branch';
                 const entities = [...new Set(config[view] ? (typeof config[view][0] === 'object' ? config[view].map(x=>x.name) : config[view]) : config.branches.map(b=>b.name))];
-                
+
+                // The aggregate breakdown table is Channels/Forms/Products/Complaints'
+                // only content, but Submissions replaces it with the detail log +
+                // export center above instead.
+                const metricsCard = document.getElementById('universal-metrics-card');
+                if(metricsCard) metricsCard.style.display = (view === 'submissions') ? 'none' : '';
+
                 document.getElementById('analytics-current-title').innerText = `Current ${titleMap[view]} Breakdown`;
                 document.getElementById('univ-curr-thead').innerHTML = `<tr><th>${key.toUpperCase()}</th><th>Current Submissions</th><th>Current Incidents</th><th>Current Rate</th></tr>`;
                 document.getElementById('univ-curr-tbody').innerHTML = entities.map(ent => {
