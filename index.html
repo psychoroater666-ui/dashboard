@@ -3519,8 +3519,21 @@
             (rows||[]).forEach(r=>{
                 try {
                     const status = String(_find(r,'status')).trim().toLowerCase();
-                    if(status && status !== 'completed'){ trackExcluded('status', r); return; }
-                    const branch = _find(r,'location'); if(!branch){ trackExcluded('branch', r); return; }
+                    // Abandoned submissions now count fully, same as completed —
+                    // a deliberate decision, not an oversight. "Editing" (still
+                    // mid-submission at the moment of sync) and anything else
+                    // stays excluded, since that isn't finished data yet.
+                    const isCountableStatus = (status === '' || status === 'completed' || status === 'abandoned');
+                    if(!isCountableStatus){ trackExcluded('status', r); return; }
+                    // Missing branch no longer excludes the row entirely — these
+                    // are otherwise-real, complete interactions (confirmed by
+                    // checking the actual rows: real name, phone, timestamp),
+                    // just missing one field. Bucketed under "Unspecified" so
+                    // they're counted everywhere without corrupting any real
+                    // branch's numbers, and stay visible as their own line for
+                    // investigating why Location wasn't captured.
+                    let branch = _find(r,'location');
+                    if(!branch){ trackExcluded('branch', r); branch = 'Unspecified'; }
                     const rating = _num(_find(r,'rate','visit') || _find(r,'experience','today') || _find(r,'rate') || _find(r,'experience'));
                     if(!rating){ trackExcluded('rating', r); return; }
                     const prod = String(_find(r,'select your product') || _find(r,'select','product') || _find(r,'menu item') || _find(r,'item','name') || '').split(',')[0].trim();
@@ -4866,7 +4879,12 @@
                 const excludedCard = document.getElementById('submissions-excluded-card');
                 if(excludedCard){
                     const exc = window.__excluded || { status:0, branch:0, rating:0, samples:[] };
-                    const total = exc.status + exc.branch + exc.rating;
+                    // "branch" rows are no longer truly excluded — they're counted
+                    // under an "Unspecified" branch bucket now (see mapSource) — so
+                    // they're shown here as a separate, milder callout, not folded
+                    // into the "not counted at all" total.
+                    const notCountedTotal = exc.status + exc.rating;
+                    const total = notCountedTotal + exc.branch;
                     if(view === 'submissions' && total > 0){
                         excludedCard.style.display = '';
                         const summaryEl = document.getElementById('submissions-excluded-summary');
@@ -4879,13 +4897,19 @@
                             const formLines = Object.keys(byForm).map(f => {
                                 const b = byForm[f];
                                 const parts = [];
-                                if(b.status) parts.push(`${b.status} not "completed" status`);
+                                if(b.status) parts.push(`${b.status} not "completed"/"abandoned" status`);
                                 if(b.rating) parts.push(`${b.rating} missing a rating`);
-                                if(b.branch) parts.push(`${b.branch} missing a branch`);
+                                if(b.branch) parts.push(`${b.branch} counted under "Unspecified" (missing branch)`);
                                 return `<div style="margin-bottom:4px;"><strong>${f}:</strong> ${parts.join(', ')}</div>`;
                             }).join('');
+                            const notCountedLine = notCountedTotal > 0
+                                ? `<div style="margin-bottom:8px;"><strong>${notCountedTotal.toLocaleString()} row${notCountedTotal===1?'':'s'}</strong> genuinely not counted anywhere — <strong>${exc.status.toLocaleString()}</strong> because their status isn't "completed" or "abandoned" (e.g. still "editing"), <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded.</div>`
+                                : '';
+                            const branchLine = exc.branch > 0
+                                ? `<div style="margin-bottom:10px;"><strong>${exc.branch.toLocaleString()} row${exc.branch===1?'':'s'}</strong> ARE counted, but under an "Unspecified" branch — real, complete submissions that are just missing a Location value. Worth checking why (see the "Branches" table for that entry).</div>`
+                                : '';
                             summaryEl.innerHTML = `
-                                <div style="margin-bottom:10px;"><strong>${total.toLocaleString()} row${total===1?'':'s'}</strong> in your sheets right now are not counted anywhere on this dashboard — <strong>${exc.status.toLocaleString()}</strong> because their Status column isn't "completed", <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded, <strong>${exc.branch.toLocaleString()}</strong> because they're missing a branch/location.</div>
+                                ${notCountedLine}${branchLine}
                                 <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Breakdown by form (based on the exported sample below)</div>
                                 ${formLines}
                                 ${Object.values(exc.perFormCount || {}).some(c => c >= 200) ? '<div style="color:var(--text-muted);font-style:italic;margin-top:8px;">One or more forms hit the 200-sample cap for this breakdown — the totals above are exact regardless, only the per-form split may undercount that form.</div>' : ''}
