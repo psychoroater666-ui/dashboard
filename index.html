@@ -3065,14 +3065,23 @@
                     </div>
                 </div>
 
-                <!-- Main content: mentions feed + right panel -->
-                <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;">
+                <!-- Main content: mentions feed + right panel. Both columns get
+                     an EXPLICIT height (not max-height) on the outer row, and
+                     height:100% + overflow-y:auto on each column — this is
+                     what actually fixes the blank-space issue: with max-height,
+                     a CSS grid row still sizes itself to whichever column's
+                     natural content is taller, so a short feed next to a
+                     naturally-tall sidebar still left a gap. A fixed row
+                     height means neither column's content amount can affect
+                     the other — each just gets its own internal scrollbar if
+                     it has more content than fits. -->
+                <div style="display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start;height:calc(100vh - 320px);min-height:520px;">
 
                     <!-- MENTIONS FEED — independently scrollable, so the right
                          panel (Trending Keywords, By Platform) stays fully
                          visible without needing to scroll through potentially
                          hundreds of mention cards to reach it. -->
-                    <div style="display:flex;flex-direction:column;gap:12px; max-height:calc(100vh - 220px); overflow-y:auto; padding-right:8px;">
+                    <div style="display:flex;flex-direction:column;gap:12px; height:100%; overflow-y:auto; padding-right:8px;">
                         <div id="sl-feed" style="display:flex;flex-direction:column;gap:12px;">
                             <!-- Filled by JS -->
                         </div>
@@ -3085,15 +3094,9 @@
                         </div>
                     </div>
 
-                    <!-- RIGHT PANEL — capped to the same height as the feed on
-                         purpose: a CSS grid row is always as tall as its
-                         tallest cell no matter what align-items says, so
-                         without this the row kept stretching to match this
-                         panel's full natural height, leaving blank space below
-                         the (now shorter, bounded) feed. Rarely needs its own
-                         scrollbar in practice since it's usually shorter than
-                         the cap, but stays safe if it ever grows past it. -->
-                    <div style="display:flex;flex-direction:column;gap:14px; max-height:calc(100vh - 220px); overflow-y:auto; padding-right:4px;">
+                    <!-- RIGHT PANEL — height:100% of the now-fixed row height,
+                         same reasoning as the feed column. -->
+                    <div style="display:flex;flex-direction:column;gap:14px; height:100%; overflow-y:auto; padding-right:4px;">
 
                         <!-- Trending Keywords -->
                         <div class="card" style="padding:18px 20px;">
@@ -7167,7 +7170,7 @@
                     ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" ><i class="${SL_PLATFORM_STYLE[m.platform]||'fas'} ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
                     : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:rgba(217,119,6,.08);color:var(--status-warn);font-size:0.72rem;font-weight:800;border:1.5px dashed rgba(217,119,6,.35);cursor:default;" title="Source link missing — whoever added this mention should edit it and paste the direct post URL so it can be verified"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Source missing</span>`;
                 const evidenceBtn = m.imageUrl
-                    ? `<button class="sl-evidence-btn" onclick="slTogglePictureEvidence('${m.id}')" title="Show attached photo"><i class="fas fa-camera"></i> Picture Evidence</button>`
+                    ? `<button class="sl-evidence-btn" onclick="window.open('${m.imageUrl}','_blank')" title="Open full size"><i class="fas fa-camera"></i> Picture Evidence</button>`
                     : '';
 
                 // ── Brand confidence chip ─────────────────────────────────────
@@ -7280,7 +7283,7 @@
                     </div>
                     <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author || '(no handle entered)'}</div>
                     <div class="sl-content">${highlightedContent}</div>
-                    ${m.imageUrl ? `<div class="sl-evidence-img" id="sl-evidence-${m.id}" style="display:none;"><img src="${m.imageUrl}" alt="Picture evidence" onclick="window.open('${m.imageUrl}','_blank')"></div>` : ''}
+                    ${m.imageUrl ? `<div class="sl-evidence-img" id="sl-evidence-${m.id}"><img src="${m.imageUrl}" alt="Picture evidence" onclick="window.open('${m.imageUrl}','_blank')"></div>` : ''}
                     ${triggeredRow}
                     <div class="sl-meta-row" style="margin-top:10px;">
                         <span class="sl-stat"><i class="fas fa-heart"></i> ${(m.likes||0).toLocaleString()}</span>
