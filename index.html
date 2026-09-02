@@ -6275,12 +6275,15 @@
                     // compares against, so it MUST be plain "YYYY-MM-DD".
                     const normDate = slNormalizeDate(get('Date') || get('Timestamp'));
 
-                    // Precise sort timestamp: prefer the sheet's Timestamp column
-                    // (has time-of-day) so same-day posts order correctly; fall back
-                    // to the normalized date at noon, then to row index (rows are
-                    // appended oldest→newest, so a later index = more recently added).
-                    const tsRaw    = get('Timestamp');
-                    let   parsedTs = tsRaw ? Date.parse(tsRaw.replace(' ','T')) : NaN;
+                    // Precise sort timestamp: prefer a "Timestamp" column if one
+                    // exists, otherwise the "Date" column itself often already holds
+                    // a full date+time value (not just a calendar day) — so try that
+                    // too before falling back to noon-of-day, which is what was
+                    // causing every same-day post to tie and fall back to sheet row
+                    // order instead of true recency.
+                    const tsRaw    = get('Timestamp') || get('Date');
+                    let   parsedTs = tsRaw ? Date.parse(tsRaw) : NaN;
+                    if(isNaN(parsedTs) && tsRaw) parsedTs = Date.parse(tsRaw.replace(' ','T'));
                     if(isNaN(parsedTs) && normDate) parsedTs = Date.parse(normDate + 'T12:00:00');
                     const sortTs   = isNaN(parsedTs) ? idx : parsedTs;
 
@@ -6802,7 +6805,7 @@
                             </span>
                         </div>
                     </div>
-                    <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author}</div>
+                    <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author || '(no handle entered)'}</div>
                     <div class="sl-content">${highlightedContent}</div>
                     ${m.imageUrl ? `<div class="sl-evidence-img" id="sl-evidence-${m.id}" style="display:none;"><img src="${m.imageUrl}" alt="Picture evidence" onclick="window.open('${m.imageUrl}','_blank')"></div>` : ''}
                     ${triggeredRow}
