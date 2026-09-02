@@ -1413,6 +1413,7 @@
         .sl-res-note i { color:var(--text-muted); font-size:0.68rem; margin-right:4px; }
         .btn-export { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); font-size:0.8rem; font-weight:700; cursor:pointer; transition:all .15s; }
         .btn-export:hover { background:var(--bg-light); transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.08); }
+        .btn-export:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
         .sl-close-attach-btn { width:28px; height:28px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; flex-shrink:0; }
         .sl-close-attach-btn:hover { border-color:#2563EB; color:#2563EB; background:rgba(37,99,235,.08); }
         .sl-close-preview { align-items:center; gap:8px; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg-light); border:1px dashed var(--border-color); }
@@ -3314,15 +3315,26 @@
                                 <i class="fas fa-rotate"></i> Refresh
                             </button>
                         </div>
-                        <div style="font-size:0.72rem;color:var(--text-muted); width:100%;" id="submissions-detail-count"></div>
                     </div>
-                    <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
+                    <div class="table-wrapper">
                         <table id="submissions-detail-table">
-                            <thead style="position:sticky;top:0;background:var(--white);z-index:1;">
+                            <thead>
                                 <tr><th>Created At</th><th>Name</th><th>Phone Number</th><th>Location</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
                             </thead>
                             <tbody id="submissions-detail-tbody"></tbody>
                         </table>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 4px 4px; flex-wrap:wrap; gap:10px;">
+                        <div style="font-size:0.8rem; color:var(--text-muted);" id="submissions-detail-count"></div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <button class="btn-export" id="submissions-prev-btn" onclick="submissionsChangePage(-1)">
+                                <i class="fas fa-chevron-left"></i> Previous
+                            </button>
+                            <span style="font-size:0.8rem; font-weight:700; color:var(--text-main);" id="submissions-page-label"></span>
+                            <button class="btn-export" id="submissions-next-btn" onclick="submissionsChangePage(1)">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -4040,9 +4052,32 @@
             return k ? String(raw[k] || '').trim() : '';
         }
 
+        // Explicitly parses "M/D/YYYY H:MM:SS" (the exact format the sync
+        // scripts write) rather than relying on Date.parse, which handles this
+        // hybrid format inconsistently — that's what was causing same-day rows
+        // to tie on sort order and fall back to insertion order instead of
+        // true recency.
+        function _parseSheetDateTime(str) {
+            if(!str) return NaN;
+            const m = String(str).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+            if(m){
+                const [, mo, da, yr, hh, mi, ss] = m;
+                return new Date(+yr, +mo-1, +da, +hh, +mi, +(ss||0)).getTime();
+            }
+            const t = Date.parse(str);
+            return isNaN(t) ? NaN : t;
+        }
+
         let _submissionsSearchTerm = '';
+        let _submissionsPage = 0;
         function submissionsSearch(term) {
             _submissionsSearchTerm = term || '';
+            _submissionsPage = 0;
+            if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
+        }
+        function submissionsChangePage(delta) {
+            _submissionsPage += delta;
+            if(_submissionsPage < 0) _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
         }
 
@@ -4792,8 +4827,13 @@
                 if(detailCard){
                     if(view === 'submissions'){
                         detailCard.style.display = '';
-                        const DISPLAY_CAP = 300;
-                        let sorted = state.p1.subs.slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+                        const PAGE_SIZE = 20;
+                        const getSortTs = (s) => {
+                            const t = _parseSheetDateTime(_rawFieldExact(s._raw, 'Created At'));
+                            if(!isNaN(t)) return t;
+                            return s.date ? Date.parse(s.date + 'T12:00:00') : 0;
+                        };
+                        let sorted = state.p1.subs.slice().sort((a,b) => getSortTs(b) - getSortTs(a));
                         const term = (_submissionsSearchTerm || '').toLowerCase().trim();
                         if(term){
                             sorted = sorted.filter(s => {
@@ -4802,24 +4842,31 @@
                                 return nm.includes(term) || ph.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
                             });
                         }
-                        const shown = sorted.slice(0, DISPLAY_CAP);
+                        const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+                        if(_submissionsPage >= totalPages) _submissionsPage = totalPages - 1;
+                        if(_submissionsPage < 0) _submissionsPage = 0;
+                        const pageStart = _submissionsPage * PAGE_SIZE;
+                        const shown = sorted.slice(pageStart, pageStart + PAGE_SIZE);
                         const countEl = document.getElementById('submissions-detail-count');
                         if(countEl){
-                            countEl.textContent = sorted.length > DISPLAY_CAP
-                                ? `Showing latest ${DISPLAY_CAP.toLocaleString()} of ${sorted.length.toLocaleString()}${term?' matching your search':''} — narrow the date filter above to see more`
-                                : `${sorted.length.toLocaleString()} submission${sorted.length===1?'':'s'}${term?' matching your search':''}`;
+                            countEl.textContent = sorted.length
+                                ? `Showing ${(pageStart+1).toLocaleString()} - ${Math.min(pageStart+PAGE_SIZE, sorted.length).toLocaleString()} of ${sorted.length.toLocaleString()} record(s)${term?' matching your search':''}.`
+                                : `No submissions${term?' match your search':' in the current filter'}.`;
                         }
+                        const pageLabel = document.getElementById('submissions-page-label');
+                        if(pageLabel) pageLabel.textContent = `Page ${_submissionsPage+1} of ${totalPages}`;
+                        const prevBtn = document.getElementById('submissions-prev-btn');
+                        const nextBtn = document.getElementById('submissions-next-btn');
+                        if(prevBtn) prevBtn.disabled = (_submissionsPage <= 0);
+                        if(nextBtn) nextBtn.disabled = (_submissionsPage >= totalPages - 1);
                         const tbody = document.getElementById('submissions-detail-tbody');
                         if(tbody){
                             tbody.innerHTML = shown.length ? shown.map(s => {
                                 const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
-                                let dateDisp;
-                                if(rawCreatedAt){
-                                    const dt = new Date(rawCreatedAt.replace(' ','T'));
-                                    dateDisp = !isNaN(dt) ? dt.toLocaleString('en-US', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}) : rawCreatedAt;
-                                } else {
-                                    dateDisp = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
-                                }
+                                const parsedTs = _parseSheetDateTime(rawCreatedAt);
+                                const dateDisp = !isNaN(parsedTs)
+                                    ? new Date(parsedTs).toLocaleString('en-US', {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'})
+                                    : (rawCreatedAt || (s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—'));
                                 const name  = _rawFieldExact(s._raw, 'Name')         || '<span style="color:var(--text-muted);">—</span>';
                                 const phone = _rawFieldExact(s._raw, 'Phone Number') || '<span style="color:var(--text-muted);">—</span>';
                                 const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore}/5` : '—';
