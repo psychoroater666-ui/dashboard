@@ -3268,43 +3268,46 @@
                 <div class="card" id="submissions-export-card" style="display:none;">
                     <div class="section-header" style="margin-bottom:16px;">
                         <h3><i class="fas fa-download" style="color:var(--accent-blue);margin-right:6px;"></i> Export Data</h3>
-                        <div style="font-size:0.72rem;color:var(--text-muted);">Respects the date/branch/region filters set above</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">Also respects the date/branch/region filters set above</div>
                     </div>
 
-                    <div style="margin-bottom:20px;">
-                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Form — Submissions</div>
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;" id="export-by-form-buttons"></div>
-                    </div>
-
-                    <div style="margin-bottom:20px;">
-                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Branch — Submissions</div>
-                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                            <select id="export-branch-select" class="select-input" style="min-width:200px;">
-                                <option value="">— Select Branch —</option>
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:18px;">
+                        <div>
+                            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Dataset</div>
+                            <select id="export-dataset-select" class="select-input" style="width:100%;" onchange="updateExportValidityState()">
+                                <option value="submissions">Submissions</option>
+                                <option value="incidents">Incidents</option>
                             </select>
-                            <button class="btn-export" onclick="exportSubmissionsByBranch(document.getElementById('export-branch-select').value)">
-                                <i class="fas fa-download"></i> Export
-                            </button>
+                        </div>
+                        <div>
+                            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Branch</div>
+                            <select id="export-branch-select" class="select-input" style="width:100%;">
+                                <option value="">All Branches</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Form</div>
+                            <select id="export-form-select" class="select-input" style="width:100%;">
+                                <option value="">All Forms</option>
+                                <option value="Dine In">Dine In</option>
+                                <option value="Delivery">Delivery</option>
+                                <option value="Call Center">Call Center</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Case Validity <span style="font-weight:600; text-transform:none; letter-spacing:0;">(Incidents only)</span></div>
+                            <select id="export-validity-select" class="select-input" style="width:100%;" disabled>
+                                <option value="">All</option>
+                                <option value="verified">Verified</option>
+                                <option value="fake">Fake</option>
+                                <option value="review">Needs Review</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div>
-                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Case Validity — Incidents</div>
-                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                            <button class="btn-export" style="border-color:rgba(5,150,105,.3);color:#059669;" onclick="exportIncidentsByValidity('verified')"><i class="fas fa-circle-check"></i> Verified</button>
-                            <button class="btn-export" style="border-color:rgba(220,38,38,.3);color:#DC2626;" onclick="exportIncidentsByValidity('fake')"><i class="fas fa-circle-xmark"></i> Fake</button>
-                            <button class="btn-export" style="border-color:rgba(217,119,6,.3);color:#D97706;" onclick="exportIncidentsByValidity('review')"><i class="fas fa-magnifying-glass"></i> Needs Review</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Data completeness diagnostic — only shown on the Submissions tab, and only when something is actually being excluded -->
-                <div class="card" id="submissions-excluded-card" style="display:none; border-left:4px solid #D97706;">
-                    <div class="section-header" style="margin-bottom:12px;">
-                        <h3><i class="fas fa-triangle-exclamation" style="color:#D97706;margin-right:6px;"></i> Rows Not Counted on This Dashboard</h3>
-                        <button class="btn-export" onclick="exportExcludedRows()"><i class="fas fa-download"></i> Export These Rows</button>
-                    </div>
-                    <div id="submissions-excluded-summary" style="font-size:0.85rem;color:var(--text-main);line-height:1.7;"></div>
+                    <button class="btn-export" onclick="exportFiltered()" style="background:var(--accent-blue); color:#fff; border-color:var(--accent-blue); padding:10px 20px; font-size:0.85rem;">
+                        <i class="fas fa-download"></i> Export Filtered Data
+                    </button>
                 </div>
 
                 <!-- Detailed, row-level submissions log — only shown on the
@@ -3353,6 +3356,25 @@
                 <div class="card" id="universal-metrics-card">
                     <div class="section-header"><h3 id="analytics-current-title">Current Category Metrics</h3></div>
                     <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
+                </div>
+
+                <!-- Data completeness diagnostic — only shown on the Submissions
+                     tab, only when something needs attention, last in the list,
+                     collapsed by default. -->
+                <div class="card" id="submissions-excluded-card" style="display:none; border-left:4px solid #D97706; padding:14px 20px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleExcludedPanel()">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:var(--text-main);">
+                            <i class="fas fa-triangle-exclamation" style="color:#D97706;"></i>
+                            <span id="submissions-excluded-compact-label">Data completeness</span>
+                        </div>
+                        <i class="fas fa-chevron-down" id="submissions-excluded-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
+                    </div>
+                    <div id="submissions-excluded-details" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+                        <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                            <button class="btn-export" onclick="event.stopPropagation(); exportExcludedRows()"><i class="fas fa-download"></i> Export These Rows</button>
+                        </div>
+                        <div id="submissions-excluded-summary" style="font-size:0.85rem;color:var(--text-main);line-height:1.7;"></div>
+                    </div>
                 </div>
 
             </div>
@@ -4043,31 +4065,39 @@
             URL.revokeObjectURL(url);
         }
 
-        function exportSubmissionsByForm(formName) {
-            const subs = state.p1.subs.filter(s => (s.surveyForm || s.form) === formName);
-            _exportRawCSV(subs, `${formName.replace(/\s+/g,'_')}_Submissions_RAW`);
+        function updateExportValidityState() {
+            const dataset = document.getElementById('export-dataset-select')?.value;
+            const validitySel = document.getElementById('export-validity-select');
+            if(validitySel) validitySel.disabled = (dataset !== 'incidents');
         }
 
-        function exportSubmissionsByBranch(branchName) {
-            if(!branchName){ alert('Select a branch first.'); return; }
-            const subs = state.p1.subs.filter(s => s.branch === branchName);
-            _exportRawCSV(subs, `${branchName.replace(/\s+/g,'_')}_Submissions_RAW`);
-        }
+        function exportFiltered() {
+            const dataset  = document.getElementById('export-dataset-select')?.value || 'submissions';
+            const branch   = document.getElementById('export-branch-select')?.value || '';
+            const form     = document.getElementById('export-form-select')?.value || '';
+            const validity = document.getElementById('export-validity-select')?.value || '';
 
-        function exportIncidentsByValidity(statusValue) {
-            const incs = state.p1.incs.filter(i => (i.caseStatus || 'verified') === statusValue);
-            _exportRawCSV(incs, `Incidents_${statusValue}_RAW`);
+            let items = (dataset === 'incidents') ? state.p1.incs : state.p1.subs;
+            if(branch) items = items.filter(x => x.branch === branch);
+            if(form) items = items.filter(x => (x.surveyForm || x.form) === form);
+            if(dataset === 'incidents' && validity) items = items.filter(x => (x.caseStatus || 'verified') === validity);
+
+            const nameParts = [dataset === 'incidents' ? 'Incidents' : 'Submissions'];
+            if(branch) nameParts.push(branch.replace(/\s+/g,'_'));
+            if(form) nameParts.push(form.replace(/\s+/g,'_'));
+            if(validity) nameParts.push(validity);
+            _exportRawCSV(items, nameParts.join('_'));
         }
 
         // Exports the EXACT original sheet columns (every header, verbatim),
         // not the reduced set of fields the dashboard normalizes internally.
-        // Because a branch or validity-status export can span multiple forms
-        // (Dine In + Delivery + Call Center, each with different columns), this
-        // builds the UNION of every raw column seen across the matched rows —
-        // so the CSV stays one consistent table, with a leading "Source Form"
-        // column and blank cells wherever a given row's form doesn't have that
-        // particular column. A single-form export (exportSubmissionsByForm)
-        // naturally only ever sees its own columns, so nothing is padded there.
+        // Because a combined export can span multiple forms (Dine In + Delivery
+        // + Call Center, each with different columns), this builds the UNION of
+        // every raw column seen across the matched rows — so the CSV stays one
+        // consistent table, with a leading "Source Form" column and blank cells
+        // wherever a given row's form doesn't have that particular column. A
+        // single-form export naturally only ever sees its own columns, so
+        // nothing is padded there.
         function _exportRawCSV(items, filenamePrefix) {
             if(!items.length){ alert('Nothing to export in the current filter.'); return; }
             const rawItems = items.filter(x => x._raw);
@@ -4117,6 +4147,15 @@
             _submissionsPage += delta;
             if(_submissionsPage < 0) _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
+        }
+
+        function toggleExcludedPanel() {
+            const details = document.getElementById('submissions-excluded-details');
+            const chevron = document.getElementById('submissions-excluded-chevron');
+            if(!details) return;
+            const isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : '';
+            if(chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
         }
 
         function submissionsManualRefresh() {
@@ -4887,6 +4926,13 @@
                     const total = notCountedTotal + exc.branch;
                     if(view === 'submissions' && total > 0){
                         excludedCard.style.display = '';
+                        const compactLabel = document.getElementById('submissions-excluded-compact-label');
+                        if(compactLabel){
+                            const parts = [];
+                            if(notCountedTotal > 0) parts.push(`${notCountedTotal.toLocaleString()} not counted`);
+                            if(exc.branch > 0) parts.push(`${exc.branch.toLocaleString()} counted as "Unspecified"`);
+                            compactLabel.textContent = `Data completeness — ${parts.join(', ')} (click to expand)`;
+                        }
                         const summaryEl = document.getElementById('submissions-excluded-summary');
                         if(summaryEl){
                             const byForm = {};
@@ -4976,20 +5022,15 @@
                         detailCard.style.display = 'none';
                     }
                 }
-                // Export center — buttons/dropdown only shown + populated on the
-                // Submissions tab itself (built fresh each render; cheap given the
-                // small number of forms/branches involved).
+                // Export center — branch dropdown populated fresh each render
+                // (Form is a static dropdown of the 3 real forms now, no longer
+                // built from config.surveyForms, which carries placeholder demo
+                // values like "Product"/"Service"/"General" alongside the real
+                // ones and has no way to tell them apart).
                 const exportCard = document.getElementById('submissions-export-card');
                 if(exportCard){
                     if(view === 'submissions'){
                         exportCard.style.display = '';
-                        const formBtns = document.getElementById('export-by-form-buttons');
-                        if(formBtns){
-                            const forms = (config.surveyForms && config.surveyForms.length) ? config.surveyForms : ['Dine In','Delivery','Call Center'];
-                            formBtns.innerHTML = forms.map(f =>
-                                `<button class="btn-export" onclick="exportSubmissionsByForm('${f.replace(/'/g,"\\'")}')"><i class="fas fa-download"></i> ${f}</button>`
-                            ).join('');
-                        }
                         const branchSel = document.getElementById('export-branch-select');
                         if(branchSel && branchSel.options.length <= 1){
                             config.branches.forEach(b => branchSel.add(new Option(b.name, b.name)));
