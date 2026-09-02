@@ -1411,6 +1411,8 @@
         .sl-close-note-cancel:hover { background:rgba(220,38,38,.08); border-color:#DC2626; color:#DC2626; }
         .sl-res-note { margin-top:6px; padding:8px 12px; border-radius:8px; background:var(--bg-light); border:1px solid var(--border-color); font-size:0.78rem; font-weight:500; color:var(--text-main); font-style:italic; }
         .sl-res-note i { color:var(--text-muted); font-size:0.68rem; margin-right:4px; }
+        .btn-export { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); font-size:0.8rem; font-weight:700; cursor:pointer; transition:all .15s; }
+        .btn-export:hover { background:var(--bg-light); transform:translateY(-1px); box-shadow:0 2px 8px rgba(0,0,0,.08); }
         .sl-close-attach-btn { width:28px; height:28px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; flex-shrink:0; }
         .sl-close-attach-btn:hover { border-color:#2563EB; color:#2563EB; background:rgba(37,99,235,.08); }
         .sl-close-preview { align-items:center; gap:8px; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg-light); border:1px dashed var(--border-color); }
@@ -3265,6 +3267,57 @@
                     <div class="section-header"><h3 id="analytics-current-title">Current Category Metrics</h3></div>
                     <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
                 </div>
+
+                <!-- Detailed, row-level submissions log — only shown on the
+                     Submissions tab; Channels/Forms/Products/Complaints share
+                     this same container and stay aggregate-only. -->
+                <div class="card" id="submissions-detail-card" style="display:none;">
+                    <div class="section-header" style="margin-bottom:16px;">
+                        <h3><i class="fas fa-list" style="color:var(--accent-blue);margin-right:6px;"></i> All Submissions</h3>
+                        <div style="font-size:0.72rem;color:var(--text-muted);" id="submissions-detail-count"></div>
+                    </div>
+                    <div class="table-wrapper" style="max-height:600px;overflow-y:auto;">
+                        <table id="submissions-detail-table">
+                            <thead style="position:sticky;top:0;background:var(--white);z-index:1;">
+                                <tr><th>Date</th><th>Branch</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
+                            </thead>
+                            <tbody id="submissions-detail-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- Export center — only shown on the Submissions tab -->
+                <div class="card" id="submissions-export-card" style="display:none;">
+                    <div class="section-header" style="margin-bottom:16px;">
+                        <h3><i class="fas fa-download" style="color:var(--accent-blue);margin-right:6px;"></i> Export Data</h3>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">Respects the date/branch/region filters set above</div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Form — Submissions</div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;" id="export-by-form-buttons"></div>
+                    </div>
+
+                    <div style="margin-bottom:20px;">
+                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Branch — Submissions</div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <select id="export-branch-select" class="select-input" style="min-width:200px;">
+                                <option value="">— Select Branch —</option>
+                            </select>
+                            <button class="btn-export" onclick="exportSubmissionsByBranch(document.getElementById('export-branch-select').value)">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:10px;">By Case Validity — Incidents</div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                            <button class="btn-export" style="border-color:rgba(5,150,105,.3);color:#059669;" onclick="exportIncidentsByValidity('verified')"><i class="fas fa-circle-check"></i> Verified</button>
+                            <button class="btn-export" style="border-color:rgba(220,38,38,.3);color:#DC2626;" onclick="exportIncidentsByValidity('fake')"><i class="fas fa-circle-xmark"></i> Fake</button>
+                            <button class="btn-export" style="border-color:rgba(217,119,6,.3);color:#D97706;" onclick="exportIncidentsByValidity('review')"><i class="fas fa-magnifying-glass"></i> Needs Review</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -3906,6 +3959,49 @@
         // ==========================================
         // 5. MAIN APP CONTROLLER
         // ==========================================
+        // --- EXPORT (CSV) ---
+        // Shared CSV builder: escapes commas/quotes/newlines properly, triggers a
+        // real browser download via a temporary Blob URL. No server round-trip —
+        // everything's already in rawData/state client-side.
+        function _exportCSV(filename, headers, rows) {
+            const esc = v => {
+                const s = (v === null || v === undefined) ? '' : String(v);
+                return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+            };
+            const csv = [headers.map(esc).join(',')].concat(rows.map(r => r.map(esc).join(','))).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportSubmissionsByForm(formName) {
+            const subs = state.p1.subs.filter(s => (s.surveyForm || s.form) === formName);
+            if(!subs.length){ alert(`No ${formName} submissions in the current filter.`); return; }
+            const headers = ['Date','Branch','Channel','Form','Rating','Comment'];
+            const rows = subs.map(s => [s.date, s.branch, s.channel||'', s.surveyForm||s.form||'', s.smileScore??'', s.comment||'']);
+            _exportCSV(`${formName.replace(/\s+/g,'_')}_Submissions_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+        }
+
+        function exportSubmissionsByBranch(branchName) {
+            if(!branchName){ alert('Select a branch first.'); return; }
+            const subs = state.p1.subs.filter(s => s.branch === branchName);
+            if(!subs.length){ alert(`No submissions for ${branchName} in the current filter.`); return; }
+            const headers = ['Date','Branch','Channel','Form','Rating','Comment'];
+            const rows = subs.map(s => [s.date, s.branch, s.channel||'', s.surveyForm||s.form||'', s.smileScore??'', s.comment||'']);
+            _exportCSV(`${branchName.replace(/\s+/g,'_')}_Submissions_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+        }
+
+        function exportIncidentsByValidity(statusValue) {
+            const incs = state.p1.incs.filter(i => (i.caseStatus || 'verified') === statusValue);
+            if(!incs.length){ alert(`No ${statusValue} incidents in the current filter.`); return; }
+            const headers = ['Date','Branch','Channel','Form','Complaint Type','Rating','Order ID','Resolved'];
+            const rows = incs.map(i => [i.date, i.branch, i.channel||'', i.surveyForm||i.form||'', i.complaintType||'', i.smileScore??'', i.orderId||'', i.resolved ? 'Yes' : 'No']);
+            _exportCSV(`Incidents_${statusValue}_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
+        }
+
         const app = {
             async init() {
                 const _revealApp = () => document.body.classList.remove('app-loading');
@@ -4624,9 +4720,64 @@
                     const rate = s ? ((i/s)*100).toFixed(2) + '%' : `${i} cases`;
                     return `<tr><td class="font-semibold">${ent}</td><td>${s.toLocaleString()}</td><td>${i.toLocaleString()}</td><td>${rate}</td></tr>`;
                 }).join('');
+
+                // Detailed, row-level submissions log — respects the same global
+                // filters (date range, branch, region, channel) as the breakdown
+                // table above, so narrowing those narrows this too. Capped for
+                // render performance (Feedback alone can be 25,000+ rows) — sorted
+                // newest first, so the cap only ever trims older rows, never the
+                // most recent ones you actually landed here to check.
+                const detailCard = document.getElementById('submissions-detail-card');
+                if(detailCard){
+                    if(view === 'submissions'){
+                        detailCard.style.display = '';
+                        const DISPLAY_CAP = 300;
+                        const sorted = state.p1.subs.slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+                        const shown = sorted.slice(0, DISPLAY_CAP);
+                        const countEl = document.getElementById('submissions-detail-count');
+                        if(countEl){
+                            countEl.textContent = sorted.length > DISPLAY_CAP
+                                ? `Showing latest ${DISPLAY_CAP.toLocaleString()} of ${sorted.length.toLocaleString()} — narrow the date filter above to see more`
+                                : `${sorted.length.toLocaleString()} submission${sorted.length===1?'':'s'}`;
+                        }
+                        const tbody = document.getElementById('submissions-detail-tbody');
+                        if(tbody){
+                            tbody.innerHTML = shown.length ? shown.map(s => {
+                                const dateDisp = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—';
+                                const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore}/5` : '—';
+                                const commentRaw = s.comment ? String(s.comment).replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+                                const commentDisp = commentRaw || '<span style="color:var(--text-muted);">—</span>';
+                                return `<tr><td>${dateDisp}</td><td class="font-semibold">${s.branch||'—'}</td><td>${s.surveyForm||s.form||'—'}</td><td>${ratingDisp}</td><td>${commentDisp}</td></tr>`;
+                            }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions in the current filter</td></tr>`;
+                        }
+                    } else {
+                        detailCard.style.display = 'none';
+                    }
+                }
+                // Export center — buttons/dropdown only shown + populated on the
+                // Submissions tab itself (built fresh each render; cheap given the
+                // small number of forms/branches involved).
+                const exportCard = document.getElementById('submissions-export-card');
+                if(exportCard){
+                    if(view === 'submissions'){
+                        exportCard.style.display = '';
+                        const formBtns = document.getElementById('export-by-form-buttons');
+                        if(formBtns){
+                            const forms = (config.surveyForms && config.surveyForms.length) ? config.surveyForms : ['Dine In','Delivery','Call Center'];
+                            formBtns.innerHTML = forms.map(f =>
+                                `<button class="btn-export" onclick="exportSubmissionsByForm('${f.replace(/'/g,"\\'")}')"><i class="fas fa-download"></i> ${f}</button>`
+                            ).join('');
+                        }
+                        const branchSel = document.getElementById('export-branch-select');
+                        if(branchSel && branchSel.options.length <= 1){
+                            config.branches.forEach(b => branchSel.add(new Option(b.name, b.name)));
+                        }
+                    } else {
+                        exportCard.style.display = 'none';
+                    }
+                }
             },
 
-            // --- CHARTS ---
             renderExecTrendChart(canvasId) {
                 if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const ctx = document.getElementById(canvasId).getContext('2d');
