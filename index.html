@@ -2584,10 +2584,14 @@
                                     <option value="">— Select Branch B —</option>
                                 </select>
                             </div>
-                            <div style="flex-shrink:0; display:flex; align-items:center; gap:6px; max-width:220px;">
-                                <span style="font-size:0.66rem; color:var(--text-muted); font-style:italic; line-height:1.3;">
-                                    <i class="fas fa-arrow-down" style="font-size:0.58rem;"></i> Uses "Period A" dates — set below in Timeline Comparison
-                                </span>
+                            <div style="flex-shrink:0; display:flex; align-items:center; gap:10px;">
+                                <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px;">Date Range</div>
+                                <div class="date-range-pill">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <input type="date" id="comp-bc-s">
+                                    <span class="date-separator">→</span>
+                                    <input type="date" id="comp-bc-e">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3746,8 +3750,8 @@
                 document.getElementById('comp-db-s').value = formatStr(dBStart);
                 document.getElementById('comp-db-e').value = formatStr(dBEnd);
 
-                document.getElementById('comp-da-s').addEventListener('change', () => { this.render(); if(typeof branchCompare!=='undefined') branchCompare.render(); });
-                document.getElementById('comp-da-e').addEventListener('change', () => { this.render(); if(typeof branchCompare!=='undefined') branchCompare.render(); });
+                document.getElementById('comp-da-s').addEventListener('change', () => this.render());
+                document.getElementById('comp-da-e').addEventListener('change', () => this.render());
                 document.getElementById('comp-db-s').addEventListener('change', () => this.render());
                 document.getElementById('comp-db-e').addEventListener('change', () => this.render());
 
@@ -4888,14 +4892,32 @@
                     selA.value = config.branches[0].name;
                     selB.value = config.branches[1].name;
                 }
+
+                // Independent date range for Branch Comparison — defaults to the
+                // last 7 days of real data, same anchor logic used elsewhere, but
+                // fully separate from Timeline Comparison's Period A / Period B.
+                const bcS = document.getElementById('comp-bc-s');
+                const bcE = document.getElementById('comp-bc-e');
+                if(bcS && bcE){
+                    const anchor = (typeof DATA_MAX_DATE === 'string' && DATA_MAX_DATE) ? new Date(DATA_MAX_DATE + 'T12:00:00') : new Date(SYSTEM_NOW);
+                    const end = new Date(anchor);
+                    const start = new Date(anchor); start.setDate(start.getDate() - 6);
+                    const fmt = d => d.toISOString().split('T')[0];
+                    bcS.value = fmt(start);
+                    bcE.value = fmt(end);
+                    bcS.addEventListener('change', () => this.render());
+                    bcE.addEventListener('change', () => this.render());
+                }
+
                 this.render();
             },
 
             render() {
                 const bA = document.getElementById('comp-branch-a')?.value;
                 const bB = document.getElementById('comp-branch-b')?.value;
-                const startDate = document.getElementById('comp-da-s')?.value;
-                const endDate   = document.getElementById('comp-da-e')?.value;
+                let startDate = document.getElementById('comp-bc-s')?.value;
+                let endDate   = document.getElementById('comp-bc-e')?.value;
+                if(startDate && endDate && startDate > endDate){ const t = startDate; startDate = endDate; endDate = t; }
                 const out = document.getElementById('branch-comp-output');
                 if (!out) return;
 
