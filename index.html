@@ -3288,7 +3288,7 @@
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
         const LIVE = {
-            refreshMs: 60000,
+            refreshMs: 20000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
             slScriptUrl: 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec',
             // Social Listening — published CSV (reads rows back from Sheet)
@@ -5559,6 +5559,30 @@
         // ── Data store ────────────────────────────────────────────────────────
         const SL_DATA_VERSION = 5; // bumped — resolution stages added
         let slMentions = [];
+
+        // ── Write-protection layer ──────────────────────────────────────────
+        // Google's "Publish to Web" CSV that loadSocialFromSheet() reads from can
+        // lag behind the real sheet by anywhere from a few seconds to a couple of
+        // minutes, even with auto-republish on. Without this, every periodic
+        // background refresh would re-read that possibly-stale snapshot and
+        // silently overwrite (or make vanish) something the user just confirmed
+        // was saved a moment ago — that's the actual cause of "it updates, then
+        // reverts on its own." This keeps our own confirmed value authoritative
+        // for a short grace window, until the snapshot genuinely catches up.
+        const SL_PROTECT_MS = 90 * 1000;
+        let _slProtected = {}; // id -> { until, fullMention?, resolutionStatus?, resolutionNote?, resolutionImageUrl? }
+        function slProtectFields(id, fields){
+            _slProtected[id] = Object.assign({}, _slProtected[id], fields, { until: Date.now() + SL_PROTECT_MS });
+        }
+        function slApplyProtection(mention){
+            const p = _slProtected[mention.id];
+            if(!p) return mention;
+            if(Date.now() > p.until){ delete _slProtected[mention.id]; return mention; }
+            if(p.resolutionStatus    !== undefined) mention.resolutionStatus    = p.resolutionStatus;
+            if(p.resolutionNote      !== undefined) mention.resolutionNote      = p.resolutionNote;
+            if(p.resolutionImageUrl  !== undefined) mention.resolutionImageUrl  = p.resolutionImageUrl;
+            return mention;
+        }
         function slLoadData(){
             try {
                 const saved = sessionStorage.getItem('crumble_sl_mentions');
@@ -5683,6 +5707,11 @@
                 .then(r=>{
                     if(r.status!=='success') throw new Error(r.message||'save failed');
                     if(r.imageUrl){ m.resolutionImageUrl = r.imageUrl; slSaveData(); renderSocialListening(); }
+                    // Lock these fields in as authoritative for a grace window — a
+                    // background refresh landing right after this shouldn't be able
+                    // to revert what the server just confirmed, even if the CSV
+                    // snapshot it reads hasn't caught up to this write yet.
+                    slProtectFields(id, { resolutionStatus: m.resolutionStatus, resolutionNote: m.resolutionNote, resolutionImageUrl: m.resolutionImageUrl });
                     console.log('Resolution saved ✓');
                 })
                 .catch(e=>{
@@ -6109,6 +6138,11 @@
             .then(r=>{
                 if(r.status!=='success') throw new Error(r.message||'save failed');
                 console.log('Social mention saved to Google Sheets ✓');
+                // Protect this mention from being wiped by a resync that reads a
+                // not-yet-caught-up snapshot — see loadSocialFromSheet's
+                // sheetNaturalKeys check for how it gets safely dropped once the
+                // real sheet-sourced entry actually appears.
+                slProtectFields(newMention.id, { fullMention: newMention });
                 // Re-sync from the sheet shortly after so this entry's date/time
                 // (and permanent image URL, if a photo was attached) reflects the
                 // backend's actual recorded value, not the local placeholder
@@ -6188,6 +6222,7 @@
             slMentions.forEach(m => {
                 const entry = map[m.id];
                 if(entry){ m.resolutionStatus = entry.status; if(entry.note) m.resolutionNote = entry.note; if(entry.image) m.resolutionImageUrl = entry.image; }
+                slApplyProtection(m);
             });
         }
 
@@ -6283,7 +6318,24 @@
                 // (Total Mentions, Complaints, etc.) by up to SL_SEED.length fake
                 // entries forever, since fictional seed author+date pairs never
                 // match real ones.
-                slMentions = fromSheet;
+                //
+                // One exception: a mention we JUST added ourselves may not be in
+                // this snapshot yet if Google's Publish to Web hasn't caught up to
+                // the save (see the write-protection layer above) — matched by
+                // author+content since its temporary local ID won't match the
+                // real ID this snapshot assigns it once it does appear. Without
+                // this, a freshly-added mention would flash into existence, then
+                // silently vanish for up to a minute or two.
+                const sheetNaturalKeys = new Set(fromSheet.map(m => (m.author+'|'+m.content).toLowerCase().trim()));
+                const stillPending = Object.keys(_slProtected)
+                    .filter(id => {
+                        const p = _slProtected[id];
+                        if(!p.fullMention || p.until <= Date.now()) return false;
+                        const key = (p.fullMention.author+'|'+p.fullMention.content).toLowerCase().trim();
+                        return !sheetNaturalKeys.has(key);
+                    })
+                    .map(id => _slProtected[id].fullMention);
+                slMentions = [...stillPending, ...fromSheet];
                 // Merge saved resolution statuses from SL_Resolution (persist across sessions)
                 slApplyResolutions(await loadResolutionsFromSheet());
                 slSaveData();
