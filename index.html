@@ -65,7 +65,6 @@
         body.dark-theme .voc-section,
         body.dark-theme .bd-item,
         body.dark-theme .sl-kpi,
-        body.dark-theme .lb-row,
         body.dark-theme .collapsible-card {
             background: var(--white) !important;
             border-color: var(--border-color) !important;
@@ -712,62 +711,6 @@
         .score-mid { background: var(--status-warn-bg); color: var(--status-warn); }
         .score-low { background: var(--status-critical-bg); color: var(--status-critical); }
         
-        /* ═══════════ BRANCH LEADERBOARD ═══════════ */
-        .lb-list { display: flex; flex-direction: column; gap: 6px; }
-        .lb-row {
-            display: grid;
-            grid-template-columns: 32px 30px 1fr auto;
-            align-items: center;
-            gap: 10px;
-            background: var(--white);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 8px 12px;
-            transition: transform .22s cubic-bezier(.16,1,.3,1), box-shadow .22s, border-color .22s;
-        }
-        .lb-row:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(1,1,151,.07); }
-        .lb-row.lb-me { border-color: var(--accent-blue); border-width: 1.5px; background: linear-gradient(135deg, rgba(1,1,151,.06) 0%, var(--white) 55%); box-shadow: 0 0 0 2px rgba(1,1,151,.07); }
-        .lb-me-tag { font-size: 0.52rem; font-weight: 800; text-transform: uppercase; letter-spacing: .3px; color: var(--accent-blue); background: rgba(1,1,151,.08); border: 1px solid rgba(1,1,151,.25); padding: 1px 5px; border-radius: 8px; margin-left: 5px; vertical-align: middle; }
-        .lb-rank-badge {
-            width: 26px; height: 26px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.7rem; font-weight: 800; color: var(--text-muted);
-            background: var(--bg-light); border: 1px solid var(--border-color);
-            justify-self: center;
-        }
-        .lb-rank-badge.lb-gold   { background: linear-gradient(160deg,#FFE9A8,#F5C542); border-color: #E8B923; color: #6B4E00; box-shadow: 0 2px 6px rgba(245,197,66,.4); }
-        .lb-rank-badge.lb-silver { background: linear-gradient(160deg,#F1F3F6,#C9CFD8); border-color: #B7BEC9; color: #3A3F47; box-shadow: 0 2px 6px rgba(179,186,196,.35); }
-        .lb-rank-badge.lb-bronze { background: linear-gradient(160deg,#F0C39A,#CE8A52); border-color: #B9723A; color: #5A3312; box-shadow: 0 2px 6px rgba(206,138,82,.35); }
-        .lb-rank-badge i { font-size: 0.62rem; }
-        .lb-avatar {
-            width: 26px; height: 26px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.62rem; font-weight: 800; color: #fff;
-            flex-shrink: 0;
-        }
-        .lb-branch-block { display: flex; align-items: center; gap: 8px; min-width: 0; }
-        .lb-name-col { min-width: 0; }
-        .lb-branch-name { font-size: 0.76rem; font-weight: 800; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .lb-branch-region { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .25px; }
-        .lb-score-col { text-align: right; }
-        .lb-tier-badge {
-            display: inline-flex; align-items: center; gap: 4px;
-            font-size: 0.58rem; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
-            padding: 2px 7px; border-radius: 16px; margin-bottom: 2px;
-        }
-        .lb-tier-badge i { font-size: 0.54rem; }
-        .lb-tier-legendary { background: linear-gradient(135deg,#FDE68A,#F59E0B22); color: #B45309; border: 1px solid #F59E0B55; }
-        .lb-tier-diamond   { background: rgba(37,99,235,.1); color: #1D4ED8; border: 1px solid rgba(37,99,235,.3); }
-        .lb-tier-gold      { background: var(--status-good-bg); color: var(--status-good); border: 1px solid rgba(5,150,105,.3); }
-        .lb-tier-silver    { background: var(--status-warn-bg); color: var(--status-warn); border: 1px solid rgba(217,119,6,.3); }
-        .lb-tier-bronze    { background: var(--status-critical-bg); color: var(--status-critical); border: 1px solid rgba(220,38,38,.3); }
-        .lb-score-val { font-size: 0.84rem; font-weight: 800; color: var(--text-main); }
-        .lb-score-val span { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); }
-        @media (max-width: 640px) {
-            .lb-row { grid-template-columns: 26px 24px 1fr auto; padding: 7px 9px; gap: 8px; }
-            .lb-branch-region { display: none; }
-        }
-
         .chart-container { position: relative; width: 100%; height: 240px; }
         #channel-legend-table th, #channel-legend-table td { padding: 8px 10px; font-size: 0.75rem; }
 
@@ -2239,12 +2182,11 @@
                 <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
                 <span class="topnav-link" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" onclick="app.navigate('incidents', this)">Incidents</span>
-                <span class="topnav-link" onclick="app.navigate('leaderboard', this)">Leaderboard</span>
+                <span class="topnav-link" onclick="app.navigate('channels', this)">Channels</span>
                 <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
                 <span class="topnav-link" onclick="app.navigate('branches', this)">Branches</span>
                 <span class="topnav-link" onclick="app.navigate('forms', this)">Forms</span>
                 <span class="topnav-link" onclick="app.navigate('products', this)">Products</span>
-                <span class="topnav-link" onclick="app.navigate('channels', this)">Channels</span>
                 <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
@@ -2864,30 +2806,6 @@
                             <tbody></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-
-            <!-- BRANCH LEADERBOARD -->
-            <div id="view-leaderboard" class="view">
-                <div class="card" style="padding:16px;">
-                    <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
-                        <div>
-                            <h3 style="font-size:0.92rem;">Branch Leaderboard</h3>
-                            <p id="lb-metric-desc" style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">Ranked by overall CX health score — blends smile score, positive feedback, resolution rate and incident rate for the selected period.</p>
-                        </div>
-                        <div id="lb-updated" style="font-size:0.64rem;color:var(--text-muted);font-weight:600;"></div>
-                    </div>
-                    <div id="lb-metric-tabs" style="display:flex;align-items:center;gap:0;background:var(--bg-light);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;padding:2px;margin-top:10px;width:fit-content;max-width:100%;overflow-x:auto;">
-                        <button class="view-btn active" onclick="app.setLbMetric('overall', this)" style="font-size:0.66rem;padding:4px 10px;border-radius:6px;border:none;white-space:nowrap;">Overall Score</button>
-                        <button class="view-btn" onclick="app.setLbMetric('csat', this)" style="font-size:0.66rem;padding:4px 10px;border-radius:6px;border:none;white-space:nowrap;">CSAT Ratio</button>
-                        <button class="view-btn" onclick="app.setLbMetric('complaints', this)" style="font-size:0.66rem;padding:4px 10px;border-radius:6px;border:none;white-space:nowrap;">Complaints / 100</button>
-                        <button class="view-btn" onclick="app.setLbMetric('resolution', this)" style="font-size:0.66rem;padding:4px 10px;border-radius:6px;border:none;white-space:nowrap;">Resolution Rate</button>
-                    </div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px;">
-                        <div id="lb-region-tabs" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-                        <button id="lb-mybranch-btn" class="preset-chip" onclick="app.lbJumpToMyBranch()" style="display:none;align-items:center;gap:5px;font-size:0.68rem;padding:4px 10px;"><i class="fas fa-location-crosshairs" style="font-size:0.62rem;"></i> My Branch</button>
-                    </div>
-                    <div id="lb-list" class="lb-list" style="margin-top:10px;"></div>
                 </div>
             </div>
 
@@ -4542,6 +4460,76 @@
             if(typeof app !== 'undefined' && app.navigate) app.navigate('incidents');
         }
 
+        // Guards the Overview KPI numbers against a specific flicker: Google's
+        // Publish-to-Web can occasionally serve a slightly-stale snapshot on
+        // one poll and catch up on the next, which showed up as the
+        // Submissions count briefly jumping backward before "correcting"
+        // itself again a poll or two later. Real submissions only ever get
+        // added, never removed — so a DECREASE seen during a background
+        // refresh is treated as suspect and only accepted once the same lower
+        // value is confirmed twice in a row. Anything triggered directly by
+        // the user (changing a filter) is trusted immediately, no debounce.
+        const _subsStabilizer = { stable: null, pending: null, pendingConfirms: 0 };
+        const _incsStabilizer = { stable: null, pending: null, pendingConfirms: 0 };
+        function _stabilizeCount(newVal, state, trustImmediately){
+            if(trustImmediately || state.stable === null || newVal >= state.stable){
+                state.stable = newVal;
+                state.pending = null;
+                state.pendingConfirms = 0;
+                return newVal;
+            }
+            if(state.pending === newVal){
+                state.pendingConfirms++;
+                if(state.pendingConfirms >= 2){
+                    state.stable = newVal;
+                    state.pending = null;
+                    state.pendingConfirms = 0;
+                    return newVal;
+                }
+            } else {
+                state.pending = newVal;
+                state.pendingConfirms = 1;
+            }
+            return state.stable;
+        }
+
+        // Same idea, but for Social Listening's KPIs — here a decrease is very
+        // often legitimate (the user just changed a filter), so this also
+        // tracks a signature of the current filter scope. A real filter
+        // change is trusted immediately and resets tracking; an unchanged
+        // scope that still dropped gets the same "confirm twice" treatment.
+        const _slTotalStabilizer      = { stable: null, pending: null, pendingConfirms: 0, sig: null };
+        const _slComplaintsStabilizer = { stable: null, pending: null, pendingConfirms: 0, sig: null };
+        const _slUnresolvedStabilizer = { stable: null, pending: null, pendingConfirms: 0, sig: null };
+        function _stabilizeSlCount(newVal, state, filterSig){
+            if(state.sig !== filterSig){
+                state.sig = filterSig;
+                state.stable = newVal;
+                state.pending = null;
+                state.pendingConfirms = 0;
+                return newVal;
+            }
+            if(state.stable === null || newVal >= state.stable){
+                state.stable = newVal;
+                state.pending = null;
+                state.pendingConfirms = 0;
+                return newVal;
+            }
+            if(state.pending === newVal){
+                state.pendingConfirms++;
+                if(state.pendingConfirms >= 2){
+                    state.stable = newVal;
+                    state.pending = null;
+                    state.pendingConfirms = 0;
+                    return newVal;
+                }
+            } else {
+                state.pending = newVal;
+                state.pendingConfirms = 1;
+            }
+            return state.stable;
+        }
+
         const app = {
             async init() {
                 const _revealApp = () => document.body.classList.remove('app-loading');
@@ -4578,7 +4566,9 @@
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
                                 _lsc=ns; _lic=ni;
+                                window._isBackgroundRefresh = true;
                                 _s.applyFilters(); renderAlerts();
+                                window._isBackgroundRefresh = false;
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
@@ -4682,13 +4672,13 @@
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => (el.getAttribute('onclick')||'').indexOf("'"+viewId+"'") !== -1);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', leaderboard:'Branch Leaderboard', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'leaderboard', 'incidents', 'resolution', 'insights', 'data', 'social', 'complaints'];
+                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social', 'complaints'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -4762,7 +4752,6 @@
                 }
                 if (state.currentView === 'executive') this.renderExecutive();
                 else if (state.currentView === 'branches') this.renderBranchesView();
-                else if (state.currentView === 'leaderboard') this.renderLeaderboard();
                 else if (state.currentView === 'incidents') this.renderIncidentsView();
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'insights') this.renderInsights();
@@ -4819,7 +4808,8 @@
             renderExecutive() {
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
-                    const tSubs = p1.subs.length, tIncs = p1.incs.length;
+                    const tSubs = _stabilizeCount(p1.subs.length, _subsStabilizer, !window._isBackgroundRefresh);
+                    const tIncs = _stabilizeCount(p1.incs.length, _incsStabilizer, !window._isBackgroundRefresh);
                     const p2Subs = p2.subs.length, p2Incs = p2.incs.length;
                     
                     const sTrend = p2Subs ? (((tSubs - p2Subs)/p2Subs)*100).toFixed(1) : 0;
@@ -5026,185 +5016,6 @@
                         </tr>
                     `;
                 }).join('');
-            },
-
-            // Ranks branches by one of four leaderboard metrics for the currently
-            // active filters/date range (state.p1): Overall Score (composite),
-            // CSAT Ratio (positive:negative), Complaints per 100 responses
-            // (lower is better), or Resolution Rate. Supports filtering to a
-            // single region, and highlights the logged-in user's own branch
-            // (PERM.branch) so managers can find themselves fast.
-            renderLeaderboard() {
-                const list = document.getElementById('lb-list');
-                if(!list) return;
-
-                // ── Region tabs ──
-                const allRegions = [...new Set(config.branches.map(b => b.region).filter(r => r && r !== 'Other'))].sort();
-                const regionLocked = PERM.region !== 'All';
-                if(regionLocked) LB_REGION = PERM.region; // regional managers can't leave their own region
-                else if(LB_REGION !== 'All' && !allRegions.includes(LB_REGION)) LB_REGION = 'All';
-
-                const tabsEl = document.getElementById('lb-region-tabs');
-                if(tabsEl){
-                    const chips = regionLocked ? [] : [{ key:'All', label:'All Regions' }];
-                    allRegions.forEach(r => chips.push({ key:r, label:r }));
-                    tabsEl.innerHTML = chips.map(c =>
-                        `<button class="preset-chip ${LB_REGION===c.key?'active':''}" onclick="app.setLbRegion('${c.key.replace(/'/g,"\\'")}', this)">${c.label}</button>`
-                    ).join('');
-                }
-
-                // ── My Branch quick-jump ──
-                const myBtn = document.getElementById('lb-mybranch-btn');
-                if(myBtn) myBtn.style.display = (PERM.branch && PERM.branch !== 'All') ? 'inline-flex' : 'none';
-
-                // ── Metric tab description ──
-                const descEl = document.getElementById('lb-metric-desc');
-                const METRIC_DESC = {
-                    overall:     'Ranked by overall CX health score — blends smile score, positive feedback, resolution rate and incident rate for the selected period.',
-                    csat:        'Ranked by CSAT ratio — positive-rated responses per negative-rated response for the selected period.',
-                    complaints:  'Ranked by complaints per 100 responses for the selected period. Fewer complaints ranks higher.',
-                    resolution:  'Ranked by resolution rate — the share of logged incidents marked resolved for the selected period.'
-                };
-                if(descEl) descEl.innerText = METRIC_DESC[LB_METRIC] || METRIC_DESC.overall;
-
-                // ── Compute all four metrics per branch ──
-                const scoped = config.branches.filter(b => LB_REGION === 'All' || b.region === LB_REGION);
-                let rows = scoped.map(b => {
-                    const s = state.p1.subs.filter(x=>x.branch===b.name);
-                    const i = state.p1.incs.filter(x=>x.branch===b.name);
-                    const sL = s.length, iL = i.length;
-                    const posCount = s.filter(x=>x.smileScore>=4).length;
-                    const negCount = s.filter(x=>x.smileScore<=2).length;
-                    const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 0;
-                    const avgSmile100 = avgSmileRaw * 20; // 1–5 → 0–100
-                    const posFB   = sL ? (posCount/sL)*100 : 0;
-                    const resRate = iL ? (i.filter(x=>x.resolved).length/iL)*100 : 100;
-                    const incRate = sL ? (iL/sL)*100 : 0;
-                    const incPenalty = Math.max(0, 100 - incRate*10); // 0% incidents = 100, 10%+ = 0
-                    const csatRatio = negCount ? (posCount/negCount) : posCount; // no negatives → ratio = raw positive count (uncapped, like an undefeated K/D)
-                    const complaintsPer100 = sL ? (iL/sL)*100 : 0;
-
-                    let score = (avgSmile100*0.35) + (posFB*0.25) + (resRate*0.25) + (incPenalty*0.15);
-                    const noData = (sL===0 && iL===0);
-                    if(noData) score = 0; // no data this period — send to the bottom, not the top
-                    score = Math.max(0, Math.min(100, score));
-
-                    return { branch: b, submissions: sL, incidents: iL, noData, score, csatRatio, complaintsPer100, resRate };
-                });
-
-                // ── Sort by selected metric (noData branches always sink to the bottom) ──
-                const sortKeyFns = {
-                    overall:    r => r.score,
-                    csat:       r => r.csatRatio,
-                    complaints: r => -r.complaintsPer100, // lower is better → negate so "higher = better" sort works uniformly
-                    resolution: r => r.resRate
-                };
-                const keyFn = sortKeyFns[LB_METRIC] || sortKeyFns.overall;
-                rows.sort((a,c) => {
-                    if(a.noData !== c.noData) return a.noData ? 1 : -1;
-                    return keyFn(c) - keyFn(a);
-                });
-
-                // ── Tier bands, per metric scale ──
-                const tierFromBands = (v, bands) => {
-                    for(const b of bands) if(v >= b.min) return b;
-                    return bands[bands.length-1];
-                };
-                const PCT_BANDS = [
-                    { min:90, cls:'lb-tier-legendary', label:'Legendary' },
-                    { min:80, cls:'lb-tier-diamond',   label:'Diamond'   },
-                    { min:65, cls:'lb-tier-gold',      label:'Gold'      },
-                    { min:50, cls:'lb-tier-silver',    label:'Silver'    },
-                    { min:-Infinity, cls:'lb-tier-bronze', label:'Bronze' }
-                ];
-                const CSAT_BANDS = [
-                    { min:5,   cls:'lb-tier-legendary', label:'Legendary' },
-                    { min:3,   cls:'lb-tier-diamond',   label:'Diamond'   },
-                    { min:1.5, cls:'lb-tier-gold',      label:'Gold'      },
-                    { min:1,   cls:'lb-tier-silver',    label:'Silver'    },
-                    { min:-Infinity, cls:'lb-tier-bronze', label:'Bronze' }
-                ];
-                // Complaints/100 — lower is better, so bands run on inverted scale
-                const complaintTier = (v) => {
-                    if(v <= 1)  return { cls:'lb-tier-legendary', label:'Legendary' };
-                    if(v <= 3)  return { cls:'lb-tier-diamond',   label:'Diamond'   };
-                    if(v <= 6)  return { cls:'lb-tier-gold',      label:'Gold'      };
-                    if(v <= 10) return { cls:'lb-tier-silver',    label:'Silver'    };
-                    return { cls:'lb-tier-bronze', label:'Bronze' };
-                };
-
-                const metricDisplay = (r) => {
-                    switch(LB_METRIC){
-                        case 'csat':       return { value: `${r.csatRatio.toFixed(2)} : 1`, tier: tierFromBands(r.csatRatio, CSAT_BANDS) };
-                        case 'complaints': return { value: `${r.complaintsPer100.toFixed(1)} /100`, tier: complaintTier(r.complaintsPer100) };
-                        case 'resolution': return { value: `${r.resRate.toFixed(1)}%`, tier: tierFromBands(r.resRate, PCT_BANDS) };
-                        default:           return { value: `${r.score.toFixed(1)} / 100`, tier: tierFromBands(r.score, PCT_BANDS) };
-                    }
-                };
-
-                list.innerHTML = rows.map((r, idx) => {
-                    const rank = idx + 1;
-                    const rankCls  = rank===1?'lb-gold':rank===2?'lb-silver':rank===3?'lb-bronze':'';
-                    const rankIcon = rank<=3 ? `<i class="fas fa-crown"></i>` : rank;
-                    const md = metricDisplay(r);
-                    const initials = r.branch.name.split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase();
-                    const avatarColor = getAvatarColor(r.branch.name);
-                    const isMe = PERM.branch && PERM.branch !== 'All' && r.branch.name === PERM.branch;
-                    const rowId = 'lb-row-' + r.branch.name.replace(/[^a-zA-Z0-9]/g,'-');
-
-                    return `
-                        <div id="${rowId}" class="lb-row ${isMe?'lb-me':''}" style="${r.noData ? 'opacity:.55;' : ''}">
-                            <div class="lb-rank-badge ${rankCls}">${rankIcon}</div>
-                            <div class="lb-avatar" style="background:${avatarColor.bg};">${initials}</div>
-                            <div class="lb-name-col">
-                                <div class="lb-branch-name">${r.branch.name}${isMe ? '<span class="lb-me-tag">You</span>' : ''}</div>
-                                <div class="lb-branch-region">${r.branch.region} · ${r.submissions.toLocaleString()} responses${r.noData ? ' · no data this period' : ''}</div>
-                            </div>
-                            <div class="lb-score-col">
-                                <div class="lb-tier-badge ${md.tier.cls}"><i class="fas fa-shield-halved"></i> ${md.tier.label}</div>
-                                <div class="lb-score-val">${md.value}</div>
-                            </div>
-                        </div>`;
-                }).join('') || '<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-trophy"></i></div><div class="empty-state-title">No branches in this region</div></div>';
-
-                const updEl = document.getElementById('lb-updated');
-                if(updEl){
-                    const s = document.getElementById('filter-start-date')?.value;
-                    const e = document.getElementById('filter-end-date')?.value;
-                    updEl.innerText = (s && e) ? `Period: ${s} → ${e}` : '';
-                }
-            },
-
-            setLbMetric(metric, btnEl) {
-                LB_METRIC = metric;
-                document.querySelectorAll('#lb-metric-tabs .view-btn').forEach(b => b.classList.remove('active'));
-                if(btnEl) btnEl.classList.add('active');
-                this.renderLeaderboard();
-            },
-
-            setLbRegion(region, chipEl) {
-                LB_REGION = region;
-                this.renderLeaderboard();
-            },
-
-            lbJumpToMyBranch() {
-                if(!PERM.branch || PERM.branch === 'All') return;
-                const myBranchCfg = config.branches.find(b => b.name === PERM.branch);
-                // Switch to the correct region tab first if a specific one is selected and doesn't match
-                if(myBranchCfg && PERM.region === 'All' && LB_REGION !== 'All' && LB_REGION !== myBranchCfg.region){
-                    LB_REGION = 'All';
-                    this.renderLeaderboard();
-                }
-                const rowId = 'lb-row-' + PERM.branch.replace(/[^a-zA-Z0-9]/g,'-');
-                setTimeout(() => {
-                    const row = document.getElementById(rowId);
-                    if(row){
-                        row.scrollIntoView({ behavior:'smooth', block:'center' });
-                        row.style.transition = 'box-shadow .3s';
-                        row.style.boxShadow = '0 0 0 4px rgba(1,1,151,.25)';
-                        setTimeout(() => { row.style.boxShadow = ''; }, 1400);
-                    }
-                }, 50);
             },
 
             renderIncidentsView() {
@@ -7623,12 +7434,29 @@
             }
 
             // ── KPI strip — counts from filtered (matches what's visible) ──
-            const total      = filtered.length;
-            const totalAll   = slMentions.length;
-            const complaints = filtered.filter(m=>m.sentiment==='Complaint').length;
-            const praises    = filtered.filter(m=>m.sentiment==='Praise').length;
-            const unresolved = filtered.filter(m=>m.sentiment==='Complaint' && m.resolutionStatus !== 'closed').length;
-            const reach      = filtered.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
+            // Same Google Publish-to-Web flicker risk as Overview's Submissions
+            // KPI: a background re-render can occasionally see a momentarily
+            // inconsistent slMentions snapshot. Unlike Overview though, a drop
+            // here is very often LEGITIMATE (the user just changed a filter) —
+            // so this only debounces a decrease when the filter scope itself
+            // hasn't actually changed; any real filter change is trusted
+            // immediately, full stop.
+            const rawTotal      = filtered.length;
+            const totalAll      = slMentions.length;
+            const rawComplaints = filtered.filter(m=>m.sentiment==='Complaint').length;
+            const praises       = filtered.filter(m=>m.sentiment==='Praise').length;
+            const rawUnresolved = filtered.filter(m=>m.sentiment==='Complaint' && m.resolutionStatus !== 'closed').length;
+            const reach         = filtered.reduce((a,m)=>a+(m.likes||0)+(m.comments||0)+(m.shares||0),0);
+
+            const slFilterSig = JSON.stringify({
+                snFilter, dateFrom, dateTo, searchQ,
+                mentionOnly: !!window._slMentionFilter, complaintOnly: !!window._slComplaintFilter,
+                unresolvedOnly: !!window._slUnresolvedOnly, keyword: window._slKeywordFilter || '',
+                platform: window._slPlatformFilter || '', branch: window._slBranchFilter || ''
+            });
+            const total      = _stabilizeSlCount(rawTotal,      _slTotalStabilizer,      slFilterSig);
+            const complaints = _stabilizeSlCount(rawComplaints, _slComplaintsStabilizer, slFilterSig);
+            const unresolved = _stabilizeSlCount(rawUnresolved, _slUnresolvedStabilizer, slFilterSig);
 
             const kpiStrip = document.getElementById('sl-kpi-strip');
             const _isUnresOnly = !!window._slUnresolvedOnly;
@@ -7965,8 +7793,6 @@
         // ══════════════════════════════════════════════════════════════════
         let CT_SCOPE = 'branch';
         let CT_RANGE = '7d';   // '7d' | '30d' | 'month'
-        let LB_REGION = 'All'; // Branch Leaderboard — selected region tab
-        let LB_METRIC = 'overall'; // Branch Leaderboard — selected ranking metric: overall | csat | complaints | resolution
         const COMPLAINT_CATEGORIES = [
             { id:'missing',    title:'Missing Item',       cause:'Packing accuracy failure',             op:'Packing / dispatch',     keywords:['missing','not received','didn\'t get','did not get','item missing','incomplete','forgot','left out','nahi mila','nai mila'] },
             { id:'wrong',      title:'Wrong Order',        cause:'Order-handling error at counter',      op:'Front counter / system', keywords:['wrong order','wrong item','incorrect order','not what i ordered','different item','wrong flavour','wrong flavor','galat'] },
