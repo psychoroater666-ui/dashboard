@@ -3085,8 +3085,15 @@
                         </div>
                     </div>
 
-                    <!-- RIGHT PANEL -->
-                    <div style="display:flex;flex-direction:column;gap:14px;position:sticky;top:20px;">
+                    <!-- RIGHT PANEL — capped to the same height as the feed on
+                         purpose: a CSS grid row is always as tall as its
+                         tallest cell no matter what align-items says, so
+                         without this the row kept stretching to match this
+                         panel's full natural height, leaving blank space below
+                         the (now shorter, bounded) feed. Rarely needs its own
+                         scrollbar in practice since it's usually shorter than
+                         the cap, but stays safe if it ever grows past it. -->
+                    <div style="display:flex;flex-direction:column;gap:14px; max-height:calc(100vh - 220px); overflow-y:auto; padding-right:4px;">
 
                         <!-- Trending Keywords -->
                         <div class="card" style="padding:18px 20px;">
