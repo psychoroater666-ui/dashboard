@@ -3298,6 +3298,15 @@
                     </div>
                 </div>
 
+                <!-- Data completeness diagnostic — only shown on the Submissions tab, and only when something is actually being excluded -->
+                <div class="card" id="submissions-excluded-card" style="display:none; border-left:4px solid #D97706;">
+                    <div class="section-header" style="margin-bottom:12px;">
+                        <h3><i class="fas fa-triangle-exclamation" style="color:#D97706;margin-right:6px;"></i> Rows Not Counted on This Dashboard</h3>
+                        <button class="btn-export" onclick="exportExcludedRows()"><i class="fas fa-download"></i> Export These Rows</button>
+                    </div>
+                    <div id="submissions-excluded-summary" style="font-size:0.85rem;color:var(--text-main);line-height:1.7;"></div>
+                </div>
+
                 <!-- Detailed, row-level submissions log — only shown on the
                      Submissions tab; Channels/Forms/Products/Complaints share
                      this same container and stay aggregate-only. -->
@@ -3492,13 +3501,24 @@
         // Map one form's rows, tagging each with its form/channel. Called once per source.
         function mapSource(rows, src, out){
             let pushed = 0;
+            // Tracks every row silently dropped and why — without this, a real
+            // row sitting in the sheet with no obvious visual difference just
+            // vanishes with zero trace, which is exactly what made this
+            // impossible to pin down by eye.
+            out.excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
+            const trackExcluded = (reason, r) => {
+                out.excluded[reason]++;
+                if(out.excluded.samples.length < 500){
+                    out.excluded.samples.push({ form: src.form, reason, _raw: r });
+                }
+            };
             (rows||[]).forEach(r=>{
                 try {
                     const status = String(_find(r,'status')).trim().toLowerCase();
-                    if(status && status !== 'completed') return;
-                    const branch = _find(r,'location'); if(!branch) return;
+                    if(status && status !== 'completed'){ trackExcluded('status', r); return; }
+                    const branch = _find(r,'location'); if(!branch){ trackExcluded('branch', r); return; }
                     const rating = _num(_find(r,'rate','visit') || _find(r,'experience','today') || _find(r,'rate') || _find(r,'experience'));
-                    if(!rating) return;
+                    if(!rating){ trackExcluded('rating', r); return; }
                     const prod = String(_find(r,'select your product') || _find(r,'select','product') || _find(r,'menu item') || _find(r,'item','name') || '').split(',')[0].trim();
                     let channel = src.channel || '';
                     if(!channel && src.channelFields){ for(const f of src.channelFields){ const v=_find(r, ...f.split(' ')); if(v){ channel=String(v).trim(); break; } } }
@@ -3626,6 +3646,7 @@
             const out = { subs:[], incs:[] };
             const mapped = results.map((rows, idx) => (rows && rows.length) ? mapSource(rows, sources[idx], out) : (rows===null?'ERR':0));
             window.__diag2 = 'mapped ' + sources.map((s,i)=> s.form.replace(/\s/g,'')+':'+mapped[i]).join(' ');
+            window.__excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
             if(out.subs.length){
                 rawData.submissions.length = 0; rawData.incidents.length = 0;
                 out.subs.forEach(x=>rawData.submissions.push(x));
@@ -4090,6 +4111,17 @@
             }).finally(() => {
                 if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Refresh'; }
             });
+        }
+
+        function exportExcludedRows() {
+            const exc = window.__excluded;
+            if(!exc || !exc.samples.length){ alert('No excluded rows to export.'); return; }
+            const colSet = new Set();
+            exc.samples.forEach(x => Object.keys(x._raw).forEach(k => colSet.add(k)));
+            const rawCols = Array.from(colSet);
+            const headers = ['Source Form', 'Exclusion Reason', ...rawCols];
+            const rows = exc.samples.map(x => [x.form, x.reason, ...rawCols.map(c => x._raw[c] ?? '')]);
+            _exportCSV(`Excluded_Rows_${new Date().toISOString().split('T')[0]}.csv`, headers, rows);
         }
 
         const app = {
@@ -4823,6 +4855,43 @@
                 // (Feedback alone can be 25,000+ rows) — sorted newest first, so
                 // the cap only ever trims older rows, never the ones you're
                 // actually looking for.
+                // Data completeness diagnostic — shows exactly how many real
+                // sheet rows are being silently excluded from every count on
+                // this dashboard right now, and why, instead of leaving that
+                // gap invisible and unexplained.
+                const excludedCard = document.getElementById('submissions-excluded-card');
+                if(excludedCard){
+                    const exc = window.__excluded || { status:0, branch:0, rating:0, samples:[] };
+                    const total = exc.status + exc.branch + exc.rating;
+                    if(view === 'submissions' && total > 0){
+                        excludedCard.style.display = '';
+                        const summaryEl = document.getElementById('submissions-excluded-summary');
+                        if(summaryEl){
+                            const byForm = {};
+                            exc.samples.forEach(s => {
+                                byForm[s.form] = byForm[s.form] || { status:0, branch:0, rating:0 };
+                                byForm[s.form][s.reason] = (byForm[s.form][s.reason] || 0) + 1;
+                            });
+                            const formLines = Object.keys(byForm).map(f => {
+                                const b = byForm[f];
+                                const parts = [];
+                                if(b.status) parts.push(`${b.status} not "completed" status`);
+                                if(b.rating) parts.push(`${b.rating} missing a rating`);
+                                if(b.branch) parts.push(`${b.branch} missing a branch`);
+                                return `<div style="margin-bottom:4px;"><strong>${f}:</strong> ${parts.join(', ')}</div>`;
+                            }).join('');
+                            summaryEl.innerHTML = `
+                                <div style="margin-bottom:10px;"><strong>${total.toLocaleString()} row${total===1?'':'s'}</strong> in your sheets right now are not counted anywhere on this dashboard — <strong>${exc.status.toLocaleString()}</strong> because their Status column isn't "completed", <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded, <strong>${exc.branch.toLocaleString()}</strong> because they're missing a branch/location.</div>
+                                <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Breakdown by form (based on the exported sample below)</div>
+                                ${formLines}
+                                ${exc.samples.length >= 500 ? '<div style="color:var(--text-muted);font-style:italic;margin-top:8px;">Per-form breakdown reflects the first 500 excluded rows found — the totals above are exact regardless.</div>' : ''}
+                            `;
+                        }
+                    } else {
+                        excludedCard.style.display = 'none';
+                    }
+                }
+
                 const detailCard = document.getElementById('submissions-detail-card');
                 if(detailCard){
                     if(view === 'submissions'){
