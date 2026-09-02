@@ -3945,7 +3945,7 @@
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
-                        }, 30000);
+                        }, LIVE.refreshMs);
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
