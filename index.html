@@ -3504,11 +3504,15 @@
             // Tracks every row silently dropped and why — without this, a real
             // row sitting in the sheet with no obvious visual difference just
             // vanishes with zero trace, which is exactly what made this
-            // impossible to pin down by eye.
-            out.excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
+            // impossible to pin down by eye. Capped PER FORM (not globally) so
+            // a form with a lot of exclusions can't crowd out visibility into
+            // the others — each form gets its own fair sample.
+            out.excluded = out.excluded || { status:0, branch:0, rating:0, samples:[], perFormCount:{} };
             const trackExcluded = (reason, r) => {
                 out.excluded[reason]++;
-                if(out.excluded.samples.length < 500){
+                const formCount = out.excluded.perFormCount[src.form] || 0;
+                if(formCount < 200){
+                    out.excluded.perFormCount[src.form] = formCount + 1;
                     out.excluded.samples.push({ form: src.form, reason, _raw: r });
                 }
             };
@@ -4884,7 +4888,7 @@
                                 <div style="margin-bottom:10px;"><strong>${total.toLocaleString()} row${total===1?'':'s'}</strong> in your sheets right now are not counted anywhere on this dashboard — <strong>${exc.status.toLocaleString()}</strong> because their Status column isn't "completed", <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded, <strong>${exc.branch.toLocaleString()}</strong> because they're missing a branch/location.</div>
                                 <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Breakdown by form (based on the exported sample below)</div>
                                 ${formLines}
-                                ${exc.samples.length >= 500 ? '<div style="color:var(--text-muted);font-style:italic;margin-top:8px;">Per-form breakdown reflects the first 500 excluded rows found — the totals above are exact regardless.</div>' : ''}
+                                ${Object.values(exc.perFormCount || {}).some(c => c >= 200) ? '<div style="color:var(--text-muted);font-style:italic;margin-top:8px;">One or more forms hit the 200-sample cap for this breakdown — the totals above are exact regardless, only the per-form split may undercount that form.</div>' : ''}
                             `;
                         }
                     } else {
