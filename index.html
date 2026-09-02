@@ -5515,21 +5515,21 @@
 
             // Set the from/to inputs automatically for non-custom presets
             if(preset !== 'custom'){
-                const max = SYSTEM_NOW.toISOString().split('T')[0];
+                const max = new Date().toISOString().split('T')[0];
                 let from  = '';
                 if(preset === 'today'){
                     from = max;
                 } else if(preset === 'yesterday'){
-                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-1);
+                    const d = new Date(); d.setDate(d.getDate()-1);
                     from = d.toISOString().split('T')[0];
                     // yesterday only = from AND to = yesterday
                     const toEl = document.getElementById('sl-date-to');
                     if(toEl) toEl.value = from;
                 } else if(preset === '7d'){
-                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-7);
+                    const d = new Date(); d.setDate(d.getDate()-7);
                     from = d.toISOString().split('T')[0];
                 } else if(preset === '30d'){
-                    const d = new Date(SYSTEM_NOW); d.setDate(d.getDate()-30);
+                    const d = new Date(); d.setDate(d.getDate()-30);
                     from = d.toISOString().split('T')[0];
                 } else {
                     // 'all' — clear both
@@ -5731,7 +5731,7 @@
         function slTimeAgo(dateStr){
             if(!dateStr) return '—';
             const d = new Date(dateStr + 'T00:00:00');
-            const today = new Date(SYSTEM_NOW); today.setHours(0,0,0,0);
+            const today = new Date(); today.setHours(0,0,0,0);
             const diff = Math.round((today - d) / 86400000);
             if(diff === 0) return 'Today';
             if(diff === 1) return 'Yesterday';
@@ -6069,7 +6069,7 @@
             const newMention = {
                 id:'sl'+Date.now(), platform, type, sentiment, branch, author, content,
                 likes, comments, shares:0,
-                date: new Date(SYSTEM_NOW).toISOString().split('T')[0],
+                date: new Date().toISOString().split('T')[0],
                 sortTs: Date.now(),
                 url, resolved:false, tags:[],
                 resolutionStatus: sentiment === 'Complaint' ? 'none' : null,
