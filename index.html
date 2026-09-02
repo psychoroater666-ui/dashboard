@@ -1419,6 +1419,17 @@
         .sl-close-thumb-remove { width:24px; height:24px; border-radius:6px; border:none; background:rgba(220,38,38,.1); color:#DC2626; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.68rem; flex-shrink:0; }
         .sl-close-thumb-remove:hover { background:rgba(220,38,38,.18); }
         .sl-res-photo { display:block; margin-top:6px; max-width:180px; max-height:140px; border-radius:8px; border:1px solid var(--border-color); object-fit:cover; cursor:pointer; }
+        .sl-evidence-pick-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1.5px dashed var(--border-color); background:var(--bg-light); color:var(--text-muted); font-size:0.8rem; font-weight:600; cursor:pointer; }
+        .sl-evidence-pick-btn:hover { border-color:#7C3AED; color:#7C3AED; background:rgba(124,58,237,.06); }
+        .sl-evidence-preview { display:flex; align-items:center; gap:8px; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg-light); border:1px solid var(--border-color); }
+        .sl-evidence-preview img { width:40px; height:40px; border-radius:6px; object-fit:cover; }
+        .sl-evidence-preview span { font-size:0.75rem; font-weight:600; color:var(--text-muted); flex:1; }
+        .sl-evidence-preview button { width:24px; height:24px; border-radius:6px; border:none; background:rgba(220,38,38,.1); color:#DC2626; cursor:pointer; font-size:0.68rem; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+        .sl-evidence-preview button:hover { background:rgba(220,38,38,.18); }
+        .sl-evidence-btn { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:7px; background:#7C3AED; color:#fff; font-size:0.72rem; font-weight:800; border:none; cursor:pointer; flex-shrink:0; }
+        .sl-evidence-btn:hover { opacity:.88; }
+        .sl-evidence-img { margin-top:10px; }
+        .sl-evidence-img img { max-width:260px; max-height:220px; border-radius:10px; border:1px solid var(--border-color); object-fit:cover; cursor:zoom-in; }
         /* Premium morphing resolution button */
         .res-stage-btn { position:relative; display:inline-flex; align-items:center; gap:8px; padding:7px 18px 7px 14px; border-radius:30px; font-size:0.73rem; font-weight:800; border:none; cursor:pointer; letter-spacing:0.2px; overflow:hidden; font-family:'Inter',sans-serif; transition: transform .3s cubic-bezier(.16,1,.3,1), box-shadow .3s cubic-bezier(.16,1,.3,1), background .4s ease; }
         .res-stage-btn::before { content:''; position:absolute; inset:0; border-radius:inherit; background:rgba(255,255,255,0.15); opacity:0; transition:opacity .2s ease; }
@@ -3175,6 +3186,14 @@
                                 &nbsp;·&nbsp;
                                 <span>Twitter/X → tap <strong>Share</strong> → <strong>Copy link to post</strong></span>
                             </div>
+                        </div>
+                        <div class="sl-field" style="grid-column:1/-1;">
+                            <label>Picture Evidence (optional)</label>
+                            <input type="file" id="sl-m-image-file" accept="image/*" style="display:none;" onchange="slHandleMentionImageFile(event)">
+                            <button type="button" class="sl-evidence-pick-btn" onclick="document.getElementById('sl-m-image-file').click()">
+                                <i class="fas fa-camera"></i> Attach a photo, or click here then paste (Ctrl+V)
+                            </button>
+                            <div id="sl-m-image-preview" class="sl-evidence-preview" style="display:none;"></div>
                         </div>
                     </div>
                     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
@@ -5722,6 +5741,11 @@
         }
 
         function slIsUrgent(m){ return m.sentiment === 'Complaint' && m.resolutionStatus !== 'closed'; }
+        function slTogglePictureEvidence(id){
+            const el = document.getElementById('sl-evidence-'+id);
+            if(!el) return;
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        }
 
         // ═══════════════════════════════════════════
         // BRAND INTELLIGENCE — keyword config
@@ -5950,6 +5974,36 @@
         }
 
         // ── Add mention from modal ────────────────────────────────────────────
+        // ── Picture evidence for a NEW mention (Add Social Mention modal) ──────
+        let _slMentionImageData = '';
+        function slReadMentionImage(file){
+            if(!file) return;
+            if(file.size > 2 * 1024 * 1024){ alert('Photo must be under 2MB.'); return; }
+            const reader = new FileReader();
+            reader.onload = ev => {
+                _slMentionImageData = ev.target.result;
+                const prev = document.getElementById('sl-m-image-preview');
+                if(!prev) return;
+                prev.style.display = 'flex';
+                prev.innerHTML = `<img src="${ev.target.result}"><span>Photo attached</span>
+                    <button type="button" onclick="_slMentionImageData=''; const p=document.getElementById('sl-m-image-preview'); p.style.display='none'; p.innerHTML='';" title="Remove"><i class="fas fa-trash"></i></button>`;
+            };
+            reader.readAsDataURL(file);
+        }
+        function slHandleMentionImageFile(e){ slReadMentionImage(e.target.files[0]); }
+        // Paste anywhere while the Add Mention modal is open — most browsers only
+        // fire `paste` on a focused, editable target, so this listens at the
+        // document level instead of a specific field, scoped to only act when
+        // this modal is actually open.
+        document.addEventListener('paste', e => {
+            const modal = document.getElementById('sl-add-modal');
+            if(!modal || !modal.classList.contains('open')) return;
+            const items = (e.clipboardData || window.clipboardData).items;
+            for(const item of items){
+                if(item.type.indexOf('image') === 0){ e.preventDefault(); slReadMentionImage(item.getAsFile()); break; }
+            }
+        });
+
         function slAddMention(){
             let platform    = document.getElementById('sl-m-platform').value;
             if(platform === 'Other'){
@@ -6023,7 +6077,10 @@
                 brandTier: analysis.tier,
                 brandLabel: analysis.brand || 'Unverified',
                 triggeredBy: (analysis.triggeredBy||[]).map(t=>t.kw),
+                imageUrl: _slMentionImageData || '',
             };
+            const imageForSave = _slMentionImageData;
+            _slMentionImageData = '';
 
             // ── 1. Add to local list immediately so UI updates without waiting ──
             slMentions.unshift(newMention);
@@ -6033,28 +6090,36 @@
             const saveBtn = document.querySelector('#sl-add-modal button[onclick="slAddMention()"]');
             if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='Saving…'; }
 
+            // NOTE: no `mode:'no-cors'` here on purpose — see slSetResolution for
+            // why: that combination silently breaks delivery and makes the
+            // response unreadable, so a failed save was indistinguishable from
+            // a successful one.
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
-                mode: 'no-cors', // Apps Script requires no-cors from browser
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     platform, type, sentiment, branch, author, content,
                     likes, comments,
                     url,
                     date: newMention.date,
+                    image: imageForSave,
                 })
             })
-            .then(() => {
+            .then(r=>r.json())
+            .then(r=>{
+                if(r.status!=='success') throw new Error(r.message||'save failed');
                 console.log('Social mention saved to Google Sheets ✓');
                 // Re-sync from the sheet shortly after so this entry's date/time
-                // reflects the backend's actual recorded value (not the local
-                // placeholder date used for the optimistic UI update above).
+                // (and permanent image URL, if a photo was attached) reflects the
+                // backend's actual recorded value, not the local placeholder
+                // used for the optimistic UI update above.
                 setTimeout(() => {
                     loadSocialFromSheet().then(() => renderSocialListening());
                 }, 1500);
             })
             .catch(err => {
                 console.warn('Sheet save failed (mention kept locally):', err);
+                alert('Could not save this mention to the sheet — it is only stored locally for now. Please try again.');
             })
             .finally(() => {
                 if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Mention'; }
@@ -6068,6 +6133,8 @@
             if(otherWrap) otherWrap.style.display='none';
             const ar = document.getElementById('sl-analyse-result');
             if(ar){ ar.innerHTML=''; ar.style.display='none'; }
+            const imgPrev = document.getElementById('sl-m-image-preview');
+            if(imgPrev){ imgPrev.style.display='none'; imgPrev.innerHTML=''; }
             const urlHint = document.getElementById('sl-url-hint');
             if(urlHint) urlHint.textContent='';
             const urlInput = document.getElementById('sl-m-url');
@@ -6196,6 +6263,7 @@
                         date:       normDate,
                         sortTs,
                         url:        get('URL')        || '',
+                        imageUrl:   get('Image URL')  || '',
                         resolved:   false,
                         tags:       [],
                         region:     (config.branches.find(b=>b.name===get('Branch'))||{}).region || 'Pakistan',
@@ -6570,6 +6638,9 @@
                 const sourceBtn = m.url
                     ? `<a href="${m.url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:${pc.bg};color:#fff;font-size:0.72rem;font-weight:800;text-decoration:none;transition:opacity .15s;flex-shrink:0;" title="Open on ${m.platform}" ><i class="${SL_PLATFORM_STYLE[m.platform]||'fas'} ${pc.icon}" style="font-size:0.75rem;"></i> View Source</a>`
                     : `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:7px;background:rgba(217,119,6,.08);color:var(--status-warn);font-size:0.72rem;font-weight:800;border:1.5px dashed rgba(217,119,6,.35);cursor:default;" title="Source link missing — whoever added this mention should edit it and paste the direct post URL so it can be verified"><i class="fas fa-triangle-exclamation" style="font-size:0.65rem;"></i> Source missing</span>`;
+                const evidenceBtn = m.imageUrl
+                    ? `<button class="sl-evidence-btn" onclick="slTogglePictureEvidence('${m.id}')" title="Show attached photo"><i class="fas fa-camera"></i> Picture Evidence</button>`
+                    : '';
 
                 // ── Brand confidence chip ─────────────────────────────────────
                 // For seed data (no brandTier stored), run analysis live
@@ -6673,6 +6744,7 @@
                         </div>
                         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
                             ${sourceBtn}
+                            ${evidenceBtn}
                             <span class="sl-time">
                                 <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}
                             </span>
@@ -6680,6 +6752,7 @@
                     </div>
                     <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;">${m.author}</div>
                     <div class="sl-content">${highlightedContent}</div>
+                    ${m.imageUrl ? `<div class="sl-evidence-img" id="sl-evidence-${m.id}" style="display:none;"><img src="${m.imageUrl}" alt="Picture evidence" onclick="window.open('${m.imageUrl}','_blank')"></div>` : ''}
                     ${triggeredRow}
                     <div class="sl-meta-row" style="margin-top:10px;">
                         <span class="sl-stat"><i class="fas fa-heart"></i> ${(m.likes||0).toLocaleString()}</span>
