@@ -2874,18 +2874,6 @@
                 <!-- Summary stat strip -->
                 <div class="inc-stats" id="inc-stats"></div>
 
-                <!-- Pattern breakdown -->
-                <div class="inc-break-row">
-                    <div class="card" style="padding:18px 20px;">
-                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-signal" style="color:var(--accent-blue);margin-right:6px;"></i> Incidents by Channel</h3></div>
-                        <div id="inc-by-channel"></div>
-                    </div>
-                    <div class="card" style="padding:18px 20px;">
-                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-tags" style="color:var(--accent-blue);margin-right:6px;"></i> Top Complaint Types</h3></div>
-                        <div id="inc-by-type"></div>
-                    </div>
-                </div>
-
                 <!-- Toolbar: search + rating filter -->
                 <div class="card" style="padding:14px 18px;">
                     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
@@ -5608,8 +5596,9 @@
                         `<div class="inc-bar-row"><div class="inc-bar-label" title="${k}">${k}</div><div class="inc-bar-track"><div class="inc-bar-fill" style="width:${(v/max*100).toFixed(0)}%;"></div></div><div class="inc-bar-val">${v}</div></div>`
                     ).join('') || '<div style="color:var(--text-muted);font-size:0.82rem;padding:8px 0;">No data.</div>';
                 };
-                barBlock(byChannel, 'inc-by-channel');
-                barBlock(byType, 'inc-by-type');
+                // Now shown on the dedicated Incident Analytics tab instead —
+                // byChannel is still needed just below for the channel filter
+                // dropdown, byType's bar-list display was removed with the section.
 
                 // ── Populate channel filter ──
                 const chanSel = document.getElementById('inc-chan-filter');
