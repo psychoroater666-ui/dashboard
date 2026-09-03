@@ -1848,6 +1848,12 @@
         .inc-add-comment-label-v2 { font-size:0.78rem; font-weight:800; color:var(--text-main); margin-bottom:6px; }
         .inc-add-comment-v2 textarea { width:100%; min-height:58px; padding:8px 10px; border-radius:9px; border:1.5px solid var(--border-color); font-size:0.8rem; font-family:inherit; resize:vertical; background:var(--white); color:var(--text-main); }
         .inc-close-btn-v2 { margin-top:8px; padding:7px 15px; border-radius:8px; border:none; background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.78rem; font-weight:700; cursor:pointer; }
+        .inc-close-btn-v2:disabled { opacity:.4; cursor:not-allowed; }
+        .inc-validity-label { font-size:0.72rem; font-weight:700; color:var(--text-muted); margin-top:12px; margin-bottom:6px; }
+        .inc-validity-toggle { display:flex; gap:8px; }
+        .inc-validity-btn { flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-muted); font-size:0.78rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
+        .inc-validity-btn.inc-validity-valid.inc-validity-selected { background:rgba(5,150,105,.1); border-color:#059669; color:#059669; }
+        .inc-validity-btn.inc-validity-fake.inc-validity-selected { background:rgba(220,38,38,.1); border-color:#DC2626; color:#DC2626; }
         .inc-sidebar-v2 { display:flex; flex-direction:column; gap:10px; }
         .inc-sb-card-v2 { background:var(--bg-light); border-radius:10px; padding:11px 13px; }
         .inc-sb-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -4637,10 +4643,12 @@
                     const idKey   = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
                     const stKey   = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
                     const noteKey = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
+                    const valKey  = keys.find(k => k.toLowerCase().trim() === 'validity') || keys.find(k => k.toLowerCase().includes('valid'));
                     const id   = idKey   ? String(row[idKey]||'').trim()   : '';
                     const st   = stKey   ? String(row[stKey]||'').trim()   : '';
                     const note = noteKey ? String(row[noteKey]||'').trim() : '';
-                    if(id && st) map[id] = { status: st, note: note };
+                    const validity = valKey ? String(row[valKey]||'').trim().toLowerCase() : '';
+                    if(id && st) map[id] = { status: st, note: note, validity: validity };
                 });
                 return map;
             } catch(err){ console.warn('Incident resolution read-back failed:', err); return null; }
@@ -4653,22 +4661,40 @@
                 if(entry){
                     inc.resolved = (entry.status === 'closed');
                     if(entry.note) inc.resolutionNote = entry.note;
+                    if(entry.validity){
+                        inc.caseStatus = (entry.validity === 'fake') ? 'fake' : 'verified';
+                        inc.agentVerdict = true;
+                    }
                 }
             });
         }
 
-        function saveIncidentResolution(stableKey, note, btnEl){
+        function selectIncidentValidity(btnEl, validity){
+            document.querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
+            btnEl.classList.add('inc-validity-selected');
+            window._selectedIncidentValidity = validity;
+            const closeBtn = document.getElementById('ivm-close-btn');
+            if(closeBtn) closeBtn.disabled = false;
+        }
+
+        function saveIncidentResolution(stableKey, note, btnEl, validity){
+            if(!validity){ alert('Please mark this complaint as Valid or Fake before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '' })
+                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '', validity: validity })
             })
             .then(r => r.json())
             .then(r => {
                 if(r.status !== 'success') throw new Error(r.message || 'save failed');
                 (rawData.incidents||[]).forEach(inc => {
-                    if(_incidentStableKey(inc) === stableKey){ inc.resolved = true; inc.resolutionNote = note || ''; }
+                    if(_incidentStableKey(inc) === stableKey){
+                        inc.resolved = true;
+                        inc.resolutionNote = note || '';
+                        inc.caseStatus = (validity === 'fake') ? 'fake' : 'verified';
+                        inc.agentVerdict = true; // this came from a human, not the automated classifier
+                    }
                 });
                 if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
             })
@@ -5291,7 +5317,9 @@
                         <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-idle'}" title="${resolved?'Resolved':'Not resolved'}"><i class="fas fa-thumbs-up"></i></span>
                     </div>`;
                     const cs = inc.caseStatus || 'verified';
-                    const csMap = { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
+                    const csMap = inc.agentVerdict
+                        ? { verified:['✓','#059669','Agent Confirmed'], fake:['✕','#DC2626','Agent: Fake'] }
+                        : { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr style="cursor:pointer;" onclick="app.openIncidentDetailModal(${idx})">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
@@ -5324,6 +5352,7 @@
 
             openIncidentDetailModalDirect(inc) {
                 window._openIncidentModalKey = _incidentStableKey(inc);
+                window._selectedIncidentValidity = null; // reset per-incident — don't carry over a selection from a previously-viewed incident
                 const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
                 const parsedTs = _parseSheetDateTime(rawCreatedAt);
                 const dateStr = !isNaN(parsedTs)
@@ -5359,8 +5388,13 @@
                 const addCommentHtml = !isClosed ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">Add Remarks</div>
-                        <textarea id="ivm-remarks" placeholder="What was done to resolve this?"></textarea>
-                        <button class="inc-close-btn-v2" onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
+                        <textarea id="ivm-remarks" placeholder="What was done to resolve this? (contacted customer, verified order, etc.)"></textarea>
+                        <div class="inc-validity-label">Your determination — is this complaint valid?</div>
+                        <div class="inc-validity-toggle">
+                            <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
+                            <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
+                        </div>
+                        <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity)"><i class="fas fa-check"></i> Mark as Closed</button>
                     </div>` : '';
 
                 const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
