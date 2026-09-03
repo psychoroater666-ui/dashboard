@@ -4192,6 +4192,23 @@
 
             state.p1 = { subs: filter(rawData.submissions, start, end, isViewingToday), incs: filter(rawData.incidents, start, end, isViewingToday) };
             state.p2 = { subs: filter(rawData.submissions, p2Start, p2End, isViewingToday), incs: filter(rawData.incidents, p2Start, p2End, isViewingToday) };
+
+            // Groups state.p1 by branch ONCE here, instead of the 6+ places
+            // throughout the dashboard that were each independently filtering
+            // the full submissions/incidents arrays per branch on every
+            // render. Deliberately only the grouping is shared — every place
+            // that reads this still computes its own specific stats (rate,
+            // smile score, resolution %, etc.) exactly as it already did, from
+            // these pre-split arrays instead of re-scanning everything itself.
+            // Using the identical match condition every one of those 6 places
+            // already used (x.branch === b.name), so this changes nothing
+            // about what gets counted — only how many times the same scan
+            // happens.
+            const branchGroups = {};
+            config.branches.forEach(b => { branchGroups[b.name] = { subs: [], incs: [] }; });
+            state.p1.subs.forEach(s => { if(branchGroups[s.branch]) branchGroups[s.branch].subs.push(s); });
+            state.p1.incs.forEach(i => { if(branchGroups[i.branch]) branchGroups[i.branch].incs.push(i); });
+            state.branchGroups = branchGroups;
         }
 
         // ==========================================
@@ -5045,6 +5062,39 @@
             </div>
         `);
 
+        // Updates an existing chart's data in place instead of destroying and
+        // recreating it — Chart.js animates the transition smoothly, and it's
+        // meaningfully cheaper than a full rebuild every single refresh cycle.
+        // Falls back to a real destroy+recreate only when there isn't an
+        // existing chart yet, or its type/dataset count genuinely changed
+        // (e.g. a category list that grew) — safe either way.
+        function _renderOrUpdateChart(canvasId, chartConfig) {
+            const canvasEl = document.getElementById(canvasId);
+            if(!canvasEl) return null;
+            const existing = state.charts[canvasId];
+            const sameShape = existing
+                && existing.config.type === chartConfig.type
+                && existing.data.datasets.length === chartConfig.data.datasets.length;
+            if(sameShape){
+                existing.data.labels = chartConfig.data.labels;
+                existing.data.datasets.forEach((ds, i) => {
+                    const nd = chartConfig.data.datasets[i];
+                    if(!nd) return;
+                    ds.data = nd.data;
+                    if(nd.backgroundColor !== undefined) ds.backgroundColor = nd.backgroundColor;
+                    if(nd.borderColor !== undefined) ds.borderColor = nd.borderColor;
+                    if(nd.label !== undefined) ds.label = nd.label;
+                });
+                existing.update();
+                return existing;
+            }
+            if(existing) existing.destroy();
+            const ctx = canvasEl.getContext('2d');
+            const chart = new Chart(ctx, chartConfig);
+            state.charts[canvasId] = chart;
+            return chart;
+        }
+
         const app = {
             async init() {
                 const _revealApp = () => document.body.classList.remove('app-loading');
@@ -5071,7 +5121,9 @@
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
-                        setInterval(async()=>{
+                        let _pendingVisibilityRefresh = false;
+
+                        const _doRefresh = async () => {
                             document.body.classList.add('bg-refresh');
                             void document.body.offsetHeight;
                             try {
@@ -5087,7 +5139,25 @@
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
+                        };
+
+                        // Pause the expensive work (fetch, filter, chart
+                        // rebuilds) while the tab isn't visible — nothing is
+                        // gained refreshing charts nobody's looking at. Catches
+                        // up immediately the moment the tab becomes visible
+                        // again, rather than waiting up to refreshMs for the
+                        // next scheduled tick.
+                        setInterval(() => {
+                            if(document.hidden){ _pendingVisibilityRefresh = true; return; }
+                            _doRefresh();
                         }, LIVE.refreshMs);
+
+                        document.addEventListener('visibilitychange', () => {
+                            if(!document.hidden && _pendingVisibilityRefresh){
+                                _pendingVisibilityRefresh = false;
+                                _doRefresh();
+                            }
+                        });
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
@@ -5358,8 +5428,8 @@
                     // "best" — it still shows normally everywhere else
                     // (tables, breakdowns), just not in this superlative.
                     const branchMetrics = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
-                        const s = p1.subs.filter(x=>x.branch===b.name).length;
-                        const i = p1.incs.filter(x=>x.branch===b.name).length;
+                        const s = (state.branchGroups[b.name] || {subs:[]}).subs.length;
+                        const i = (state.branchGroups[b.name] || {incs:[]}).incs.length;
                         return { name: b.name, rate: s ? (i/s)*100 : 0 };
                     }).sort((a,b) => a.rate - b.rate); 
 
@@ -5471,8 +5541,8 @@
 
                     document.querySelector('#exec-branch-master-expanded tbody').innerHTML = (() => {
                         const rows = config.branches.map(b => {
-                            const s = state.p1.subs.filter(x=>x.branch===b.name);
-                            const i = state.p1.incs.filter(x=>x.branch===b.name);
+                            const s = (state.branchGroups[b.name] || {subs:[]}).subs;
+                            const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                             const sL = s.length, iL = i.length;
                             const rate = sL ? (iL/sL)*100 : 0;
                             const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.0;
@@ -5502,8 +5572,8 @@
 
             renderBranchesView() {
                 const branchStats = config.branches.map(b => {
-                    const s = state.p1.subs.filter(x=>x.branch===b.name);
-                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const s = (state.branchGroups[b.name] || {subs:[]}).subs;
+                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
                     return { name: b.name, subs: sL, rate };
@@ -5512,8 +5582,8 @@
                 this.renderBranchIncRateChart(branchStats);
 
                 document.querySelector('#branch-master-table tbody').innerHTML = config.branches.map(b => {
-                    const s = state.p1.subs.filter(x=>x.branch===b.name);
-                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const s = (state.branchGroups[b.name] || {subs:[]}).subs;
+                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
                     const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.4;
@@ -5539,16 +5609,14 @@
 
             renderBranchSubsChart(branchStats) {
                 const canvasId = 'branchSubsChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
                 const sorted = branchStats.slice().sort((a,b)=>b.subs-a.subs);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(s=>s.name), datasets: [{ label:'Submissions', data: sorted.map(s=>s.subs), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:22 }] },
                     options: {
@@ -5564,16 +5632,14 @@
 
             renderBranchIncRateChart(branchStats) {
                 const canvasId = 'branchIncRateChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
                 const sorted = branchStats.slice().sort((a,b)=>b.rate-a.rate);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(s=>s.name), datasets: [{
                         label:'Incident Rate %',
@@ -5645,10 +5711,8 @@
 
             renderIANewIncidentsChart(incs) {
                 const canvasId = 'iaNewIncidentsChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -5658,7 +5722,7 @@
                 const labels = Object.keys(daily).sort();
                 const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: displayLabels, datasets: [{ label:'New Incidents', data: labels.map(l=>daily[l]), backgroundColor:'#EF4444', borderRadius:5, maxBarThickness:28 }] },
                     options: {
@@ -5674,10 +5738,8 @@
 
             renderIATimesChart(incs) {
                 const canvasId = 'iaTimesChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -5702,7 +5764,7 @@
                 const reviewMins = labels.map(l => byDay[l].reviewCount ? Math.round(byDay[l].reviewSum/byDay[l].reviewCount/60000) : null);
                 const resolveMins = labels.map(l => byDay[l].resolveCount ? Math.round(byDay[l].resolveSum/byDay[l].resolveCount/60000) : null);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'line',
                     data: { labels: displayLabels, datasets: [
                         { label:'Avg Review Time (min)', data: reviewMins, borderColor:'#3B5BDB', backgroundColor:'#3B5BDB', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
@@ -5721,10 +5783,8 @@
 
             renderIALocationsChart(incs) {
                 const canvasId = 'iaLocationsChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -5733,7 +5793,7 @@
                 incs.forEach(i => { const b = i.branch||'Unspecified'; byBranch[b] = (byBranch[b]||0)+1; });
                 const sorted = Object.entries(byBranch).sort((a,b)=>b[1]-a[1]).slice(0,10);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:22 }] },
                     options: {
@@ -5750,10 +5810,8 @@
 
             renderIAComplaintTypesChart(incs) {
                 const canvasId = 'iaComplaintTypesChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -5765,7 +5823,7 @@
                 });
                 const sorted = Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0,8);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#D97706', borderRadius:5, maxBarThickness:22 }] },
                     options: {
@@ -5782,10 +5840,8 @@
 
             renderIAValidityChart(incs) {
                 const canvasId = 'iaValidityChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
                 let agentValid = 0, agentFake = 0, notReviewed = 0;
@@ -5794,7 +5850,7 @@
                     else notReviewed++;
                 });
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'doughnut',
                     data: {
                         labels: ['Agent Confirmed Valid', 'Agent Flagged Fake', 'Not Yet Agent-Reviewed'],
@@ -5946,16 +6002,14 @@
 
             renderUnivCurrChart(entityStats, label) {
                 const canvasId = 'univCurrChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
                 const sorted = entityStats.slice().sort((a,b)=>b.s-a.s);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(x=>x.ent), datasets: [{ label:`Submissions by ${label}`, data: sorted.map(x=>x.s), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:32 }] },
                     options: {
@@ -6245,7 +6299,7 @@
 
             renderResolution() {
                 const branchRates = config.branches.map(b => {
-                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const res = i.filter(x=>x.resolved).length;
                     const rate = i.length ? (res/i.length)*100 : 100;
                     return { name: b.name, total: i.length, rate };
@@ -6253,7 +6307,7 @@
                 this.renderResRateChart(branchRates);
 
                 document.querySelector('#res-current-table tbody').innerHTML = config.branches.map(b => {
-                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const res = i.filter(x=>x.resolved).length;
                     const unres = i.length - res;
                     const rate = i.length ? ((res/i.length)*100).toFixed(1) : "100.0";
@@ -6271,16 +6325,14 @@
 
             renderResRateChart(branchRates) {
                 const canvasId = 'resRateChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
                 const sorted = branchRates.slice().sort((a,b)=>a.rate-b.rate);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: sorted.map(s=>s.name), datasets: [{
                         label:'Resolution Rate %',
@@ -6305,8 +6357,8 @@
                 // it rank here would generate genuinely bad advice like
                 // "escalate to branch manager" for a branch that doesn't exist.
                 const bStats = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
-                    const s = state.p1.subs.filter(x=>x.branch===b.name).length;
-                    const i = state.p1.incs.filter(x=>x.branch===b.name).length;
+                    const s = (state.branchGroups[b.name] || {subs:[]}).subs.length;
+                    const i = (state.branchGroups[b.name] || {incs:[]}).incs.length;
                     return { name: b.name, rate: s ? (i/s)*100 : 0 };
                 }).sort((a,b) => b.rate - a.rate);
 
@@ -6498,15 +6550,13 @@
 
             renderExecBranchPosFBChart(branches) {
                 const canvasId = 'execBranchPosFBChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: branches.map(b=>b.name), datasets: [{
                         label:'Positive Feedback %',
@@ -6527,15 +6577,13 @@
 
             renderExecBranchSmileChart(branches) {
                 const canvasId = 'execBranchSmileChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: branches.map(b=>b.name), datasets: [{
                         label:'Smile Score',
@@ -6556,10 +6604,8 @@
 
             renderExecRateTrendChart() {
                 const canvasId = 'execRateTrendChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -6571,7 +6617,7 @@
                 const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
                 const rates = labels.map(l => daily[l].s ? +((daily[l].i/daily[l].s)*100).toFixed(2) : 0);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'line',
                     data: { labels: displayLabels, datasets: [{ label:'Incident Rate %', data: rates, borderColor:'#DC2626', backgroundColor:'#DC2626', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
                     options: {
@@ -6587,10 +6633,8 @@
 
             renderExecResSpeedChart() {
                 const canvasId = 'execResSpeedChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -6613,7 +6657,8 @@
                 const labels = Object.keys(byDay).sort();
 
                 if(!labels.length){
-                    state.charts[canvasId] = null;
+                    if(state.charts[canvasId]){ state.charts[canvasId].destroy(); state.charts[canvasId] = null; }
+                    const ctx = canvasEl.getContext('2d');
                     ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
                     ctx.save();
                     ctx.font = '12px Inter, sans-serif';
@@ -6627,7 +6672,7 @@
                 const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
                 const mins = labels.map(l => Math.round(byDay[l].sum/byDay[l].count/60000));
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'line',
                     data: { labels: displayLabels, datasets: [{ label:'Avg Resolve Time (min)', data: mins, borderColor:'#D97706', backgroundColor:'#D97706', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
                     options: {
@@ -6643,10 +6688,8 @@
 
             renderExecVerFakeChart() {
                 const canvasId = 'execVerFakeChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -6661,7 +6704,7 @@
                 const labels = Object.keys(byDay).sort();
                 const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: displayLabels, datasets: [
                         { label:'Verified', data: labels.map(l=>byDay[l].verified), backgroundColor:'#059669', borderRadius:4, maxBarThickness:18 },
@@ -6680,17 +6723,15 @@
 
             renderExecSocialSentimentChart() {
                 const canvasId = 'execSocialSentimentChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
 
                 const mentions = (typeof slMentions !== 'undefined') ? slMentions : [];
                 const complaint = mentions.filter(m=>m.sentiment==='Complaint').length;
                 const praise = mentions.filter(m=>m.sentiment==='Praise').length;
                 const neutral = Math.max(0, mentions.length - complaint - praise);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'doughnut',
                     data: {
                         labels: ['Praise','Complaint','Neutral'],
@@ -6721,10 +6762,8 @@
 
             renderExecPeakHoursChart() {
                 const canvasId = 'execPeakHoursChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -6737,7 +6776,7 @@
                 });
                 const labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels, datasets: [{ label:'Submissions', data: hourCounts, backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:16 }] },
                     options: {
@@ -6753,10 +6792,8 @@
 
             renderExecRegionalChart() {
                 const canvasId = 'execRegionalChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const isDark = document.body.classList.contains('dark-theme');
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
@@ -6769,7 +6806,7 @@
                     return { region:r, s, i, rate: s ? (i/s)*100 : 0 };
                 });
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'bar',
                     data: { labels: regions, datasets: [{
                         label:'Submissions',
@@ -6836,10 +6873,8 @@
 
             renderExecChannelMixChart() {
                 const canvasId = 'execChannelMixChart';
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
                 const canvasEl = document.getElementById(canvasId);
                 if(!canvasEl) return;
-                const ctx = canvasEl.getContext('2d');
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
                 const byForm = {};
@@ -6849,7 +6884,7 @@
                 const total = values.reduce((a,b)=>a+b,0);
                 const colors = ['#3B5BDB','#059669','#D97706','#8B5CF6','#DC2626'];
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'doughnut',
                     data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_,i)=>colors[i%colors.length]), borderWidth:0 }] },
                     options: {
@@ -6873,9 +6908,6 @@
             },
 
             renderExecTrendChart(canvasId) {
-                if (state.charts[canvasId]) state.charts[canvasId].destroy();
-                const ctx = document.getElementById(canvasId).getContext('2d');
-                
                 const rootStyles = getComputedStyle(document.body);
                 const isDark = document.body.classList.contains('dark-theme');
                 const textColor = rootStyles.getPropertyValue('--text-muted').trim();
@@ -6890,7 +6922,7 @@
                 const labels = Object.keys(daily).sort();
                 const displayLabels = labels.map(l => { const d = new Date(l); return `${d.getDate()} ${d.toLocaleString('default', {month:'short'})}`; });
 
-                state.charts[canvasId] = new Chart(ctx, {
+                _renderOrUpdateChart(canvasId, {
                     type: 'line',
                     data: {
                         labels: displayLabels,
@@ -7425,8 +7457,8 @@
             const { p1 } = state;
 
             const branchData = config.branches.map(b => {
-                const s = p1.subs.filter(x => x.branch === b.name);
-                const i = p1.incs.filter(x => x.branch === b.name);
+                const s = (state.branchGroups[b.name] || {subs:[]}).subs;
+                const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                 const sL = s.length, iL = i.length;
                 const rate = sL ? (iL / sL) * 100 : 0;
                 const avgSmile = sL ? (s.reduce((a, c) => a + c.smileScore, 0) / sL) : 0;
@@ -9328,21 +9360,19 @@
 
         app.renderCTTrendChart = function(rows, labels){
             const canvasId = 'ctTrendChart';
-            if (state.charts[canvasId]) state.charts[canvasId].destroy();
             const canvasEl = document.getElementById(canvasId);
             if(!canvasEl) return;
-            const ctx = canvasEl.getContext('2d');
             const isDark = document.body.classList.contains('dark-theme');
             const gridColor = isDark ? '#334155' : '#F1F5F9';
             const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
             if(!rows.length){
-                state.charts[canvasId] = null;
-                ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+                if(state.charts[canvasId]){ state.charts[canvasId].destroy(); state.charts[canvasId] = null; }
+                canvasEl.getContext('2d').clearRect(0,0,canvasEl.width,canvasEl.height);
                 return;
             }
 
-            state.charts[canvasId] = new Chart(ctx, {
+            _renderOrUpdateChart(canvasId, {
                 type: 'bar',
                 data: {
                     labels: rows.map(r => r.cat.title),
