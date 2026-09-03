@@ -3860,7 +3860,17 @@
                     let branch = _find(r,'location');
                     if(!branch){ trackExcluded('branch', r); branch = 'Unspecified'; }
                     const rating = _num(_find(r,'rate','visit') || _find(r,'experience','today') || _find(r,'rate') || _find(r,'experience'));
-                    if(!rating){ trackExcluded('rating', r); return; }
+                    // No longer excludes the row entirely — this is a genuine,
+                    // otherwise-complete submission (real branch, real status)
+                    // just caught before the customer reached the rating
+                    // question. Counted toward Submissions volume (real
+                    // engagement happened), but explicitly kept OUT of
+                    // anything rating-dependent — there's genuinely nothing to
+                    // average or classify yet. smileScore:null (not 0) is the
+                    // deliberate marker for "no rating yet", specifically so it
+                    // can never be mistaken for an actual low rating anywhere
+                    // downstream.
+                    if(!rating) trackExcluded('rating', r);
                     const prod = String(_find(r,'select your product') || _find(r,'select','product') || _find(r,'menu item') || _find(r,'item','name') || '').split(',')[0].trim();
                     let channel = src.channel || '';
                     let _channelPath = channel ? 'hardcoded' : null;
@@ -3907,9 +3917,9 @@
                         .map(([,v]) => String(v).trim())
                         .join(' ');
                     _ensure('branch',branch); _ensure('form',form); _ensure('channel',channel); _ensure('survey',src.form);
-                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore:rating, comment, _raw:r });
+                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore: rating || null, comment, _raw:r });
                     pushed++;
-                    if(rating <= INCIDENT_MAX_RATING){
+                    if(rating && rating <= INCIDENT_MAX_RATING){
                         const complaintType = prod || (src.form + ' Issue');
                         _ensure('complaint',complaintType);
                         // OPTIONAL columns — only override the defaults if the sheet actually has them.
@@ -5706,10 +5716,17 @@
                             const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                             const sL = s.length, iL = i.length;
                             const rate = sL ? (iL/sL)*100 : 0;
-                            const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.0;
+                            // Average and positive-feedback % must divide by
+                            // how many actually HAVE a rating, not total
+                            // submissions — a ratingless row provides no
+                            // signal either way, and including it in the
+                            // denominator while it can never count in the
+                            // numerator would silently drag both down.
+                            const rated = s.filter(x => x.smileScore != null);
+                            const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : 4.0;
                             const avgSmile = (avgSmileRaw * 20).toFixed(0);
                             const emojiColor = avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)');
-                            const posFB = sL ? ((s.filter(x=>x.smileScore>=4).length/sL)*100).toFixed(0) : 0;
+                            const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(0) : 0;
                             const res = i.filter(x=>x.resolved).length;
                             const resRate = iL ? ((res/iL)*100).toFixed(0) : 100;
                             return { name: b.name, sL, iL, rate, emojiColor, posFB: +posFB, res, resRate, avgSmile };
@@ -5747,9 +5764,10 @@
                     const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
-                    const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.4;
+                    const rated = s.filter(x => x.smileScore != null);
+                    const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : 4.4;
                     const avgSmile = (avgSmileRaw * 20).toFixed(0); // 1–5 → 0–100
-                    const posFB = sL ? ((s.filter(x=>x.smileScore>=4).length/sL)*100).toFixed(1) : "90.0";
+                    const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(1) : "90.0";
                     const resolved = iL ? ((i.filter(x=>x.resolved).length/iL)*100).toFixed(1) : "100.0";
                     return `
                         <tr>
@@ -7506,8 +7524,9 @@
             const subs = rawData.submissions.filter(x => x.branch === branchName && inRange(x));
             const incs = rawData.incidents.filter(x => x.branch === branchName && inRange(x));
             const s = subs.length, i = incs.length;
-            const avgSmile = s ? subs.reduce((a,c)=>a+c.smileScore,0)/s : 0;
-            const posFb = s ? (subs.filter(x=>x.smileScore>=4).length/s)*100 : 0;
+            const rated = subs.filter(x => x.smileScore != null);
+            const avgSmile = rated.length ? rated.reduce((a,c)=>a+c.smileScore,0)/rated.length : 0;
+            const posFb = rated.length ? (rated.filter(x=>x.smileScore>=4).length/rated.length)*100 : 0;
             const res = i ? (incs.filter(x=>x.resolved).length/i)*100 : 100;
             const dSubs = subs.filter(x=>x.surveyForm==='Delivery').length;
             const dIncs = incs.filter(x=>x.surveyForm==='Delivery').length;
@@ -7778,13 +7797,18 @@
             }
 
             // ── SENTIMENT — always show live score bars + AI paragraph below ──
+            // Sentiment score requires an actual rating, so both the average
+            // and the displayed count here use rated-only submissions —
+            // showing "50 submissions" next to a score computed from fewer
+            // actual ratings would be inconsistent/misleading.
             const sentimentData = ['Delivery','Dine In','Call Center'].map(f=>{
-                const fSubs = subs.filter(s=>s.surveyForm===f);
+                const fSubs = subs.filter(s=>s.surveyForm===f && s.smileScore != null);
                 const avgRaw = fSubs.length ? fSubs.reduce((a,c)=>a+c.smileScore,0)/fSubs.length : 0;
                 return {label:f, score:Math.round(avgRaw*20), count:fSubs.length};
             }).filter(d=>d.count>0);
-            const allAvg = subs.length ? subs.reduce((a,c)=>a+c.smileScore,0)/subs.length : 0;
-            sentimentData.unshift({label:'Overall', score:Math.round(allAvg*20), count:subs.length});
+            const ratedSubs = subs.filter(s => s.smileScore != null);
+            const allAvg = ratedSubs.length ? ratedSubs.reduce((a,c)=>a+c.smileScore,0)/ratedSubs.length : 0;
+            sentimentData.unshift({label:'Overall', score:Math.round(allAvg*20), count:ratedSubs.length});
 
             const sentColors = s => s>=75?'#059669':s>=50?'#D97706':'#DC2626';
             const sentBg     = s => s>=75?'rgba(5,150,105,0.65)':s>=50?'rgba(217,119,6,0.65)':'rgba(220,38,38,0.65)';
@@ -7828,9 +7852,10 @@
                 const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                 const sL = s.length, iL = i.length;
                 const rate = sL ? (iL / sL) * 100 : 0;
-                const avgSmile = sL ? (s.reduce((a, c) => a + c.smileScore, 0) / sL) : 0;
+                const rated = s.filter(x => x.smileScore != null);
+                const avgSmile = rated.length ? (rated.reduce((a, c) => a + c.smileScore, 0) / rated.length) : 0;
                 const avgSmileDisplay = (avgSmile * 20).toFixed(0); // 1–5 → 0–100
-                const posFB = sL ? (s.filter(x => x.smileScore >= 4).length / sL) * 100 : 0;
+                const posFB = rated.length ? (rated.filter(x => x.smileScore >= 4).length / rated.length) * 100 : 0;
                 const res = iL ? (i.filter(x => x.resolved).length / iL) * 100 : 100;
                 const statusClass = rate < 3 ? 'good' : rate < 5 ? 'warn' : 'crit';
                 const rateColor = rate < 3 ? 'var(--status-good)' : rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
