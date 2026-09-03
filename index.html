@@ -3695,6 +3695,7 @@
         const _POS_RE  = /\b(best|amazing|awesome|great|good|love|loved|loving|perfect|nice|yummy|delicious|tasty|excellent|fantastic|wonderful|recommend|recommended|obsessed|worth|favou?rite|satisf(y|ied)|happy|sahi|zabardast|mazedar|lajawab|acha|achi|umda|behtareen)\b|10\/10/i;
         const _NEG_RE  = /\b(cold|stale|hard|dry|soggy|raw|missing|wrong|incorrect|late|delay|delayed|slow|rude|bad|worst|dirty|unhygienic|hygiene|burnt|thin|watery|expensive|overpriced|disappoint(ed|ing)?|terrible|horrible|awful|poor|unprofessional|ganda|kharab|bakwas|bura|buri|ghalat|tameez)\b|too sweet|not good|not fresh|not nice|not clean/i;
         const _JUNK_RE = /^(n\/?a|na|no|none|nothing|nope|nil|ok|okay|fine|test(ing)?|asdf+|[.\-—\s]*)$/i;
+        const _TEXT_SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status','order id','order number']);
 
         function classifyCaseValidity(rating, comment, category, channel){
             const ch  = String(channel  || '').toLowerCase();
@@ -3809,6 +3810,20 @@
                         _find(r,'other comments') ||
                         _find(r,'improve') || ''
                     ).trim();
+                    // Full open-text blob — every free-text answer in the row,
+                    // not just "any other thoughts". A complaint or a glowing
+                    // review is very often written under a specific
+                    // sub-question ("How was the taste?", "Texture?") rather
+                    // than the closing comment field, and the fake/verified
+                    // classifier + complaint categorization both need to see
+                    // that text to work correctly. `comment` above stays
+                    // narrow on purpose — it's what gets DISPLAYED as "the
+                    // customer's comment", and a blob of every answer
+                    // concatenated together wouldn't read well there.
+                    const fullText = Object.entries(r)
+                        .filter(([k,v]) => v && typeof v === 'string' && !_TEXT_SKIP_KEYS.has(k.toLowerCase().trim()))
+                        .map(([,v]) => String(v).trim())
+                        .join(' ');
                     _ensure('branch',branch); _ensure('form',form); _ensure('channel',channel); _ensure('survey',src.form);
                     out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore:rating, comment, _raw:r });
                     pushed++;
@@ -3827,12 +3842,12 @@
                         // caseStatus: sheet `verified` column wins; else classify per the spec
                         let caseStatus, verified;
                         if(verifiedRaw !== ''){ verified = _bool(verifiedRaw); caseStatus = verified ? 'verified' : 'fake'; }
-                        else { caseStatus = classifyCaseValidity(rating, comment, catVal, channel); verified = caseStatus === 'verified'; }
+                        else { caseStatus = classifyCaseValidity(rating, fullText, catVal, channel); verified = caseStatus === 'verified'; }
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
                             complaintType, verified, caseStatus, resolved, resolutionMins, product: prod || '—', smileScore:rating,
                             category: catVal,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
-                            note: comment, _raw:r });
+                            note: comment, fullText, _raw:r });
                     }
                 } catch(e){ /* skip a bad row, keep going */ }
             });
@@ -4265,20 +4280,35 @@
                 document.getElementById('comp-th-entity').innerText = groupBy.toUpperCase().replace('TYPE','');
 
                 const getFiltered = (start, end) => {
-                    const filterDs = (ds) => ds.filter(item => {
-                        const d = new Date(item.date); d.setHours(0,0,0,0);
+                    // Was comparing item.date (a bare "YYYY-MM-DD" string) via
+                    // new Date(item.date), which JS parses as UTC midnight —
+                    // in a UTC+5 timezone that's actually 5am local, so
+                    // submissions between midnight and 5am could land on the
+                    // wrong side of a date boundary here versus Overview,
+                    // which correctly uses each item's real local timestamp.
+                    // That's exactly what was causing the small Compare vs
+                    // Overview mismatches. Now uses the same precise-timestamp
+                    // approach as Overview's own filter.
+                    const filterDs = (ds) => {
                         const s = new Date(start); s.setHours(0,0,0,0);
                         const e = new Date(end); e.setHours(23,59,59,999);
-                        
-                        if(d < s || d > e) return false;
-                        if(br !== 'all' && !br.includes(item.branch)) return false;
-                        if(ch !== 'all' && !ch.includes(item.channel)) return false;
-                        if(fo !== 'all' && !fo.includes(item.form)) return false;
-                        if(su !== 'all' && !su.includes(item.surveyForm)) return false;
-                        if(item.complaintType && co !== 'all' && !co.includes(item.complaintType)) return false;
-                        return true;
-                    });
-                    return { subs: filterDs(rawData.submissions), incs: filterDs(rawData.incidents) };
+                        const sTs = s.getTime(), eTs = e.getTime();
+                        return ds.filter(item => {
+                            const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
+                            const itemTs = !isNaN(t) ? t : (item.date ? new Date(item.date + 'T12:00:00').getTime() : 0);
+                            if(itemTs < sTs || itemTs > eTs) return false;
+                            if(br !== 'all' && !br.includes(item.branch)) return false;
+                            if(ch !== 'all' && !ch.includes(item.channel)) return false;
+                            if(fo !== 'all' && !fo.includes(item.form)) return false;
+                            if(su !== 'all' && !su.includes(item.surveyForm)) return false;
+                            if(item.complaintType && co !== 'all' && !co.includes(item.complaintType)) return false;
+                            return true;
+                        });
+                    };
+                    // Verified only — unverified/fake and needs-review cases
+                    // shouldn't count toward the comparison rate, since they
+                    // don't represent confirmed real incidents.
+                    return { subs: filterDs(rawData.submissions), incs: filterDs(rawData.incidents).filter(i => (i.caseStatus||'verified') === 'verified') };
                 };
 
                 const dataA = getFiltered(sA, eA);
@@ -7035,15 +7065,23 @@
         ];
 
         function getBranchMetrics(branchName, startDate, endDate) {
+            // Same fix as Compare's Timeline filterDs and Overview's filter —
+            // was comparing item.date (bare "YYYY-MM-DD") via new Date(),
+            // which parses as UTC midnight and can misplace early-morning
+            // submissions across a date boundary in a UTC+5 timezone.
+            const getItemTs = (item) => {
+                const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
+                return !isNaN(t) ? t : (item.date ? new Date(item.date + 'T12:00:00').getTime() : 0);
+            };
             const inRange = (item) => {
                 if(!startDate || !endDate) return true;
-                const d = new Date(item.date); d.setHours(0,0,0,0);
                 let sRaw = new Date(startDate), eRaw = new Date(endDate);
                 // Tolerate the range being picked in either click order.
                 if(sRaw > eRaw){ const t = sRaw; sRaw = eRaw; eRaw = t; }
                 const s = new Date(sRaw); s.setHours(0,0,0,0);
                 const e = new Date(eRaw); e.setHours(23,59,59,999);
-                return d >= s && d <= e;
+                const itemTs = getItemTs(item);
+                return itemTs >= s.getTime() && itemTs <= e.getTime();
             };
             const subs = rawData.submissions.filter(x => x.branch === branchName && inRange(x));
             const incs = rawData.incidents.filter(x => x.branch === branchName && inRange(x));
@@ -8011,15 +8049,14 @@
             'Query':'sentiment-query','Mention':'sentiment-mention'
         };
 
+        // Always shows the exact date — no relative phrasing ("Today",
+        // "Yesterday", "3 days ago"). Function name kept as-is to avoid
+        // touching every call site, but it now always returns an absolute
+        // date for accurate tracking.
         function slTimeAgo(dateStr){
             if(!dateStr) return '—';
             const d = new Date(dateStr + 'T00:00:00');
-            const today = new Date(); today.setHours(0,0,0,0);
-            const diff = Math.round((today - d) / 86400000);
-            if(diff === 0) return 'Today';
-            if(diff === 1) return 'Yesterday';
-            if(diff < 7)  return `${diff} days ago`;
-            if(diff < 30) return `${Math.floor(diff/7)} week${Math.floor(diff/7)>1?'s':''} ago`;
+            if(isNaN(d)) return dateStr;
             return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
         }
 
@@ -9224,7 +9261,7 @@
                 if(known) return known;
             }
 
-            const text = [inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
+            const text = [inc.fullText || inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
 
             // 2. Health-hazard override — checked first and independently of
             // the scoring below, so a real safety issue can never lose out to
