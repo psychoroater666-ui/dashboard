@@ -2416,6 +2416,30 @@
                         </div>
                     </div>
 
+                    <!-- Health trends — the ratios that actually say whether
+                         things are improving, not just raw volume -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">INCIDENT RATE TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execRateTrendChart"></canvas></div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RESOLUTION SPEED TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execResSpeedChart"></canvas></div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">VERIFIED VS FAKE TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execVerFakeChart"></canvas></div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SOCIAL SENTIMENT SNAPSHOT</h3></div>
+                            <div style="display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:center;">
+                                <div class="chart-container" style="height:130px;"><canvas id="execSocialSentimentChart"></canvas></div>
+                                <div id="exec-social-sentiment-legend" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- EXECUTIVE SUMMARY horizontal strip -->
                     <div class="card ai-card" style="padding:16px 24px;">
                         <div style="display:flex; align-items:flex-start; gap:16px;">
@@ -5327,6 +5351,10 @@
 
                     this.renderExecTrendChart('execTrendChart');
                     this.renderExecChannelMixChart();
+                    this.renderExecRateTrendChart();
+                    this.renderExecResSpeedChart();
+                    this.renderExecVerFakeChart();
+                    this.renderExecSocialSentimentChart();
                     try { this.renderChannelDoughnut('channelDoughnut'); } catch(e){}
                     if(typeof app.renderFormPerf === 'function') app.renderFormPerf();
                     if(typeof app.renderBranchCards === 'function') app.renderBranchCards();
@@ -6448,6 +6476,171 @@
                         }
                     }
                 });
+            },
+
+            renderExecRateTrendChart() {
+                const canvasId = 'execRateTrendChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const daily = {};
+                state.p1.subs.forEach(s => { if(!daily[s.date]) daily[s.date]={s:0,i:0}; daily[s.date].s++; });
+                state.p1.incs.forEach(i => { if(!daily[i.date]) daily[i.date]={s:0,i:0}; daily[i.date].i++; });
+                const labels = Object.keys(daily).sort();
+                const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
+                const rates = labels.map(l => daily[l].s ? +((daily[l].i/daily[l].s)*100).toFixed(2) : 0);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: displayLabels, datasets: [{ label:'Incident Rate %', data: rates, borderColor:'#DC2626', backgroundColor:'#DC2626', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10}, callback:v=>v+'%'} }
+                        }
+                    }
+                });
+            },
+
+            renderExecResSpeedChart() {
+                const canvasId = 'execResSpeedChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                // Only counts incidents with a real tracked resolution timestamp
+                // (see the remarks/close workflow) — resolutions from before that
+                // was built won't have one, so early days can look sparse until
+                // more resolutions accumulate under the new tracking.
+                const byDay = {};
+                state.p1.incs.forEach(inc => {
+                    const createdTs = _parseSheetDateTime(_rawFieldExact(inc._raw, 'Created At'));
+                    if(isNaN(createdTs) || !inc.resolvedAt) return;
+                    const t = new Date(inc.resolvedAt).getTime();
+                    if(isNaN(t) || t < createdTs) return;
+                    const day = inc.date;
+                    if(!byDay[day]) byDay[day] = { sum:0, count:0 };
+                    byDay[day].sum += (t - createdTs);
+                    byDay[day].count++;
+                });
+                const labels = Object.keys(byDay).sort();
+
+                if(!labels.length){
+                    state.charts[canvasId] = null;
+                    ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+                    ctx.save();
+                    ctx.font = '12px Inter, sans-serif';
+                    ctx.fillStyle = textColor;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No resolved incidents with tracked timestamps yet', canvasEl.width/2, canvasEl.height/2);
+                    ctx.restore();
+                    return;
+                }
+
+                const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
+                const mins = labels.map(l => Math.round(byDay[l].sum/byDay[l].count/60000));
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: displayLabels, datasets: [{ label:'Avg Resolve Time (min)', data: mins, borderColor:'#D97706', backgroundColor:'#D97706', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10}} }
+                        }
+                    }
+                });
+            },
+
+            renderExecVerFakeChart() {
+                const canvasId = 'execVerFakeChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const byDay = {};
+                state.p1.incs.forEach(inc => {
+                    const day = inc.date;
+                    if(!byDay[day]) byDay[day] = { verified:0, fake:0 };
+                    if((inc.caseStatus||'verified') === 'fake') byDay[day].fake++;
+                    else byDay[day].verified++;
+                });
+                const labels = Object.keys(byDay).sort();
+                const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: displayLabels, datasets: [
+                        { label:'Verified', data: labels.map(l=>byDay[l].verified), backgroundColor:'#059669', borderRadius:4, maxBarThickness:18 },
+                        { label:'Fake', data: labels.map(l=>byDay[l].fake), backgroundColor:'#DC2626', borderRadius:4, maxBarThickness:18 },
+                    ] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{position:'top',align:'start',labels:{usePointStyle:true,color:textColor,font:{size:10}}} },
+                        scales: {
+                            x: { stacked:true, grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
+                            y: { stacked:true, beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                        }
+                    }
+                });
+            },
+
+            renderExecSocialSentimentChart() {
+                const canvasId = 'execSocialSentimentChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+
+                const mentions = (typeof slMentions !== 'undefined') ? slMentions : [];
+                const complaint = mentions.filter(m=>m.sentiment==='Complaint').length;
+                const praise = mentions.filter(m=>m.sentiment==='Praise').length;
+                const neutral = Math.max(0, mentions.length - complaint - praise);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Praise','Complaint','Neutral'],
+                        datasets: [{ data: [praise, complaint, neutral], backgroundColor:['#059669','#DC2626','#94A3B8'], borderWidth:0 }]
+                    },
+                    options: { responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{display:false}} }
+                });
+
+                const legendEl = document.getElementById('exec-social-sentiment-legend');
+                if(legendEl){
+                    const total = mentions.length;
+                    const rows = [
+                        { label:'Praise', val:praise, color:'#059669' },
+                        { label:'Complaint', val:complaint, color:'#DC2626' },
+                        { label:'Neutral', val:neutral, color:'#94A3B8' },
+                    ];
+                    legendEl.innerHTML = total ? rows.map(r => {
+                        const pct = ((r.val/total)*100).toFixed(0);
+                        return `<div style="display:flex;align-items:center;gap:8px;">
+                            <span style="width:9px;height:9px;border-radius:3px;background:${r.color};flex-shrink:0;"></span>
+                            <span style="flex:1;font-size:0.78rem;font-weight:600;color:var(--text-main);">${r.label}</span>
+                            <span style="font-size:0.78rem;font-weight:800;color:var(--text-main);">${r.val}</span>
+                            <span style="font-size:0.7rem;color:var(--text-muted);width:32px;text-align:right;">${pct}%</span>
+                        </div>`;
+                    }).join('') : `<div style="color:var(--text-muted);font-size:0.8rem;">No mentions yet.</div>`;
+                }
             },
 
             renderExecChannelMixChart() {
