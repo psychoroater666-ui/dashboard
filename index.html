@@ -4633,6 +4633,21 @@
             return `${inc.surveyForm || inc.form || ''}|${inc.branch || ''}|${ts}`;
         }
 
+        // Shared "how long did that take" formatter for incident timelines —
+        // e.g. "1m 24s", "17m 36s", "2h 5m" — used for both the review and
+        // resolution duration labels so they read the same everywhere an
+        // incident's timeline shows up.
+        function _fmtIncidentDuration(diffSec){
+            if(diffSec < 0) diffSec = 0;
+            if(diffSec < 60) return `${diffSec}s`;
+            if(diffSec < 3600){
+                const m = Math.floor(diffSec/60), s = diffSec%60;
+                return s ? `${m}m ${s}s` : `${m}m`;
+            }
+            const h = Math.floor(diffSec/3600), m = Math.floor((diffSec%3600)/60);
+            return m ? `${h}h ${m}m` : `${h}h`;
+        }
+
         // ── Notification sound ──────────────────────────────────────────────
         // Generated directly via the Web Audio API rather than an external
         // sound file — this published page's security policy blocks loading
@@ -6166,6 +6181,21 @@
                 const custPhone = _rawFieldExact(inc._raw, 'Phone Number');
                 const waNumber  = custPhone ? custPhone.replace(/[^\d]/g, '') : '';
 
+                // Review / resolution durations — both measured from the
+                // moment the incident was created, matching what the team
+                // relies on to track response times.
+                const reviewedDisp = inc.reviewedAt ? new Date(inc.reviewedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+                let reviewDurationLabel = '';
+                if(inc.reviewedAt && !isNaN(parsedTs)){
+                    const reviewedTs = new Date(inc.reviewedAt).getTime();
+                    if(!isNaN(reviewedTs) && reviewedTs >= parsedTs) reviewDurationLabel = _fmtIncidentDuration(Math.round((reviewedTs - parsedTs)/1000));
+                }
+                let resolveDurationLabel = '';
+                if(inc.resolvedAt && !isNaN(parsedTs)){
+                    const resolvedTs = new Date(inc.resolvedAt).getTime();
+                    if(!isNaN(resolvedTs) && resolvedTs >= parsedTs) resolveDurationLabel = _fmtIncidentDuration(Math.round((resolvedTs - parsedTs)/1000));
+                }
+
                 const timelineHtml = `
                     <div class="inc-tl-entry-v2">
                         <div class="inc-tl-icon-v2 inc-tl-icon-created"><i class="fas fa-triangle-exclamation"></i></div>
@@ -6174,12 +6204,20 @@
                             <div class="inc-tl-sub-v2">Submission at <strong>${inc.branch||'—'}</strong>${custName ? ` by customer <strong>${custName}</strong>` : ''} with survey <strong>${inc.surveyForm||inc.form||'—'}</strong></div>
                         </div>
                     </div>
+                    ${inc.reviewedAt ? `
+                    <div class="inc-tl-connector"></div>
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-reviewed"><i class="fas fa-eye"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
+                        </div>
+                    </div>` : ''}
                     ${isClosed ? `
                     <div class="inc-tl-connector"></div>
                     <div class="inc-tl-entry-v2">
                         <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
                         <div class="inc-tl-content-v2">
-                            <div class="inc-tl-title-v2">Incident resolved</div>
+                            <div class="inc-tl-title-v2">Incident resolved${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
                     </div>` : ''}
@@ -6297,10 +6335,12 @@
                 let reviewDurationLabel = '';
                 if(inc.reviewedAt && !isNaN(parsedTs)){
                     const reviewedTs = new Date(inc.reviewedAt).getTime();
-                    if(!isNaN(reviewedTs) && reviewedTs >= parsedTs){
-                        const diffSec = Math.round((reviewedTs - parsedTs)/1000);
-                        reviewDurationLabel = diffSec < 60 ? `${diffSec}s` : diffSec < 3600 ? `${Math.round(diffSec/60)}m` : `${Math.round(diffSec/3600)}h`;
-                    }
+                    if(!isNaN(reviewedTs) && reviewedTs >= parsedTs) reviewDurationLabel = _fmtIncidentDuration(Math.round((reviewedTs - parsedTs)/1000));
+                }
+                let resolveDurationLabel = '';
+                if(inc.resolvedAt && !isNaN(parsedTs)){
+                    const resolvedTs = new Date(inc.resolvedAt).getTime();
+                    if(!isNaN(resolvedTs) && resolvedTs >= parsedTs) resolveDurationLabel = _fmtIncidentDuration(Math.round((resolvedTs - parsedTs)/1000));
                 }
                 const timelineHtml = `
                     <div class="inc-tl-entry-v2">
@@ -6323,7 +6363,7 @@
                     <div class="inc-tl-entry-v2">
                         <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
                         <div class="inc-tl-content-v2">
-                            <div class="inc-tl-title-v2">Incident resolved</div>
+                            <div class="inc-tl-title-v2">Incident resolved${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
                     </div>` : ''}
