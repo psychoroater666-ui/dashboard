@@ -5075,6 +5075,35 @@
             async init() {
                 const _revealApp = () => document.body.classList.remove('app-loading');
                 setTimeout(_revealApp, 20000);   // safety net: never leave the skeleton stuck
+
+                // Restore whichever tab the user was on before a refresh, instead
+                // of always dropping them back on the Overview tab. Happens before
+                // the skeleton is removed, so there's no visible flash of Overview
+                // first. Session-scoped (not localStorage) so it only survives a
+                // refresh of the same tab/session, not future fresh logins.
+                try {
+                    const savedView = sessionStorage.getItem('crumble_current_view');
+                    if(savedView && savedView !== state.currentView){
+                        state.currentView = savedView;
+                        document.querySelectorAll('.topnav-link').forEach(el => el.classList.remove('active'));
+                        const navEl = Array.from(document.querySelectorAll('.topnav-link')).find(el => (el.getAttribute('onclick')||'').indexOf("'"+savedView+"'") !== -1);
+                        if(navEl) navEl.classList.add('active');
+
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening' };
+                        const subEl = document.getElementById('pageSubtitle');
+                        if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
+
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints'];
+                        const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
+                        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                        const targetView = document.getElementById(targetId);
+                        if(targetView) targetView.classList.add('active');
+
+                        const gc = document.getElementById('global-controls');
+                        if(gc) gc.style.display = savedView === 'executive' ? 'flex' : 'none';
+                    }
+                } catch(e){}
+
                 try {
                     let ok = false;
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
@@ -5210,6 +5239,7 @@
 
             navigate(viewId, elEvt) {
                 state.currentView = viewId;
+                try { sessionStorage.setItem('crumble_current_view', viewId); } catch(e){}
                 document.querySelectorAll('.topnav-link').forEach(el => el.classList.remove('active'));
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => (el.getAttribute('onclick')||'').indexOf("'"+viewId+"'") !== -1);
                 if(activeEl) activeEl.classList.add('active');
