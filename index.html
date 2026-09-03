@@ -6812,21 +6812,30 @@
 
                 state.charts[canvasId] = new Chart(ctx, {
                     type: 'bar',
-                    data: { labels: regions, datasets: [{
-                        label:'Submissions',
-                        data: data.map(d=>d.s),
-                        backgroundColor: data.map(d => d.rate<3?'#059669':(d.rate<5?'#D97706':'#DC2626')),
-                        borderRadius:6, maxBarThickness:60
-                    }] },
+                    data: { labels: regions, datasets: [
+                        {
+                            label:'Submissions',
+                            data: data.map(d=>d.s),
+                            backgroundColor: data.map(d => d.rate<3?'#059669':(d.rate<5?'#D97706':'#DC2626')),
+                            borderRadius:6, maxBarThickness:44, yAxisID:'y', order:2
+                        },
+                        {
+                            label:'Incidents',
+                            data: data.map(d=>d.i),
+                            backgroundColor:'#94A3B8',
+                            borderRadius:6, maxBarThickness:44, yAxisID:'y1', order:1
+                        }
+                    ] },
                     options: {
                         responsive:true, maintainAspectRatio:false,
                         plugins: {
-                            legend:{display:false},
-                            tooltip: { callbacks: { afterLabel: (c) => `Incident rate: ${data[c.dataIndex].rate.toFixed(2)}%` } }
+                            legend: { display:true, position:'top', align:'end', labels:{ boxWidth:9, font:{size:9}, color:textColor, usePointStyle:true, padding:10 } },
+                            tooltip: { callbacks: { afterLabel: (c) => c.datasetIndex===0 ? `Incident rate: ${data[c.dataIndex].rate.toFixed(2)}%` : '' } }
                         },
                         scales: {
                             x: { grid:{display:false}, ticks:{color:textColor,font:{size:12,weight:'700'}} },
-                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
+                            y1: { beginAtZero:true, position:'right', grid:{display:false}, ticks:{color:'#94A3B8',font:{size:9},precision:0} }
                         }
                     }
                 });
