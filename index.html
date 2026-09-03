@@ -5350,7 +5350,14 @@
                     const trendVer = document.getElementById('trend-ver');
                     if(trendVer) trendVer.innerHTML = `<span class="trend-text">${tIncs?((ver/tIncs)*100).toFixed(0):0}% of incidents</span>`;
 
-                    const branchMetrics = config.branches.map(b => {
+                    // "Unspecified" is excluded from best/worst ranking — it's
+                    // the placeholder bucket for rows missing a real branch
+                    // (see the Submissions tab's data-completeness panel), not
+                    // an actual branch. With very few rows in it, its rate can
+                    // easily land at 0% by chance, misleadingly ranking it
+                    // "best" — it still shows normally everywhere else
+                    // (tables, breakdowns), just not in this superlative.
+                    const branchMetrics = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                         const s = p1.subs.filter(x=>x.branch===b.name).length;
                         const i = p1.incs.filter(x=>x.branch===b.name).length;
                         return { name: b.name, rate: s ? (i/s)*100 : 0 };
