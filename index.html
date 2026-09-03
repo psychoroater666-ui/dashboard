@@ -1836,6 +1836,7 @@
         .inc-tl-entry-v2 { display:flex; gap:11px; align-items:flex-start; }
         .inc-tl-icon-v2 { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; }
         .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
+        .inc-tl-icon-reviewed { background:rgba(217,119,6,.1); color:#D97706; }
         .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
         .inc-tl-connector { width:2px; height:16px; background:var(--border-color); margin-left:13px; }
         .inc-tl-content-v2 { flex:1; padding-top:2px; }
@@ -2223,6 +2224,7 @@
                 <span class="topnav-link" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
                 <span class="topnav-link" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" onclick="app.navigate('incidents', this)">Incidents</span>
+                <span class="topnav-link" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" onclick="app.navigate('channels', this)">Channels</span>
                 <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
                 <span class="topnav-link" onclick="app.navigate('branches', this)">Branches</span>
@@ -2964,6 +2966,62 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- INCIDENT ANALYTICS -->
+            <div id="view-incident-analytics" class="view">
+                <div style="margin-bottom:4px;">
+                    <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);">Incident Analytics</h2>
+                    <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">Review and resolution performance across all incidents.</p>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;">
+                    <div class="card" style="padding:16px 18px;">
+                        <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Total Incidents</div>
+                        <div id="ia-kpi-total" style="font-size:1.5rem;font-weight:800;color:var(--text-main);">—</div>
+                    </div>
+                    <div class="card" style="padding:16px 18px;">
+                        <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Resolved Incidents</div>
+                        <div id="ia-kpi-resolved" style="font-size:1.5rem;font-weight:800;color:#059669;">—</div>
+                    </div>
+                    <div class="card" style="padding:16px 18px;">
+                        <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Avg Review Time</div>
+                        <div id="ia-kpi-review-time" style="font-size:1.5rem;font-weight:800;color:var(--accent-blue);">—</div>
+                    </div>
+                    <div class="card" style="padding:16px 18px;">
+                        <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Avg Resolve Time</div>
+                        <div id="ia-kpi-resolve-time" style="font-size:1.5rem;font-weight:800;color:#D97706;">—</div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:18px 20px;">
+                    <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-chart-column" style="color:var(--accent-blue);margin-right:6px;"></i> New Incidents</h3></div>
+                    <div class="chart-container" style="height:230px;"><canvas id="iaNewIncidentsChart"></canvas></div>
+                </div>
+
+                <div class="card" style="padding:18px 20px;">
+                    <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-stopwatch" style="color:var(--accent-blue);margin-right:6px;"></i> Average Review &amp; Resolve Times</h3></div>
+                    <div class="chart-container" style="height:230px;"><canvas id="iaTimesChart"></canvas></div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-map-marker-alt" style="color:var(--accent-blue);margin-right:6px;"></i> Incident Locations</h3></div>
+                        <div class="chart-container" style="height:260px;"><canvas id="iaLocationsChart"></canvas></div>
+                    </div>
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-tags" style="color:var(--accent-blue);margin-right:6px;"></i> Top Complaint Types</h3></div>
+                        <div class="chart-container" style="height:260px;"><canvas id="iaComplaintTypesChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Added on top of what was asked for — ties directly into the
+                     Valid/Fake agent-verdict system built earlier: how much of
+                     what's auto-flagged actually turns out to be real. -->
+                <div class="card" style="padding:18px 20px;">
+                    <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-scale-balanced" style="color:var(--accent-blue);margin-right:6px;"></i> Complaint Validity Breakdown</h3></div>
+                    <div class="chart-container" style="height:230px;"><canvas id="iaValidityChart"></canvas></div>
                 </div>
             </div>
 
@@ -4641,15 +4699,19 @@
                 const map = {};
                 res.forEach(row => {
                     const keys = Object.keys(row);
-                    const idKey   = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
-                    const stKey   = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
-                    const noteKey = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
-                    const valKey  = keys.find(k => k.toLowerCase().trim() === 'validity') || keys.find(k => k.toLowerCase().includes('valid'));
-                    const id   = idKey   ? String(row[idKey]||'').trim()   : '';
-                    const st   = stKey   ? String(row[stKey]||'').trim()   : '';
-                    const note = noteKey ? String(row[noteKey]||'').trim() : '';
-                    const validity = valKey ? String(row[valKey]||'').trim().toLowerCase() : '';
-                    if(id && st) map[id] = { status: st, note: note, validity: validity };
+                    const idKey       = keys.find(k => k.toLowerCase().trim() === 'id') || keys.find(k => k.toLowerCase().includes('id'));
+                    const stKey       = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
+                    const noteKey     = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
+                    const valKey      = keys.find(k => k.toLowerCase().trim() === 'validity') || keys.find(k => k.toLowerCase().includes('valid'));
+                    const reviewedKey = keys.find(k => k.toLowerCase().trim() === 'reviewed at');
+                    const resolvedKey = keys.find(k => k.toLowerCase().trim() === 'resolved at');
+                    const id         = idKey       ? String(row[idKey]||'').trim()       : '';
+                    const st         = stKey       ? String(row[stKey]||'').trim()       : '';
+                    const note       = noteKey     ? String(row[noteKey]||'').trim()     : '';
+                    const validity   = valKey      ? String(row[valKey]||'').trim().toLowerCase() : '';
+                    const reviewedAt = reviewedKey ? String(row[reviewedKey]||'').trim() : '';
+                    const resolvedAt = resolvedKey ? String(row[resolvedKey]||'').trim() : '';
+                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt };
                 });
                 return map;
             } catch(err){ console.warn('Incident resolution read-back failed:', err); return null; }
@@ -4660,12 +4722,14 @@
             (rawData.incidents||[]).forEach(inc => {
                 const entry = map[_incidentStableKey(inc)];
                 if(entry){
-                    inc.resolved = (entry.status === 'closed');
+                    if(entry.status) inc.resolved = (entry.status === 'closed');
                     if(entry.note) inc.resolutionNote = entry.note;
                     if(entry.validity){
                         inc.caseStatus = (entry.validity === 'fake') ? 'fake' : 'verified';
                         inc.agentVerdict = true;
                     }
+                    if(entry.reviewedAt) inc.reviewedAt = entry.reviewedAt;
+                    if(entry.resolvedAt) inc.resolvedAt = entry.resolvedAt;
                 }
             });
         }
@@ -4680,11 +4744,20 @@
         const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
         const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
 
-        function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote){
-            _incidentResolutionProtected[stableKey] = {
-                resolved, caseStatus, resolutionNote,
+        function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote, resolvedAt){
+            const existing = _incidentResolutionProtected[stableKey] || {};
+            _incidentResolutionProtected[stableKey] = Object.assign({}, existing, {
+                resolved, caseStatus, resolutionNote, resolvedAt,
                 expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
-            };
+            });
+        }
+
+        function _protectIncidentReview(stableKey, reviewedAt){
+            const existing = _incidentResolutionProtected[stableKey] || {};
+            _incidentResolutionProtected[stableKey] = Object.assign({}, existing, {
+                reviewedAt,
+                expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
+            });
         }
 
         function _applyIncidentResolutionProtection(){
@@ -4695,12 +4768,33 @@
             (rawData.incidents||[]).forEach(inc => {
                 const p = _incidentResolutionProtected[_incidentStableKey(inc)];
                 if(p){
-                    inc.resolved = p.resolved;
-                    inc.caseStatus = p.caseStatus;
-                    inc.agentVerdict = true;
+                    if(p.resolved !== undefined) inc.resolved = p.resolved;
+                    if(p.caseStatus !== undefined){ inc.caseStatus = p.caseStatus; inc.agentVerdict = true; }
                     if(p.resolutionNote) inc.resolutionNote = p.resolutionNote;
+                    if(p.reviewedAt) inc.reviewedAt = p.reviewedAt;
+                    if(p.resolvedAt) inc.resolvedAt = p.resolvedAt;
                 }
             });
+        }
+
+        // Fire-and-forget — this is background tracking, not something the
+        // agent explicitly triggered, so no error alert on failure.
+        function saveIncidentReview(stableKey){
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'incident_reviewed', id: stableKey })
+            })
+            .then(r => r.json())
+            .then(r => {
+                if(r.status !== 'success') return;
+                const reviewedAt = new Date().toISOString();
+                (rawData.incidents||[]).forEach(inc => {
+                    if(_incidentStableKey(inc) === stableKey) inc.reviewedAt = reviewedAt;
+                });
+                _protectIncidentReview(stableKey, reviewedAt);
+            })
+            .catch(err => console.warn('Incident review tracking failed (non-critical):', err));
         }
 
         function selectIncidentValidity(btnEl, validity){
@@ -4723,13 +4817,15 @@
             .then(r => {
                 if(r.status !== 'success') throw new Error(r.message || 'save failed');
                 const resolvedCaseStatus = (validity === 'fake') ? 'fake' : 'verified';
-                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '');
+                const resolvedAt = new Date().toISOString();
+                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt);
                 (rawData.incidents||[]).forEach(inc => {
                     if(_incidentStableKey(inc) === stableKey){
                         inc.resolved = true;
                         inc.resolutionNote = note || '';
                         inc.caseStatus = resolvedCaseStatus;
                         inc.agentVerdict = true; // this came from a human, not the automated classifier
+                        inc.resolvedAt = resolvedAt;
                     }
                 });
                 if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
@@ -4904,7 +5000,7 @@
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'resolution', 'insights', 'data', 'social', 'complaints'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -4979,6 +5075,7 @@
                 if (state.currentView === 'executive') this.renderExecutive();
                 else if (state.currentView === 'branches') this.renderBranchesView();
                 else if (state.currentView === 'incidents') this.renderIncidentsView();
+                else if (state.currentView === 'incident-analytics') this.renderIncidentAnalytics();
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
@@ -5244,6 +5341,221 @@
                 }).join('');
             },
 
+            renderIncidentAnalytics() {
+                const incs = state.p1.incs;
+                const total = incs.length;
+                const resolved = incs.filter(i => i.resolved).length;
+
+                // Real tracked durations — not estimated. Only counts pairs
+                // where both the creation timestamp and the tracked event
+                // (reviewed/resolved) are valid and in the right order.
+                const reviewDurations = [];
+                const resolveDurations = [];
+                incs.forEach(inc => {
+                    const createdTs = _parseSheetDateTime(_rawFieldExact(inc._raw, 'Created At'));
+                    if(isNaN(createdTs)) return;
+                    if(inc.reviewedAt){
+                        const t = new Date(inc.reviewedAt).getTime();
+                        if(!isNaN(t) && t >= createdTs) reviewDurations.push(t - createdTs);
+                    }
+                    if(inc.resolvedAt){
+                        const t = new Date(inc.resolvedAt).getTime();
+                        if(!isNaN(t) && t >= createdTs) resolveDurations.push(t - createdTs);
+                    }
+                });
+                const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+                const avgReviewMs = avg(reviewDurations);
+                const avgResolveMs = avg(resolveDurations);
+                const fmtDuration = (ms) => {
+                    if(ms === null) return '—';
+                    const mins = Math.round(ms / 60000);
+                    if(mins < 60) return `${mins}m`;
+                    const hrs = Math.floor(mins / 60);
+                    if(hrs < 24) return `${hrs}h ${mins % 60}m`;
+                    const days = Math.floor(hrs / 24);
+                    return `${days}d ${hrs % 24}h`;
+                };
+
+                const totalEl = document.getElementById('ia-kpi-total');
+                if(totalEl) totalEl.textContent = total.toLocaleString();
+                const resEl = document.getElementById('ia-kpi-resolved');
+                if(resEl) resEl.textContent = resolved.toLocaleString();
+                const rtEl = document.getElementById('ia-kpi-review-time');
+                if(rtEl) rtEl.textContent = fmtDuration(avgReviewMs);
+                const stEl = document.getElementById('ia-kpi-resolve-time');
+                if(stEl) stEl.textContent = fmtDuration(avgResolveMs);
+
+                this.renderIANewIncidentsChart(incs);
+                this.renderIATimesChart(incs);
+                this.renderIALocationsChart(incs);
+                this.renderIAComplaintTypesChart(incs);
+                this.renderIAValidityChart(incs);
+            },
+
+            renderIANewIncidentsChart(incs) {
+                const canvasId = 'iaNewIncidentsChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const daily = {};
+                incs.forEach(i => { daily[i.date] = (daily[i.date]||0) + 1; });
+                const labels = Object.keys(daily).sort();
+                const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: displayLabels, datasets: [{ label:'New Incidents', data: labels.map(l=>daily[l]), backgroundColor:'#EF4444', borderRadius:5, maxBarThickness:28 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} }
+                        }
+                    }
+                });
+            },
+
+            renderIATimesChart(incs) {
+                const canvasId = 'iaTimesChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const byDay = {};
+                incs.forEach(inc => {
+                    const createdTs = _parseSheetDateTime(_rawFieldExact(inc._raw, 'Created At'));
+                    if(isNaN(createdTs)) return;
+                    const day = inc.date;
+                    if(!byDay[day]) byDay[day] = { reviewSum:0, reviewCount:0, resolveSum:0, resolveCount:0 };
+                    if(inc.reviewedAt){
+                        const t = new Date(inc.reviewedAt).getTime();
+                        if(!isNaN(t) && t>=createdTs){ byDay[day].reviewSum += (t-createdTs); byDay[day].reviewCount++; }
+                    }
+                    if(inc.resolvedAt){
+                        const t = new Date(inc.resolvedAt).getTime();
+                        if(!isNaN(t) && t>=createdTs){ byDay[day].resolveSum += (t-createdTs); byDay[day].resolveCount++; }
+                    }
+                });
+                const labels = Object.keys(byDay).sort();
+                const displayLabels = labels.map(l => { const d = new Date(l+'T00:00:00'); return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`; });
+                const reviewMins = labels.map(l => byDay[l].reviewCount ? Math.round(byDay[l].reviewSum/byDay[l].reviewCount/60000) : null);
+                const resolveMins = labels.map(l => byDay[l].resolveCount ? Math.round(byDay[l].resolveSum/byDay[l].resolveCount/60000) : null);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: displayLabels, datasets: [
+                        { label:'Avg Review Time (min)', data: reviewMins, borderColor:'#3B5BDB', backgroundColor:'#3B5BDB', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
+                        { label:'Avg Resolve Time (min)', data: resolveMins, borderColor:'#D97706', backgroundColor:'#D97706', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
+                    ] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{position:'top',align:'start',labels:{usePointStyle:true,color:textColor,font:{size:11}}} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}} }
+                        }
+                    }
+                });
+            },
+
+            renderIALocationsChart(incs) {
+                const canvasId = 'iaLocationsChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const byBranch = {};
+                incs.forEach(i => { const b = i.branch||'Unspecified'; byBranch[b] = (byBranch[b]||0)+1; });
+                const sorted = Object.entries(byBranch).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:22 }] },
+                    options: {
+                        indexAxis: 'y',
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} }
+                        }
+                    }
+                });
+            },
+
+            renderIAComplaintTypesChart(incs) {
+                const canvasId = 'iaComplaintTypesChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const byType = {};
+                incs.forEach(i => {
+                    const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(i) : {title:(i.complaintType||'Other')};
+                    byType[cat.title] = (byType[cat.title]||0)+1;
+                });
+                const sorted = Object.entries(byType).sort((a,b)=>b[1]-a[1]).slice(0,8);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#D97706', borderRadius:5, maxBarThickness:22 }] },
+                    options: {
+                        indexAxis: 'y',
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} }
+                        }
+                    }
+                });
+            },
+
+            renderIAValidityChart(incs) {
+                const canvasId = 'iaValidityChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                let agentValid = 0, agentFake = 0, notReviewed = 0;
+                incs.forEach(i => {
+                    if(i.agentVerdict){ if(i.caseStatus === 'fake') agentFake++; else agentValid++; }
+                    else notReviewed++;
+                });
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Agent Confirmed Valid', 'Agent Flagged Fake', 'Not Yet Agent-Reviewed'],
+                        datasets: [{ data: [agentValid, agentFake, notReviewed], backgroundColor: ['#059669','#DC2626','#94A3B8'], borderWidth:0 }]
+                    },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{position:'right', labels:{usePointStyle:true,color:textColor,font:{size:11}}} }
+                    }
+                });
+            },
+
             renderIncidentsView() {
                 // No sort was being applied at all here — this shows incidents
                 // in raw sheet order (oldest-appended-first), not just a
@@ -5389,6 +5701,7 @@
             openIncidentDetailModalDirect(inc) {
                 window._openIncidentModalKey = _incidentStableKey(inc);
                 window._selectedIncidentValidity = null; // reset per-incident — don't carry over a selection from a previously-viewed incident
+                if(!inc.reviewedAt) saveIncidentReview(_incidentStableKey(inc));
                 const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
                 const parsedTs = _parseSheetDateTime(rawCreatedAt);
                 const dateStr = !isNaN(parsedTs)
@@ -5521,7 +5834,16 @@
                 const custPhone = _rawFieldExact(inc._raw, 'Phone Number');
                 const waNumber  = custPhone ? custPhone.replace(/[^\d]/g, '') : '';
 
-                // Timeline: created (always), resolved (only if closed)
+                // Timeline: created (always), reviewed (once tracked), resolved (only if closed)
+                const reviewedDisp = inc.reviewedAt ? new Date(inc.reviewedAt).toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+                let reviewDurationLabel = '';
+                if(inc.reviewedAt && !isNaN(parsedTs)){
+                    const reviewedTs = new Date(inc.reviewedAt).getTime();
+                    if(!isNaN(reviewedTs) && reviewedTs >= parsedTs){
+                        const diffSec = Math.round((reviewedTs - parsedTs)/1000);
+                        reviewDurationLabel = diffSec < 60 ? `${diffSec}s` : diffSec < 3600 ? `${Math.round(diffSec/60)}m` : `${Math.round(diffSec/3600)}h`;
+                    }
+                }
                 const timelineHtml = `
                     <div class="inc-tl-entry-v2">
                         <div class="inc-tl-icon-v2 inc-tl-icon-created"><i class="fas fa-triangle-exclamation"></i></div>
@@ -5530,6 +5852,14 @@
                             <div class="inc-tl-sub-v2">Submission at <strong>${inc.branch||'—'}</strong>${custName ? ` by customer <strong>${custName}</strong>` : ''} with survey <strong>${inc.surveyForm||inc.form||'—'}</strong></div>
                         </div>
                     </div>
+                    ${inc.reviewedAt ? `
+                    <div class="inc-tl-connector"></div>
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-reviewed"><i class="fas fa-eye"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
+                        </div>
+                    </div>` : ''}
                     ${isClosed ? `
                     <div class="inc-tl-connector"></div>
                     <div class="inc-tl-entry-v2">
