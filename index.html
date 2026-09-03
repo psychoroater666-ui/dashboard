@@ -3377,7 +3377,20 @@
                     </div>
                 </div>
 
-                <div class="card" style="padding:20px 24px;">
+                <!-- Region coverage diagnostic — collapsed by default, only
+                     shows when at least one branch is actually unmapped. -->
+                <div class="card" id="ct-region-gap-card" style="display:none; border-left:4px solid #D97706; padding:12px 18px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleRegionGapPanel()">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:var(--text-main);">
+                            <i class="fas fa-map-location-dot" style="color:#D97706;"></i>
+                            <span id="ct-region-gap-label">Region coverage</span>
+                        </div>
+                        <i class="fas fa-chevron-down" id="ct-region-gap-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
+                    </div>
+                    <div id="ct-region-gap-details" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); font-size:0.8rem;"></div>
+                </div>
+
+                <div class="card" style="padding:14px 18px;">
                     <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">CATEGORY TREND</h3><span class="text-xs text-muted" id="ct-chart-note" style="font-weight:600;font-size:0.7rem;">Top categories across the 3 comparison windows</span></div>
                     <div class="chart-container" style="height:220px;margin-top:8px;"><canvas id="ctTrendChart"></canvas></div>
                 </div>
@@ -4331,6 +4344,15 @@
         function toggleExcludedPanel() {
             const details = document.getElementById('submissions-excluded-details');
             const chevron = document.getElementById('submissions-excluded-chevron');
+            if(!details) return;
+            const isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : '';
+            if(chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+
+        function toggleRegionGapPanel() {
+            const details = document.getElementById('ct-region-gap-details');
+            const chevron = document.getElementById('ct-region-gap-chevron');
             if(!details) return;
             const isOpen = details.style.display !== 'none';
             details.style.display = isOpen ? 'none' : '';
@@ -8676,7 +8698,35 @@
         app.renderComplaintTopography = function(){
             const ledgerEl = document.getElementById('ct-ledger');
             if(!ledgerEl) return;
-            const incs = rawData.incidents || [];
+            const incs = state.p1.incs || [];
+
+            // Region coverage check — config.branches accumulates every real
+            // branch name seen in the live data (via _ensure), each with a
+            // .region already assigned at that point. Anything that landed on
+            // "Other" fell through both the static branch list and
+            // REGION_OVERRIDES — this surfaces exactly which ones, so it's a
+            // verified answer instead of a guess.
+            const gapCard = document.getElementById('ct-region-gap-card');
+            if(gapCard){
+                const unmapped = config.branches.filter(b => b.region === 'Other').map(b => b.name);
+                if(unmapped.length){
+                    gapCard.style.display = '';
+                    const labelEl = document.getElementById('ct-region-gap-label');
+                    if(labelEl) labelEl.textContent = `Region coverage — ${unmapped.length} branch${unmapped.length===1?'':'es'} not mapped to North/South/Central (click to expand)`;
+                    const detailsEl = document.getElementById('ct-region-gap-details');
+                    if(detailsEl){
+                        detailsEl.innerHTML = `
+                            <div style="margin-bottom:8px;">These branches are showing up in your live data but aren't assigned to North, South, or Central — they're currently falling into "Other" everywhere region grouping is used:</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                                ${unmapped.map(n => `<span style="background:var(--bg-light);border-radius:6px;padding:4px 10px;font-weight:700;color:var(--text-main);">${n}</span>`).join('')}
+                            </div>
+                            <div style="margin-top:8px;color:var(--text-muted);">Tell me which region each of these belongs to and I'll add them to the mapping.</div>
+                        `;
+                    }
+                } else {
+                    gapCard.style.display = 'none';
+                }
+            }
 
             // Classify + attach a parsed date
             const parse = d => { const dt = new Date(d); return isNaN(dt) ? null : dt; };
