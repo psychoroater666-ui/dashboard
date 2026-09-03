@@ -6742,23 +6742,51 @@
                 const gridColor = isDark ? '#334155' : '#F1F5F9';
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
-                const hourCounts = new Array(24).fill(0);
-                state.p1.subs.forEach(s => {
-                    const ts = _parseSheetDateTime(_rawFieldExact(s._raw, 'Created At'));
-                    if(isNaN(ts)) return;
-                    hourCounts[new Date(ts).getHours()]++;
-                });
+                const hourCountsOf = (list) => {
+                    const counts = new Array(24).fill(0);
+                    (list||[]).forEach(s => {
+                        const ts = _parseSheetDateTime(_rawFieldExact(s._raw, 'Created At'));
+                        if(isNaN(ts)) return;
+                        counts[new Date(ts).getHours()]++;
+                    });
+                    return counts;
+                };
+
+                const hourCounts = hourCountsOf(state.p1.subs);
+                const incidentHourCounts = hourCountsOf(state.p1.incs);
+                const prevHourCounts = state.p2 ? hourCountsOf(state.p2.subs) : null;
                 const labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
+
+                const datasets = [
+                    { type:'bar', label:'Submissions', data: hourCounts, backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' }
+                ];
+                if(prevHourCounts && prevHourCounts.some(v=>v>0)){
+                    datasets.push({
+                        type:'line', label:'Previous period', data: prevHourCounts,
+                        borderColor: isDark ? '#64748B' : '#B9C2D0', borderWidth:2, borderDash:[4,3],
+                        pointRadius:0, tension:0.3, fill:false, order:1, yAxisID:'y'
+                    });
+                }
+                datasets.push({
+                    type:'line', label:'Incidents', data: incidentHourCounts,
+                    borderColor:'#DC2626', backgroundColor:'#DC2626', borderWidth:2,
+                    pointRadius:2, pointHoverRadius:4, pointBackgroundColor:'#DC2626',
+                    tension:0.3, fill:false, order:0, yAxisID:'y1'
+                });
 
                 state.charts[canvasId] = new Chart(ctx, {
                     type: 'bar',
-                    data: { labels, datasets: [{ label:'Submissions', data: hourCounts, backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:16 }] },
+                    data: { labels, datasets },
                     options: {
                         responsive:true, maintainAspectRatio:false,
-                        plugins: { legend:{display:false} },
+                        interaction: { mode:'index', intersect:false },
+                        plugins: {
+                            legend: { display:true, position:'top', align:'end', labels:{ boxWidth:9, font:{size:9}, color:textColor, usePointStyle:true, padding:10 } }
+                        },
                         scales: {
                             x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
-                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
+                            y1: { beginAtZero:true, position:'right', grid:{display:false}, ticks:{color:'#DC2626',font:{size:9},precision:0} }
                         }
                     }
                 });
