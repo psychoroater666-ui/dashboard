@@ -8708,7 +8708,12 @@
             // verified answer instead of a guess.
             const gapCard = document.getElementById('ct-region-gap-card');
             if(gapCard){
-                const unmapped = config.branches.filter(b => b.region === 'Other').map(b => b.name);
+                // "Unspecified" is deliberately excluded — it's not a real
+                // branch at all, just the placeholder bucket for rows that
+                // arrived with no Location value (see the Submissions tab's
+                // data-completeness panel). It has no real-world region to
+                // assign, so flagging it here would be a false alarm every time.
+                const unmapped = config.branches.filter(b => b.region === 'Other' && b.name !== 'Unspecified').map(b => b.name);
                 if(unmapped.length){
                     gapCard.style.display = '';
                     const labelEl = document.getElementById('ct-region-gap-label');
