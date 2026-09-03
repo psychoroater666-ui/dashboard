@@ -3757,7 +3757,16 @@
             const to = setTimeout(() => finish(null), 15000);
             try {
                 if (typeof Papa === 'undefined') { finish(null); return; }
-                Papa.parse(url, { download:true, header:true, skipEmptyLines:true,
+                // Cache-bust every request. Google's Publish-to-Web CSV export
+                // (and the browser's own HTTP cache) can otherwise serve a
+                // slightly stale or inconsistent snapshot on one request that
+                // only "catches up" a request or two later — this is what
+                // caused KPI counts to briefly jump backward then forward
+                // again across separate page refreshes. A unique query
+                // parameter on every fetch forces a genuinely fresh read
+                // every single time instead of a cached one.
+                const bustUrl = url + (url.indexOf('?') === -1 ? '?' : '&') + '_cb=' + Date.now();
+                Papa.parse(bustUrl, { download:true, header:true, skipEmptyLines:true,
                     complete:r=>finish(r.data.filter(row=>Object.values(row).some(v=>String(v).trim()!==''))),
                     error:()=>finish(null) });
             } catch(e){ finish(null); }
