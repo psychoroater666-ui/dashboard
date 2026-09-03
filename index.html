@@ -6300,7 +6300,11 @@
             },
 
             renderInsights() {
-                const bStats = config.branches.map(b => {
+                // Same exclusion as the Overview KPI cards — "Unspecified" is
+                // a data-quality placeholder, not a real branch, and letting
+                // it rank here would generate genuinely bad advice like
+                // "escalate to branch manager" for a branch that doesn't exist.
+                const bStats = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                     const s = state.p1.subs.filter(x=>x.branch===b.name).length;
                     const i = state.p1.incs.filter(x=>x.branch===b.name).length;
                     return { name: b.name, rate: s ? (i/s)*100 : 0 };
