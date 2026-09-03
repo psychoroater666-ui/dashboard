@@ -4001,21 +4001,43 @@
             // branch -> region lookup so the Region filter actually does something
             const _regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
 
-            const filter = (ds, dS, dE) => {
+            // If the selected period runs through today, today is necessarily a
+            // partial day (only whatever's happened so far) — comparing it
+            // against a full previous day always looks artificially worse than
+            // reality. When that's the case, the comparison period's last day
+            // is capped to the same time-of-day as right now, so it's "yesterday
+            // up to 1:50pm" vs "today up to 1:50pm", not "yesterday's whole day".
+            const now = new Date();
+            const nowTimeMs = now.getHours()*3600000 + now.getMinutes()*60000 + now.getSeconds()*1000;
+            const isViewingToday = (_fmtDate(end) === _fmtDate(now));
+
+            // Needs each item's real precise timestamp, not just its day — the
+            // old version compared everything at midnight, which can't tell
+            // "8am" from "11pm" and so couldn't support a time-of-day cutoff.
+            const getItemTs = (item) => {
+                const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
+                if(!isNaN(t)) return t;
+                return item.date ? new Date(item.date + 'T12:00:00').getTime() : 0;
+            };
+
+            const filter = (ds, dS, dE, capEndToNow) => {
+                const s = new Date(dS); s.setHours(0,0,0,0);
+                const e = new Date(dE);
+                if(capEndToNow){ e.setHours(0,0,0,0); e.setTime(e.getTime() + nowTimeMs); }
+                else { e.setHours(23,59,59,999); }
+                const sTs = s.getTime(), eTs = e.getTime();
                 return ds.filter(item => {
-                    const d = new Date(item.date); d.setHours(0,0,0,0);
-                    const s = new Date(dS); s.setHours(0,0,0,0);
-                    const e = new Date(dE); e.setHours(23,59,59,999);
-                    return d >= s && d <= e && 
+                    const itemTs = getItemTs(item);
+                    return itemTs >= sTs && itemTs <= eTs &&
                            (region === 'all' || _regionOf(item.branch) === region) &&
-                           (branch === 'all' || item.branch === branch) && 
+                           (branch === 'all' || item.branch === branch) &&
                            (channel === 'all' || item.channel === channel) &&
                            (survey === 'all' || item.surveyForm === survey);
                 });
             };
 
-            state.p1 = { subs: filter(rawData.submissions, start, end), incs: filter(rawData.incidents, start, end) };
-            state.p2 = { subs: filter(rawData.submissions, p2Start, p2End), incs: filter(rawData.incidents, p2Start, p2End) };
+            state.p1 = { subs: filter(rawData.submissions, start, end, isViewingToday), incs: filter(rawData.incidents, start, end, isViewingToday) };
+            state.p2 = { subs: filter(rawData.submissions, p2Start, p2End, isViewingToday), incs: filter(rawData.incidents, p2Start, p2End, isViewingToday) };
         }
 
         // ==========================================
