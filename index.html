@@ -3372,6 +3372,11 @@
                 </div>
 
                 <div class="card" style="padding:20px 24px;">
+                    <div class="section-header"><h3>CATEGORY TREND</h3><span class="text-xs text-muted" id="ct-chart-note" style="font-weight:600;">Top categories across the 3 comparison windows</span></div>
+                    <div class="chart-container" style="height:260px;margin-top:10px;"><canvas id="ctTrendChart"></canvas></div>
+                </div>
+
+                <div class="card" style="padding:20px 24px;">
                     <div class="section-header"><h3>CATEGORY LEDGER</h3><span class="text-xs text-muted" id="ct-ledger-note" style="font-weight:600;"></span></div>
                     <div id="ct-ledger" class="ci-list" style="margin-top:10px;"></div>
                 </div>
@@ -8625,6 +8630,43 @@
             return CI_OTHER;
         }
 
+        app.renderCTTrendChart = function(rows, labels){
+            const canvasId = 'ctTrendChart';
+            if (state.charts[canvasId]) state.charts[canvasId].destroy();
+            const canvasEl = document.getElementById(canvasId);
+            if(!canvasEl) return;
+            const ctx = canvasEl.getContext('2d');
+            const isDark = document.body.classList.contains('dark-theme');
+            const gridColor = isDark ? '#334155' : '#F1F5F9';
+            const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+            if(!rows.length){
+                state.charts[canvasId] = null;
+                ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+                return;
+            }
+
+            state.charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: rows.map(r => r.cat.title),
+                    datasets: [
+                        { label: labels[0], data: rows.map(r => r.months[0]), backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:20 },
+                        { label: labels[1], data: rows.map(r => r.months[1]), backgroundColor:'#94A3B8', borderRadius:4, maxBarThickness:20 },
+                        { label: labels[2], data: rows.map(r => r.months[2]), backgroundColor:'#CBD5E1', borderRadius:4, maxBarThickness:20 },
+                    ]
+                },
+                options: {
+                    responsive:true, maintainAspectRatio:false,
+                    plugins: { legend:{position:'top',align:'start',labels:{usePointStyle:true,color:textColor,font:{size:11}}} },
+                    scales: {
+                        x: { grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
+                        y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} }
+                    }
+                }
+            });
+        };
+
         app.renderComplaintTopography = function(){
             const ledgerEl = document.getElementById('ct-ledger');
             if(!ledgerEl) return;
@@ -8675,6 +8717,8 @@
 
             let rows = Object.values(agg).filter(r => r.months.some(v=>v));
             rows.sort((a,b) => b.months[0] - a.months[0] || b.months[1] - a.months[1]);
+
+            this.renderCTTrendChart(rows.filter(r => r.cat.id !== 'other').slice(0, 7), monthLabels);
 
             // ── LEDGER (ranked cards) ──
             const realRows = rows.filter(r => r.cat.id !== 'other');
