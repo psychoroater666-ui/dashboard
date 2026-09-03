@@ -4700,6 +4700,10 @@
             if(!_incidentAlertQueue.length){ _incidentAlertShowing = false; return; }
             _incidentAlertShowing = true;
             const inc = _incidentAlertQueue.shift();
+            // Someone may have already reviewed this on another device while it
+            // was waiting in this device's queue — skip straight to the next one.
+            const _latest = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _incidentStableKey(inc));
+            if(_latest && _latest.reviewedAt){ showNextIncidentAlert(); return; }
             _lastAlertedIncidentKey = _incidentStableKey(inc);
             _lastAlertedIncident = inc;
             startRepeatingIncidentSound();
@@ -4731,6 +4735,31 @@
             stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
             showNextIncidentAlert();
+        }
+
+        // Cross-device sync: if the incident currently ringing/showing on THIS
+        // device was already reviewed on another device (picked up via the
+        // normal 20s sheet poll -> applyIncidentResolutions -> inc.reviewedAt),
+        // stop the sound and dismiss the popup here too instead of leaving it
+        // ringing until this device's user separately acts on it.
+        function _syncIncidentAlertReviewState(){
+            if(_incidentAlertShowing && _lastAlertedIncidentKey){
+                const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _lastAlertedIncidentKey);
+                if(inc && inc.reviewedAt){
+                    stopRepeatingIncidentSound();
+                    const modal = document.getElementById('incident-alert-modal');
+                    if(modal) modal.style.display = 'none';
+                    _incidentAlertShowing = false;
+                    showNextIncidentAlert();
+                    return;
+                }
+            }
+            if(_incidentAlertQueue.length){
+                _incidentAlertQueue = _incidentAlertQueue.filter(inc => {
+                    const latest = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _incidentStableKey(inc));
+                    return !(latest && latest.reviewedAt);
+                });
+            }
         }
 
         function viewIncidentFromAlert(){
@@ -5068,6 +5097,7 @@
                                 if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
+                                _syncIncidentAlertReviewState();
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
                                 _lsc=ns; _lic=ni;
