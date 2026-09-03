@@ -2235,11 +2235,11 @@
                 <span class="topnav-link" onclick="app.navigate('incidents', this)">Incidents</span>
                 <span class="topnav-link" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" onclick="app.navigate('channels', this)">Channels</span>
-                <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
+                <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" onclick="app.navigate('branches', this)">Branches</span>
+                <span class="topnav-link" onclick="app.navigate('submissions', this)">Submissions</span>
                 <span class="topnav-link" onclick="app.navigate('forms', this)">Forms</span>
                 <span class="topnav-link" onclick="app.navigate('products', this)">Products</span>
-                <span class="topnav-link" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
@@ -2403,6 +2403,15 @@
                                 </select>
                             </div>
                             <div class="chart-container" style="height: 230px;"><canvas id="execTrendChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Channel mix — how submission volume splits across Dine In / Delivery / Call Center -->
+                    <div class="card" style="padding:20px;">
+                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">CHANNEL MIX</h3></div>
+                        <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;">
+                            <div class="chart-container" style="height:200px;"><canvas id="execChannelMixChart"></canvas></div>
+                            <div id="exec-channel-mix-legend" style="display:flex;flex-direction:column;gap:10px;"></div>
                         </div>
                     </div>
 
@@ -2850,6 +2859,16 @@
             <!-- ================= GENERIC VIEWS ================= -->
             <!-- BRANCHES -->
             <div id="view-branches" class="view">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.9rem;">Submissions by Branch</h3></div>
+                        <div class="chart-container" style="height:240px;"><canvas id="branchSubsChart"></canvas></div>
+                    </div>
+                    <div class="card" style="padding:18px 20px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.9rem;">Incident Rate by Branch</h3><span class="text-xs text-muted" style="font-weight:600;">Worst to best</span></div>
+                        <div class="chart-container" style="height:240px;"><canvas id="branchIncRateChart"></canvas></div>
+                    </div>
+                </div>
                 <div class="card">
                     <div class="section-header"><h3>Current Branch Performance Matrix</h3></div>
                     <div class="table-wrapper">
@@ -3024,6 +3043,10 @@
 
             <!-- RESOLUTION -->
             <div id="view-resolution" class="view">
+                <div class="card" style="padding:18px 20px;">
+                    <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.9rem;">Resolution Rate by Branch</h3><span class="text-xs text-muted" style="font-weight:600;">Ranked, worst to best</span></div>
+                    <div class="chart-container" style="height:260px;"><canvas id="resRateChart"></canvas></div>
+                </div>
                 <div class="card" style="padding:0;overflow:hidden;">
                     <div style="padding:18px 24px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
                         <div style="display:flex;align-items:center;gap:12px;">
@@ -3505,6 +3528,7 @@
                      specifically, since the detail log + export above replace it there. -->
                 <div class="card" id="universal-metrics-card">
                     <div class="section-header"><h3 id="analytics-current-title">Current Category Metrics</h3></div>
+                    <div class="chart-container" style="height:220px;margin:6px 0 14px;"><canvas id="univCurrChart"></canvas></div>
                     <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
                 </div>
 
@@ -5330,6 +5354,7 @@
                     `).join('');
 
                     this.renderExecTrendChart('execTrendChart');
+                    this.renderExecChannelMixChart();
                     try { this.renderChannelDoughnut('channelDoughnut'); } catch(e){}
                     if(typeof app.renderFormPerf === 'function') app.renderFormPerf();
                     if(typeof app.renderBranchCards === 'function') app.renderBranchCards();
@@ -5400,6 +5425,16 @@
             },
 
             renderBranchesView() {
+                const branchStats = config.branches.map(b => {
+                    const s = state.p1.subs.filter(x=>x.branch===b.name);
+                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const sL = s.length, iL = i.length;
+                    const rate = sL ? (iL/sL)*100 : 0;
+                    return { name: b.name, subs: sL, rate };
+                });
+                this.renderBranchSubsChart(branchStats);
+                this.renderBranchIncRateChart(branchStats);
+
                 document.querySelector('#branch-master-table tbody').innerHTML = config.branches.map(b => {
                     const s = state.p1.subs.filter(x=>x.branch===b.name);
                     const i = state.p1.incs.filter(x=>x.branch===b.name);
@@ -5424,6 +5459,61 @@
                         </tr>
                     `;
                 }).join('');
+            },
+
+            renderBranchSubsChart(branchStats) {
+                const canvasId = 'branchSubsChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                const sorted = branchStats.slice().sort((a,b)=>b.subs-a.subs);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(s=>s.name), datasets: [{ label:'Submissions', data: sorted.map(s=>s.subs), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:22 }] },
+                    options: {
+                        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:10.5}} }
+                        }
+                    }
+                });
+            },
+
+            renderBranchIncRateChart(branchStats) {
+                const canvasId = 'branchIncRateChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                const sorted = branchStats.slice().sort((a,b)=>b.rate-a.rate);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(s=>s.name), datasets: [{
+                        label:'Incident Rate %',
+                        data: sorted.map(s=>+s.rate.toFixed(2)),
+                        backgroundColor: sorted.map(s => s.rate<3?'#059669':(s.rate<5?'#D97706':'#DC2626')),
+                        borderRadius:5, maxBarThickness:22
+                    }] },
+                    options: {
+                        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}, callback:v=>v+'%'} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:10.5}} }
+                        }
+                    }
+                });
             },
 
             renderIncidentAnalytics() {
@@ -5778,6 +5868,31 @@
                 }
             },
 
+            renderUnivCurrChart(entityStats, label) {
+                const canvasId = 'univCurrChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                const sorted = entityStats.slice().sort((a,b)=>b.s-a.s);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(x=>x.ent), datasets: [{ label:`Submissions by ${label}`, data: sorted.map(x=>x.s), backgroundColor:'#3B5BDB', borderRadius:5, maxBarThickness:32 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11},precision:0} }
+                        }
+                    }
+                });
+            },
+
             openIncidentDetailModal(idx) {
                 const inc = (this._incFiltered || [])[idx];
                 if(!inc) return;
@@ -6053,6 +6168,14 @@
             },
 
             renderResolution() {
+                const branchRates = config.branches.map(b => {
+                    const i = state.p1.incs.filter(x=>x.branch===b.name);
+                    const res = i.filter(x=>x.resolved).length;
+                    const rate = i.length ? (res/i.length)*100 : 100;
+                    return { name: b.name, total: i.length, rate };
+                });
+                this.renderResRateChart(branchRates);
+
                 document.querySelector('#res-current-table tbody').innerHTML = config.branches.map(b => {
                     const i = state.p1.incs.filter(x=>x.branch===b.name);
                     const res = i.filter(x=>x.resolved).length;
@@ -6068,6 +6191,36 @@
                         </tr>
                     `;
                 }).join('');
+            },
+
+            renderResRateChart(branchRates) {
+                const canvasId = 'resRateChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                const sorted = branchRates.slice().sort((a,b)=>a.rate-b.rate);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: sorted.map(s=>s.name), datasets: [{
+                        label:'Resolution Rate %',
+                        data: sorted.map(s=>+s.rate.toFixed(1)),
+                        backgroundColor: sorted.map(s => s.rate>=70?'#059669':(s.rate>=50?'#D97706':'#DC2626')),
+                        borderRadius:5, maxBarThickness:22
+                    }] },
+                    options: {
+                        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, max:100, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}, callback:v=>v+'%'} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:10.5}} }
+                        }
+                    }
+                });
             },
 
             renderInsights() {
@@ -6116,12 +6269,16 @@
 
                 document.getElementById('analytics-current-title').innerText = `Current ${titleMap[view]} Breakdown`;
                 document.getElementById('univ-curr-thead').innerHTML = `<tr><th>${key.toUpperCase()}</th><th>Current Submissions</th><th>Current Incidents</th><th>Current Rate</th></tr>`;
-                document.getElementById('univ-curr-tbody').innerHTML = entities.map(ent => {
-                    const s = state.p1.subs.filter(x=>x[key]===ent).length;
-                    const i = state.p1.incs.filter(x=>x[key]===ent).length;
+                const entityStats = entities.map(ent => ({
+                    ent,
+                    s: state.p1.subs.filter(x=>x[key]===ent).length,
+                    i: state.p1.incs.filter(x=>x[key]===ent).length
+                }));
+                document.getElementById('univ-curr-tbody').innerHTML = entityStats.map(({ent,s,i}) => {
                     const rate = s ? ((i/s)*100).toFixed(2) + '%' : `${i} cases`;
                     return `<tr><td class="font-semibold">${ent}</td><td>${s.toLocaleString()}</td><td>${i.toLocaleString()}</td><td>${rate}</td></tr>`;
                 }).join('');
+                if(view !== 'submissions') this.renderUnivCurrChart(entityStats, titleMap[view]);
 
                 // Detailed, row-level submissions log — respects the same global
                 // filters (date range, branch, region, channel) as the breakdown
@@ -6256,6 +6413,44 @@
                     } else {
                         exportCard.style.display = 'none';
                     }
+                }
+            },
+
+            renderExecChannelMixChart() {
+                const canvasId = 'execChannelMixChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const byForm = {};
+                state.p1.subs.forEach(s => { const f = s.surveyForm || s.form || 'Other'; byForm[f] = (byForm[f]||0)+1; });
+                const labels = Object.keys(byForm);
+                const values = labels.map(l => byForm[l]);
+                const total = values.reduce((a,b)=>a+b,0);
+                const colors = ['#3B5BDB','#059669','#D97706','#8B5CF6','#DC2626'];
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_,i)=>colors[i%colors.length]), borderWidth:0 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false, cutout:'68%',
+                        plugins: { legend:{display:false} }
+                    }
+                });
+
+                const legendEl = document.getElementById('exec-channel-mix-legend');
+                if(legendEl){
+                    legendEl.innerHTML = labels.map((l,i) => {
+                        const pct = total ? ((byForm[l]/total)*100).toFixed(1) : '0.0';
+                        return `<div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]};flex-shrink:0;"></span>
+                            <span style="flex:1;font-size:0.82rem;font-weight:600;color:var(--text-main);">${l}</span>
+                            <span style="font-size:0.85rem;font-weight:800;color:var(--text-main);">${byForm[l].toLocaleString()}</span>
+                            <span style="font-size:0.75rem;color:var(--text-muted);width:44px;text-align:right;">${pct}%</span>
+                        </div>`;
+                    }).join('') || `<div style="color:var(--text-muted);font-size:0.85rem;">No data in the current filter.</div>`;
                 }
             },
 
