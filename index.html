@@ -1825,36 +1825,38 @@
         .inc-detail-row > td { background: var(--bg-light); padding: 0 !important; }
         .inc-detail-inner { padding: 16px 22px; display: grid; grid-template-columns: repeat(auto-fill, 190px); justify-content: start; gap: 14px 22px; }
         /* Incident detail v2 — matches Harlyy's own layout: status pill,
-           timeline (created → resolved), remarks section, right sidebar. */
-        .inc-detail-v2 { padding: 22px 26px; }
-        .inc-status-badge-v2 { display:inline-block; padding:4px 13px; border-radius:20px; font-size:0.72rem; font-weight:700; margin-bottom:18px; }
+           timeline (created → resolved), remarks section, right sidebar.
+           Compact sizing throughout. */
+        .inc-detail-v2 { padding: 4px 0; }
+        .ivm-status-badge { display:flex; align-items:center; }
+        .inc-status-badge-v2 { display:inline-block; padding:3px 11px; border-radius:20px; font-size:0.68rem; font-weight:700; }
         .inc-status-badge-v2.inc-status-resolved { background:rgba(5,150,105,.12); color:#059669; }
         .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#D97706; }
-        .inc-columns-v2 { display:grid; grid-template-columns: 1fr 300px; gap:30px; align-items:start; }
-        .inc-tl-entry-v2 { display:flex; gap:14px; align-items:flex-start; }
-        .inc-tl-icon-v2 { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0; }
+        .inc-columns-v2 { display:grid; grid-template-columns: 1fr 240px; gap:20px; align-items:start; padding-bottom:20px; }
+        .inc-tl-entry-v2 { display:flex; gap:11px; align-items:flex-start; }
+        .inc-tl-icon-v2 { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; }
         .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
         .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
-        .inc-tl-connector { width:2px; height:22px; background:var(--border-color); margin-left:17px; }
-        .inc-tl-content-v2 { flex:1; padding-top:4px; }
-        .inc-tl-title-v2 { font-size:0.9rem; font-weight:800; color:var(--text-main); }
-        .inc-tl-time-v2 { font-size:0.72rem; font-weight:600; color:var(--text-muted); margin-left:8px; }
-        .inc-tl-sub-v2 { font-size:0.82rem; color:var(--text-muted); margin-top:3px; }
+        .inc-tl-connector { width:2px; height:16px; background:var(--border-color); margin-left:13px; }
+        .inc-tl-content-v2 { flex:1; padding-top:2px; }
+        .inc-tl-title-v2 { font-size:0.82rem; font-weight:800; color:var(--text-main); }
+        .inc-tl-time-v2 { font-size:0.68rem; font-weight:600; color:var(--text-muted); margin-left:7px; }
+        .inc-tl-sub-v2 { font-size:0.76rem; color:var(--text-muted); margin-top:2px; }
         .inc-tl-sub-v2 strong { color:var(--text-main); font-weight:700; }
-        .inc-tl-comment-bubble { background:var(--bg-light); border-radius:10px; padding:12px 14px; margin-top:8px; font-size:0.85rem; color:var(--text-main); font-style:italic; }
-        .inc-add-comment-v2 { margin-top:22px; padding-top:18px; border-top:1px solid var(--border-color); }
-        .inc-add-comment-label-v2 { font-size:0.85rem; font-weight:800; color:var(--text-main); margin-bottom:8px; }
-        .inc-add-comment-v2 textarea { width:100%; min-height:70px; padding:10px 12px; border-radius:10px; border:1.5px solid var(--border-color); font-size:0.85rem; font-family:inherit; resize:vertical; background:var(--white); color:var(--text-main); }
-        .inc-close-btn-v2 { margin-top:10px; padding:9px 18px; border-radius:9px; border:none; background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.83rem; font-weight:700; cursor:pointer; }
-        .inc-sidebar-v2 { display:flex; flex-direction:column; gap:14px; }
-        .inc-sb-card-v2 { background:var(--bg-light); border-radius:12px; padding:14px 16px; }
-        .inc-sb-2col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .inc-sb-label-v2 { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:3px; }
-        .inc-sb-val-v2 { font-size:0.85rem; font-weight:700; color:var(--text-main); word-break:break-word; }
-        .inc-sb-qa-item { margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); }
+        .inc-tl-comment-bubble { background:var(--bg-light); border-radius:9px; padding:9px 12px; margin-top:6px; font-size:0.78rem; color:var(--text-main); font-style:italic; }
+        .inc-add-comment-v2 { margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color); }
+        .inc-add-comment-label-v2 { font-size:0.78rem; font-weight:800; color:var(--text-main); margin-bottom:6px; }
+        .inc-add-comment-v2 textarea { width:100%; min-height:58px; padding:8px 10px; border-radius:9px; border:1.5px solid var(--border-color); font-size:0.8rem; font-family:inherit; resize:vertical; background:var(--white); color:var(--text-main); }
+        .inc-close-btn-v2 { margin-top:8px; padding:7px 15px; border-radius:8px; border:none; background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.78rem; font-weight:700; cursor:pointer; }
+        .inc-sidebar-v2 { display:flex; flex-direction:column; gap:10px; }
+        .inc-sb-card-v2 { background:var(--bg-light); border-radius:10px; padding:11px 13px; }
+        .inc-sb-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .inc-sb-label-v2 { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-bottom:2px; }
+        .inc-sb-val-v2 { font-size:0.8rem; font-weight:700; color:var(--text-main); word-break:break-word; }
+        .inc-sb-qa-item { margin-top:8px; padding-top:8px; border-top:1px solid var(--border-color); }
         .inc-sb-qa-item:first-child { margin-top:0; padding-top:0; border-top:none; }
-        .inc-sb-id-row-v2 { display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border-radius:8px; padding:8px 10px; margin-top:10px; }
-        .inc-sb-id-row-v2 span { font-size:0.72rem; color:var(--text-muted); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .inc-sb-id-row-v2 { display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border-radius:7px; padding:6px 9px; margin-top:8px; }
+        .inc-sb-id-row-v2 span { font-size:0.68rem; color:var(--text-muted); font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .inc-sb-id-row-v2 button { border:none; background:none; color:var(--text-muted); cursor:pointer; flex-shrink:0; }
         @media (max-width: 900px) { .inc-columns-v2 { grid-template-columns: 1fr; } }
         body.do-anim .inc-detail-inner { animation: fadeIn .2s ease; }
@@ -4403,6 +4405,7 @@
 
         let _seenIncidentKeys = null; // lazy-loaded from localStorage
         let _lastAlertedIncidentKey = null;
+        let _lastAlertedIncident = null;
         let _incidentAlertQueue = [];
         let _incidentAlertShowing = false;
 
@@ -4444,6 +4447,7 @@
             _incidentAlertShowing = true;
             const inc = _incidentAlertQueue.shift();
             _lastAlertedIncidentKey = _incidentStableKey(inc);
+            _lastAlertedIncident = inc;
             startRepeatingIncidentSound();
 
             const emojiFor = (score) => (score === undefined || score === null) ? '❓' : score <= 1 ? '😠' : score === 2 ? '🙁' : '😐';
@@ -4479,9 +4483,11 @@
             stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
             _incidentAlertShowing = false;
-            window._pendingIncidentHighlightKey = _lastAlertedIncidentKey;
             _incidentAlertQueue = [];
             if(typeof app !== 'undefined' && app.navigate) app.navigate('incidents');
+            if(_lastAlertedIncident && typeof app !== 'undefined' && app.openIncidentDetailModalDirect){
+                setTimeout(() => app.openIncidentDetailModalDirect(_lastAlertedIncident), 50);
+            }
         }
 
         function copyIncidentId(){
@@ -4632,6 +4638,21 @@
                 if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Mark as Closed'; }
             });
         }
+
+        // ── Incident Detail Modal (matches Harlyy: the incident opens over the
+        // list, not merged into a table row) ────────────────────────────────
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="ia-overlay" id="incident-view-modal">
+                <div class="ia-card" id="incident-view-card" style="max-width:760px;">
+                    <div class="ia-header" style="padding:16px 20px 10px;">
+                        <div class="ivm-status-badge" id="ivm-status"></div>
+                        <button class="ia-close-x" onclick="app.closeIncidentDetailModal()"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="ia-body" id="incident-view-body" style="padding:0 20px;"></div>
+                    <div style="height:16px;"></div>
+                </div>
+            </div>
+        `);
 
         const app = {
             async init() {
@@ -5213,9 +5234,6 @@
 
                 const rows = filtered.slice(0, 300);
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
-                // Preserve expanded row across auto-refresh
-                const openDetailRow = document.querySelector('.inc-detail-row');
-                const openIdx = openDetailRow ? parseInt(openDetailRow.dataset.incIdx || '-1') : -1;
                 document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
                     const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
@@ -5235,7 +5253,7 @@
                     const cs = inc.caseStatus || 'verified';
                     const csMap = { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
-                    return `<tr style="cursor:pointer;" onclick="app.toggleIncidentDetail(this, ${idx})">
+                    return `<tr style="cursor:pointer;" onclick="app.openIncidentDetailModal(${idx})">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
                         <td>${tl}</td>
                         <td style="white-space:nowrap;">${dateStr}</td>
@@ -5243,32 +5261,128 @@
                         <td style="font-size:0.82rem;">${inc.surveyForm||'—'}</td>
                         <td><span class="inc-label-chip" style="background:${lc}1a;color:${lc};">${cat.title}</span></td>
                         <td style="font-weight:600;">${inc.branch||'—'}</td>
-                        <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.toggleIncidentDetail(this.closest('tr'), ${idx})" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
+                        <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.openIncidentDetailModal(${idx})" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
                     </tr>`;
                 }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 this._incFiltered = rows;
-                // Restore previously open row silently after refresh
-                if(openIdx >= 0 && rows[openIdx]){
-                    const tbody = document.querySelector('#inc-detail-table tbody');
-                    const targetRow = tbody ? tbody.rows[openIdx] : null;
-                    if(targetRow) this.toggleIncidentDetail(targetRow, openIdx, true);
+                // If the detail modal is currently open, refresh its content
+                // with the fresh data (e.g. a resolution just came back from
+                // the sheet) rather than leaving it stale — much simpler than
+                // the old row-DOM-matching this replaced, since a modal isn't
+                // tied to any specific table row's position.
+                if(window._openIncidentModalKey){
+                    const match = rows.find(inc => _incidentStableKey(inc) === window._openIncidentModalKey);
+                    if(match) this.openIncidentDetailModalDirect(match);
                 }
-                // Auto-open the specific incident that triggered a "View
-                // Incident" click from the alert popup — matched by stable
-                // key since our own INC-xxx ids aren't stable across refreshes.
-                if(window._pendingIncidentHighlightKey){
-                    const key = window._pendingIncidentHighlightKey;
-                    window._pendingIncidentHighlightKey = null;
-                    const matchIdx = rows.findIndex(inc => _incidentStableKey(inc) === key);
-                    if(matchIdx >= 0){
-                        const tbody2 = document.querySelector('#inc-detail-table tbody');
-                        const targetRow2 = tbody2 ? tbody2.rows[matchIdx] : null;
-                        if(targetRow2){
-                            this.toggleIncidentDetail(targetRow2, matchIdx, true);
-                            targetRow2.scrollIntoView({ behavior:'smooth', block:'center' });
-                        }
-                    }
+            },
+
+            openIncidentDetailModal(idx) {
+                const inc = (this._incFiltered || [])[idx];
+                if(!inc) return;
+                this.openIncidentDetailModalDirect(inc);
+            },
+
+            openIncidentDetailModalDirect(inc) {
+                window._openIncidentModalKey = _incidentStableKey(inc);
+                const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
+                const parsedTs = _parseSheetDateTime(rawCreatedAt);
+                const dateStr = !isNaN(parsedTs)
+                    ? new Date(parsedTs).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                    : (inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—');
+                const timeTaken = _rawFieldExact(inc._raw, 'Time Taken') || '—';
+                const stableKey = _incidentStableKey(inc);
+                const escKey = stableKey.replace(/'/g, "\\'");
+                const isClosed = !!inc.resolved;
+                const custName  = _rawFieldExact(inc._raw, 'Name');
+                const custPhone = _rawFieldExact(inc._raw, 'Phone Number');
+                const waNumber  = custPhone ? custPhone.replace(/[^\d]/g, '') : '';
+
+                const timelineHtml = `
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-created"><i class="fas fa-triangle-exclamation"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident created <span class="inc-tl-time-v2">${dateStr}</span></div>
+                            <div class="inc-tl-sub-v2">Submission at <strong>${inc.branch||'—'}</strong>${custName ? ` by customer <strong>${custName}</strong>` : ''} with survey <strong>${inc.surveyForm||inc.form||'—'}</strong></div>
+                        </div>
+                    </div>
+                    ${isClosed ? `
+                    <div class="inc-tl-connector"></div>
+                    <div class="inc-tl-entry-v2">
+                        <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
+                        <div class="inc-tl-content-v2">
+                            <div class="inc-tl-title-v2">Incident resolved</div>
+                            ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
+                        </div>
+                    </div>` : ''}
+                `;
+
+                const addCommentHtml = !isClosed ? `
+                    <div class="inc-add-comment-v2">
+                        <div class="inc-add-comment-label-v2">Add Remarks</div>
+                        <textarea id="ivm-remarks" placeholder="What was done to resolve this?"></textarea>
+                        <button class="inc-close-btn-v2" onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
+                    </div>` : '';
+
+                const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
+                let qaHtmlSidebar = '';
+                if(inc._raw){
+                    qaHtmlSidebar = Object.entries(inc._raw)
+                        .filter(([k, v]) => v && String(v).trim() && !SKIP_KEYS.has(k.toLowerCase().trim()))
+                        .map(([k, v]) => `<div class="inc-sb-qa-item"><div class="inc-sb-label-v2">${k}</div><div class="inc-sb-val-v2">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
+                        .join('');
                 }
+
+                const sidebarHtml = `
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-2col">
+                            <div><div class="inc-sb-label-v2">Survey</div><div class="inc-sb-val-v2">${inc.surveyForm||inc.form||'—'}</div></div>
+                            <div><div class="inc-sb-label-v2">Location</div><div class="inc-sb-val-v2">${inc.branch||'—'}</div></div>
+                        </div>
+                    </div>
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-label-v2">Order ID</div><div class="inc-sb-val-v2" style="margin-bottom:${qaHtmlSidebar?'8px':'0'};">${inc.orderId||'—'}</div>
+                        ${qaHtmlSidebar}
+                    </div>
+                    <div class="inc-sb-card-v2">
+                        <div class="inc-sb-2col">
+                            <div><div class="inc-sb-label-v2">Created At</div><div class="inc-sb-val-v2">${dateStr}</div></div>
+                            <div><div class="inc-sb-label-v2">Time Taken</div><div class="inc-sb-val-v2">${timeTaken}</div></div>
+                        </div>
+                        <div class="inc-sb-id-row-v2">
+                            <span>${inc.id}</span>
+                            <button onclick="navigator.clipboard&&navigator.clipboard.writeText('${inc.id}')" title="Copy"><i class="fas fa-copy"></i></button>
+                        </div>
+                    </div>
+                    ${(custName || custPhone) ? `
+                    <div class="inc-sb-card-v2">
+                        ${custName ? `<div class="inc-sb-label-v2">Name</div><div class="inc-sb-val-v2" style="margin-bottom:6px;">${custName}</div>` : ''}
+                        ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:8px;">${custPhone}</div>` : ''}
+                        <div style="display:flex;flex-direction:column;gap:6px;">
+                            ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
+                            ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa" style="justify-content:center;"><i class="fab fa-whatsapp"></i> WhatsApp Customer</a>` : ''}
+                        </div>
+                    </div>` : ''}
+                `;
+
+                document.getElementById('ivm-status').innerHTML = `<span class="inc-status-badge-v2 ${isClosed?'inc-status-resolved':'inc-status-open'}">${isClosed?'resolved':'open'}</span>`;
+                document.getElementById('incident-view-body').innerHTML = `
+                    <div class="inc-columns-v2">
+                        <div class="inc-main-col-v2">
+                            ${timelineHtml}
+                            ${addCommentHtml}
+                        </div>
+                        <div class="inc-sidebar-v2">
+                            ${sidebarHtml}
+                        </div>
+                    </div>
+                `;
+                document.getElementById('incident-view-modal').style.display = 'flex';
+            },
+
+            closeIncidentDetailModal() {
+                window._openIncidentModalKey = null;
+                const modal = document.getElementById('incident-view-modal');
+                if(modal) modal.style.display = 'none';
             },
 
             toggleIncidentDetail(rowEl, idx, silent) {
