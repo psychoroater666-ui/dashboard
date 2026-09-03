@@ -2411,6 +2411,18 @@
                         </div>
                     </div>
 
+                    <!-- Peak hours + regional rollup -->
+                    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
+                        </div>
+                    </div>
+
                     <!-- Channel mix — how submission volume splits across Dine In / Delivery / Call Center -->
                     <div class="card" style="padding:20px;">
                         <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">CHANNEL MIX</h3></div>
@@ -2441,18 +2453,6 @@
                                 <div class="chart-container" style="height:130px;"><canvas id="execSocialSentimentChart"></canvas></div>
                                 <div id="exec-social-sentiment-legend" style="display:flex;flex-direction:column;gap:8px;"></div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Peak hours + regional rollup -->
-                    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
-                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
-                        </div>
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
-                            <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
                         </div>
                     </div>
 
