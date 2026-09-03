@@ -3576,6 +3576,22 @@
                     <div class="table-wrapper"><table id="universal-current-table"><thead id="univ-curr-thead"></thead><tbody id="univ-curr-tbody"></tbody></table></div>
                 </div>
 
+                <!-- Channel assignment diagnostic — only shown on the Channels
+                     tab. Shows exactly which of the 3 possible paths assigned
+                     each row's channel value, per source form — so the
+                     breakdown above can be verified against what's actually
+                     happening, not guessed at. -->
+                <div class="card" id="channel-diag-card" style="display:none; border-left:4px solid #D97706; padding:12px 18px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleChannelDiagPanel()">
+                        <div style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:var(--text-main);">
+                            <i class="fas fa-route" style="color:#D97706;"></i>
+                            <span id="channel-diag-label">How channel values are being assigned</span>
+                        </div>
+                        <i class="fas fa-chevron-down" id="channel-diag-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
+                    </div>
+                    <div id="channel-diag-details" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--border-color); font-size:0.82rem; line-height:1.8;"></div>
+                </div>
+
                 <!-- Data completeness diagnostic — only shown on the Submissions
                      tab, only when something needs attention, last in the list,
                      collapsed by default. -->
@@ -3808,8 +3824,17 @@
                     if(!rating){ trackExcluded('rating', r); return; }
                     const prod = String(_find(r,'select your product') || _find(r,'select','product') || _find(r,'menu item') || _find(r,'item','name') || '').split(',')[0].trim();
                     let channel = src.channel || '';
-                    if(!channel && src.channelFields){ for(const f of src.channelFields){ const v=_find(r, ...f.split(' ')); if(v){ channel=String(v).trim(); break; } } }
-                    if(!channel) channel = src.form;
+                    let _channelPath = channel ? 'hardcoded' : null;
+                    if(!channel && src.channelFields){ for(const f of src.channelFields){ const v=_find(r, ...f.split(' ')); if(v){ channel=String(v).trim(); _channelPath = `matched: "${f}"`; break; } } }
+                    if(!channel){ channel = src.form; _channelPath = 'fallback to form name (no channel field matched)'; }
+                    // Diagnostic — tracks which of the 3 paths above assigned
+                    // each row's channel, broken down by source form. Exposed
+                    // as window.__channelDiag so the Channels tab's numbers can
+                    // actually be verified against what the raw data is doing,
+                    // instead of guessed at.
+                    out.channelDiag = out.channelDiag || {};
+                    out.channelDiag[src.form] = out.channelDiag[src.form] || {};
+                    out.channelDiag[src.form][_channelPath] = (out.channelDiag[src.form][_channelPath] || 0) + 1;
                     const form = prod || src.form;
                     const dstr = _isoDate(_find(r,'created at'));
                     // Capture "Any other thoughts or suggestions for us?" from all 3 forms
@@ -3948,6 +3973,7 @@
             const mapped = results.map((rows, idx) => (rows && rows.length) ? mapSource(rows, sources[idx], out) : (rows===null?'ERR':0));
             window.__diag2 = 'mapped ' + sources.map((s,i)=> s.form.replace(/\s/g,'')+':'+mapped[i]).join(' ');
             window.__excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
+            window.__channelDiag = out.channelDiag || {};
             if(out.subs.length){
                 // Guarded at the single source point everything else reads
                 // from — not patched per display. A drop here (Google's
@@ -4515,6 +4541,15 @@
         function toggleRegionGapPanel() {
             const details = document.getElementById('ct-region-gap-details');
             const chevron = document.getElementById('ct-region-gap-chevron');
+            if(!details) return;
+            const isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : '';
+            if(chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+
+        function toggleChannelDiagPanel() {
+            const details = document.getElementById('channel-diag-details');
+            const chevron = document.getElementById('channel-diag-chevron');
             if(!details) return;
             const isOpen = details.style.display !== 'none';
             details.style.display = isOpen ? 'none' : '';
@@ -6411,6 +6446,42 @@
                     return `<tr><td class="font-semibold">${ent}</td><td>${s.toLocaleString()}</td><td>${i.toLocaleString()}</td><td>${rate}</td></tr>`;
                 }).join('');
                 if(view !== 'submissions') this.renderUnivCurrChart(entityStats, titleMap[view]);
+
+                // Channel assignment diagnostic — only on the Channels tab.
+                const chDiagCard = document.getElementById('channel-diag-card');
+                if(chDiagCard){
+                    const diag = window.__channelDiag || {};
+                    const forms = Object.keys(diag);
+                    if(view === 'channels' && forms.length){
+                        chDiagCard.style.display = '';
+                        const detailsEl = document.getElementById('channel-diag-details');
+                        if(detailsEl){
+                            detailsEl.innerHTML = forms.map(formName => {
+                                const paths = diag[formName];
+                                const total = Object.values(paths).reduce((a,b)=>a+b, 0);
+                                const rows = Object.entries(paths)
+                                    .sort((a,b) => b[1]-a[1])
+                                    .map(([path, count]) => {
+                                        const pct = total ? ((count/total)*100).toFixed(0) : 0;
+                                        const isFallback = path.startsWith('fallback');
+                                        const isHardcoded = path === 'hardcoded';
+                                        const color = isFallback ? '#DC2626' : (isHardcoded ? 'var(--text-muted)' : '#059669');
+                                        return `<div style="margin-left:14px;color:${color};">${count.toLocaleString()} (${pct}%) — ${path}</div>`;
+                                    }).join('');
+                                return `<div style="margin-bottom:8px;"><strong>${formName}</strong> — ${total.toLocaleString()} rows<br>${rows}</div>`;
+                            }).join('') + `<div style="margin-top:6px;color:var(--text-muted);font-style:italic;">Red = fell back to the form name because no real channel column was found — this is almost certainly the "only 2 submissions" / inaccurate breakdown issue. Tell me the exact column header for the channel/order-source question on the affected form and I'll fix the matching directly.</div>`;
+                        }
+                        const labelEl = document.getElementById('channel-diag-label');
+                        if(labelEl){
+                            const anyFallback = forms.some(f => Object.keys(diag[f]).some(p => p.startsWith('fallback')));
+                            labelEl.textContent = anyFallback
+                                ? 'How channel values are being assigned — some rows fell back (click to expand)'
+                                : 'How channel values are being assigned (click to expand)';
+                        }
+                    } else {
+                        chDiagCard.style.display = 'none';
+                    }
+                }
 
                 // Detailed, row-level submissions log — respects the same global
                 // filters (date range, branch, region, channel) as the breakdown
