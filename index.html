@@ -5161,7 +5161,10 @@
                                 if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
                                 _lsc=ns; _lic=ni;
                                 window._isBackgroundRefresh = true;
+                                const _prevChartAnim = Chart.defaults.animation;
+                                Chart.defaults.animation = false; // silent redraw — every chart is destroyed/recreated on render, so without this each bg poll would replay the full draw-in animation
                                 _s.applyFilters(); renderAlerts();
+                                Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
@@ -10692,6 +10695,13 @@
         function countUp(el, target){
             if(!el) return;
             target = Number(target) || 0;
+            // Background auto-refresh should be silent — the number should
+            // just update to the new value, not visibly tick/count up. The
+            // tick animation is reserved for manual refreshes/navigation.
+            if(window._isBackgroundRefresh){
+                el.innerText = target.toLocaleString();
+                return;
+            }
             if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
                 el.innerText = target.toLocaleString(); return;
             }
