@@ -4634,7 +4634,7 @@
             })
             .catch(err => {
                 console.warn('Incident resolution save failed:', err);
-                alert('Could not save this — please try again.');
+                alert('Could not save this: ' + (err && err.message ? err.message : err));
                 if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Mark as Closed'; }
             });
         }
