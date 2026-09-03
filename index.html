@@ -3789,6 +3789,7 @@
                 if(LIVE.incidentResolutionUrl){
                     try { applyIncidentResolutions(await loadIncidentResolutionsFromSheet()); } catch(e){ console.warn('Incident resolution apply failed:', e); }
                 }
+                _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 if(typeof app !== 'undefined' && app.applyFilters){ try{ app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); }catch(e){} }   // repaint with fresh data
@@ -4669,6 +4670,39 @@
             });
         }
 
+        // Write-protection layer — same fix as Social Listening's
+        // SL_Resolution saves: right after saving, the sheet's published CSV
+        // can take a little while to catch up, so the very next poll (or two)
+        // could read a stale snapshot and silently revert the agent's
+        // determination back to whatever the automated classifier says. This
+        // holds the just-saved values as the source of truth for 90s,
+        // overriding whatever the sheet read-back says during that window.
+        const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
+        const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
+
+        function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote){
+            _incidentResolutionProtected[stableKey] = {
+                resolved, caseStatus, resolutionNote,
+                expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
+            };
+        }
+
+        function _applyIncidentResolutionProtection(){
+            const now = Date.now();
+            Object.keys(_incidentResolutionProtected).forEach(key => {
+                if(_incidentResolutionProtected[key].expiresAt < now) delete _incidentResolutionProtected[key];
+            });
+            (rawData.incidents||[]).forEach(inc => {
+                const p = _incidentResolutionProtected[_incidentStableKey(inc)];
+                if(p){
+                    inc.resolved = p.resolved;
+                    inc.caseStatus = p.caseStatus;
+                    inc.agentVerdict = true;
+                    if(p.resolutionNote) inc.resolutionNote = p.resolutionNote;
+                }
+            });
+        }
+
         function selectIncidentValidity(btnEl, validity){
             document.querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
             btnEl.classList.add('inc-validity-selected');
@@ -4688,11 +4722,13 @@
             .then(r => r.json())
             .then(r => {
                 if(r.status !== 'success') throw new Error(r.message || 'save failed');
+                const resolvedCaseStatus = (validity === 'fake') ? 'fake' : 'verified';
+                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '');
                 (rawData.incidents||[]).forEach(inc => {
                     if(_incidentStableKey(inc) === stableKey){
                         inc.resolved = true;
                         inc.resolutionNote = note || '';
-                        inc.caseStatus = (validity === 'fake') ? 'fake' : 'verified';
+                        inc.caseStatus = resolvedCaseStatus;
                         inc.agentVerdict = true; // this came from a human, not the automated classifier
                     }
                 });
