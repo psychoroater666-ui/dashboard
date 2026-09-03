@@ -2440,6 +2440,28 @@
                         </div>
                     </div>
 
+                    <!-- Peak hours + regional rollup -->
+                    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
+                        </div>
+                        <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
+                        </div>
+                    </div>
+
+                    <!-- Needs Attention Today — the one direct action list on
+                         an otherwise all-chart page -->
+                    <div class="card" style="padding:20px;">
+                        <div class="section-header" style="margin-bottom:12px;">
+                            <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3>
+                            <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
+                        </div>
+                        <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
+                    </div>
+
                     <!-- EXECUTIVE SUMMARY horizontal strip -->
                     <div class="card ai-card" style="padding:16px 24px;">
                         <div style="display:flex; align-items:flex-start; gap:16px;">
@@ -5355,6 +5377,9 @@
                     this.renderExecResSpeedChart();
                     this.renderExecVerFakeChart();
                     this.renderExecSocialSentimentChart();
+                    this.renderExecPeakHoursChart();
+                    this.renderExecRegionalChart();
+                    this.renderExecNeedsAttention();
                     try { this.renderChannelDoughnut('channelDoughnut'); } catch(e){}
                     if(typeof app.renderFormPerf === 'function') app.renderFormPerf();
                     if(typeof app.renderBranchCards === 'function') app.renderBranchCards();
@@ -6641,6 +6666,121 @@
                         </div>`;
                     }).join('') : `<div style="color:var(--text-muted);font-size:0.8rem;">No mentions yet.</div>`;
                 }
+            },
+
+            renderExecPeakHoursChart() {
+                const canvasId = 'execPeakHoursChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const hourCounts = new Array(24).fill(0);
+                state.p1.subs.forEach(s => {
+                    const ts = _parseSheetDateTime(_rawFieldExact(s._raw, 'Created At'));
+                    if(isNaN(ts)) return;
+                    hourCounts[new Date(ts).getHours()]++;
+                });
+                const labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label:'Submissions', data: hourCounts, backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:16 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                        }
+                    }
+                });
+            },
+
+            renderExecRegionalChart() {
+                const canvasId = 'execRegionalChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                const regions = ['North','South','Central'];
+                const _regionOfBranch = name => { const b = config.branches.find(x=>x.name===name); return b ? b.region : 'Other'; };
+                const data = regions.map(r => {
+                    const s = state.p1.subs.filter(x => _regionOfBranch(x.branch) === r).length;
+                    const i = state.p1.incs.filter(x => _regionOfBranch(x.branch) === r).length;
+                    return { region:r, s, i, rate: s ? (i/s)*100 : 0 };
+                });
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: regions, datasets: [{
+                        label:'Submissions',
+                        data: data.map(d=>d.s),
+                        backgroundColor: data.map(d => d.rate<3?'#059669':(d.rate<5?'#D97706':'#DC2626')),
+                        borderRadius:6, maxBarThickness:60
+                    }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: {
+                            legend:{display:false},
+                            tooltip: { callbacks: { afterLabel: (c) => `Incident rate: ${data[c.dataIndex].rate.toFixed(2)}%` } }
+                        },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:12,weight:'700'}} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                        }
+                    }
+                });
+            },
+
+            openIncidentFromStableKey(key) {
+                const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === key);
+                if(inc) this.openIncidentDetailModalDirect(inc);
+            },
+
+            renderExecNeedsAttention() {
+                const container = document.getElementById('exec-needs-attention');
+                if(!container) return;
+                const todayStr = _fmtDate(new Date());
+                const todaysUnresolved = (rawData.incidents||[]).filter(inc => inc.date === todayStr && !inc.resolved);
+                todaysUnresolved.sort((a,b) => {
+                    const sa = a.smileScore||0, sb = b.smileScore||0;
+                    if(sa !== sb) return sa - sb;
+                    const ta = _parseSheetDateTime(_rawFieldExact(a._raw,'Created At')) || 0;
+                    const tb = _parseSheetDateTime(_rawFieldExact(b._raw,'Created At')) || 0;
+                    return ta - tb;
+                });
+                const top = todaysUnresolved.slice(0, 8);
+
+                if(!top.length){
+                    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>Nothing unresolved from today — all caught up.</div>`;
+                    return;
+                }
+
+                container.innerHTML = top.map(inc => {
+                    const key = _incidentStableKey(inc).replace(/'/g,"\\'");
+                    const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : {title: inc.complaintType||'—'};
+                    const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
+                    const ts = _parseSheetDateTime(rawCreatedAt);
+                    const timeDisp = !isNaN(ts) ? new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
+                    const score = inc.smileScore||0;
+                    const urgentBadge = cat.critical ? `<span style="background:rgba(220,38,38,.12);color:#DC2626;font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;">CRITICAL</span>` : '';
+                    return `<div onclick="app.openIncidentFromStableKey('${key}')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border-color);border-radius:9px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
+                        <span style="width:30px;height:30px;border-radius:8px;background:${score<=2?'rgba(220,38,38,.1)':'rgba(217,119,6,.1)'};color:${score<=2?'#DC2626':'#D97706'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">${score||'—'}</span>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${inc.branch||'—'} — ${cat.title}${urgentBadge}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">${inc.surveyForm||inc.form||'—'} · ${timeDisp}</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:var(--text-muted);font-size:0.75rem;"></i>
+                    </div>`;
+                }).join('');
             },
 
             renderExecChannelMixChart() {
