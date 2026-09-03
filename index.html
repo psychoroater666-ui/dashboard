@@ -4715,13 +4715,15 @@
                     const valKey      = keys.find(k => k.toLowerCase().trim() === 'validity') || keys.find(k => k.toLowerCase().includes('valid'));
                     const reviewedKey = keys.find(k => k.toLowerCase().trim() === 'reviewed at');
                     const resolvedKey = keys.find(k => k.toLowerCase().trim() === 'resolved at');
+                    const catKey      = keys.find(k => k.toLowerCase().trim() === 'category');
                     const id         = idKey       ? String(row[idKey]||'').trim()       : '';
                     const st         = stKey       ? String(row[stKey]||'').trim()       : '';
                     const note       = noteKey     ? String(row[noteKey]||'').trim()     : '';
                     const validity   = valKey      ? String(row[valKey]||'').trim().toLowerCase() : '';
                     const reviewedAt = reviewedKey ? String(row[reviewedKey]||'').trim() : '';
                     const resolvedAt = resolvedKey ? String(row[resolvedKey]||'').trim() : '';
-                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt };
+                    const category   = catKey      ? String(row[catKey]||'').trim()      : '';
+                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category };
                 });
                 return map;
             } catch(err){ console.warn('Incident resolution read-back failed:', err); return null; }
@@ -4740,6 +4742,7 @@
                     }
                     if(entry.reviewedAt) inc.reviewedAt = entry.reviewedAt;
                     if(entry.resolvedAt) inc.resolvedAt = entry.resolvedAt;
+                    if(entry.category) inc.agentCategory = entry.category;
                 }
             });
         }
@@ -4754,10 +4757,10 @@
         const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
         const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
 
-        function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote, resolvedAt){
+        function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote, resolvedAt, agentCategory){
             const existing = _incidentResolutionProtected[stableKey] || {};
             _incidentResolutionProtected[stableKey] = Object.assign({}, existing, {
-                resolved, caseStatus, resolutionNote, resolvedAt,
+                resolved, caseStatus, resolutionNote, resolvedAt, agentCategory,
                 expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
             });
         }
@@ -4783,6 +4786,7 @@
                     if(p.resolutionNote) inc.resolutionNote = p.resolutionNote;
                     if(p.reviewedAt) inc.reviewedAt = p.reviewedAt;
                     if(p.resolvedAt) inc.resolvedAt = p.resolvedAt;
+                    if(p.agentCategory) inc.agentCategory = p.agentCategory;
                 }
             });
         }
@@ -4815,20 +4819,20 @@
             if(closeBtn) closeBtn.disabled = false;
         }
 
-        function saveIncidentResolution(stableKey, note, btnEl, validity){
+        function saveIncidentResolution(stableKey, note, btnEl, validity, category){
             if(!validity){ alert('Please mark this complaint as Valid or Fake before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '', validity: validity })
+                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '' })
             })
             .then(r => r.json())
             .then(r => {
                 if(r.status !== 'success') throw new Error(r.message || 'save failed');
                 const resolvedCaseStatus = (validity === 'fake') ? 'fake' : 'verified';
                 const resolvedAt = new Date().toISOString();
-                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt);
+                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt, category || '');
                 (rawData.incidents||[]).forEach(inc => {
                     if(_incidentStableKey(inc) === stableKey){
                         inc.resolved = true;
@@ -4836,6 +4840,7 @@
                         inc.caseStatus = resolvedCaseStatus;
                         inc.agentVerdict = true; // this came from a human, not the automated classifier
                         inc.resolvedAt = resolvedAt;
+                        if(category) inc.agentCategory = category;
                     }
                 });
                 if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
@@ -5745,16 +5750,23 @@
                     </div>` : ''}
                 `;
 
+                const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
+                const categoryOptions = [...COMPLAINT_CATEGORIES, CI_HEALTH_HAZARD, CI_OTHER]
+                    .map(c => `<option value="${c.id}" ${c.id === currentCat.id ? 'selected' : ''}>${c.title}</option>`)
+                    .join('');
+
                 const addCommentHtml = !isClosed ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">Add Remarks</div>
                         <textarea id="ivm-remarks" placeholder="What was done to resolve this? (contacted customer, verified order, etc.)"></textarea>
+                        <div class="inc-validity-label">Category — confirm or correct the auto-detected type</div>
+                        <select id="ivm-category" class="select-input" style="width:100%; margin-top:2px;">${categoryOptions}</select>
                         <div class="inc-validity-label">Your determination — is this complaint valid?</div>
                         <div class="inc-validity-toggle">
                             <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
                             <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
                         </div>
-                        <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity)"><i class="fas fa-check"></i> Mark as Closed</button>
+                        <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity, document.getElementById('ivm-category').value)"><i class="fas fa-check"></i> Mark as Closed</button>
                     </div>` : '';
 
                 const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
@@ -8545,6 +8557,12 @@
             { id:'staff',      title:'Staff Behaviour',    cause:'Service attitude / training gap',      op:'Branch staff',           keywords:['rude','behaviour','behavior','staff','attitude','misbehav','ignored','unprofessional','bad service'] },
             { id:'taste',      title:'Taste',              cause:'Product inconsistency',                op:'Kitchen',                keywords:['taste','tasteless','flavour','flavor','bland','not good','disgusting','bad quality','quality'] },
         ];
+        // Checked first and independently of everything else below — a real
+        // food-safety issue must never be able to end up buried inside a
+        // generic bucket like "Taste" just because it scored fewer keyword
+        // hits than something else.
+        const CI_HEALTH_HAZARD = { id:'health_hazard', title:'Food Poisoning / Health Hazard', cause:'Food safety incident', op:'Immediate escalation — Quality & Safety', critical:true };
+        const HEALTH_HAZARD_RE = /\b(food\s*poisoning|poisoned|vomit(ing)?|diarrh(o|e)a|stomach\s*(ache|pain|upset)|allergic\s*reaction|hospitali[sz]ed|fell\s*(sick|ill)|got\s*sick|food\s*safety)\b/i;
         const CI_OTHER = { id:'other', title:'Other / Unspecified', cause:'Uncategorised feedback', op:'Review manually' };
         // Pre-compile whole-word regexes for each keyword
         COMPLAINT_CATEGORIES.forEach(c => {
@@ -8553,23 +8571,58 @@
         const _MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
         function classifyComplaint(inc){
-            // 1. Sheet-provided category wins (map to a known bucket if names match)
+            // 1. Agent-confirmed category — set during resolution by someone
+            // who actually read the note and, where needed, contacted the
+            // customer. This is human-verified and should always win over any
+            // automated guess.
+            if(inc.agentCategory){
+                if(inc.agentCategory === CI_HEALTH_HAZARD.id) return CI_HEALTH_HAZARD;
+                const known = COMPLAINT_CATEGORIES.find(c => c.id === inc.agentCategory);
+                if(known) return known;
+            }
+
+            const text = [inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
+
+            // 2. Health-hazard override — checked first and independently of
+            // the scoring below, so a real safety issue can never lose out to
+            // a higher-scoring but less serious category.
+            if(HEALTH_HAZARD_RE.test(text)) return CI_HEALTH_HAZARD;
+
+            // 3. Keyword scoring against the actual complaint text — this is
+            // now the PRIMARY signal, not a fallback. The sheet's tag can be a
+            // pre-selected default (e.g. Foodpanda's form defaults to "Taste
+            // and Flavor" whether or not the customer chose it) or simply not
+            // match what the customer actually described.
+            let best = null, bestScore = 0;
+            if(text.trim()){
+                for(const c of COMPLAINT_CATEGORIES){
+                    let score = 0;
+                    for(const re of c._re){ if(re.test(text)) score++; }
+                    if(score > bestScore){ bestScore = score; best = c; }
+                }
+            }
+            if(best) return best;
+
+            // 4. Sheet-provided tag — trusted only once the note itself has
+            // no usable signal at all.
             const sheetCat = (inc.category || '').trim();
             if(sheetCat){
-                const known = COMPLAINT_CATEGORIES.find(c => c.title.toLowerCase() === sheetCat.toLowerCase() || c.id === sheetCat.toLowerCase());
-                if(known) return known;
-                return { id:'sheet_'+sheetCat.toLowerCase().replace(/\s+/g,'_'), title:sheetCat, cause:'Sheet-defined category', op:'Review mapping', _re:[] };
+                // A bare "Taste and Flavor" tag on a Delivery order with no
+                // actual complaint text isn't a real signal — it's Foodpanda's
+                // pre-selected default, not something the customer chose.
+                // Don't let it inflate the taste count.
+                const isBareFoodpandaDefault = (inc.channel === 'Delivery' || inc.surveyForm === 'Delivery') &&
+                    sheetCat.toLowerCase() === 'taste and flavor' && !text.trim();
+                if(!isBareFoodpandaDefault){
+                    const known = COMPLAINT_CATEGORIES.find(c => c.title.toLowerCase() === sheetCat.toLowerCase() || c.id === sheetCat.toLowerCase());
+                    if(known) return known;
+                    return { id:'sheet_'+sheetCat.toLowerCase().replace(/\s+/g,'_'), title:sheetCat, cause:'Sheet-defined category', op:'Review mapping', _re:[] };
+                }
             }
-            // 2. Keyword scoring — most hits wins
-            const text = [inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
-            if(!text.trim()) return CI_OTHER;
-            let best = null, bestScore = 0;
-            for(const c of COMPLAINT_CATEGORIES){
-                let score = 0;
-                for(const re of c._re){ if(re.test(text)) score++; }
-                if(score > bestScore){ bestScore = score; best = c; }
-            }
-            return best || CI_OTHER;
+
+            // 5. Nothing usable anywhere — genuinely unclassified, and
+            // deliberately left that way rather than forcing a guess.
+            return CI_OTHER;
         }
 
         app.renderComplaintTopography = function(){
