@@ -3766,9 +3766,20 @@
             window.__diag2 = 'mapped ' + sources.map((s,i)=> s.form.replace(/\s/g,'')+':'+mapped[i]).join(' ');
             window.__excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
             if(out.subs.length){
+                // Guarded at the single source point everything else reads
+                // from — not patched per display. A drop here (Google's
+                // Publish-to-Web occasionally serving a momentarily
+                // inconsistent snapshot between two polls a few seconds apart)
+                // is held back until confirmed twice in a row; growth is
+                // always accepted immediately. Every view built from
+                // rawData.submissions/incidents — Overview, Incidents,
+                // Branches, Submissions breakdown, all of it — inherits this
+                // automatically, with nothing further to patch per-page.
+                const guardedSubs = _guardRawArray(out.subs, _rawSubsGuard);
+                const guardedIncs = _guardRawArray(out.incs, _rawIncsGuard);
                 rawData.submissions.length = 0; rawData.incidents.length = 0;
-                out.subs.forEach(x=>rawData.submissions.push(x));
-                out.incs.forEach(x=>rawData.incidents.push(x));
+                guardedSubs.forEach(x=>rawData.submissions.push(x));
+                guardedIncs.forEach(x=>rawData.incidents.push(x));
                 if(LIVE.incidentResolutionUrl){
                     try { applyIncidentResolutions(await loadIncidentResolutionsFromSheet()); } catch(e){ console.warn('Incident resolution apply failed:', e); }
                 }
@@ -4519,6 +4530,35 @@
         // refresh is treated as suspect and only accepted once the same lower
         // value is confirmed twice in a row. Anything triggered directly by
         // the user (changing a filter) is trusted immediately, no debounce.
+        // The actual global fix — guards the raw data arrays themselves at
+        // their single source point (see loadLive()), not individual display
+        // locations. A newly-fetched array shorter than the last confirmed
+        // one is held back until the SAME shorter length is seen twice in a
+        // row; anything equal or longer is trusted immediately.
+        const _rawSubsGuard = { confirmed: null, pending: null, pendingConfirms: 0 };
+        const _rawIncsGuard = { confirmed: null, pending: null, pendingConfirms: 0 };
+        function _guardRawArray(newArr, guard){
+            if(guard.confirmed === null || newArr.length >= guard.confirmed.length){
+                guard.confirmed = newArr;
+                guard.pending = null;
+                guard.pendingConfirms = 0;
+                return newArr;
+            }
+            if(guard.pending && guard.pending.length === newArr.length){
+                guard.pendingConfirms++;
+                if(guard.pendingConfirms >= 2){
+                    guard.confirmed = newArr;
+                    guard.pending = null;
+                    guard.pendingConfirms = 0;
+                    return newArr;
+                }
+            } else {
+                guard.pending = newArr;
+                guard.pendingConfirms = 1;
+            }
+            return guard.confirmed;
+        }
+
         const _subsStabilizer = { stable: null, pending: null, pendingConfirms: 0 };
         const _incsStabilizer = { stable: null, pending: null, pendingConfirms: 0 };
         function _stabilizeCount(newVal, state, trustImmediately){
