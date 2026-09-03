@@ -2391,7 +2391,8 @@
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
                                 <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                             </div>
-                            <div id="exec-incident-monitor" style="max-height:440px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+                            <div class="chart-container" style="height:110px;margin-bottom:12px;"><canvas id="execIncByFormChart"></canvas></div>
+                            <div id="exec-incident-monitor" style="max-height:330px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 
                         <div class="card" style="padding:20px;">
@@ -2627,7 +2628,10 @@
                     </div>
                     <!-- ══════════ END AI INSIGHTS ══════════ -->
 
-                    <!-- BRANCH PERFORMANCE — cards on top, full table below -->
+                    <!-- BRANCH PERFORMANCE — cards only now (the table underneath
+                         used to just repeat the exact same 6 branches and metrics
+                         the cards above already show; the full detailed list with
+                         all branches lives on the dedicated Branches tab). -->
                     <div class="card" style="padding: 22px 24px;">
                         <div class="section-header" style="margin-bottom: 18px;">
                             <h3>BRANCH PERFORMANCE</h3>
@@ -2637,15 +2641,8 @@
                         <div class="branch-cards-grid" id="branch-cards-container">
                             <!-- Filled by JS -->
                         </div>
-                        <!-- Full detail table -->
-                        <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 4px;">
-                            <div style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); margin-bottom:10px;">All Branches — Full Detail</div>
-                            <div class="table-wrapper">
-                                <table id="exec-branch-master-table">
-                                    <thead><tr><th>Branch</th><th>Smile Score</th><th>Submissions</th><th>Incidents</th><th>Rate</th><th>Pos. Feed</th><th>Res</th><th>Res Rate</th></tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; text-align:center;">
+                            <button class="btn-link" onclick="app.navigate('branches')" style="font-size:0.78rem;">View full detail for all branches →</button>
                         </div>
                     </div>
                 </div>
@@ -2851,6 +2848,7 @@
                     </div>
                     <div class="card">
                         <div class="section-header"><h3>FULL BRANCH PERFORMANCE BREAKDOWN</h3></div>
+                        <div class="chart-container" style="height:200px;margin-bottom:14px;"><canvas id="execBranchPosFBChart"></canvas></div>
                         <div class="table-wrapper"><table id="exec-branch-master-expanded"><thead><tr><th>Branch</th><th>Smile Score</th><th>Submissions</th><th>Incidents</th><th>Incident Rate</th><th>Positive Feedback</th><th>Resolved</th><th>Resolution Rate</th></tr></thead><tbody></tbody></table></div>
                     </div>
                 </div>
@@ -5327,32 +5325,6 @@
                         </div>
                     `).join('');
 
-                    // Overview Branch Table
-                    document.querySelector('#exec-branch-master-table tbody').innerHTML = config.branches.map(b => {
-                        const s = p1.subs.filter(x=>x.branch===b.name);
-                        const i = p1.incs.filter(x=>x.branch===b.name);
-                        const sL = s.length, iL = i.length;
-                        const rate = sL ? (iL/sL)*100 : 0;
-                        const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.0;
-                        const avgSmile = (avgSmileRaw * 20).toFixed(0); // convert 1–5 → 0–100
-                        const emojiColor = avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)');
-                        const posFB = sL ? ((s.filter(x=>x.smileScore>=4).length/sL)*100).toFixed(0) : 0;
-                        const res = i.filter(x=>x.resolved).length;
-                        const resRate = iL ? ((res/iL)*100).toFixed(0) : 100;
-                        return { name: b.name, sL, iL, rate, emojiColor, posFB, res, resRate, avgSmile };
-                    }).sort((a,b) => a.rate - b.rate).slice(0,6).map(b => `
-                        <tr>
-                            <td class="font-bold">${b.name}</td>
-                            <td><span class="smile-pill" style="color:${b.emojiColor}; background:${b.emojiColor}15;">${b.avgSmile}/100</span></td>
-                            <td>${b.sL.toLocaleString()}</td>
-                            <td style="font-weight:700;">${b.iL}</td>
-                            <td class="font-bold" style="color:${b.rate<3?'var(--status-good)':(b.rate<5?'var(--status-warn)':'var(--status-critical)')}">${b.rate.toFixed(2)}%</td>
-                            <td>${b.posFB}%</td>
-                            <td>${b.res}</td>
-                            <td>${b.resRate}%</td>
-                        </tr>
-                    `).join('');
-
                     this.renderExecTrendChart('execTrendChart');
                     this.renderExecChannelMixChart();
                     try { this.renderChannelDoughnut('channelDoughnut'); } catch(e){}
@@ -5397,19 +5369,22 @@
                     this.renderFormBarChart('formBarChartExpanded', formStats);
                     this.renderChannelDoughnut('channelDoughnutExpanded');
 
-                    document.querySelector('#exec-branch-master-expanded tbody').innerHTML = config.branches.map(b => {
-                        const s = state.p1.subs.filter(x=>x.branch===b.name);
-                        const i = state.p1.incs.filter(x=>x.branch===b.name);
-                        const sL = s.length, iL = i.length;
-                        const rate = sL ? (iL/sL)*100 : 0;
-                        const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.0;
-                        const avgSmile = (avgSmileRaw * 20).toFixed(0);
-                        const emojiColor = avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)');
-                        const posFB = sL ? ((s.filter(x=>x.smileScore>=4).length/sL)*100).toFixed(0) : 0;
-                        const res = i.filter(x=>x.resolved).length;
-                        const resRate = iL ? ((res/iL)*100).toFixed(0) : 100;
-                        return { name: b.name, sL, iL, rate, emojiColor, posFB, res, resRate, avgSmile };
-                    }).sort((a,b) => a.rate - b.rate).map(b => `
+                    document.querySelector('#exec-branch-master-expanded tbody').innerHTML = (() => {
+                        const rows = config.branches.map(b => {
+                            const s = state.p1.subs.filter(x=>x.branch===b.name);
+                            const i = state.p1.incs.filter(x=>x.branch===b.name);
+                            const sL = s.length, iL = i.length;
+                            const rate = sL ? (iL/sL)*100 : 0;
+                            const avgSmileRaw = sL ? (s.reduce((acc,curr)=>acc+curr.smileScore,0)/sL) : 4.0;
+                            const avgSmile = (avgSmileRaw * 20).toFixed(0);
+                            const emojiColor = avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)');
+                            const posFB = sL ? ((s.filter(x=>x.smileScore>=4).length/sL)*100).toFixed(0) : 0;
+                            const res = i.filter(x=>x.resolved).length;
+                            const resRate = iL ? ((res/iL)*100).toFixed(0) : 100;
+                            return { name: b.name, sL, iL, rate, emojiColor, posFB: +posFB, res, resRate, avgSmile };
+                        }).sort((a,b) => a.rate - b.rate);
+                        this.renderExecBranchPosFBChart(rows);
+                        return rows.map(b => `
                         <tr>
                             <td class="font-bold">${b.name}</td>
                             <td><span class="smile-pill" style="color:${b.emojiColor}; background:${b.emojiColor}15;">${b.avgSmile}/100</span></td>
@@ -5421,6 +5396,7 @@
                             <td>${b.resRate}%</td>
                         </tr>
                     `).join('');
+                })();
                 }
             },
 
@@ -6416,6 +6392,64 @@
                 }
             },
 
+            renderExecBranchPosFBChart(branches) {
+                const canvasId = 'execBranchPosFBChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: branches.map(b=>b.name), datasets: [{
+                        label:'Positive Feedback %',
+                        data: branches.map(b=>b.posFB),
+                        backgroundColor: branches.map(b => b.posFB>=90?'#059669':(b.posFB>=75?'#D97706':'#DC2626')),
+                        borderRadius:5, maxBarThickness:26
+                    }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:9.5}, maxRotation:45, minRotation:45} },
+                            y: { beginAtZero:true, max:100, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}, callback:v=>v+'%'} }
+                        }
+                    }
+                });
+            },
+
+            renderExecBranchSmileChart(branches) {
+                const canvasId = 'execBranchSmileChart';
+                if (state.charts[canvasId]) state.charts[canvasId].destroy();
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const ctx = canvasEl.getContext('2d');
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                state.charts[canvasId] = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: branches.map(b=>b.name), datasets: [{
+                        label:'Smile Score',
+                        data: branches.map(b=>b.avgSmile),
+                        backgroundColor: branches.map(b => b.avgSmile>=80?'#059669':(b.avgSmile>=60?'#D97706':'#DC2626')),
+                        borderRadius:5, maxBarThickness:32
+                    }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:10.5}} },
+                            y: { beginAtZero:true, max:100, grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}} }
+                        }
+                    }
+                });
+            },
+
             renderExecChannelMixChart() {
                 const canvasId = 'execChannelMixChart';
                 if (state.charts[canvasId]) state.charts[canvasId].destroy();
@@ -7092,20 +7126,6 @@
                             <div class="form-perf-sub">${f.sub}</div>
                         </div>
                     </div>
-                    <div class="form-perf-stats">
-                        <div class="form-perf-stat">
-                            <span class="form-perf-stat-val" style="color:var(--text-main);">${d.subs.toLocaleString()}</span>
-                            <span class="form-perf-stat-label">Submissions</span>
-                        </div>
-                        <div class="form-perf-stat">
-                            <span class="form-perf-stat-val" style="color:var(--status-critical);">${d.incs}</span>
-                            <span class="form-perf-stat-label">Incidents</span>
-                        </div>
-                        <div class="form-perf-stat">
-                            <span class="form-perf-stat-val" style="color:${rateColor};">${d.rate.toFixed(2)}%</span>
-                            <span class="form-perf-stat-label">Inc. Rate</span>
-                        </div>
-                    </div>
                     <div class="ai-bot-bubble">
                         <div class="bot-icon"><i class="fas fa-robot"></i></div>
                         <div class="bot-text">${perfMsg}</div>
@@ -7231,6 +7251,31 @@
             const allForms = forms.concat([...new Set(state.p1.incs.map(i=>i.surveyForm))].filter(f=>!known.has(f)));
             const iconMap = { 'Dine In':'fa-utensils', 'Delivery':'fa-motorcycle', 'Call Center':'fa-headset' };
             const colorMap = { 'Dine In':'#F59E0B', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' };
+
+            // Small chart summary above the expandable list below — the list
+            // stays as the interactive drill-down (click a form to see which
+            // branches), this just gives the at-a-glance comparison first.
+            const chartCanvasId = 'execIncByFormChart';
+            if (state.charts[chartCanvasId]) state.charts[chartCanvasId].destroy();
+            const chartEl = document.getElementById(chartCanvasId);
+            if(chartEl){
+                const chartCtx = chartEl.getContext('2d');
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+                const gridColor = document.body.classList.contains('dark-theme') ? '#334155' : '#F1F5F9';
+                const counts = allForms.map(fn => state.p1.incs.filter(i=>i.surveyForm===fn).length);
+                state.charts[chartCanvasId] = new Chart(chartCtx, {
+                    type: 'bar',
+                    data: { labels: allForms, datasets: [{ data: counts, backgroundColor: allForms.map(fn=>colorMap[fn]||'#64748B'), borderRadius:5, maxBarThickness:26 }] },
+                    options: {
+                        indexAxis:'y', responsive:true, maintainAspectRatio:false,
+                        plugins: { legend:{display:false} },
+                        scales: {
+                            x: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
+                            y: { grid:{display:false}, ticks:{color:textColor,font:{size:11}} }
+                        }
+                    }
+                });
+            }
 
             const html = allForms.map(fn => {
                 const fIncs = state.p1.incs.filter(i => i.surveyForm === fn);
