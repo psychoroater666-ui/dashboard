@@ -1530,6 +1530,15 @@
         .ct-heat th { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); padding:6px 8px; text-align:center; white-space:nowrap; }
         .ct-heat th.ct-row-h { text-align:left; position:sticky; left:0; background:var(--white); z-index:2; }
         .ct-heat td.ct-row-h { font-size:0.8rem; font-weight:700; color:var(--text-main); text-align:left; white-space:nowrap; padding:6px 10px 6px 4px; position:sticky; left:0; background:var(--white); z-index:1; }
+        /* Cell color is set via a --cell-bg custom property (not a literal
+           background) specifically so it can survive the dashboard's generic
+           "table row hover" rule, which forces background:transparent
+           !important on td on hover — that rule was silently breaking this
+           heatmap: text color stayed white (set for dark cells) while the
+           background reset to transparent underneath it, making the number
+           invisible. This selector is more specific, so it wins instead. */
+        .ct-cell { background: var(--cell-bg, transparent); }
+        .ct-heat tbody tr:hover td.ct-cell { background: var(--cell-bg, transparent) !important; }
         .ct-cell { width:46px; height:38px; border-radius:8px; text-align:center; font-size:0.82rem; font-weight:800; color:#fff; }
         .ct-cell.zero { color:var(--text-muted); font-weight:600; background:var(--bg-light); }
         .ct-legend { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--text-muted); font-weight:600; margin-top:12px; }
@@ -3348,16 +3357,13 @@
 
             <!-- COMPLAINT TOPOGRAPHY -->
             <div id="view-complaints" class="view">
-                <div class="card" style="padding:20px 24px;">
+                <div class="card" style="padding:14px 18px;">
                     <div class="ct-toolbar">
                         <div>
-                            <h3 style="display:flex;align-items:center;gap:10px;margin:0;">
-                                <span style="width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,#010197,#64D0FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.78rem;box-shadow:0 3px 8px rgba(1,1,151,0.3);"><i class="fas fa-fingerprint"></i></span>
-                                COMPLAINT TOPOGRAPHY
-                            </h3>
-                            <div class="text-xs text-muted" id="ct-subtitle" style="font-weight:600;margin-top:4px;">Classified complaints · root cause → operational area → where they cluster</div>
+                            <h3 style="margin:0;font-size:0.92rem;">COMPLAINT TOPOGRAPHY</h3>
+                            <div class="text-xs text-muted" id="ct-subtitle" style="font-weight:600;margin-top:3px;font-size:0.72rem;">Classified complaints · root cause → operational area → where they cluster</div>
                         </div>
-                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                             <div class="ct-seg" id="ct-range">
                                 <button class="active" onclick="app.setComplaintRange('7d', this)">7 Days</button>
                                 <button onclick="app.setComplaintRange('30d', this)">30 Days</button>
@@ -3372,24 +3378,24 @@
                 </div>
 
                 <div class="card" style="padding:20px 24px;">
-                    <div class="section-header"><h3>CATEGORY TREND</h3><span class="text-xs text-muted" id="ct-chart-note" style="font-weight:600;">Top categories across the 3 comparison windows</span></div>
-                    <div class="chart-container" style="height:260px;margin-top:10px;"><canvas id="ctTrendChart"></canvas></div>
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">CATEGORY TREND</h3><span class="text-xs text-muted" id="ct-chart-note" style="font-weight:600;font-size:0.7rem;">Top categories across the 3 comparison windows</span></div>
+                    <div class="chart-container" style="height:220px;margin-top:8px;"><canvas id="ctTrendChart"></canvas></div>
                 </div>
 
-                <div class="card" style="padding:20px 24px;">
-                    <div class="section-header"><h3>CATEGORY LEDGER</h3><span class="text-xs text-muted" id="ct-ledger-note" style="font-weight:600;"></span></div>
-                    <div id="ct-ledger" class="ci-list" style="margin-top:10px;"></div>
+                <div class="card" style="padding:14px 18px;">
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">CATEGORY LEDGER</h3><span class="text-xs text-muted" id="ct-ledger-note" style="font-weight:600;font-size:0.7rem;"></span></div>
+                    <div id="ct-ledger" class="ci-list" style="margin-top:8px;"></div>
                 </div>
 
-                <div class="card" style="padding:20px 24px;">
-                    <div class="section-header"><h3>TOPOGRAPHY HEATMAP</h3><span class="text-xs text-muted" id="ct-heat-note" style="font-weight:600;">Darker = more complaints this month</span></div>
-                    <div class="ct-heat-wrap" style="margin-top:12px;"><table class="ct-heat" id="ct-heatmap"></table></div>
+                <div class="card" style="padding:14px 18px;">
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">TOPOGRAPHY HEATMAP</h3><span class="text-xs text-muted" id="ct-heat-note" style="font-weight:600;font-size:0.7rem;">Darker = more complaints this month</span></div>
+                    <div class="ct-heat-wrap" style="margin-top:8px;"><table class="ct-heat" id="ct-heatmap"></table></div>
                     <div class="ct-legend">Fewer <div class="ct-legend-scale" id="ct-legend"></div> More</div>
                 </div>
 
-                <div class="card" id="ct-unc-card" style="padding:20px 24px;display:none;">
-                    <div class="section-header"><h3>UNCLASSIFIED — REVIEW BACKLOG</h3><span class="text-xs text-muted" id="ct-unc-note" style="font-weight:600;"></span></div>
-                    <div id="ct-unclassified" style="margin-top:12px;"></div>
+                <div class="card" id="ct-unc-card" style="padding:14px 18px;display:none;">
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">UNCLASSIFIED — REVIEW BACKLOG</h3><span class="text-xs text-muted" id="ct-unc-note" style="font-weight:600;font-size:0.7rem;"></span></div>
+                    <div id="ct-unclassified" style="margin-top:8px;"></div>
                 </div>
             </div>
 
@@ -8761,7 +8767,25 @@
             const cols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).slice(0, CT_SCOPE==='region'?8:8).map(x=>x[0]);
             let maxCell = 1;
             realRows.forEach(r => cols.forEach(c => { if((r.colCounts[c]||0) > maxCell) maxCell = r.colCounts[c]; }));
-            const cellColor = n => { if(!n) return ''; const t = n/maxCell; const a = 0.18 + 0.82*t; return `background:rgba(220,38,38,${a.toFixed(2)});${a>0.5?'color:#fff;':'color:var(--text-main);'}`; };
+            // Curated 5-band scale instead of raw alpha-blended red — cleaner,
+            // more consistent-looking than computed opacity, and each band's
+            // text color is fixed rather than derived, so contrast is always
+            // correct. Set as a CSS custom property (not a literal
+            // background) specifically so it can survive the dashboard's
+            // generic "table row hover" rule — see .ct-cell below.
+            const HEAT_BANDS = [
+                { max:0.2,  bg:'#FEF1EE', text:'var(--text-main)' },
+                { max:0.4,  bg:'#F7C9BC', text:'var(--text-main)' },
+                { max:0.6,  bg:'#EC8F76', text:'#fff' },
+                { max:0.8,  bg:'#D85C3A', text:'#fff' },
+                { max:1.01, bg:'#A8471F', text:'#fff' },
+            ];
+            const cellColor = n => {
+                if(!n) return '';
+                const t = n/maxCell;
+                const band = HEAT_BANDS.find(b => t <= b.max) || HEAT_BANDS[HEAT_BANDS.length-1];
+                return `--cell-bg:${band.bg};color:${band.text};`;
+            };
 
             const heat = document.getElementById('ct-heatmap');
             if(!cols.length){ heat.innerHTML = '<tr><td style="color:var(--text-muted);padding:16px;">No data for the latest month.</td></tr>'; }
@@ -8778,7 +8802,7 @@
             }
             document.getElementById('ct-heat-note').textContent = `${monthLabels[0]} · darker = more complaints (top ${cols.length} ${CT_SCOPE==='region'?'regions':'branches'})`;
             const legend = document.getElementById('ct-legend');
-            if(legend) legend.innerHTML = [0.18,0.38,0.58,0.78,1].map(a=>`<span style="background:rgba(220,38,38,${a});"></span>`).join('');
+            if(legend) legend.innerHTML = HEAT_BANDS.map(b=>`<span style="background:${b.bg};"></span>`).join('');
 
             // ── UNCLASSIFIED review backlog ──
             const other = agg['other'];
