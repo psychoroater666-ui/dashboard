@@ -2247,6 +2247,29 @@
                 <span class="topnav-link" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" onclick="app.navigate('data', this)">Data</span>
             </nav>
+            <script>
+                // Fixes the active nav highlight BEFORE the browser paints —
+                // this runs synchronously the instant the parser reaches this
+                // point, well before the deferred app.init() (which only runs
+                // after auth/session checks and data loading) would otherwise
+                // get to it. Without this, the hardcoded "Overview" active
+                // class in the markup above briefly paints on screen on every
+                // refresh before flipping to the tab the user was actually on.
+                (function(){
+                    try {
+                        var savedView = sessionStorage.getItem('crumble_current_view');
+                        if(!savedView || savedView === 'executive') return;
+                        var links = document.querySelectorAll('#topNav .topnav-link');
+                        links.forEach(function(el){ el.classList.remove('active'); });
+                        for(var i=0;i<links.length;i++){
+                            if((links[i].getAttribute('onclick')||'').indexOf("'"+savedView+"'") !== -1){
+                                links[i].classList.add('active');
+                                break;
+                            }
+                        }
+                    } catch(e){}
+                })();
+            </script>
             <div class="header-controls">
                 <div style="position:relative;">
                     <button class="btn-icon" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
