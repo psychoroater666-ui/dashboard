@@ -3555,7 +3555,21 @@
             'blue area': 'North',
             'chaklala scheme 3': 'North'
         };
-        const _regionFor = name => REGION_OVERRIDES[String(name||'').trim().toLowerCase().replace(/\s+/g,' ')] || 'Other';
+        // _regionFor previously ONLY checked this small override table and
+        // fell straight to 'Other' for anything else — completely bypassing
+        // config.branches, where all 14 real branches already have the
+        // correct region set (via the static list or _ensure). That's why
+        // the heatmap's "By Region" view was showing just "North" (the 2
+        // branches actually in this table) and "Other" (literally everyone
+        // else) instead of the real North/South/Central split. Now checks
+        // config.branches first — the same authoritative source the global
+        // filter already uses correctly — and only falls back to this table
+        // for a branch that genuinely hasn't been seen/registered yet.
+        const _regionFor = name => {
+            const b = config.branches.find(x => x.name === name);
+            if(b && b.region) return b.region;
+            return REGION_OVERRIDES[String(name||'').trim().toLowerCase().replace(/\s+/g,' ')] || 'Other';
+        };
 
         /* ═══════════════════════════════════════════════════════════
            LIVE DATA ENGINE — reads two transaction-log tabs from your
@@ -4002,6 +4016,29 @@
             s.max = DATA_MAX_DATE; e.max = DATA_MAX_DATE;
             // default view = latest day of data
             s.value = DATA_MAX_DATE; e.value = DATA_MAX_DATE;
+        }
+
+        // Branch/Region/Channel/Survey scope only — deliberately excludes the
+        // global date range. The Complaints tab has its own self-contained
+        // temporal model (Last/Prev/Prior windows via its own 7d/30d/month
+        // toggle), and forcing that through an unrelated external date picker
+        // breaks the concept: if the header's range is narrow, the tab's own
+        // "last 7 days" becomes meaningless or empty. Scope filters (which
+        // branch/region to look at) still apply — only the date bound doesn't.
+        function _getScopeFilteredIncidents(){
+            let region  = (document.getElementById('filter-region')||{}).value  || 'all';
+            let branch  = (document.getElementById('filter-branch')||{}).value  || 'all';
+            const channel = (document.getElementById('filter-channel')||{}).value || 'all';
+            const survey  = (document.getElementById('filter-survey')||{}).value  || 'all';
+            if(PERM.region !== 'All') region = PERM.region;
+            if(PERM.branch !== 'All') branch = PERM.branch;
+            const _regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
+            return (rawData.incidents || []).filter(item =>
+                (region === 'all' || _regionOf(item.branch) === region) &&
+                (branch === 'all' || item.branch === branch) &&
+                (channel === 'all' || item.channel === channel) &&
+                (survey === 'all' || item.surveyForm === survey)
+            );
         }
 
         function applyGlobalFilters() {
@@ -8698,7 +8735,7 @@
         app.renderComplaintTopography = function(){
             const ledgerEl = document.getElementById('ct-ledger');
             if(!ledgerEl) return;
-            const incs = state.p1.incs || [];
+            const incs = _getScopeFilteredIncidents();
 
             // Region coverage check — config.branches accumulates every real
             // branch name seen in the live data (via _ensure), each with a
@@ -8819,7 +8856,7 @@
             // ── HEATMAP (category × branch/region, latest month) ──
             const colTotals = {};
             realRows.forEach(r => Object.entries(r.colCounts).forEach(([c,n]) => colTotals[c] = (colTotals[c]||0)+n));
-            const cols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).slice(0, CT_SCOPE==='region'?8:8).map(x=>x[0]);
+            const cols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).slice(0, CT_SCOPE==='region'?3:16).map(x=>x[0]);
             let maxCell = 1;
             realRows.forEach(r => cols.forEach(c => { if((r.colCounts[c]||0) > maxCell) maxCell = r.colCounts[c]; }));
             // Curated 5-band scale instead of raw alpha-blended red — cleaner,
