@@ -2479,6 +2479,21 @@
                         </div>
                     </div>
 
+                    <!-- Staff & Location Rankings — BM/City/Region on one row,
+                         OM/SOM/HOP (each an aggregate across the branches they
+                         oversee) on the next. Each card's metric is switchable
+                         between Smile Score and Incident Rate independently. -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="bm"></div>
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="city"></div>
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="region"></div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="om"></div>
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="som"></div>
+                        <div class="card rank-card" style="padding:20px;" data-rank-kind="hop"></div>
+                    </div>
+
                     <!-- Needs Attention Today — the one direct action list on
                          an otherwise all-chart page -->
                     <div class="card" style="padding:20px;">
@@ -3515,7 +3530,7 @@
                 <div class="card" id="submissions-export-card" style="display:none;">
                     <div class="section-header" style="margin-bottom:16px;">
                         <h3><i class="fas fa-download" style="color:var(--accent-blue);margin-right:6px;"></i> Export Data</h3>
-                        <div style="font-size:0.72rem;color:var(--text-muted);">Also respects the date/branch/region filters set above</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">Branch and Form also filter the table below live. Also respects the date/region filters set above.</div>
                     </div>
 
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:18px;">
@@ -3528,13 +3543,13 @@
                         </div>
                         <div>
                             <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Branch</div>
-                            <select id="export-branch-select" class="select-input" style="width:100%;">
+                            <select id="export-branch-select" class="select-input" style="width:100%;" onchange="submissionsFilterChanged()">
                                 <option value="">All Branches</option>
                             </select>
                         </div>
                         <div>
                             <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Form</div>
-                            <select id="export-form-select" class="select-input" style="width:100%;">
+                            <select id="export-form-select" class="select-input" style="width:100%;" onchange="submissionsFilterChanged()">
                                 <option value="">All Forms</option>
                                 <option value="Dine In">Dine In</option>
                                 <option value="Delivery">Delivery</option>
@@ -3651,14 +3666,14 @@
         // 1. DATA CONFIGURATION & SYSTEM STATE
         // ==========================================
         const config = {
-            branches: [ {name:'Gujranwala', region:'Central', basePq:88, baseSvc:86}, {name:'Saddar', region:'North', basePq:86, baseSvc:85}, {name:'Johar Town', region:'Central', basePq:85, baseSvc:82}, {name:'MM Alam Road', region:'Central', basePq:89, baseSvc:88}, {name:'Canal Road FSD', region:'Central', basePq:87, baseSvc:85}, {name:'DHA', region:'Central', basePq:87, baseSvc:86}, {name:'F-11', region:'North', basePq:91, baseSvc:89}, {name:'Peshawar', region:'North', basePq:84, baseSvc:83}, {name:'Lake City', region:'Central', basePq:88, baseSvc:86}, {name:'I-8', region:'North', basePq:90, baseSvc:88}, {name:'Multan', region:'South', basePq:82, baseSvc:80}, {name:'Bahria Phase 4', region:'North', basePq:86, baseSvc:85} ],
+            branches: [ {name:'Gujranwala', region:'Central', city:'Gujranwala', basePq:88, baseSvc:86}, {name:'Saddar', region:'North', city:'Rawalpindi', basePq:86, baseSvc:85}, {name:'Johar Town', region:'Central', city:'Lahore', basePq:85, baseSvc:82}, {name:'MM Alam Road', region:'Central', city:'Lahore', basePq:89, baseSvc:88}, {name:'Canal Road FSD', region:'Central', city:'Faisalabad', basePq:87, baseSvc:85}, {name:'DHA', region:'Central', city:'Lahore', basePq:87, baseSvc:86}, {name:'F-11', region:'North', city:'Islamabad', basePq:91, baseSvc:89}, {name:'Peshawar', region:'North', city:'Peshawar', basePq:84, baseSvc:83}, {name:'Lake City', region:'Central', city:'Lahore', basePq:88, baseSvc:86}, {name:'I-8', region:'North', city:'Islamabad', basePq:90, baseSvc:88}, {name:'Multan', region:'South', city:'Multan', basePq:82, baseSvc:80}, {name:'Bahria Phase 4', region:'North', city:'Islamabad', basePq:86, baseSvc:85} ],
             forms: [ {name:'Cookies', color:'#F59E0B', icon:'fa-cookie'}, {name:'Shakes', color:'#10B981', icon:'fa-blender'}, {name:'Cookies & Cream', color:'#8B5CF6', icon:'fa-ice-cream'}, {name:'Crumble Pots', color:'#3B82F6', icon:'fa-mug-hot'}, {name:'Service', color:'#64748B', icon:'fa-user-tie'} ],
             channels: [ {name:'In-Store', color:'#10B981'} ],
             surveyForms: ['Product', 'Service', 'General'],
             complaints: ['Service Issue', 'Cookies', 'Shakes', 'Cookies & Cream', 'Crumble Pots']
         };
 
-        const rawData = { submissions: [], incidents: [] };
+        const rawData = { submissions: [], incidents: [], branchStaff: {} };
         const SYSTEM_NOW = new Date('2026-08-26T12:00:00');
 
         // ── Branch → Region overrides ──────────────────────────────────────────
@@ -3713,6 +3728,13 @@
             branchDxUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=1854997467&single=true&output=csv',
             radarUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=693156343&single=true&output=csv',
             channelInsightUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=248655573&single=true&output=csv',
+            // Branch → staff mapping for the ranking leaderboards (BM/OM/SOM/HOP).
+            // Add a "Branch Staff" tab with columns: Branch | BM Name | OM Name |
+            // SOM Name | HOP Name (one row per branch — OM/SOM/HOP repeat across
+            // however many branches they oversee). Then File → Share → Publish
+            // to web → that tab → CSV → paste the link here. Leave '' and the
+            // ranking cards will show "not set up yet" instead of breaking.
+            branchStaffUrl: '',
             // One entry per feedback form. Paste each form's published-to-web CSV link into url.
             sources: [
                 { form:'Dine In',     channel:'In-Store',
@@ -3727,7 +3749,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.23';
+        const BUILD = 'v1.25';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3792,7 +3814,7 @@
         function _ensure(kind, name){
             if(!name) return;
             if(kind==='branch' && !config.branches.some(b=>b.name===name))
-                config.branches.push({name, region:_regionFor(name), basePq:85, baseSvc:85});
+                config.branches.push({name, region:_regionFor(name), city:name, basePq:85, baseSvc:85});
             if(kind==='form' && !config.forms.some(f=>f.name===name))
                 config.forms.push({name, color:_PALETTE[config.forms.length%_PALETTE.length], icon:'fa-tag'});
             if(kind==='channel' && !config.channels.some(c=>c.name===name))
@@ -4049,6 +4071,12 @@
                 guardedIncs.forEach(x=>rawData.incidents.push(x));
                 if(LIVE.incidentResolutionUrl){
                     try { applyIncidentResolutions(await loadIncidentResolutionsFromSheet()); } catch(e){ console.warn('Incident resolution apply failed:', e); }
+                }
+                if(LIVE.branchStaffUrl){
+                    try {
+                        const staffMap = await loadBranchStaffFromSheet();
+                        if(staffMap) rawData.branchStaff = staffMap;
+                    } catch(e){ console.warn('Branch staff apply failed:', e); }
                 }
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
@@ -4695,6 +4723,16 @@
             if(_submissionsPage < 0) _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
         }
+        // The Branch/Form dropdowns above the table were only ever read at
+        // export time — picking a branch here and hitting the page's Refresh
+        // button (which just re-pulls live data against the GLOBAL filters)
+        // never touched them, so the on-screen table kept showing everyone.
+        // This actually applies them to what's displayed, live, the moment
+        // either one changes — no separate "apply" step needed.
+        function submissionsFilterChanged() {
+            _submissionsPage = 0;
+            if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
+        }
 
         function toggleExcludedPanel() {
             const details = document.getElementById('submissions-excluded-details');
@@ -5277,6 +5315,35 @@
         // every refresh, keyed by the same stable key used for alert dedup
         // (our own INC-xxx ids aren't stable across refreshes, so they can't
         // be used to persist anything long-term).
+        // Branch → { bm, om, som, hop } lookup for the ranking leaderboards.
+        // Read fresh on every load like the resolution sheets — a staff
+        // change should show up on the next refresh, not require a redeploy.
+        async function loadBranchStaffFromSheet(){
+            if(!LIVE.branchStaffUrl) return null;
+            try {
+                const res = await _fetch(LIVE.branchStaffUrl);
+                if(!res || !res.length) return null;
+                const map = {};
+                res.forEach(row => {
+                    const keys = Object.keys(row);
+                    const branchKey = keys.find(k => k.toLowerCase().trim() === 'branch') || keys.find(k => k.toLowerCase().includes('branch'));
+                    const bmKey     = keys.find(k => k.toLowerCase().trim() === 'bm name') || keys.find(k => k.toLowerCase().includes('bm'));
+                    const omKey     = keys.find(k => k.toLowerCase().trim() === 'om name') || keys.find(k => k.toLowerCase().includes('om'));
+                    const somKey    = keys.find(k => k.toLowerCase().trim() === 'som name') || keys.find(k => k.toLowerCase().includes('som'));
+                    const hopKey    = keys.find(k => k.toLowerCase().trim() === 'hop name') || keys.find(k => k.toLowerCase().includes('hop'));
+                    const branch = branchKey ? String(row[branchKey]||'').trim() : '';
+                    if(!branch) return;
+                    map[branch] = {
+                        bm:  bmKey  ? String(row[bmKey] ||'').trim() : '',
+                        om:  omKey  ? String(row[omKey] ||'').trim() : '',
+                        som: somKey ? String(row[somKey]||'').trim() : '',
+                        hop: hopKey ? String(row[hopKey]||'').trim() : ''
+                    };
+                });
+                return map;
+            } catch(err){ console.warn('Branch staff read-back failed:', err); return null; }
+        }
+
         async function loadIncidentResolutionsFromSheet(){
             if(!LIVE.incidentResolutionUrl) return null;
             try {
@@ -5953,6 +6020,7 @@
                     this.renderExecSocialSentimentChart();
                     this.renderExecPeakHoursChart();
                     this.renderExecRegionalChart();
+                    renderStaffRankings();
                     this.renderExecNeedsAttention();
                     try { this.renderChannelDoughnut('channelDoughnut'); } catch(e){}
                     if(typeof app.renderFormPerf === 'function') app.renderFormPerf();
@@ -7098,6 +7166,13 @@
                             return s.date ? Date.parse(s.date + 'T12:00:00') : 0;
                         };
                         let sorted = state.p1.subs.slice().sort((a,b) => getSortTs(b) - getSortTs(a));
+                        // Branch/Form filters live right above this table (in the
+                        // export panel) — applying them here too, not just at
+                        // export time, so picking one actually changes what's shown.
+                        const filterBranch = document.getElementById('export-branch-select')?.value || '';
+                        const filterForm   = document.getElementById('export-form-select')?.value || '';
+                        if(filterBranch) sorted = sorted.filter(s => s.branch === filterBranch);
+                        if(filterForm)   sorted = sorted.filter(s => (s.surveyForm||s.form) === filterForm);
                         const term = (_submissionsSearchTerm || '').toLowerCase().trim();
                         if(term){
                             sorted = sorted.filter(s => {
@@ -7812,6 +7887,165 @@
                 complaintRate: s ? (i/s)*100 : 0,
                 totalVolumeScore: s
             };
+        }
+
+        // ── Staff & Location Rankings (Overview) ────────────────────────────
+        // Six leaderboards: BM (one per branch) and City/Region (grouped
+        // places) rank on the current global-filter period directly; OM/SOM/
+        // HOP rank the STAFF who oversee a group of branches (per the
+        // "Branch Staff" sheet — see LIVE.branchStaffUrl), so their score is
+        // a submissions-weighted average across every branch under them
+        // rather than a simple average of branch scores (a 500-submission
+        // branch should count more than a 5-submission one).
+        const RANK_META = {
+            bm:     { title: 'BM Ranking',     sub: 'Branch Manager' },
+            city:   { title: 'City Ranking',   sub: '' },
+            region: { title: 'Region Ranking', sub: '' },
+            om:     { title: 'OM Ranking',     sub: 'Operations Manager' },
+            som:    { title: 'SOM Ranking',    sub: 'Senior Ops Manager' },
+            hop:    { title: 'HOP Ranking',    sub: 'Head of Operations' }
+        };
+        const _rankState = {
+            bm:     { metric: 'smile', page: 0 },
+            city:   { metric: 'smile', page: 0 },
+            region: { metric: 'smile', page: 0 },
+            om:     { metric: 'smile', page: 0 },
+            som:    { metric: 'smile', page: 0 },
+            hop:    { metric: 'smile', page: 0 }
+        };
+        const RANK_PAGE_SIZE = 5;
+
+        function computeStaffRankings(metric){
+            const staff = rawData.branchStaff || {};
+            const better = metric === 'incident' ? ((a,b)=>a-b) : ((a,b)=>b-a); // incident: lower is better; smile: higher is better
+
+            const branchMetrics = config.branches.map(b => {
+                const subs = state.p1.subs.filter(x => x.branch === b.name);
+                const incs = state.p1.incs.filter(x => x.branch === b.name);
+                const rated = subs.filter(x => x.smileScore != null);
+                const smile = rated.length ? (rated.filter(x=>x.smileScore>=4).length/rated.length)*100 : null;
+                const incidentRate = subs.length ? (incs.length/subs.length)*100 : null;
+                return { branch: b.name, region: b.region, city: b.city || b.name, subs: subs.length, incs: incs.length, smile, incidentRate };
+            });
+
+            const scoreOf = m => metric === 'incident' ? m.incidentRate : m.smile;
+
+            const bm = branchMetrics
+                .filter(m => scoreOf(m) != null && m.subs > 0)
+                .map(m => ({ label: (staff[m.branch] && staff[m.branch].bm) || m.branch, sub: m.branch, value: scoreOf(m), count: m.subs }))
+                .sort((a,b) => better(a.value, b.value));
+
+            const groupBy = (keyFn) => {
+                const groups = {};
+                branchMetrics.forEach(m => {
+                    const key = keyFn(m);
+                    if(!key) return;
+                    if(!groups[key]) groups[key] = { subs:0, incs:0, smileNum:0, smileDen:0, branches:0 };
+                    const g = groups[key];
+                    g.subs += m.subs; g.incs += m.incs; g.branches++;
+                    if(m.smile != null){ g.smileNum += m.smile * m.subs; g.smileDen += m.subs; }
+                });
+                return Object.keys(groups)
+                    .map(key => {
+                        const g = groups[key];
+                        const smile = g.smileDen ? g.smileNum / g.smileDen : null;
+                        const incidentRate = g.subs ? (g.incs / g.subs) * 100 : null;
+                        const value = metric === 'incident' ? incidentRate : smile;
+                        return { label: key, sub: g.branches + ' branch' + (g.branches===1?'':'es'), value, count: g.subs };
+                    })
+                    .filter(x => x.value != null && x.count > 0)
+                    .sort((a,b) => better(a.value, b.value));
+            };
+
+            return {
+                bm,
+                city:   groupBy(m => m.city),
+                region: groupBy(m => m.region),
+                om:     groupBy(m => (staff[m.branch] && staff[m.branch].om)  || null),
+                som:    groupBy(m => (staff[m.branch] && staff[m.branch].som) || null),
+                hop:    groupBy(m => (staff[m.branch] && staff[m.branch].hop) || null)
+            };
+        }
+
+        function renderStaffRankings(){
+            const cards = document.querySelectorAll('.rank-card[data-rank-kind]');
+            if(!cards.length) return;
+            const smileMetric   = computeStaffRankings('smile');
+            const incidentMetric = computeStaffRankings('incident');
+            const byMetric = { smile: smileMetric, incident: incidentMetric };
+            cards.forEach(card => _renderOneRankCard(card, byMetric));
+        }
+
+        function _renderOneRankCard(card, byMetric){
+            const kind = card.dataset.rankKind;
+            const meta = RANK_META[kind];
+            const st = _rankState[kind];
+            const list = (byMetric || { smile: computeStaffRankings('smile'), incident: computeStaffRankings('incident') })[st.metric][kind];
+            const staffMissing = ['om','som','hop'].includes(kind) && !Object.keys(rawData.branchStaff||{}).length;
+
+            const totalPages = Math.max(1, Math.ceil(list.length / RANK_PAGE_SIZE));
+            if(st.page >= totalPages) st.page = totalPages - 1;
+            if(st.page < 0) st.page = 0;
+            const pageItems = list.slice(st.page * RANK_PAGE_SIZE, st.page * RANK_PAGE_SIZE + RANK_PAGE_SIZE);
+            const fromN = list.length ? st.page * RANK_PAGE_SIZE + 1 : 0;
+            const toN   = Math.min(list.length, st.page * RANK_PAGE_SIZE + RANK_PAGE_SIZE);
+
+            const valFmt = v => st.metric === 'incident' ? `${v.toFixed(1)}%` : Math.round(v);
+
+            let bodyHtml;
+            if(staffMissing){
+                bodyHtml = `<div style="text-align:center;padding:24px 10px;color:var(--text-muted);font-size:0.78rem;line-height:1.5;">
+                    <i class="fas fa-user-slash" style="font-size:1.1rem;margin-bottom:8px;display:block;opacity:.5;"></i>
+                    Not set up yet — add the "Branch Staff" sheet and paste its published link into <code style="font-size:0.7rem;">LIVE.branchStaffUrl</code>.
+                </div>`;
+            } else if(!list.length){
+                bodyHtml = `<div style="text-align:center;padding:24px 10px;color:var(--text-muted);font-size:0.8rem;">No data for the current filters.</div>`;
+            } else {
+                bodyHtml = pageItems.map((item, i) => {
+                    const rank = st.page * RANK_PAGE_SIZE + i + 1;
+                    return `<div style="display:flex;align-items:center;gap:14px;padding:10px 0;">
+                        <div style="width:46px;height:46px;border-radius:50%;border:2.5px solid #6366F1;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem;color:var(--text-main);flex-shrink:0;">#${rank}</div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.88rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.label}</div>
+                            <div style="font-size:1.15rem;font-weight:800;color:var(--text-main);">${valFmt(item.value)}${st.metric==='smile'?'':''}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            const paginationHtml = (!staffMissing && list.length > RANK_PAGE_SIZE) ? `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:10px;border-top:1px solid var(--border-color);font-size:0.75rem;color:var(--text-muted);">
+                    <span>Showing ${fromN} to ${toN} of ${list.length}</span>
+                    <span style="display:flex;gap:14px;">
+                        <button onclick="_rankChangePage('${kind}',-1)" ${st.page===0?'disabled':''} style="background:none;border:none;cursor:${st.page===0?'default':'pointer'};color:${st.page===0?'var(--border-color)':'var(--text-main)'};font-weight:700;font-size:0.78rem;">Prev</button>
+                        <button onclick="_rankChangePage('${kind}',1)" ${st.page>=totalPages-1?'disabled':''} style="background:none;border:none;cursor:${st.page>=totalPages-1?'default':'pointer'};color:${st.page>=totalPages-1?'var(--border-color)':'var(--text-main)'};font-weight:700;font-size:0.78rem;">Next</button>
+                    </span>
+                </div>` : '';
+
+            card.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;">
+                    <div style="min-width:0;">
+                        <h3 style="font-size:0.9rem;font-weight:800;color:var(--text-main);white-space:nowrap;">${meta.title}</h3>
+                        ${meta.sub ? `<div style="font-size:0.68rem;color:var(--text-muted);font-weight:600;margin-top:1px;">${meta.sub}</div>` : ''}
+                    </div>
+                    <select onchange="_rankChangeMetric('${kind}', this.value)" style="font-size:0.76rem;padding:6px 26px 6px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-family:'Inter',sans-serif;font-weight:600;flex-shrink:0;">
+                        <option value="smile"${st.metric==='smile'?' selected':''}>Smile Score</option>
+                        <option value="incident"${st.metric==='incident'?' selected':''}>Incident Rate</option>
+                    </select>
+                </div>
+                <div>${bodyHtml}</div>
+                ${paginationHtml}
+            `;
+        }
+
+        function _rankChangeMetric(kind, metric){
+            _rankState[kind].metric = metric;
+            _rankState[kind].page = 0;
+            _renderOneRankCard(document.querySelector(`.rank-card[data-rank-kind="${kind}"]`));
+        }
+        function _rankChangePage(kind, delta){
+            _rankState[kind].page += delta;
+            _renderOneRankCard(document.querySelector(`.rank-card[data-rank-kind="${kind}"]`));
         }
 
         const branchCompare = {
