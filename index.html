@@ -3727,7 +3727,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.21';
+        const BUILD = 'v1.22';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -10885,12 +10885,60 @@
             return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
         }
 
+        // ── Cross-device profile photo ──────────────────────────────────────
+        // The upload/save side was already wired to the backend correctly —
+        // the missing piece was that NOTHING ever fetched it back. The avatar
+        // below was rendering from localStorage only, which is per-browser,
+        // so a photo uploaded on one device correctly saved to the shared
+        // sheet but no other device ever asked for it. This fetches the full
+        // shared photo map once per session and re-renders the avatar (and
+        // caches it locally) the moment it arrives.
+        let _sharedProfilePhotos = null;
+        function _fetchSharedProfilePhotos(){
+            if(!LIVE.slScriptUrl) return;
+            fetch(LIVE.slScriptUrl + '?action=get_profile_photos')
+                .then(r => r.json())
+                .then(res => {
+                    if(res && res.status === 'success' && res.photos){
+                        _sharedProfilePhotos = res.photos;
+                        const email = (PERM.email || '').trim().toLowerCase();
+                        const photo = email ? _sharedProfilePhotos[email] : null;
+                        const dpKey = 'crumble_dp_' + (PERM.email || 'user');
+                        if(photo){
+                            try { localStorage.setItem(dpKey, photo); } catch(e){}
+                        } else {
+                            // Sheet has no photo (or it was removed elsewhere) —
+                            // don't let a stale local copy keep showing forever.
+                            try { localStorage.removeItem(dpKey); } catch(e){}
+                        }
+                        const avatar = document.getElementById('user-avatar-el');
+                        if(avatar){
+                            if(photo){
+                                avatar.style.padding  = '0';
+                                avatar.style.overflow = 'hidden';
+                                avatar.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+                            } else {
+                                const initials = (PERM.name||'U').split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U';
+                                const avatarColor = getAvatarColor(PERM.name||'U');
+                                avatar.style.padding    = '';
+                                avatar.style.overflow   = '';
+                                avatar.style.background = avatarColor.bg;
+                                avatar.style.boxShadow  = `0 2px 8px ${avatarColor.shadow}`;
+                                avatar.innerHTML = initials;
+                            }
+                        }
+                    }
+                })
+                .catch(()=>{}); // non-fatal — the initials avatar is a perfectly fine fallback
+        }
+
         function authApplyPermissions(user){
             // Load into global PERM object
             PERM.role   = user.role   || 'Viewer';
             PERM.region = user.region || 'All';
             PERM.branch = user.branch || 'All';
             PERM.name   = user.name   || user.email || '';
+            PERM.email  = user.email  || PERM.email || '';
 
             // ── Lock region filter ──
             const regionEl = document.getElementById('filter-region');
@@ -11087,14 +11135,15 @@
                 }
                 const menu = document.getElementById('dp-menu');
                 if(menu) menu.style.display = 'none';
+                if(_sharedProfilePhotos) _sharedProfilePhotos[(userEmail||'').trim().toLowerCase()] = base64;
                 // Shared save so the admin and this same account on any other
-                // browser/device can see it too — NOT YET WIRED TO A REAL
-                // BACKEND HANDLER. The Apps Script doPost function needs a
-                // branch added for action:'save_profile_photo' before this
-                // will actually persist anywhere beyond this one browser.
-                // Fails silently on purpose for now (fire-and-forget, like
-                // the other non-critical saves in this dashboard) so upload
-                // still works locally even before that backend piece exists.
+                // browser/device can see it too. The backend handler for
+                // action:'save_profile_photo' does exist (Incident_Resolution-
+                // style upsert into User_Profiles) — the piece that was
+                // actually missing was nothing ever fetching it back on other
+                // devices (see _fetchSharedProfilePhotos). Still fire-and-
+                // forget here, like the other non-critical saves in this
+                // dashboard, so the upload itself never blocks on the network.
                 fetch(LIVE.slScriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -11105,7 +11154,8 @@
 
         function removeDp(){
             const emailEl = document.getElementById('dp-email-store');
-            const dpKey = 'crumble_dp_' + (emailEl ? emailEl.dataset.email : 'user');
+            const userEmail = emailEl ? emailEl.dataset.email : 'user';
+            const dpKey = 'crumble_dp_' + userEmail;
             localStorage.removeItem(dpKey);
             const avatar = document.getElementById('user-avatar-el');
             if(avatar){
@@ -11119,6 +11169,16 @@
             }
             const menu = document.getElementById('dp-menu');
             if(menu) menu.style.display = 'none';
+            // Clear it on the shared side too (backend already treats an empty
+            // string as "photo removed") — without this, the next fetch on any
+            // device (including this one, next login) would just bring the old
+            // photo right back.
+            if(_sharedProfilePhotos) _sharedProfilePhotos[(userEmail||'').trim().toLowerCase()] = '';
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'save_profile_photo', email: userEmail, photo: '' })
+            }).catch(()=>{});
         }
 
         function authLogout(){
@@ -11131,6 +11191,7 @@
             if(ls) ls.classList.remove('visible');
             document.body.classList.add('app-ready');
             authApplyPermissions(user);
+            _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
             app.init();
         }
 
