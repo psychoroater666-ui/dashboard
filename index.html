@@ -3024,7 +3024,7 @@
                 <div class="card" style="padding:0;overflow:hidden;">
                     <div class="table-wrapper" style="max-height:560px;overflow-y:auto;">
                         <table id="inc-detail-table">
-                            <thead><tr><th>Code</th><th>Timeline</th><th>Date</th><th>Rating</th><th>Survey</th><th>Label</th><th>Branch</th><th></th></tr></thead>
+                            <thead><tr><th>Code</th><th>Timeline</th><th>Date</th><th>Rating</th><th>Survey</th><th>Label</th><th>Branch</th><th>Order #</th><th></th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
@@ -3762,7 +3762,12 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.32';
+        const BUILD = 'v1.34';
+        // Single source of truth for the two Harley source taxonomies —
+        // used by BOTH the Submissions source filters and the
+        // Create-Submission form, so the two can never drift apart.
+        const CS_ORDER_SOURCES     = ['Foodpanda','Blink App/Website','Phone Call Orders','Whatsapp Orders','Walk-in orders','Something Else'];
+        const CS_COMPLAINT_SOURCES = ['Foodpanda','Phone Call','Instagram','Facebook','Whatsapp','Email','Play store','Other'];
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -6753,7 +6758,7 @@
                     if(cf !== 'all' && (i.channel||'—') !== cf) return false;
                     if(vf !== 'all' && (i.caseStatus||'verified') !== vf) return false;
                     if(q){
-                        const hay = `${i.branch} ${i.product} ${i.complaintType} ${i.note||''}`.toLowerCase();
+                        const hay = `${i.branch} ${i.product} ${i.complaintType} ${i.note||''} ${_rawOrderId(i._raw)}`.toLowerCase();
                         if(!hay.includes(q)) return false;
                     }
                     return true;
@@ -6767,8 +6772,15 @@
                 const rows = filtered.slice(0, 300);
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
                 document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
-                    const dateStr = inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
+                    // Exact creation date+time from the sheet's precise "Created At"
+                    // (same format as the Submissions tab). Falls back to the
+                    // business-day date only if the raw timestamp can't be parsed.
+                    const _incTs = _parseSheetDateTime(_rawFieldExact(inc._raw, 'Created At'));
+                    const dateStr = !isNaN(_incTs)
+                        ? new Date(_incTs).toLocaleString('en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'})
+                        : (inc.date ? new Date(inc.date+'T00:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—');
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
+                    const orderNo = _rawOrderId(inc._raw);
                     const score = inc.smileScore || inc.rating || 0;
                     const ratingColor = score<=1?'#DC2626':score<=2?'#F97316':score<=3?'#F59E0B':'#059669';
                     const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : {title:(inc.complaintType||'—'), id:'other'};
@@ -6795,9 +6807,10 @@
                         <td style="font-size:0.82rem;">${inc.surveyForm||'—'}</td>
                         <td><span class="inc-label-chip" style="background:${lc}1a;color:${lc};">${cat.title}</span></td>
                         <td style="font-weight:600;">${inc.branch||'—'}</td>
+                        <td style="font-family:monospace;font-size:0.78rem;white-space:nowrap;">${orderNo || '<span style="color:var(--text-muted);">—</span>'}</td>
                         <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.openIncidentDetailModal(${idx})" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
                     </tr>`;
-                }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
+                }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 this._incFiltered = rows;
                 // If the detail modal is currently open, refresh its content
                 // with the fresh data (e.g. a resolution just came back from
@@ -7434,28 +7447,37 @@
                                 return nm.includes(term) || ph.includes(term) || oid.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
                             });
                         }
-                        // Order Source / Complaint Source dropdowns — only real
-                        // values actually present in the currently loaded data,
-                        // never invented categories. Grouped case-insensitively
-                        // (option value = lowercase key) so casing variants of
-                        // the same real answer show as one option, not two —
-                        // display label keeps the first casing seen. Repopulated
-                        // each render so a newly-seen value shows up
-                        // automatically; current selection is preserved.
+                        // Order Source / Complaint Source dropdowns — seeded with
+                        // the FULL canonical taxonomy (the same lists as the
+                        // Create-Submission form), so a source with zero rows in
+                        // the current window is still selectable — e.g. to confirm
+                        // nothing came in from it. Any real value found in the data
+                        // that isn't canonical (legacy casing, a typo, or a new
+                        // Harley option not yet mirrored here) is folded in after,
+                        // so a real row is never left unfilterable. Option value =
+                        // lowercase key, matching the case-insensitive filter
+                        // compare above, so casing variants collapse to one option.
                         [
-                            { el: 'submissions-order-source-select', get: s => _rawFieldContains(s._raw,'order','source') },
-                            { el: 'submissions-complaint-source-select', get: s => _rawFieldContains(s._raw,'source','complaint') }
+                            { el: 'submissions-order-source-select',     get: s => _rawFieldContains(s._raw,'order','source'),    canon: CS_ORDER_SOURCES },
+                            { el: 'submissions-complaint-source-select', get: s => _rawFieldContains(s._raw,'source','complaint'), canon: CS_COMPLAINT_SOURCES }
                         ].forEach(cfg => {
                             const sel = document.getElementById(cfg.el);
                             if(!sel) return;
+                            // Canonical options first, kept in Harley's own order.
                             const byNorm = new Map();
+                            cfg.canon.forEach(label => byNorm.set(label.trim().toLowerCase(), label.trim()));
+                            // Then fold in any real value from the data not already covered.
+                            const extras = new Map();
                             state.p1.subs.forEach(s => {
                                 const v = cfg.get(s);
                                 if(!v) return;
                                 const n = v.trim().toLowerCase();
-                                if(!byNorm.has(n)) byNorm.set(n, v.trim());
+                                if(!byNorm.has(n) && !extras.has(n)) extras.set(n, v.trim());
                             });
-                            const entries = Array.from(byNorm.entries()).sort((a,b) => a[1].localeCompare(b[1]));
+                            const entries = [
+                                ...byNorm.entries(),
+                                ...Array.from(extras.entries()).sort((a,b) => a[1].localeCompare(b[1]))
+                            ];
                             const prevVal = sel.value;
                             const placeholderOpt = sel.options[0];
                             sel.innerHTML = '';
@@ -10930,8 +10952,8 @@
                     </div></div>`;
 
             } else if(step.id === 'channel'){ csRenderChoices(area,['Dine in','Takeaway','Delivery'],'channel',true);
-            } else if(step.id === 'source'){ csRenderChoices(area,['Foodpanda','Blink App/Website','Phone Call Orders','Whatsapp Orders','Walk-in orders','Something Else'],'orderSource',true);
-            } else if(step.id === 'complaint_source'){ csRenderChoices(area,['Foodpanda','Phone Call','Instagram','Facebook','Whatsapp','Email','Play store','Other'],'complaintSource',true);
+            } else if(step.id === 'source'){ csRenderChoices(area,CS_ORDER_SOURCES,'orderSource',true);
+            } else if(step.id === 'complaint_source'){ csRenderChoices(area,CS_COMPLAINT_SOURCES,'complaintSource',true);
             } else if(step.id === 'improve'){ csRenderChoices(area,['Customer Service','Ambiance','Order Accuracy','Delivery Speed','Packaging','Something Else','Product Quality'],'improve',true);
             } else if(step.id === 'like_menu'){ csRenderChoices(area,['Taste and Flavor','Presentation','Sweetness','Temperature','Consistency'],'likeMenu',true);
             } else if(step.id === 'like_service'){ csRenderChoices(area,['Service Speed','Order Placement Time','Staff Friendliness','Staff Communication','Staff Hygiene','Product Knowledge'],'likeService',true);
