@@ -5390,6 +5390,17 @@
                                 if(!await loadLive()){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
+                                // Runs unconditionally, even when the render
+                                // below gets skipped for having an unchanged
+                                // submission/incident count — reviewing an
+                                // incident on another device doesn't change
+                                // that count at all, it only sets a field
+                                // (reviewedAt) on an existing one. Without
+                                // this being called before the count-based
+                                // early return, the sound would never stop
+                                // ringing on other devices even though the
+                                // updated data was correctly fetched.
+                                _syncIncidentAlertReviewState();
                                 if(skipRender){ _needsRenderCatchup = true; return; }
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 if(ns===_lsc&&ni===_lic&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
@@ -5398,7 +5409,6 @@
                                 const _prevChartAnim = Chart.defaults.animation;
                                 Chart.defaults.animation = false; // silent redraw — charts can still be recreated on render, so without this each bg poll could replay the full draw-in animation
                                 _s.applyFilters(); renderAlerts();
-                                _syncIncidentAlertReviewState();
                                 Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
                             } finally {
