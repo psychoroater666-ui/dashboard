@@ -10083,6 +10083,11 @@
             csCurrentStep = 1;
             Object.keys(csData).forEach(k => delete csData[k]);
             csStartTime = Date.now();
+            // Defensive reset — guarantees a fresh, clickable Next button on
+            // every open regardless of what state a previous submission left
+            // it in, even if some other future code path fails to reset it.
+            const nextBtnEl = document.getElementById('cs-next-btn');
+            if(nextBtnEl){ nextBtnEl.disabled = false; nextBtnEl.innerHTML = 'Next <i class="fas fa-arrow-right" style="font-size:0.75rem;"></i>'; }
             const modal = document.getElementById('cs-modal');
             const box   = document.getElementById('cs-modal-box');
             modal.style.display = 'flex';
@@ -10360,6 +10365,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body   : JSON.stringify(payload),
                 });
+                // Re-enable before closing — this button element persists
+                // across modal opens (csRenderStep only replaces #cs-body,
+                // not the Next/Prev/Skip buttons around it), so leaving it
+                // disabled here means the NEXT time this form opens for a
+                // second submission in the same session, every step that
+                // actually requires clicking Next (unlike rating, which
+                // auto-advances on its own) would silently do nothing.
+                nextBtn.disabled = false;
+                nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
                 csCloseForm();
                 const toast = document.createElement('div');
                 toast.innerHTML = '<i class="fas fa-check-circle"></i> Submission saved successfully';
