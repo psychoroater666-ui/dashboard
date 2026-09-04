@@ -3762,7 +3762,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.31';
+        const BUILD = 'v1.32';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -4729,6 +4729,18 @@
             return k ? String(raw[k] || '').trim() : '';
         }
 
+        // Order ID needs its own, stricter finder — 'id' as a loose substring
+        // match (via _rawFieldContains) turned out to match completely
+        // unrelated headers that merely contain the letters "id" inside
+        // another word (e.g. "provide", "consider", "avoid"), pulling in the
+        // wrong column's value entirely. Requiring "id"/"no"/"number" as a
+        // standalone word right after "order" avoids that.
+        function _rawOrderId(raw){
+            if(!raw) return '';
+            const k = Object.keys(raw).find(key => /\border\s*(id|no\.?|number)\b/i.test(key));
+            return k ? String(raw[k] || '').trim() : '';
+        }
+
         // Explicitly parses "M/D/YYYY H:MM:SS" (the exact format the sync
         // scripts write) rather than relying on Date.parse, which handles this
         // hybrid format inconsistently — that's what was causing same-day rows
@@ -4790,7 +4802,7 @@
             document.getElementById('sdm-sub').textContent = `${s.branch||'—'} · ${s.surveyForm||s.form||'—'} · ${dateDisp}`;
 
             const phone = _rawFieldExact(s._raw, 'Phone Number');
-            const orderId = _rawFieldContains(s._raw,'order','id');
+            const orderId = _rawOrderId(s._raw);
             const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore} / 5` : '—';
             const keyFacts = [
                 phone ? ['Phone Number', phone] : null,
@@ -7418,7 +7430,7 @@
                             sorted = sorted.filter(s => {
                                 const nm  = _rawFieldExact(s._raw, 'Name').toLowerCase();
                                 const ph  = _rawFieldExact(s._raw, 'Phone Number').toLowerCase();
-                                const oid = _rawFieldContains(s._raw,'order','id').toLowerCase();
+                                const oid = _rawOrderId(s._raw).toLowerCase();
                                 return nm.includes(term) || ph.includes(term) || oid.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
                             });
                         }
@@ -7478,7 +7490,7 @@
                                     : (rawCreatedAt || (s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—'));
                                 const name  = _rawFieldExact(s._raw, 'Name')         || '<span style="color:var(--text-muted);">—</span>';
                                 const phone = _rawFieldExact(s._raw, 'Phone Number') || '<span style="color:var(--text-muted);">—</span>';
-                                const orderId = _rawFieldContains(s._raw,'order','id') || '<span style="color:var(--text-muted);">—</span>';
+                                const orderId = _rawOrderId(s._raw) || '<span style="color:var(--text-muted);">—</span>';
                                 const orderSrc = _rawFieldContains(s._raw,'order','source') || '<span style="color:var(--text-muted);">—</span>';
                                 const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore}/5` : '—';
                                 const commentRaw = s.comment ? String(s.comment).replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
