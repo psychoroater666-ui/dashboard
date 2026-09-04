@@ -3537,7 +3537,7 @@
                 <div class="card" id="submissions-export-card" style="display:none;">
                     <div class="section-header" style="margin-bottom:16px;">
                         <h3><i class="fas fa-download" style="color:var(--accent-blue);margin-right:6px;"></i> Export Data</h3>
-                        <div style="font-size:0.72rem;color:var(--text-muted);">Branch and Form also filter the table below live. Also respects the date/region filters set above.</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);">Branch and Form also filter the table below live. Order Source / Complaint Source (set in the search row below) apply to export too. Also respects the date/region filters set above.</div>
                     </div>
 
                     <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:18px;">
@@ -3585,13 +3585,19 @@
                 <div class="card" id="submissions-detail-card" style="display:none;">
                     <div class="section-header" style="margin-bottom:16px; flex-wrap:wrap; row-gap:12px;">
                         <h3><i class="fas fa-list" style="color:var(--accent-blue);margin-right:6px;"></i> All Submissions</h3>
-                        <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                             <div style="position:relative;">
                                 <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.75rem;color:var(--text-muted);"></i>
-                                <input type="text" id="submissions-search-input" placeholder="Search name, phone, branch, comment…"
+                                <input type="text" id="submissions-search-input" placeholder="Search name, phone, order ID, branch, comment…"
                                        oninput="submissionsSearch(this.value)"
-                                       style="padding:8px 12px 8px 32px; border-radius:8px; border:1.5px solid var(--border-color); font-size:0.8rem; min-width:260px; background:var(--white); color:var(--text-main);">
+                                       style="padding:8px 12px 8px 32px; border-radius:8px; border:1.5px solid var(--border-color); font-size:0.8rem; min-width:240px; background:var(--white); color:var(--text-main);">
                             </div>
+                            <select id="submissions-order-source-select" class="select-input" onchange="submissionsFilterChanged()" style="font-size:0.8rem;padding:8px 26px 8px 10px;">
+                                <option value="">All Order Sources</option>
+                            </select>
+                            <select id="submissions-complaint-source-select" class="select-input" onchange="submissionsFilterChanged()" style="font-size:0.8rem;padding:8px 26px 8px 10px;">
+                                <option value="">All Complaint Sources</option>
+                            </select>
                             <button class="btn-export" id="submissions-refresh-btn" onclick="submissionsManualRefresh()">
                                 <i class="fas fa-rotate"></i> Refresh
                             </button>
@@ -3600,7 +3606,7 @@
                     <div class="table-wrapper">
                         <table id="submissions-detail-table">
                             <thead>
-                                <tr><th>Created At</th><th>Name</th><th>Phone Number</th><th>Location</th><th>Channel</th><th>Rating</th><th>Comment</th></tr>
+                                <tr><th>Created At</th><th>Name</th><th>Phone Number</th><th>Order ID</th><th>Location</th><th>Channel</th><th>Order Source</th><th>Rating</th><th>Comment</th></tr>
                             </thead>
                             <tbody id="submissions-detail-tbody"></tbody>
                         </table>
@@ -3756,7 +3762,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.28';
+        const BUILD = 'v1.31';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -4658,16 +4664,22 @@
             const branch   = document.getElementById('export-branch-select')?.value || '';
             const form     = document.getElementById('export-form-select')?.value || '';
             const validity = document.getElementById('export-validity-select')?.value || '';
+            const orderSrc     = document.getElementById('submissions-order-source-select')?.value || '';
+            const complaintSrc = document.getElementById('submissions-complaint-source-select')?.value || '';
 
             let items = (dataset === 'incidents') ? state.p1.incs : state.p1.subs;
             if(branch) items = items.filter(x => x.branch === branch);
             if(form) items = items.filter(x => (x.surveyForm || x.form) === form);
             if(dataset === 'incidents' && validity) items = items.filter(x => (x.caseStatus || 'verified') === validity);
+            if(orderSrc)     items = items.filter(x => _rawFieldContains(x._raw,'order','source').trim().toLowerCase() === orderSrc);
+            if(complaintSrc) items = items.filter(x => _rawFieldContains(x._raw,'source','complaint').trim().toLowerCase() === complaintSrc);
 
             const nameParts = [dataset === 'incidents' ? 'Incidents' : 'Submissions'];
             if(branch) nameParts.push(branch.replace(/\s+/g,'_'));
             if(form) nameParts.push(form.replace(/\s+/g,'_'));
             if(validity) nameParts.push(validity);
+            if(orderSrc) nameParts.push(orderSrc.replace(/\s+/g,'_'));
+            if(complaintSrc) nameParts.push(complaintSrc.replace(/\s+/g,'_'));
             _exportRawCSV(items, nameParts.join('_'));
         }
 
@@ -4699,6 +4711,21 @@
             if(!raw) return '';
             const target = label.toLowerCase().trim();
             const k = Object.keys(raw).find(key => key.toLowerCase().trim() === target);
+            return k ? String(raw[k] || '').trim() : '';
+        }
+
+        // Same idea as the Apps Script's own find() helper — matches a header
+        // by keywords rather than an exact string, since sheet headers like
+        // "Please Select Order Source." can vary slightly in punctuation from
+        // what's typed here. Used for the Call Center fields the Submissions
+        // filters below need (Order Source, Complaint Source, Order ID).
+        function _rawFieldContains(raw, ...keywords) {
+            if(!raw) return '';
+            const kws = keywords.map(w => w.toLowerCase());
+            const k = Object.keys(raw).find(key => {
+                const kl = key.toLowerCase();
+                return kws.every(w => kl.includes(w));
+            });
             return k ? String(raw[k] || '').trim() : '';
         }
 
@@ -4739,6 +4766,65 @@
         function submissionsFilterChanged() {
             _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
+        }
+
+        // Full-detail view for a single submission — every raw field the
+        // customer/agent actually answered, same depth as Harley's card view,
+        // just reached by clicking the row instead of it all being crammed
+        // into the table. If the submission's rating was low enough to have
+        // become an incident, offers a straight jump to that incident's own
+        // (richer, resolution-tracking) detail view instead of duplicating it here.
+        const _SUBMISSION_SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
+        function openSubmissionDetailModal(stableKey){
+            const s = (state.p1.subs || []).find(x => _incidentStableKey(x) === stableKey)
+                   || (rawData.submissions || []).find(x => _incidentStableKey(x) === stableKey);
+            if(!s) return;
+            const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
+            const parsedTs = _parseSheetDateTime(rawCreatedAt);
+            const dateDisp = !isNaN(parsedTs)
+                ? new Date(parsedTs).toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'2-digit', minute:'2-digit' })
+                : (rawCreatedAt || '—');
+            const name = _rawFieldExact(s._raw, 'Name') || 'Unknown customer';
+
+            document.getElementById('sdm-title').textContent = name;
+            document.getElementById('sdm-sub').textContent = `${s.branch||'—'} · ${s.surveyForm||s.form||'—'} · ${dateDisp}`;
+
+            const phone = _rawFieldExact(s._raw, 'Phone Number');
+            const orderId = _rawFieldContains(s._raw,'order','id');
+            const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore} / 5` : '—';
+            const keyFacts = [
+                phone ? ['Phone Number', phone] : null,
+                orderId ? ['Order ID', orderId] : null,
+                ['Rating', ratingDisp],
+                s.branch ? ['Location', s.branch] : null
+            ].filter(Boolean);
+
+            const qaHtml = Object.entries(s._raw || {})
+                .filter(([k, v]) => v && String(v).trim() && !_SUBMISSION_SKIP_KEYS.has(k.toLowerCase().trim()))
+                .map(([k, v]) => `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);"><div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:3px;">${k}</div><div style="font-size:0.85rem;color:var(--text-main);font-weight:600;">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
+                .join('');
+
+            document.getElementById('sdm-body').innerHTML = `
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+                    ${keyFacts.map(([k,v]) => `<div style="background:var(--bg-light);border-radius:9px;padding:10px 12px;"><div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:3px;">${k}</div><div style="font-size:0.88rem;color:var(--text-main);font-weight:700;">${v}</div></div>`).join('')}
+                </div>
+                <div>${qaHtml || '<div style="color:var(--text-muted);font-size:0.82rem;">No additional survey answers recorded.</div>'}</div>
+            `;
+
+            const isIncident = s.smileScore != null && s.smileScore <= INCIDENT_MAX_RATING;
+            const footerEl = document.getElementById('sdm-footer');
+            footerEl.innerHTML = isIncident
+                ? `<button class="ia-btn-close" onclick="closeSubmissionDetailModal()">Close</button>
+                   <button class="ia-btn-view" onclick="closeSubmissionDetailModal(); app.openIncidentDetailModalDirect(window._pendingLinkedIncident);"><i class="fas fa-triangle-exclamation" style="margin-right:6px;"></i>View Linked Incident</button>`
+                : `<button class="ia-btn-close" onclick="closeSubmissionDetailModal()">Close</button>`;
+            if(isIncident){
+                window._pendingLinkedIncident = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey) || s;
+            }
+
+            document.getElementById('submission-detail-modal').style.display = 'flex';
+        }
+        function closeSubmissionDetailModal(){
+            document.getElementById('submission-detail-modal').style.display = 'none';
         }
 
         function toggleExcludedPanel() {
@@ -4928,6 +5014,22 @@
                         <button class="ia-btn-close" onclick="closeUserForm()">Cancel</button>
                         <button class="ia-btn-view" id="uf-save-btn" onclick="saveUserForm()">Save User</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Submission detail — every raw field the customer/agent
+                 actually answered, click-through from the Submissions table. -->
+            <div class="ia-overlay" id="submission-detail-modal">
+                <div class="ia-card" style="max-width:560px;max-height:85vh;display:flex;flex-direction:column;">
+                    <div class="ia-header">
+                        <div>
+                            <div class="ia-title" id="sdm-title">Submission</div>
+                            <div class="ia-sub" id="sdm-sub">—</div>
+                        </div>
+                        <button class="ia-close-x" onclick="closeSubmissionDetailModal()"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="ia-body" id="sdm-body" style="overflow-y:auto;"></div>
+                    <div class="ia-footer" id="sdm-footer" style="justify-content:flex-end;"></div>
                 </div>
             </div>
         `);
@@ -7296,16 +7398,59 @@
                         // export time, so picking one actually changes what's shown.
                         const filterBranch = document.getElementById('export-branch-select')?.value || '';
                         const filterForm   = document.getElementById('export-form-select')?.value || '';
+                        const filterOrderSrc = document.getElementById('submissions-order-source-select')?.value || '';
+                        const filterComplaintSrc = document.getElementById('submissions-complaint-source-select')?.value || '';
                         if(filterBranch) sorted = sorted.filter(s => s.branch === filterBranch);
                         if(filterForm)   sorted = sorted.filter(s => (s.surveyForm||s.form) === filterForm);
+                        // Compared case-insensitively — Harley and this
+                        // dashboard's own Create Submission form have used
+                        // slightly different casing for the same option in the
+                        // past (e.g. "Whatsapp Orders" vs "WhatsApp Orders"),
+                        // and old sheet rows saved under the older wording
+                        // can't be edited retroactively — so exact-casing
+                        // matching would silently split what's really one
+                        // category into two. Normalizing here keeps them merged
+                        // regardless of which system a row came from.
+                        if(filterOrderSrc)     sorted = sorted.filter(s => _rawFieldContains(s._raw,'order','source').trim().toLowerCase() === filterOrderSrc);
+                        if(filterComplaintSrc) sorted = sorted.filter(s => _rawFieldContains(s._raw,'source','complaint').trim().toLowerCase() === filterComplaintSrc);
                         const term = (_submissionsSearchTerm || '').toLowerCase().trim();
                         if(term){
                             sorted = sorted.filter(s => {
-                                const nm = _rawFieldExact(s._raw, 'Name').toLowerCase();
-                                const ph = _rawFieldExact(s._raw, 'Phone Number').toLowerCase();
-                                return nm.includes(term) || ph.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
+                                const nm  = _rawFieldExact(s._raw, 'Name').toLowerCase();
+                                const ph  = _rawFieldExact(s._raw, 'Phone Number').toLowerCase();
+                                const oid = _rawFieldContains(s._raw,'order','id').toLowerCase();
+                                return nm.includes(term) || ph.includes(term) || oid.includes(term) || (s.branch||'').toLowerCase().includes(term) || (s.comment||'').toLowerCase().includes(term);
                             });
                         }
+                        // Order Source / Complaint Source dropdowns — only real
+                        // values actually present in the currently loaded data,
+                        // never invented categories. Grouped case-insensitively
+                        // (option value = lowercase key) so casing variants of
+                        // the same real answer show as one option, not two —
+                        // display label keeps the first casing seen. Repopulated
+                        // each render so a newly-seen value shows up
+                        // automatically; current selection is preserved.
+                        [
+                            { el: 'submissions-order-source-select', get: s => _rawFieldContains(s._raw,'order','source') },
+                            { el: 'submissions-complaint-source-select', get: s => _rawFieldContains(s._raw,'source','complaint') }
+                        ].forEach(cfg => {
+                            const sel = document.getElementById(cfg.el);
+                            if(!sel) return;
+                            const byNorm = new Map();
+                            state.p1.subs.forEach(s => {
+                                const v = cfg.get(s);
+                                if(!v) return;
+                                const n = v.trim().toLowerCase();
+                                if(!byNorm.has(n)) byNorm.set(n, v.trim());
+                            });
+                            const entries = Array.from(byNorm.entries()).sort((a,b) => a[1].localeCompare(b[1]));
+                            const prevVal = sel.value;
+                            const placeholderOpt = sel.options[0];
+                            sel.innerHTML = '';
+                            sel.appendChild(placeholderOpt);
+                            entries.forEach(([n, label]) => sel.add(new Option(label, n)));
+                            if(entries.some(([n]) => n === prevVal)) sel.value = prevVal;
+                        });
                         const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
                         if(_submissionsPage >= totalPages) _submissionsPage = totalPages - 1;
                         if(_submissionsPage < 0) _submissionsPage = 0;
@@ -7333,11 +7478,25 @@
                                     : (rawCreatedAt || (s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '—'));
                                 const name  = _rawFieldExact(s._raw, 'Name')         || '<span style="color:var(--text-muted);">—</span>';
                                 const phone = _rawFieldExact(s._raw, 'Phone Number') || '<span style="color:var(--text-muted);">—</span>';
+                                const orderId = _rawFieldContains(s._raw,'order','id') || '<span style="color:var(--text-muted);">—</span>';
+                                const orderSrc = _rawFieldContains(s._raw,'order','source') || '<span style="color:var(--text-muted);">—</span>';
                                 const ratingDisp = (s.smileScore !== undefined && s.smileScore !== null) ? `${s.smileScore}/5` : '—';
                                 const commentRaw = s.comment ? String(s.comment).replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
                                 const commentDisp = commentRaw || '<span style="color:var(--text-muted);">—</span>';
-                                return `<tr><td>${dateDisp}</td><td class="font-semibold">${name}</td><td>${phone}</td><td>${s.branch||'—'}</td><td>${s.surveyForm||s.form||'—'}</td><td>${ratingDisp}</td><td>${commentDisp}</td></tr>`;
-                            }).join('') : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions match${term?' your search':' the current filter'}</td></tr>`;
+                                const isIncident = s.smileScore != null && s.smileScore <= INCIDENT_MAX_RATING;
+                                const key = _incidentStableKey(s).replace(/'/g, "\\'");
+                                return `<tr style="cursor:pointer;" onclick="openSubmissionDetailModal('${key}')">
+                                    <td>${dateDisp}</td>
+                                    <td class="font-semibold">${name}${isIncident ? ' <i class="fas fa-triangle-exclamation" style="color:#DC2626;font-size:0.7rem;" title="Became an incident"></i>' : ''}</td>
+                                    <td>${phone}</td>
+                                    <td>${orderId}</td>
+                                    <td>${s.branch||'—'}</td>
+                                    <td>${s.surveyForm||s.form||'—'}</td>
+                                    <td>${orderSrc}</td>
+                                    <td>${ratingDisp}</td>
+                                    <td>${commentDisp}</td>
+                                </tr>`;
+                            }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions match${term?' your search':' the current filter'}</td></tr>`;
                         }
                     } else {
                         detailCard.style.display = 'none';
@@ -10759,16 +10918,20 @@
                     </div></div>`;
 
             } else if(step.id === 'channel'){ csRenderChoices(area,['Dine in','Takeaway','Delivery'],'channel',true);
-            } else if(step.id === 'source'){ csRenderChoices(area,['Foodpanda','Blink App/Website','Phone Call Orders','WhatsApp Orders','Walk-in Orders','Other'],'orderSource',true);
-            } else if(step.id === 'complaint_source'){ csRenderChoices(area,['Foodpanda','Phone call','Instagram','Facebook','WhatsApp','Email','Play store','Other'],'complaintSource',true);
-            } else if(step.id === 'improve'){ csRenderChoices(area,['Food Quality','Customer Service','Ambience','Delivery Speed','Packaging','Order Accuracy','Something else'],'improve',true);
-            } else if(step.id === 'like_menu'){ csRenderChoices(area,['Taste and Flavor','Freshness','Portion Size','Presentation','Something else'],'likeMenu',true);
-            } else if(step.id === 'like_service'){ csRenderChoices(area,['Staff Friendliness','Service Speed','Order Accuracy','Packaging','Something else'],'likeService',true);
+            } else if(step.id === 'source'){ csRenderChoices(area,['Foodpanda','Blink App/Website','Phone Call Orders','Whatsapp Orders','Walk-in orders','Something Else'],'orderSource',true);
+            } else if(step.id === 'complaint_source'){ csRenderChoices(area,['Foodpanda','Phone Call','Instagram','Facebook','Whatsapp','Email','Play store','Other'],'complaintSource',true);
+            } else if(step.id === 'improve'){ csRenderChoices(area,['Customer Service','Ambiance','Order Accuracy','Delivery Speed','Packaging','Something Else','Product Quality'],'improve',true);
+            } else if(step.id === 'like_menu'){ csRenderChoices(area,['Taste and Flavor','Presentation','Sweetness','Temperature','Consistency'],'likeMenu',true);
+            } else if(step.id === 'like_service'){ csRenderChoices(area,['Service Speed','Order Placement Time','Staff Friendliness','Staff Communication','Staff Hygiene','Product Knowledge'],'likeService',true);
             } else if(step.id === 'like_ambiance'){ csRenderChoices(area,['Cleanliness','Ambiance & Decor','Seating Comfort','Music & Vibe','Something else'],'likeAmbiance',true);
 
             } else if(step.id === 'delivery_time'){
-                area.innerHTML = csInputField('cs-delivery-time','text','e.g. 45 mins, 75+ mins, 2 hours...','fa-clock',csData.deliveryTime||'')
-                    + `<p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">Tap Skip if not applicable.</p>`;
+                // Was free text — agents could type "45 mins" / "about 45
+                // minutes" / "45-60" for the same real answer, none of which
+                // would ever match each other for filtering, even with the
+                // case-insensitive merge. Harley uses a fixed list; matching
+                // it exactly is what actually keeps this usable.
+                csRenderChoices(area,['Not here at time of complaint','45-60 mins','60-75 mins','75+ mins'],'deliveryTime',true);
 
             } else if(step.id === 'comments'){
                 area.innerHTML = `<textarea id="cs-comments" rows="5" placeholder="Type here..."
@@ -10778,7 +10941,7 @@
                 setTimeout(() => document.getElementById('cs-comments')?.focus(), 320);
             }
 
-            if(['customer','menuitem','delivery_time'].includes(step.id)){
+            if(['customer','menuitem'].includes(step.id)){
                 setTimeout(() => { area.querySelector('input')?.focus(); }, 320);
             }
         }
@@ -10851,9 +11014,6 @@
             if(step.id === 'location'){
                 csData.city   = document.getElementById('cs-city')?.value||csData.city||'';
                 csData.branch = document.getElementById('cs-branch')?.value||csData.branch||'';
-            }
-            if(step.id === 'delivery_time'){
-                csData.deliveryTime = document.getElementById('cs-delivery-time')?.value.trim()||'';
             }
             if(step.id === 'comments'){
                 csData.comments = document.getElementById('cs-comments')?.value.trim()||'';
