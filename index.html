@@ -2473,9 +2473,156 @@
             }
             .content-scroll{ scroll-behavior: auto !important; }
         }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           OVERLAY, TOAST & THEME SUPPORT
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* Paints the dark canvas before any stylesheet-dependent element
+           exists, so a returning dark-mode user gets no white flash. */
+        html.pre-dark{ background:#0D1117; color-scheme: dark; }
+        html:not(.pre-dark){ color-scheme: light; }
+
+        /* ── Page behind a modal is frozen ────────────────────────────────
+           Scrolling the background while a dialog is open was one of the
+           clearest "unfinished" tells: the wheel went straight through the
+           overlay and moved the dashboard underneath. */
+        body.modal-open .content-scroll{ overflow: hidden !important; }
+        body.modal-open{ overflow: hidden; }
+        .ia-overlay, .sl-modal-overlay, #cs-modal{ overscroll-behavior: contain; }
+        .ia-body, .sl-modal-box, #cs-body{ overscroll-behavior: contain; }
+
+        /* ── One entrance for every dialog ────────────────────────────────── */
+        @keyframes crumbleOverlayIn{ from{ opacity:0 } to{ opacity:1 } }
+        @keyframes crumbleDialogIn{
+            from{ opacity:0; transform: translateY(14px) scale(.975); }
+            to  { opacity:1; transform: translateY(0)    scale(1);    }
+        }
+        .ia-overlay.is-open{ animation: crumbleOverlayIn .18s var(--ease) both; }
+        .ia-overlay.is-open > .ia-card{ animation: crumbleDialogIn .32s var(--ease-out) both; }
+        .sl-modal-overlay.is-open > .sl-modal-box{ animation: crumbleDialogIn .32s var(--ease-out) both; }
+        /* The dialog is focused programmatically on open — that's for keyboard
+           users and screen readers, it shouldn't draw a visible ring. */
+        .ia-card:focus, .sl-modal-box:focus, #cs-modal-box:focus{ outline: none; }
+
+        /* Dialog bodies scroll on their own rather than growing the dialog
+           past the viewport on small screens. */
+        .ia-card{ max-height: 90vh; display: flex; flex-direction: column; }
+        .ia-body{ overflow-y: auto; }
+
+        /* ── Toasts ──────────────────────────────────────────────────────── */
+        #crumble-toasts{
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 100000;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .crumble-toast{
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 11px 18px;
+            border-radius: var(--r-ctl);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.83rem;
+            font-weight: 700;
+            letter-spacing: .1px;
+            box-shadow: var(--e-3);
+            animation: crumbleToastIn .3s var(--ease-out) both;
+            max-width: min(92vw, 460px);
+        }
+        .crumble-toast.leaving{ animation: crumbleToastOut .24s var(--ease) both; }
+        @keyframes crumbleToastIn{
+            from{ opacity:0; transform: translateY(14px) scale(.96); }
+            to  { opacity:1; transform: translateY(0)    scale(1);   }
+        }
+        @keyframes crumbleToastOut{
+            from{ opacity:1; transform: translateY(0)   scale(1);   }
+            to  { opacity:0; transform: translateY(-6px) scale(.97); }
+        }
+
+        /* ── Input latency & stray drag targets ──────────────────────────── */
+        /* Removes the ~300ms tap delay on touch and stops double-tap zoom on
+           controls, which made the dashboard feel laggy on tablets. */
+        button, a, .kpi-card, .inc-stat, .topnav-link, .preset-chip, .view-btn,
+        .collapse-header, .sl-mention-card, .branch-kpi-card, .form-perf-card,
+        .ai-tile, .cs-choice, .select-input, label, tbody tr[onclick]{
+            touch-action: manipulation;
+        }
+        img{ -webkit-user-drag: none; user-select: none; }
+
+        /* ── Compositor hygiene ──────────────────────────────────────────── */
+        /* will-change was declared permanently on every card, which keeps a
+           GPU layer alive for each one whether or not it is moving. Promoting
+           only on hover gives the same smooth lift without the memory cost
+           that was making long views scroll unevenly. */
+        .card, .kpi-card{ will-change: auto !important; }
+        .card:hover, .kpi-card:hover, .branch-kpi-card:hover,
+        .form-perf-card:hover, .ai-tile:hover, .sl-mention-card:hover{
+            will-change: transform;
+        }
+
+        /* ── Long text should wrap, not stretch a table sideways ─────────── */
+        .table-wrapper td{ overflow-wrap: anywhere; }
+
+        /* ── Loading skeleton hands over instead of cutting ──────────────── */
+        #app-skeleton{ transition: opacity .28s var(--ease); }
+        body:not(.app-loading) #app-skeleton{ opacity: 0; }
+
+        /* ── Empty states line up with the rest of the type scale ────────── */
+        .empty-state-title{ font-size: 0.92rem; font-weight: 800; }
+        .empty-state-sub{ font-size: 0.8rem; color: var(--text-muted); max-width: 42ch; margin: 6px auto 0; line-height: 1.6; }
+
+        /* ── Mobile: dialogs behave like sheets rather than shrunken desktop
+              cards, and toasts clear the thumb ───────────────────────────── */
+        @media (max-width: 640px){
+            .ia-overlay{ padding: 12px; align-items: flex-end; }
+            .ia-card{ width: 100%; max-width: none; max-height: 86vh; border-radius: 20px 20px 14px 14px !important; }
+            @keyframes crumbleDialogIn{
+                from{ opacity:0; transform: translateY(28px); }
+                to  { opacity:1; transform: translateY(0);    }
+            }
+            #crumble-toasts{ bottom: 16px; }
+            .card:not([style*="padding:0"]):not([style*="padding: 0"]){ padding: 16px !important; }
+        }
     </style>
+    <script>
+        // Runs before the body exists so a returning dark-mode user never
+        // sees a white flash while the rest of the page parses. Reading one
+        // localStorage key synchronously here is cheaper than the repaint
+        // the flash costs.
+        (function(){
+            try {
+                if(localStorage.getItem('crumble_theme') === 'dark'){
+                    document.documentElement.classList.add('pre-dark');
+                }
+            } catch(e){}
+        })();
+    </script>
 </head>
 <body class="app-loading">
+    <script>
+        (function(){
+            try {
+                if(document.documentElement.classList.contains('pre-dark')){
+                    document.body.classList.add('dark-theme');
+                    document.addEventListener('DOMContentLoaded', function(){
+                        // Header button still ships the sun icon in markup —
+                        // bring it in line with the restored theme.
+                        var i = document.querySelector('.header-controls .btn-icon .fa-sun');
+                        if(i){ i.classList.remove('fa-sun'); i.classList.add('fa-moon'); }
+                    });
+                }
+            } catch(e){}
+        })();
+    </script>
 
     <!-- ══════════════ LOGIN SCREEN ══════════════ -->
     <div id="login-screen" class="visible">
@@ -4565,7 +4712,7 @@
             const icon ={critical:'fa-exclamation-circle', warn:'fa-triangle-exclamation', good:'fa-check-circle'};
             const color={critical:'var(--status-critical)', warn:'var(--status-warn)', good:'var(--status-good)'};
             const item = a => `<div class="notif-item"><i class="fas ${icon[a.sev]}" style="color:${color[a.sev]};font-size:1.2rem;margin-top:2px;"></i><div><div style="font-size:0.85rem;font-weight:700;color:var(--text-main);">${a.t}</div><div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${a.d}</div></div></div>`;
-            list.innerHTML = alerts.length
+            list.uiHTML = alerts.length
                 ? alerts.slice(0,7).map(item).join('')
                 : item({sev:'good', t:'All branches within thresholds', d:'No escalations in the current period.'});
             const dot = document.querySelector('.notif-dropdown')?.parentElement?.querySelector('.live-dot');
@@ -4943,7 +5090,7 @@
                     return { key, sA, iA, rtA, sB, iB, rtB, incDiff: iA - iB, rateDiff: rtA - rtB };
                 }).sort((a,b) => b.iA - a.iA); 
 
-                document.querySelector('#compare-single-table tbody').innerHTML = rows.map(r => `
+                document.querySelector('#compare-single-table tbody').uiHTML = rows.map(r => `
                     <tr>
                         <td class="font-bold" style="border-right:1px solid var(--border-color);">${r.key}</td>
                         <td style="background:rgba(37,99,235,0.02);">${r.sA.toLocaleString()}</td>
@@ -6211,7 +6358,49 @@
                 }
             }
 
-            return { pin, capture, restore, captureOpen, restoreOpen, silent, isSilent };
+            // ── Idempotent HTML writes ──────────────────────────────────
+            // Almost every render function rebuilds its whole section with
+            // innerHTML on every poll, even when the resulting markup is
+            // byte-for-byte identical. That teardown is what closed open
+            // <select> menus, cancelled hovers, dropped text selection,
+            // restarted CSS animations and made long tables feel heavy —
+            // 20 seconds of work thrown away and rebuilt for no change.
+            //
+            // Exposed as an `el.uiHTML = ...` setter rather than a function
+            // so existing call sites only change by one word, which keeps the
+            // risk of touching ~25 render paths near zero.
+            const _htmlCache = new WeakMap();
+            try {
+                Object.defineProperty(Element.prototype, 'uiHTML', {
+                    configurable: true,
+                    get(){ return this.innerHTML; },
+                    set(v){
+                        const s = String(v);
+                        // childElementCount guards the case where something
+                        // else legitimately emptied the node in between.
+                        if(_htmlCache.get(this) === s && this.childElementCount > 0) return;
+                        _htmlCache.set(this, s);
+                        this.innerHTML = s;
+                    }
+                });
+            } catch(e){ /* extremely old browser — call sites still work, just without the skip */ }
+
+            // Rebuilds a <select>'s options ONLY if the option set actually
+            // changed. Repopulating on every refresh silently closed the menu
+            // if the user happened to have it open, and reset the highlighted
+            // row while they were choosing.
+            function syncSelect(sel, values, keepFirst){
+                if(!sel) return;
+                const start = keepFirst ? 1 : 0;
+                const current = Array.from(sel.options).slice(start).map(o => o.value);
+                if(current.length === values.length && current.every((v,i) => v === values[i])) return;
+                const prev = sel.value;
+                sel.length = start;
+                values.forEach(v => sel.add(new Option(v, v)));
+                if(Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+            }
+
+            return { pin, capture, restore, captureOpen, restoreOpen, silent, isSilent, syncSelect };
         })();
 
         const app = {
@@ -6357,22 +6546,14 @@
             // Fill Region + Channel selects from real data (branches' regions and the
             // channel values present on submissions). Keeps whatever is selected if possible.
             populateRegionChannelFilters() {
-                const regSel = document.getElementById('filter-region');
-                if (regSel) {
-                    const prev = regSel.value;
-                    const regions = [...new Set(config.branches.map(b => b.region).filter(Boolean))].sort();
-                    regSel.length = 1; // keep "All Regions"
-                    regions.forEach(r => regSel.add(new Option(r, r)));
-                    if ([...regSel.options].some(o => o.value === prev)) regSel.value = prev;
-                }
-                const chSel = document.getElementById('filter-channel');
-                if (chSel) {
-                    const prev = chSel.value;
-                    const channels = [...new Set((rawData.submissions || []).map(s => s.channel).filter(Boolean))].sort();
-                    chSel.length = 1; // keep "All Channels"
-                    channels.forEach(c => chSel.add(new Option(c, c)));
-                    if ([...chSel.options].some(o => o.value === prev)) chSel.value = prev;
-                }
+                // Both go through UI.syncSelect, which is a no-op when the
+                // option list hasn't changed — previously these were rebuilt
+                // from scratch on every 20s poll, which snapped the dropdown
+                // shut if it happened to be open at that moment.
+                UI.syncSelect(document.getElementById('filter-region'),
+                    [...new Set(config.branches.map(b => b.region).filter(Boolean))].sort(), true);
+                UI.syncSelect(document.getElementById('filter-channel'),
+                    [...new Set((rawData.submissions || []).map(s => s.channel).filter(Boolean))].sort(), true);
             },
 
             toggleSearch() {
@@ -6387,11 +6568,19 @@
             },
 
             toggleTheme(btn) {
-                document.body.classList.toggle('dark-theme');
-                const i = btn.querySelector('i');
-                if(document.body.classList.contains('dark-theme')) i.classList.replace('fa-sun', 'fa-moon');
-                else i.classList.replace('fa-moon', 'fa-sun');
-                this.renderCurrentView(); 
+                const dark = document.body.classList.toggle('dark-theme');
+                document.documentElement.classList.toggle('pre-dark', dark);
+                // Persisted — the theme used to reset to light on every
+                // refresh, which is why it never felt like a real setting.
+                try { localStorage.setItem('crumble_theme', dark ? 'dark' : 'light'); } catch(e){}
+                if(btn){
+                    const i = btn.querySelector('i');
+                    if(i){ i.classList.remove('fa-sun','fa-moon'); i.classList.add(dark ? 'fa-moon' : 'fa-sun'); }
+                }
+                // Charts read their grid/text colours at build time, so they
+                // do need a repaint — but silently, so switching theme while
+                // scrolled halfway down doesn't also throw you to the top.
+                UI.silent(() => this.renderCurrentView());
             },
 
             setDateRange(preset, chipEl) {
@@ -6470,13 +6659,15 @@
                             el.style.transition = '';
                         });
                         if(targetView){
-                            targetView.style.opacity    = '0';
+                            targetView.style.opacity   = '0';
+                            targetView.style.transform = 'translateY(6px)';
                             targetView.classList.add('active');
                             document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
-                                targetView.style.transition = 'opacity .22s cubic-bezier(.4,0,.2,1)';
+                                targetView.style.transition = 'opacity .26s var(--ease), transform .34s var(--ease-out)';
                                 targetView.style.opacity    = '1';
-                                setTimeout(() => { targetView.style.opacity = ''; targetView.style.transition = ''; }, 250);
+                                targetView.style.transform  = 'translateY(0)';
+                                setTimeout(() => { targetView.style.opacity = ''; targetView.style.transform = ''; targetView.style.transition = ''; }, 360);
                             });
                             setTimeout(() => document.body.classList.remove('do-anim'), 700);
                         }
@@ -6573,7 +6764,7 @@
                                 <div class="skel" style="height:28px;width:40%;border-radius:6px;margin-bottom:6px;"></div>
                                 <div class="skel" style="height:8px;width:70%;border-radius:6px;"></div>
                             </div>`).join('');
-                        feed.innerHTML = [1,2,3,4].map(()=>`
+                        feed.uiHTML = [1,2,3,4].map(()=>`
                             <div class="sl-mention-card" style="border-left:4px solid var(--border-color);">
                                 <div style="display:flex;gap:8px;margin-bottom:12px;">
                                     <div class="skel" style="height:20px;width:80px;border-radius:20px;"></div>
@@ -6673,7 +6864,7 @@
                         const fi = p1.incs.filter(i=>i.form===f.name).length;
                         return { ...f, subs: fs, incs: fi, rate: fs ? (fi/fs)*100 : 0 };
                     });
-                    document.getElementById('exec-forms-grid').innerHTML = formStats.map(f => `
+                    document.getElementById('exec-forms-grid').uiHTML = formStats.map(f => `
                         <div class="form-card">
                             <div class="form-header">
                                 <div class="form-icon" style="background:${f.color}15; color:${f.color};"><i class="fas ${f.icon}"></i></div>
@@ -6750,7 +6941,7 @@
                     this.renderFormBarChart('formBarChartExpanded', formStats);
                     this.renderChannelDoughnut('channelDoughnutExpanded');
 
-                    document.querySelector('#exec-branch-master-expanded tbody').innerHTML = (() => {
+                    document.querySelector('#exec-branch-master-expanded tbody').uiHTML = (() => {
                         const rows = config.branches.map(b => {
                             const s = (state.branchGroups[b.name] || {subs:[]}).subs;
                             const i = (state.branchGroups[b.name] || {incs:[]}).incs;
@@ -6799,7 +6990,7 @@
                 this.renderBranchSubsChart(branchStats);
                 this.renderBranchIncRateChart(branchStats);
 
-                document.querySelector('#branch-master-table tbody').innerHTML = config.branches.map(b => {
+                document.querySelector('#branch-master-table tbody').uiHTML = config.branches.map(b => {
                     const s = (state.branchGroups[b.name] || {subs:[]}).subs;
                     const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const sL = s.length, iL = i.length;
@@ -7221,7 +7412,7 @@
                 const notRespCount = incs.filter(i => i.caseStatus==='not_responding').length;
 
                 const statsEl = document.getElementById('inc-stats');
-                if(statsEl) statsEl.innerHTML = `
+                if(statsEl) statsEl.uiHTML = `
                     <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('total')"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
                     <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('verified')"><div class="inc-stat-label"><i class="fas fa-circle-check"></i> Verified</div><div class="inc-stat-value" style="color:var(--status-good);">${verCount.toLocaleString()}</div><div class="inc-stat-sub">${total?((verCount/total)*100).toFixed(0):0}% are real complaints</div></div>
                     <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('fake')"><div class="inc-stat-label"><i class="fas fa-circle-xmark"></i> Fake / Invalid</div><div class="inc-stat-value" style="color:var(--status-critical);">${fakeCount.toLocaleString()}</div><div class="inc-stat-sub">mismatched or no context</div></div>
@@ -7242,13 +7433,7 @@
                 // dropdown, byType's bar-list display was removed with the section.
 
                 // ── Populate channel filter ──
-                const chanSel = document.getElementById('inc-chan-filter');
-                if(chanSel){
-                    const prev = chanSel.value;
-                    chanSel.length = 1;
-                    Object.keys(byChannel).sort().forEach(c => chanSel.add(new Option(c, c)));
-                    if([...chanSel.options].some(o=>o.value===prev)) chanSel.value = prev;
-                }
+                UI.syncSelect(document.getElementById('inc-chan-filter'), Object.keys(byChannel).sort(), true);
 
                 this.filterIncidents();
             },
@@ -7278,7 +7463,7 @@
 
                 const rows = filtered.slice(0, 300);
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
-                document.querySelector('#inc-detail-table tbody').innerHTML = rows.map((inc, idx) => {
+                document.querySelector('#inc-detail-table tbody').uiHTML = rows.map((inc, idx) => {
                     // Exact creation date+time from the sheet's precise "Created At"
                     // (same format as the Submissions tab). Falls back to the
                     // business-day date only if the raw timestamp can't be parsed.
@@ -7699,7 +7884,7 @@
                 });
                 this.renderResRateChart(branchRates);
 
-                document.querySelector('#res-current-table tbody').innerHTML = config.branches.map(b => {
+                document.querySelector('#res-current-table tbody').uiHTML = config.branches.map(b => {
                     const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const res = i.filter(x=>x.resolved).length;
                     const unres = i.length - res;
@@ -7755,7 +7940,7 @@
                     return { name: b.name, rate: s ? (i/s)*100 : 0 };
                 }).sort((a,b) => b.rate - a.rate);
 
-                document.getElementById('insights-container').innerHTML = `
+                document.getElementById('insights-container').uiHTML = `
                     <div class="insight-block insight-critical">
                         <div class="insight-icon"><i class="fas fa-triangle-exclamation"></i></div>
                         <div class="insight-content">
@@ -7799,7 +7984,7 @@
                     s: state.p1.subs.filter(x=>x[key]===ent).length,
                     i: state.p1.incs.filter(x=>x[key]===ent).length
                 }));
-                document.getElementById('univ-curr-tbody').innerHTML = entityStats.map(({ent,s,i}) => {
+                document.getElementById('univ-curr-tbody').uiHTML = entityStats.map(({ent,s,i}) => {
                     const rate = s ? ((i/s)*100).toFixed(2) + '%' : `${i} cases`;
                     return `<tr><td class="font-semibold">${ent}</td><td>${s.toLocaleString()}</td><td>${i.toLocaleString()}</td><td>${rate}</td></tr>`;
                 }).join('');
@@ -8012,7 +8197,7 @@
                         if(nextBtn) nextBtn.disabled = (_submissionsPage >= totalPages - 1);
                         const tbody = document.getElementById('submissions-detail-tbody');
                         if(tbody){
-                            tbody.innerHTML = shown.length ? shown.map(s => {
+                            tbody.uiHTML = shown.length ? shown.map(s => {
                                 const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
                                 const parsedTs = _parseSheetDateTime(rawCreatedAt);
                                 const dateDisp = !isNaN(parsedTs)
@@ -8399,11 +8584,11 @@
                 const top = todaysUnresolved.slice(0, 8);
 
                 if(!top.length){
-                    container.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>Nothing unresolved from today — all caught up.</div>`;
+                    container.uiHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>Nothing unresolved from today — all caught up.</div>`;
                     return;
                 }
 
-                container.innerHTML = top.map(inc => {
+                container.uiHTML = top.map(inc => {
                     const key = _incidentStableKey(inc).replace(/'/g,"\\'");
                     const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : {title: inc.complaintType||'—'};
                     const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
@@ -8848,7 +9033,7 @@
                     </span>
                 </div>` : '';
 
-            card.innerHTML = `
+            card.uiHTML = `
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;">
                     <div style="min-width:0;">
                         <h3 style="font-size:0.9rem;font-weight:800;color:var(--text-main);white-space:nowrap;">${meta.title}</h3>
@@ -8918,7 +9103,7 @@
                 if (!out) return;
 
                 if (!bA || !bB || bA === bB) {
-                    out.innerHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-code-branch"></i></div><div class="empty-state-title">Select two branches</div><div class="empty-state-sub">Pick Branch A and Branch B above to see a side-by-side performance comparison.</div></div>`;
+                    out.uiHTML = `<div class="empty-state"><div class="empty-state-icon"><i class="fas fa-code-branch"></i></div><div class="empty-state-title">Select two branches</div><div class="empty-state-sub">Pick Branch A and Branch B above to see a side-by-side performance comparison.</div></div>`;
                     return;
                 }
 
@@ -8964,7 +9149,7 @@
                     : winsB > winsA ? `<span style="color:var(--status-warn);font-weight:800;">${bB}</span> leads overall (${winsB} vs ${winsA} metrics)`
                     : 'Both branches are evenly matched';
 
-                out.innerHTML = `
+                out.uiHTML = `
                     <div style="background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(245,158,11,.02));border:1.5px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:12px;">
                         <span style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#F59E0B,#FBBF24);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3);">
                             <i class="fas fa-trophy" style="color:#fff;font-size:0.9rem;"></i>
@@ -9047,14 +9232,14 @@
             const praiseList = document.getElementById('voc-praise-list');
             if (praiseList) {
                 if (aiPraise) {
-                    praiseList.innerHTML = aiBlock(aiPraise);
+                    praiseList.uiHTML = aiBlock(aiPraise);
                 } else {
                     const praiseByForm = {};
                     posSubs.forEach(s => { const k=s.surveyForm||'General'; praiseByForm[k]=(praiseByForm[k]||0)+1; });
                     const dims = Object.entries(praiseByForm).sort((a,b)=>b[1]-a[1]);
                     const maxV = dims[0]?.[1]||1;
                     const labels = {'Delivery':'Delivery Experience','Dine In':'Dine-In Experience','Call Center':'Call Center Experience'};
-                    praiseList.innerHTML = dims.length
+                    praiseList.uiHTML = dims.length
                         ? dims.map(([k,v])=>`<div class="voc-praise-item">
                             <span class="voc-praise-label">${labels[k]||k}</span>
                             <div class="voc-praise-bar-wrap"><div class="voc-praise-bar" style="width:${Math.round(v/maxV*100)}%;"></div></div>
@@ -9075,16 +9260,16 @@
             const complaintList = document.getElementById('voc-complaint-list');
             if (complaintList) {
                 if (aiComplaints) {
-                    complaintList.innerHTML = aiBlock(aiComplaints);
+                    complaintList.uiHTML = aiBlock(aiComplaints);
                 } else if (complaintDims.length) {
-                    complaintList.innerHTML = complaintDims.map(([label,count])=>`
+                    complaintList.uiHTML = complaintDims.map(([label,count])=>`
                         <div class="voc-complaint-item">
                             <span class="voc-complaint-label">${label}</span>
                             <div class="voc-complaint-bar-wrap"><div class="voc-complaint-bar" style="width:${Math.round(count/maxC*100)}%;"></div></div>
                             <span class="voc-complaint-count">${count}</span>
                         </div>`).join('');
                 } else {
-                    complaintList.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No complaints recorded.</div>`;
+                    complaintList.uiHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.8rem;">No complaints recorded.</div>`;
                 }
             }
 
@@ -9092,7 +9277,7 @@
             const suggestList = document.getElementById('voc-suggest-list');
             if (suggestList) {
                 if (aiSuggestions) {
-                    suggestList.innerHTML = aiBlock(aiSuggestions);
+                    suggestList.uiHTML = aiBlock(aiSuggestions);
                 } else {
                     const suggestionMap = {
                         'Service Issue':   {icon:'fa-user-tie',         text:'Customers want faster, more attentive service from staff.'},
@@ -9108,7 +9293,7 @@
                         'Staff Behavior':  {icon:'fa-face-smile',        text:'Customers want friendlier, more professional staff interactions.'},
                     };
                     const topComplaints = complaintDims.slice(0,5);
-                    suggestList.innerHTML = topComplaints.length
+                    suggestList.uiHTML = topComplaints.length
                         ? topComplaints.map(([label,count])=>{
                             const s = suggestionMap[label]||{icon:'fa-arrow-right',text:`Customers want improvement in ${label}.`};
                             return `<div class="voc-suggest-item">
@@ -9151,14 +9336,14 @@
                            <div style="width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#010197,#64D0FF);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6rem;flex-shrink:0;margin-top:1px;"><i class="fas fa-robot"></i></div>
                            <p style="font-size:0.78rem;color:#010197;font-weight:600;margin:0;line-height:1.6;">${aiSentiment}</p>
                        </div>` : '';
-                sentList.innerHTML = bars + aiPara;
+                sentList.uiHTML = bars + aiPara;
             }
 
             // ── URGENCY FLAGS from live incident data ──
             const urgencyFlags = document.getElementById('voc-urgency-flags');
             if (urgencyFlags) {
                 const flagged = Object.entries(complaintByType).filter(([,v])=>v>=3).sort((a,b)=>b[1]-a[1]).slice(0,5);
-                urgencyFlags.innerHTML = flagged.length
+                urgencyFlags.uiHTML = flagged.length
                     ? flagged.map(([type,cnt])=>`<span class="voc-urgent-chip"><i class="fas fa-triangle-exclamation"></i>${type} (${cnt})</span>`).join('')
                     : `<span style="font-size:0.75rem;color:var(--status-good);font-weight:600;">No urgent patterns detected</span>`;
             }
@@ -9197,7 +9382,7 @@
                 return { ...b, sL, iL, rate, avgSmile, avgSmileDisplay, posFB, res, statusClass, rateColor, rateBg, smileColor, aiNote };
             }).sort((a, b) => a.rate - b.rate); // best first
 
-            container.innerHTML = branchData.slice(0, 6).map(b => `
+            container.uiHTML = branchData.slice(0, 6).map(b => `
                 <div class="branch-kpi-card ${b.statusClass}" onclick="app.navigate('branches')">
                     <div class="bkc-header">
                         <div>
@@ -9252,7 +9437,7 @@
                 { key: 'Call Center', label: 'Call Center Form',  cls: 'callcenter',  icon: 'fa-headset',    color: '#8B5CF6', sub: 'Phone & Support Channel' },
             ];
 
-            grid.innerHTML = forms.map(f => {
+            grid.uiHTML = forms.map(f => {
                 const d = getSurveyData(f.key);
                 const rateColor = d.rate < 3 ? 'var(--status-good)' : d.rate < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
                 const perfMsg = d.rate < 3 ? 'Performing well — incident rate is within healthy range.'
@@ -9316,7 +9501,7 @@
             const iconMap = { 'Delivery': 'fa-motorcycle', 'Dine In': 'fa-utensils', 'Call Center': 'fa-headset' };
             const colorMap = { 'Delivery': '#2563EB', 'Dine In': '#10B981', 'Call Center': '#8B5CF6' };
 
-            container.innerHTML = Object.entries(formGroups).map(([formName, data]) => {
+            container.uiHTML = Object.entries(formGroups).map(([formName, data]) => {
                 const rate = data.subs ? ((data.incs/data.subs)*100).toFixed(2) : '0.00';
                 const rateColor = parseFloat(rate) < 3 ? 'var(--status-good)' : parseFloat(rate) < 5 ? 'var(--status-warn)' : 'var(--status-critical)';
                 const color = colorMap[formName] || '#64748B';
@@ -9458,7 +9643,7 @@
                     <div class="mon-form-body" data-ui-key="f:${fn}"><div class="mon-collapse-inner">${branchRows}</div></div>
                 </div>`;
             }).join('');
-            container.innerHTML = html;
+            container.uiHTML = html;
             UI.restoreOpen('exec-incident-monitor', _openKeys);
         };
 
@@ -10746,13 +10931,13 @@
             if(!feed) return;
 
             if(!filtered.length){
-                feed.innerHTML = '';
+                feed.uiHTML = '';
                 if(emptyEl) emptyEl.style.display='block';
                 return;
             }
             if(emptyEl) emptyEl.style.display='none';
 
-            feed.innerHTML = filtered.map((m, idx) => {
+            feed.uiHTML = filtered.map((m, idx) => {
                 const platIcon  = SL_PLATFORM_ICONS[m.platform]||'fa-globe';
                 const platClass = SL_PLATFORM_CLASS[m.platform]||'sl-platform-default';
                 const sentChip  = SL_SENTIMENT_CHIPS[m.sentiment]||SL_SENTIMENT_CHIPS['Mention'];
@@ -11160,8 +11345,8 @@
             const parse = d => { const dt = new Date(d); return isNaN(dt) ? null : dt; };
             const keyed = incs.map(i => ({ inc:i, dt:parse(i.date), cat:classifyComplaint(i) })).filter(x => x.dt);
             if(!keyed.length){
-                ledgerEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;">No complaint data available.</div>';
-                document.getElementById('ct-heatmap').innerHTML = ''; return;
+                ledgerEl.uiHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;">No complaint data available.</div>';
+                document.getElementById('ct-heatmap').uiHTML = ''; return;
             }
 
             // Build the 3 comparison windows depending on the selected range.
@@ -11207,7 +11392,7 @@
             // ── LEDGER (ranked cards) ──
             const realRows = rows.filter(r => r.cat.id !== 'other');
             document.getElementById('ct-ledger-note').textContent = `${monthLabels[0]} leaders shown · trend vs ${monthLabels[1]}`;
-            ledgerEl.innerHTML = realRows.map((r, idx) => {
+            ledgerEl.uiHTML = realRows.map((r, idx) => {
                 const rank = String(idx+1).padStart(2,'0');
                 const [m0,m1,m2] = r.months;
                 let pct; if(m1===0){ pct = m0>0?100:0; } else { pct = Math.round(((m0-m1)/m1)*100); }
@@ -11266,7 +11451,7 @@
             };
 
             const heat = document.getElementById('ct-heatmap');
-            if(!cols.length){ heat.innerHTML = '<tr><td style="color:var(--text-muted);padding:16px;">No data for the latest month.</td></tr>'; }
+            if(!cols.length){ heat.uiHTML = '<tr><td style="color:var(--text-muted);padding:16px;">No data for the latest month.</td></tr>'; }
             else {
                 let html = '<thead><tr><th class="ct-row-h">Category</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
                 html += realRows.map(r => {
@@ -11276,7 +11461,7 @@
                     }).join('') + '</tr>';
                 }).join('');
                 html += '</tbody>';
-                heat.innerHTML = html;
+                heat.uiHTML = html;
             }
             document.getElementById('ct-heat-note').textContent = `${monthLabels[0]} · darker = more complaints (top ${cols.length} ${CT_SCOPE==='region'?'regions':'branches'})`;
             const legend = document.getElementById('ct-legend');
@@ -11641,11 +11826,7 @@
                 nextBtn.disabled = false;
                 nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
                 csCloseForm();
-                const toast = document.createElement('div');
-                toast.innerHTML = '<i class="fas fa-check-circle"></i> Submission saved successfully';
-                toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:12px 24px;border-radius:10px;font-weight:700;font-size:0.85rem;z-index:99999;box-shadow:0 8px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;animation:loginSlideUp .3s ease;';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 3500);
+                UI.toast('Submission saved successfully', 'success');
             } catch(err){
                 alert('Submission failed. Please try again.');
                 nextBtn.disabled = false;
@@ -12650,6 +12831,213 @@
                 }, 300);
             }
         });
+
+
+        /* ═══════════════════════════════════════════════════════════════
+           OVERLAY LAYER — one consistent set of behaviours for every modal
+           in the app, applied by observation rather than by editing each of
+           the ~9 places that open one. Adds what every one of them was
+           missing: the page behind stops scrolling, Escape closes, clicking
+           the backdrop closes, focus moves into the dialog and returns to
+           where it came from, and Tab stays inside.
+           ═══════════════════════════════════════════════════════════════ */
+        (function initOverlayLayer(){
+            const OVERLAYS = '.ia-overlay, .sl-modal-overlay, #cs-modal';
+
+            // id -> the app's own close routine, so Escape and backdrop
+            // clicks run the same cleanup the X button does (stopping the
+            // alert sound, clearing the open-incident key, and so on) rather
+            // than just hiding the element behind the app's back.
+            const CLOSERS = {
+                'incident-view-modal':          () => app.closeIncidentDetailModal(),
+                'submission-detail-modal':      () => closeSubmissionDetailModal(),
+                'users-modal':                  () => closeUsersModal(),
+                'user-form-modal':              () => closeUserForm(),
+                'incident-alert-modal':         () => closeIncidentAlert(),
+                'incident-alert-summary-modal': () => closeIncidentAlertSummary(),
+                'cs-modal':                     () => csCloseForm(),
+                'sl-add-modal':                 () => document.getElementById('sl-add-modal').classList.remove('open'),
+                'sl-reply-modal':               () => document.getElementById('sl-reply-modal').classList.remove('open')
+            };
+            // A new-incident alert is the one thing that shouldn't vanish on a
+            // stray click outside it — it has to be acknowledged.
+            const NO_BACKDROP_CLOSE = ['incident-alert-modal', 'incident-alert-summary-modal'];
+
+            const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+            let lastFocused = null;
+
+            function isVisible(el){
+                if(!el) return false;
+                if(el.classList.contains('sl-modal-overlay')) return el.classList.contains('open');
+                return getComputedStyle(el).display !== 'none';
+            }
+            function openOverlays(){
+                return Array.from(document.querySelectorAll(OVERLAYS)).filter(isVisible);
+            }
+            function topOverlay(){
+                const list = openOverlays();
+                return list.length ? list[list.length - 1] : null;
+            }
+            function close(el){
+                if(!el) return;
+                const fn = CLOSERS[el.id];
+                if(fn){ try { fn(); return; } catch(e){} }
+                el.style.display = 'none';
+                el.classList.remove('open');
+            }
+
+            // Body state — drives the CSS that freezes the page behind.
+            //
+            // Every write here is guarded by a check that the value is
+            // actually changing. That is not a micro-optimisation: calling
+            // classList.add/remove re-serialises the class attribute even
+            // when the token set is unchanged, which counts as a mutation,
+            // which re-triggers the observer below — an unconditional
+            // version of this function spins forever the moment it runs.
+            let syncing = false;
+            function syncBodyState(){
+                if(syncing) return;
+                syncing = true;
+                try {
+                    const open = openOverlays();
+                    const any = open.length > 0;
+                    if(document.body.classList.contains('modal-open') !== any){
+                        document.body.classList.toggle('modal-open', any);
+                    }
+                    document.querySelectorAll(OVERLAYS).forEach(el => {
+                        const shouldBeOpen = open.indexOf(el) !== -1;
+                        const isMarked = el.classList.contains('is-open');
+                        if(shouldBeOpen && !isMarked) el.classList.add('is-open');
+                        else if(!shouldBeOpen && isMarked) el.classList.remove('is-open');
+                    });
+                } finally { syncing = false; }
+            }
+
+            // Watches display/class changes on the overlays instead of
+            // requiring every open/close call site to be rewritten.
+            const mo = new MutationObserver(() => {
+                if(syncing) return;
+                const before = document.body.classList.contains('modal-open');
+                syncBodyState();
+                const after = document.body.classList.contains('modal-open');
+                if(!before && after){
+                    lastFocused = document.activeElement;
+                    const top = topOverlay();
+                    if(top){
+                        // Focus the dialog itself rather than its first button —
+                        // landing on "Close" and highlighting it looks like an
+                        // accident.
+                        const card = top.querySelector('.ia-card, .sl-modal-box, #cs-modal-box') || top;
+                        card.setAttribute('tabindex', '-1');
+                        card.setAttribute('role', 'dialog');
+                        card.setAttribute('aria-modal', 'true');
+                        try { card.focus({ preventScroll:true }); } catch(e){ card.focus(); }
+                    }
+                } else if(before && !after){
+                    if(lastFocused && lastFocused.isConnected){
+                        try { lastFocused.focus({ preventScroll:true }); } catch(e){}
+                    }
+                    lastFocused = null;
+                }
+            });
+
+            function observeAll(){
+                document.querySelectorAll(OVERLAYS).forEach(el => {
+                    mo.observe(el, { attributes:true, attributeFilter:['style','class'] });
+                });
+            }
+            // Some overlays are injected into <body> by script after load.
+            if(document.readyState === 'loading'){
+                document.addEventListener('DOMContentLoaded', () => { observeAll(); syncBodyState(); });
+            } else { observeAll(); syncBodyState(); }
+            setTimeout(() => { observeAll(); syncBodyState(); }, 1200);
+
+            // Backdrop click — only when the click actually landed on the
+            // overlay itself, never on a child of the dialog.
+            document.addEventListener('mousedown', function(e){
+                const overlay = e.target.closest(OVERLAYS);
+                if(!overlay || e.target !== overlay) return;
+                if(NO_BACKDROP_CLOSE.includes(overlay.id)) return;
+                // Guard against a drag that started inside the dialog and
+                // happened to end on the backdrop.
+                overlay._pressedBackdrop = true;
+            });
+            document.addEventListener('click', function(e){
+                const overlay = e.target.closest(OVERLAYS);
+                if(!overlay) return;
+                if(e.target !== overlay){ overlay._pressedBackdrop = false; return; }
+                if(NO_BACKDROP_CLOSE.includes(overlay.id)) return;
+                if(overlay._pressedBackdrop){ overlay._pressedBackdrop = false; close(overlay); }
+            });
+
+            document.addEventListener('keydown', function(e){
+                if(e.key === 'Escape'){
+                    const top = topOverlay();
+                    if(top){ e.preventDefault(); close(top); return; }
+                    // No modal open — Escape still closes the notification
+                    // tray and the profile menu, which previously could only
+                    // be dismissed by clicking in exactly the right place.
+                    const notif = document.getElementById('notifDropdown');
+                    if(notif && notif.classList.contains('active')){ notif.classList.remove('active'); return; }
+                    const dp = document.getElementById('dp-menu');
+                    if(dp && dp.style.display !== 'none'){ dp.style.display = 'none'; }
+                    return;
+                }
+                if(e.key !== 'Tab') return;
+                // Keep Tab inside the open dialog.
+                const top = topOverlay();
+                if(!top) return;
+                const items = Array.from(top.querySelectorAll(FOCUSABLE)).filter(el => el.offsetParent !== null);
+                if(!items.length) return;
+                const first = items[0], last = items[items.length - 1];
+                if(e.shiftKey && (document.activeElement === first || !top.contains(document.activeElement))){
+                    e.preventDefault(); last.focus();
+                } else if(!e.shiftKey && document.activeElement === last){
+                    e.preventDefault(); first.focus();
+                }
+            });
+
+            // Clicking anywhere outside the notification tray closes it. It
+            // previously only closed on a click inside the scroll area, so
+            // clicking the header or another tab left it hanging open.
+            document.addEventListener('click', function(e){
+                const notif = document.getElementById('notifDropdown');
+                if(!notif || !notif.classList.contains('active')) return;
+                if(notif.contains(e.target)) return;
+                if(e.target.closest('.btn-icon')) return;   // the bell toggles itself
+                notif.classList.remove('active');
+            });
+        })();
+
+        /* Lightweight toast — replaces the one-off inline toast that only the
+           Create-Submission flow had, so success/failure feedback looks the
+           same wherever it comes from. Deliberately does not replace the
+           blocking alert()/confirm() calls, which are decisions the user has
+           to actually answer. */
+        UI.toast = function(message, kind){
+            let host = document.getElementById('crumble-toasts');
+            if(!host){
+                host = document.createElement('div');
+                host.id = 'crumble-toasts';
+                document.body.appendChild(host);
+            }
+            const tone = {
+                success: { bg:'#059669', icon:'fa-circle-check' },
+                error:   { bg:'#DC2626', icon:'fa-circle-exclamation' },
+                info:    { bg:'#0F172A', icon:'fa-circle-info' }
+            }[kind || 'success'];
+            const el = document.createElement('div');
+            el.className = 'crumble-toast';
+            el.style.background = tone.bg;
+            el.innerHTML = `<i class="fas ${tone.icon}"></i><span></span>`;
+            el.querySelector('span').textContent = message;
+            host.appendChild(el);
+            setTimeout(() => {
+                el.classList.add('leaving');
+                setTimeout(() => el.remove(), 260);
+            }, 3200);
+        };
 
         // ── Remove Netlify badge if injected after page load ──
         (function removeNetlifyBadge() {
