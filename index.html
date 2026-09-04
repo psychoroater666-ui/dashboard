@@ -3727,7 +3727,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.17';
+        const BUILD = 'v1.18';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -3814,86 +3814,6 @@
         // submissions + derived incidents. Columns are matched BY HEADER NAME,
         // so column order doesn't matter and PII columns can be safely deleted.
         // Map one form's rows, tagging each with its form/channel. Called once per source.
-        // ── Instant-load cache ──────────────────────────────────────────────
-        // Stores a REDUCED snapshot of the processed data (not the raw CSV,
-        // and deliberately not the full _raw Q&A blob per row) — just enough
-        // (branch, date, form, channel, rating) to instantly paint every KPI,
-        // chart, and table on open/refresh, while the real fetch runs in the
-        // background exactly as it always has and replaces this with full,
-        // fresh data (comments, raw Q&A) within a couple seconds.
-        //
-        // Uses IndexedDB, not localStorage — measured directly against this
-        // dashboard's real data volume (~30,000+ submissions and growing),
-        // the reduced payload still lands well past localStorage's ~10MB
-        // quota. localStorage would silently fail via the try/catch below on
-        // every single save, meaning the feature would never actually work
-        // while looking like it does. IndexedDB's limit is a percentage of
-        // free disk space (typically hundreds of MB+), built for exactly
-        // this kind of larger structured data. Never allowed to block or
-        // break a normal load — every operation is wrapped so a caching
-        // failure of any kind just silently falls back to the old behavior.
-        const DASH_CACHE_DB = 'crumble_dash_cache_db';
-        const DASH_CACHE_STORE = 'snapshots';
-        const DASH_CACHE_KEY = 'latest';
-        const DASH_CACHE_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours — old enough to be worth an instant paint, young enough that showing it briefly is never seriously misleading
-
-        function _openDashCacheDB(){
-            return new Promise((resolve, reject) => {
-                if(!window.indexedDB){ reject(new Error('IndexedDB unavailable')); return; }
-                try {
-                    const req = indexedDB.open(DASH_CACHE_DB, 1);
-                    req.onupgradeneeded = () => { if(!req.result.objectStoreNames.contains(DASH_CACHE_STORE)) req.result.createObjectStore(DASH_CACHE_STORE); };
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                } catch(e){ reject(e); }
-            });
-        }
-
-        async function _saveDashCache(){
-            try {
-                const reduceSub = s => ({ id:s.id, date:s.date, branch:s.branch, form:s.form, channel:s.channel, surveyForm:s.surveyForm, smileScore:s.smileScore });
-                const reduceInc = i => ({ id:i.id, date:i.date, branch:i.branch, form:i.form, channel:i.channel, surveyForm:i.surveyForm, smileScore:i.smileScore, resolved:i.resolved, caseStatus:i.caseStatus, agentVerdict:i.agentVerdict, complaintType:i.complaintType, reviewedAt:i.reviewedAt, resolvedAt:i.resolvedAt });
-                const payload = {
-                    cachedAt: Date.now(),
-                    config: { branches: config.branches, channels: config.channels, forms: config.forms, complaintTypes: config.complaintTypes },
-                    subs: (rawData.submissions||[]).map(reduceSub),
-                    incs: (rawData.incidents||[]).map(reduceInc)
-                };
-                const db = await _openDashCacheDB();
-                await new Promise((resolve, reject) => {
-                    const tx = db.transaction(DASH_CACHE_STORE, 'readwrite');
-                    tx.objectStore(DASH_CACHE_STORE).put(payload, DASH_CACHE_KEY);
-                    tx.oncomplete = resolve;
-                    tx.onerror = () => reject(tx.error);
-                });
-                db.close();
-                _lastCacheSaveAt = Date.now();
-                if(typeof _updateCacheDiagBadge === 'function') _updateCacheDiagBadge();
-            } catch(e){ /* IndexedDB unavailable, blocked, or any other failure — caching is a nice-to-have, never worth breaking the app over */ }
-        }
-
-        async function _loadDashCache(){
-            try {
-                const db = await _openDashCacheDB();
-                const payload = await new Promise((resolve, reject) => {
-                    const tx = db.transaction(DASH_CACHE_STORE, 'readonly');
-                    const req = tx.objectStore(DASH_CACHE_STORE).get(DASH_CACHE_KEY);
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                });
-                db.close();
-                if(!payload || !payload.cachedAt || (Date.now() - payload.cachedAt) > DASH_CACHE_MAX_AGE_MS) return null;
-                if(!Array.isArray(payload.subs) || !Array.isArray(payload.incs) || !payload.config) return null;
-                // Placeholder fields for what a reduced cache row can't hold —
-                // these get filled in for real within seconds by the normal
-                // fresh load right after this instant paint.
-                payload.subs.forEach(s => { s.comment = ''; s._raw = {}; });
-                payload.incs.forEach(i => { i.comment = ''; i.note = i.note || ''; i._raw = {}; i.fullText = ''; });
-                return payload;
-            } catch(e){ return null; }
-        }
-
-
         function mapSource(rows, src, out){
             let pushed = 0;
             // Tracks every row silently dropped and why — without this, a real
@@ -4138,36 +4058,6 @@
                 return true;
             }
             return false;
-        }
-        // Visible diagnostic for exactly the cache/guard staleness issue —
-        // shows what's actually happening on THIS browser in real time,
-        // rather than guessing blind. Small floating badge, click to expand
-        // full detail. Safe to leave in permanently; costs nothing when not
-        // looked at.
-        let _lastCacheSaveAt = null;
-        function _updateCacheDiagBadge(){
-            let el = document.getElementById('cacheDiagBadge');
-            if(!el){
-                el = document.createElement('div');
-                el.id = 'cacheDiagBadge';
-                el.style.cssText = `position:fixed;bottom:56px;right:20px;z-index:9999;
-                    font-family:'Inter',sans-serif;font-size:0.66rem;font-weight:600;
-                    padding:6px 10px;border-radius:10px;cursor:pointer;max-width:280px;
-                    background:rgba(15,23,42,.92);color:#E2E8F0;line-height:1.5;
-                    box-shadow:0 4px 16px rgba(0,0,0,.2);`;
-                el.onclick = () => { el.dataset.expanded = el.dataset.expanded === '1' ? '0' : '1'; _updateCacheDiagBadge(); };
-                document.body.appendChild(el);
-            }
-            const saveAgeSec = _lastCacheSaveAt ? Math.round((Date.now()-_lastCacheSaveAt)/1000) : 'never';
-            const g = _rawSubsGuard;
-            const st = (typeof _subsStabilizer !== 'undefined') ? _subsStabilizer : null;
-            const line1 = `Live subs: ${rawData.submissions.length} | Cache saved: ${saveAgeSec}${_lastCacheSaveAt?'s ago':''}`;
-            if(el.dataset.expanded === '1'){
-                const stLine = st ? `<br>Today-KPI stabilizer: ${st.stable===null?'null':st.stable} | pending: ${st.pending===null?'none':st.pending} (${st.pendingConfirms} confirms) | bgRefresh: ${!!window._isBackgroundRefresh}` : '';
-                el.innerHTML = `${line1}<br>Guard confirmed: ${g.confirmed?g.confirmed.length:'null'}<br>Guard pending: ${g.pending?g.pending.length:'none'} (${g.pendingConfirms} confirms)${stLine}<br><span style="opacity:.6;">tap to collapse</span>`;
-            } else {
-                el.innerHTML = `${line1} <span style="opacity:.6;">(tap for detail)</span>`;
-            }
         }
 
         function setLiveBadge(ok){
@@ -5410,50 +5300,10 @@
                     }
                 } catch(e){}
 
-                // Instant-paint from cache, if a recent one exists — shows the
-                // full dashboard right away instead of the loading skeleton
-                // sitting there for the whole duration of the network fetch.
-                // The normal fetch below still runs immediately after,
-                // completely unchanged, and replaces this with full fresh
-                // data (comments, raw Q&A, any brand-new entries) within a
-                // couple seconds — this only shortcuts the FIRST paint, it
-                // never delays or skips the real live update.
-                try {
-                    const cached = await _loadDashCache();
-                    if(cached){
-                        config.branches = cached.config.branches || config.branches;
-                        config.channels = cached.config.channels || config.channels;
-                        config.forms = cached.config.forms || config.forms;
-                        if(cached.config.complaintTypes) config.complaintTypes = cached.config.complaintTypes;
-                        rawData.submissions = cached.subs;
-                        rawData.incidents = cached.incs;
-                        // Seeds the anti-flicker guard with what the cache already
-                        // confirmed, instead of leaving it at null. Without this,
-                        // the guard's protection resets on every reload — its
-                        // very first fetch after a fresh load would be accepted
-                        // with zero protection no matter what Google's CDN
-                        // happens to return at that instant, defeating the whole
-                        // point of the guard for exactly the moment it matters
-                        // most (right after a refresh).
-                        _rawSubsGuard.confirmed = cached.subs;
-                        _rawIncsGuard.confirmed = cached.incs;
-                        initGlobalDates();
-                        const bSelect = document.getElementById('filter-branch');
-                        if(bSelect) config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
-                        this.populateRegionChannelFilters();
-                        this.applyFilters();
-                        renderAlerts();
-                        _revealApp();
-                        _lastCacheSaveAt = cached.cachedAt;
-                        _updateCacheDiagBadge();
-                    }
-                } catch(e){ /* any problem with the cached paint — just proceed to the normal load below as if there were no cache at all */ }
-
                 try {
                     let ok = false;
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
                     if (!ok) { generateData(); setLiveBadge(false); }        // fall back to sample data
-                    else { _saveDashCache(); }                               // fresh live data in hand — refresh the instant-paint cache for next time
                     initGlobalDates();
                     const bSelect = document.getElementById('filter-branch');
                     config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
@@ -5483,7 +5333,6 @@
                     this.applyFilters();
                     window._isBackgroundRefresh = false;
                     renderAlerts();
-                    _updateCacheDiagBadge();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
@@ -5494,8 +5343,6 @@
                             void document.body.offsetHeight;
                             try {
                                 if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
-                                _saveDashCache(); // keep the instant-paint cache fresh on every successful poll, not just re-renders
-                                _updateCacheDiagBadge();
                                 applyGlobalFilters();
                                 checkForNewIncidents();
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
@@ -5508,7 +5355,6 @@
                                 _syncIncidentAlertReviewState();
                                 Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
-                                _updateCacheDiagBadge();
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
@@ -5526,27 +5372,12 @@
                         }, LIVE.refreshMs);
 
                         document.addEventListener('visibilitychange', () => {
-                            if(document.hidden){
-                                // Save right as the tab goes hidden — this is what
-                                // actually closes the staleness gap: a refresh or
-                                // tab close fires this reliably while the page is
-                                // still fully alive, so the write has a real chance
-                                // to finish, unlike trying to save during unload
-                                // itself. Captures whatever's currently in memory,
-                                // not a new fetch — no network wait, just persisting
-                                // the freshest data already on screen.
-                                _saveDashCache();
-                                return;
-                            }
+                            if(document.hidden) return;
                             if(_pendingVisibilityRefresh){
                                 _pendingVisibilityRefresh = false;
                                 _doRefresh();
                             }
                         });
-                        // Best-effort second attempt for the same gap, specifically
-                        // covering a browser/tab close rather than a same-tab
-                        // refresh (where visibilitychange above already fires).
-                        window.addEventListener('pagehide', () => { _saveDashCache(); });
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
