@@ -6768,6 +6768,22 @@
                 `;
 
                 document.getElementById('ivm-status').innerHTML = `<span class="inc-status-badge-v2 ${isClosed?'inc-status-resolved':'inc-status-open'}">${isClosed?'resolved':'open'}</span>`;
+
+                // Preserves in-progress state across a rebuild — this
+                // function gets called again on every background poll while
+                // this modal is open (to reflect e.g. a resolution that just
+                // came in from another device), which was unconditionally
+                // wiping whatever an agent had mid-typed in the remarks box
+                // (the textarea has no value pre-fill at all, so a rebuild
+                // means totally blank, not even reverting to a prior save)
+                // and resetting this modal's own scroll position back to the
+                // top while someone was reading through it.
+                const bodyEl = document.getElementById('incident-view-body');
+                const prevRemarksEl = document.getElementById('ivm-remarks');
+                const preservedRemarks = prevRemarksEl ? prevRemarksEl.value : '';
+                const preservedFocusWasRemarks = document.activeElement === prevRemarksEl;
+                const preservedScrollTop = bodyEl ? bodyEl.scrollTop : 0;
+
                 document.getElementById('incident-view-body').innerHTML = `
                     <div class="inc-columns-v2">
                         <div class="inc-main-col-v2">
@@ -6780,6 +6796,21 @@
                     </div>
                 `;
                 document.getElementById('incident-view-modal').style.display = 'flex';
+
+                if(preservedRemarks){
+                    const newRemarksEl = document.getElementById('ivm-remarks');
+                    if(newRemarksEl){
+                        newRemarksEl.value = preservedRemarks;
+                        // A non-empty remarks box should also enable the
+                        // Close button the same way actually typing would —
+                        // otherwise restoring the text without restoring
+                        // this button's state would look inconsistent.
+                        const closeBtn = document.getElementById('ivm-close-btn');
+                        if(closeBtn && window._selectedIncidentValidity) closeBtn.disabled = false;
+                        if(preservedFocusWasRemarks) newRemarksEl.focus();
+                    }
+                }
+                if(bodyEl) bodyEl.scrollTop = preservedScrollTop;
             },
 
             closeIncidentDetailModal() {
