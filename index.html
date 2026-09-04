@@ -4067,52 +4067,54 @@
         // status. _notifPermRowHTML() builds the row's current state;
         // _refreshNotifPermRow() re-renders just that row, called every time
         // the profile menu opens so it never shows a stale permission state.
+        // Two separate layers control whether a desktop notification actually
+        // shows: the browser's own permission (granted/denied/default — a
+        // webpage can never revoke this itself once granted, by design, only
+        // the user can via browser settings) and this app-level on/off
+        // preference stored here. Both must be true for a notification to
+        // fire — this is what makes "off" genuinely work as a real toggle
+        // even though the browser permission itself can't be turned back off
+        // from code.
+        const NOTIF_PREF_KEY = 'crumble_desktop_alerts_enabled';
+        function _notifPrefEnabled(){
+            try { const v = localStorage.getItem(NOTIF_PREF_KEY); return v === null ? true : v === '1'; }
+            catch(e){ return true; }
+        }
+        function _setNotifPrefEnabled(on){
+            try { localStorage.setItem(NOTIF_PREF_KEY, on ? '1' : '0'); } catch(e){}
+        }
+
         function _notifPermRowHTML(){
             const supported = typeof Notification !== 'undefined';
             const perm = supported ? Notification.permission : 'unsupported';
-            let iconBg, iconColor, icon, label;
-            if(perm === 'granted'){
-                iconBg='rgba(5,150,105,.08)'; iconColor='#059669'; icon='fa-bell'; label='Desktop alerts on';
+            const prefOn = _notifPrefEnabled();
+            // "on" for display purposes: only true if browser permission is
+            // actually granted AND the app-level preference is also on.
+            const on = perm === 'granted' && prefOn;
+            let iconBg, iconColor, icon, label, interactive;
+            if(perm === 'unsupported'){
+                iconBg='rgba(107,114,128,.08)'; iconColor='#6B7280'; icon='fa-bell-slash'; label='Desktop alerts not supported'; interactive=false;
             } else if(perm === 'denied'){
-                iconBg='rgba(220,38,38,.08)'; iconColor='#DC2626'; icon='fa-bell-slash'; label='Desktop alerts blocked — tap to fix';
-            } else if(perm === 'unsupported'){
-                iconBg='rgba(107,114,128,.08)'; iconColor='#6B7280'; icon='fa-bell-slash'; label='Desktop alerts not supported';
+                iconBg='rgba(220,38,38,.08)'; iconColor='#DC2626'; icon='fa-bell-slash'; label='Desktop alerts blocked — tap to fix'; interactive=true;
             } else {
-                iconBg='rgba(217,119,6,.08)'; iconColor='#D97706'; icon='fa-bell'; label='Enable desktop alerts';
+                iconBg = on ? 'rgba(5,150,105,.08)' : 'rgba(100,116,139,.08)';
+                iconColor = on ? '#059669' : 'var(--text-muted)';
+                icon = 'fa-bell';
+                label = 'Desktop alerts';
+                interactive = true;
             }
-            const clickable = perm === 'denied' || perm === 'default';
-            // Uses a <div>, not a disabled <button>, for the non-clickable
-            // states — the native browser styling for button[disabled]
-            // washes out its text/icon color regardless of what's set here,
-            // which made "Desktop alerts on" (a good, working state) look
-            // identical to broken/blocked at a glance. A plain div carries
-            // no such built-in styling, so the intended color always shows.
-            const tag = clickable ? 'button' : 'div';
-            const statusRow = `<${tag} ${clickable ? 'onclick="_handleNotifPermClick()"' : ''}
-                    style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:${clickable?'pointer':'default'};font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;box-sizing:border-box;"
-                    ${clickable ? `onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"` : ''}>
-                <span style="width:26px;height:26px;border-radius:7px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas ${icon}"></i></span>
-                ${label}
-            </${tag}>`;
-            // Only shown once permission is actually granted — lets you
-            // confirm the full delivery path (browser + OS) works right now,
-            // instead of waiting on a real incident to find out. Real
-            // incidents only ever trigger this same underlying function, so
-            // a working test notification means the mechanism itself is
-            // fine — if real ones still don't show up after this test
-            // succeeds, the cause is upstream (no incident has actually
-            // happened) rather than notification delivery being broken.
-            const testRow = perm === 'granted' ? `
-                <button onclick="_sendTestNotification()"
-                        style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-muted);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;box-sizing:border-box;"
-                        onmouseover="this.style.background='var(--bg-light)';this.style.color='var(--text-main)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-muted)'">
-                    <span style="width:26px;height:26px;border-radius:7px;background:rgba(1,1,151,.06);color:#010197;display:flex;align-items:center;justify-content:center;font-size:0.68rem;flex-shrink:0;"><i class="fas fa-paper-plane"></i></span>
-                    Send test notification
-                </button>` : '';
-            return `<div id="dp-notif-row">${statusRow}${testRow}</div>`;
-        }
-        function _sendTestNotification(){
-            _showDesktopIncidentNotification('🔔 Test notification', 'If you can see this, desktop alerts are working correctly on this device.');
+            const switchBg = on ? '#059669' : '#CBD5E1';
+            const switchKnobLeft = on ? '18px' : '2px';
+            return `<div id="dp-notif-row" style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;gap:10px;">
+                <div onclick="${perm==='denied' ? '_handleNotifPermClick()' : ''}" style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:${perm==='denied'?'pointer':'default'};">
+                    <span style="width:26px;height:26px;border-radius:7px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas ${icon}"></i></span>
+                    <span style="font-size:0.82rem;font-weight:600;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${label}</span>
+                </div>
+                ${interactive ? `<button onclick="_toggleNotifPref()" aria-label="Toggle desktop alerts"
+                        style="flex-shrink:0;width:38px;height:22px;border-radius:99px;border:none;cursor:pointer;position:relative;background:${switchBg};transition:background .2s;padding:0;">
+                    <span style="position:absolute;top:2px;left:${switchKnobLeft};width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s;"></span>
+                </button>` : `<div style="flex-shrink:0;width:38px;height:22px;border-radius:99px;background:#E5E7EB;"></div>`}
+            </div>`;
         }
         function _refreshNotifPermRow(){
             const row = document.getElementById('dp-notif-row');
@@ -4120,6 +4122,26 @@
             const wrapper = document.createElement('div');
             wrapper.innerHTML = _notifPermRowHTML();
             row.replaceWith(wrapper.firstElementChild);
+        }
+        function _toggleNotifPref(){
+            if(typeof Notification === 'undefined') return;
+            if(Notification.permission === 'denied'){
+                _handleNotifPermClick();
+                return;
+            }
+            if(Notification.permission === 'default'){
+                // Not yet asked — flipping the switch on is what actually
+                // triggers the real browser permission prompt.
+                Notification.requestPermission().then((result) => {
+                    if(result === 'granted') _setNotifPrefEnabled(true);
+                    _refreshNotifPermRow();
+                }).catch(()=>{});
+                return;
+            }
+            // Already granted at the browser level — this is now a pure
+            // app-level preference flip, no browser prompt involved.
+            _setNotifPrefEnabled(!_notifPrefEnabled());
+            _refreshNotifPermRow();
         }
         function _handleNotifPermClick(){
             if(typeof Notification === 'undefined') return;
@@ -4873,6 +4895,12 @@
         function _showDesktopIncidentNotification(title, body){
             try {
                 if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+                // Browser permission alone isn't the full gate — the
+                // in-dashboard toggle is a separate, app-level on/off that
+                // has to also be true. This is what makes switching it "off"
+                // genuinely stop notifications, since the browser permission
+                // itself can never be revoked from code once granted.
+                if(!_notifPrefEnabled()) return;
                 const n = new Notification(title, {
                     body,
                     tag: 'crumble-incident-alert',  // replaces any still-open one instead of stacking a pile of banners
