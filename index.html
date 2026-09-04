@@ -3762,7 +3762,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.34';
+        const BUILD = 'v1.35';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -3862,7 +3862,7 @@
             // impossible to pin down by eye. Capped PER FORM (not globally) so
             // a form with a lot of exclusions can't crowd out visibility into
             // the others — each form gets its own fair sample.
-            out.excluded = out.excluded || { status:0, branch:0, rating:0, samples:[], perFormCount:{} };
+            out.excluded = out.excluded || { status:0, branch:0, rating:0, blank:0, samples:[], perFormCount:{} };
             const trackExcluded = (reason, r) => {
                 out.excluded[reason]++;
                 const formCount = out.excluded.perFormCount[src.form] || 0;
@@ -3873,6 +3873,14 @@
             };
             (rows||[]).forEach(r=>{
                 try {
+                    // Guard: a row with no "Created At" timestamp isn't a real
+                    // submission — it's an empty sheet/export row. Verified against
+                    // the live form exports: every genuine row has a Created At, and
+                    // every row missing it was 100% blank. Excluded from all counts
+                    // (tracked as "blank", not silently dropped). Does NOT touch the
+                    // deliberate counting of abandoned/editing rows — those all carry
+                    // a real timestamp.
+                    if(!String(_find(r,'created at')).trim()){ trackExcluded('blank', r); return; }
                     const status = String(_find(r,'status')).trim().toLowerCase();
                     // Abandoned submissions now count fully, same as completed —
                     // a deliberate decision, not an oversight. "Editing" (still
@@ -4069,7 +4077,7 @@
             const out = { subs:[], incs:[] };
             const mapped = results.map((rows, idx) => (rows && rows.length) ? mapSource(rows, sources[idx], out) : (rows===null?'ERR':0));
             window.__diag2 = 'mapped ' + sources.map((s,i)=> s.form.replace(/\s/g,'')+':'+mapped[i]).join(' ');
-            window.__excluded = out.excluded || { status:0, branch:0, rating:0, samples:[] };
+            window.__excluded = out.excluded || { status:0, branch:0, rating:0, blank:0, samples:[] };
             window.__channelDiag = out.channelDiag || {};
             window.__channelValues = out.channelValues || {};
             if(out.subs.length){
@@ -7358,12 +7366,12 @@
                 // gap invisible and unexplained.
                 const excludedCard = document.getElementById('submissions-excluded-card');
                 if(excludedCard){
-                    const exc = window.__excluded || { status:0, branch:0, rating:0, samples:[] };
+                    const exc = window.__excluded || { status:0, branch:0, rating:0, blank:0, samples:[] };
                     // "branch" rows are no longer truly excluded — they're counted
                     // under an "Unspecified" branch bucket now (see mapSource) — so
                     // they're shown here as a separate, milder callout, not folded
                     // into the "not counted at all" total.
-                    const notCountedTotal = exc.status + exc.rating;
+                    const notCountedTotal = exc.status + exc.rating + (exc.blank||0);
                     const total = notCountedTotal + exc.branch;
                     if(view === 'submissions' && total > 0){
                         excludedCard.style.display = '';
@@ -7378,19 +7386,20 @@
                         if(summaryEl){
                             const byForm = {};
                             exc.samples.forEach(s => {
-                                byForm[s.form] = byForm[s.form] || { status:0, branch:0, rating:0 };
+                                byForm[s.form] = byForm[s.form] || { status:0, branch:0, rating:0, blank:0 };
                                 byForm[s.form][s.reason] = (byForm[s.form][s.reason] || 0) + 1;
                             });
                             const formLines = Object.keys(byForm).map(f => {
                                 const b = byForm[f];
                                 const parts = [];
+                                if(b.blank) parts.push(`${b.blank} completely blank (no timestamp)`);
                                 if(b.status) parts.push(`${b.status} not "completed"/"abandoned" status`);
                                 if(b.rating) parts.push(`${b.rating} missing a rating`);
                                 if(b.branch) parts.push(`${b.branch} counted under "Unspecified" (missing branch)`);
                                 return `<div style="margin-bottom:4px;"><strong>${f}:</strong> ${parts.join(', ')}</div>`;
                             }).join('');
                             const notCountedLine = notCountedTotal > 0
-                                ? `<div style="margin-bottom:8px;"><strong>${notCountedTotal.toLocaleString()} row${notCountedTotal===1?'':'s'}</strong> genuinely not counted anywhere — <strong>${exc.status.toLocaleString()}</strong> because their status isn't "completed" or "abandoned" (e.g. still "editing"), <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded.</div>`
+                                ? `<div style="margin-bottom:8px;"><strong>${notCountedTotal.toLocaleString()} row${notCountedTotal===1?'':'s'}</strong> genuinely not counted anywhere — <strong>${(exc.blank||0).toLocaleString()}</strong> completely blank (empty rows with no timestamp), <strong>${exc.status.toLocaleString()}</strong> because their status isn't "completed" or "abandoned" (e.g. still "editing"), <strong>${exc.rating.toLocaleString()}</strong> because they have no rating recorded.</div>`
                                 : '';
                             const branchLine = exc.branch > 0
                                 ? `<div style="margin-bottom:10px;"><strong>${exc.branch.toLocaleString()} row${exc.branch===1?'':'s'}</strong> ARE counted, but under an "Unspecified" branch — real, complete submissions that are just missing a Location value. Worth checking why (see the "Branches" table for that entry).</div>`
