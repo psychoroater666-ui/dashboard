@@ -4938,13 +4938,17 @@
             } catch(e){ console.warn('Could not play incident alert sound:', e); }
         }
 
-        // Keeps ringing every 2.5s until the alert is actually acknowledged
-        // (View Incident, Close, or the X) — not just a one-shot notification.
+        // Plays once when the alert first appears — the popup (both the
+        // in-page modal and the desktop notification, via requireInteraction)
+        // is what stays on screen until someone actually clicks it; the sound
+        // itself is a one-time cue, not a repeating ring. _incidentSoundInterval
+        // stays as a variable name for stopRepeatingIncidentSound() below,
+        // which is now a harmless no-op (nothing left running to stop) but is
+        // kept so its existing call sites (dismissing an alert, syncing
+        // review state from another device) don't need touching.
         let _incidentSoundInterval = null;
         function startRepeatingIncidentSound(){
-            if(_incidentSoundInterval) return; // already ringing
             playIncidentAlertSound();
-            _incidentSoundInterval = setInterval(playIncidentAlertSound, 2500);
         }
         function stopRepeatingIncidentSound(){
             if(_incidentSoundInterval){ clearInterval(_incidentSoundInterval); _incidentSoundInterval = null; }
