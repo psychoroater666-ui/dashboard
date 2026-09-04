@@ -522,6 +522,7 @@
         .icon-red { background: var(--status-critical-bg); color: var(--status-critical); }
         .icon-blue { background: var(--accent-blue-light); color: var(--accent-blue); }
         .icon-yellow { background: var(--status-warn-bg); color: var(--status-warn); }
+        .icon-purple { background: rgba(124,58,237,.1); color: #7C3AED; }
 
         .trend-indicator { font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; gap: 5px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border-color); }
         .trend-good { color: var(--status-good); }
@@ -1845,12 +1846,14 @@
         .inc-status-badge-v2 { display:inline-block; padding:3px 11px; border-radius:20px; font-size:0.68rem; font-weight:700; }
         .inc-status-badge-v2.inc-status-resolved { background:rgba(5,150,105,.12); color:#059669; }
         .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#D97706; }
+        .inc-status-badge-v2.inc-status-notresp { background:rgba(124,58,237,.12); color:#7C3AED; }
         .inc-columns-v2 { display:grid; grid-template-columns: 1fr 240px; gap:20px; align-items:start; padding-bottom:20px; }
         .inc-tl-entry-v2 { display:flex; gap:11px; align-items:flex-start; }
         .inc-tl-icon-v2 { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; }
         .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
         .inc-tl-icon-reviewed { background:rgba(217,119,6,.1); color:#D97706; }
         .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
+        .inc-tl-icon-notresp { background:rgba(124,58,237,.1); color:#7C3AED; }
         .inc-tl-connector { width:2px; height:16px; background:var(--border-color); margin-left:13px; }
         .inc-tl-content-v2 { flex:1; padding-top:2px; }
         .inc-tl-title-v2 { font-size:0.82rem; font-weight:800; color:var(--text-main); }
@@ -1868,6 +1871,7 @@
         .inc-validity-btn { flex:1; padding:8px 10px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-muted); font-size:0.78rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; transition:all .15s; }
         .inc-validity-btn.inc-validity-valid.inc-validity-selected { background:rgba(5,150,105,.1); border-color:#059669; color:#059669; }
         .inc-validity-btn.inc-validity-fake.inc-validity-selected { background:rgba(220,38,38,.1); border-color:#DC2626; color:#DC2626; }
+        .inc-validity-btn.inc-validity-notresp.inc-validity-selected { background:rgba(124,58,237,.1); border-color:#7C3AED; color:#7C3AED; }
         .inc-sidebar-v2 { display:flex; flex-direction:column; gap:10px; }
         .inc-sb-card-v2 { background:var(--bg-light); border-radius:10px; padding:11px 13px; }
         .inc-sb-2col { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -2396,6 +2400,12 @@
                             <div class="kpi-icon-wrapper icon-yellow"><i class="fas fa-user-secret"></i></div>
                             <div class="kpi-value" id="kpi-fake">0</div>
                             <div class="trend-indicator" id="trend-fake">--</div>
+                        </div>
+                        <div class="kpi-card" onclick="app.navigate('incidents')">
+                            <div class="kpi-title">Not Responding</div>
+                            <div class="kpi-icon-wrapper icon-purple"><i class="fas fa-phone-slash"></i></div>
+                            <div class="kpi-value" id="kpi-notresp">0</div>
+                            <div class="trend-indicator" id="trend-notresp">--</div>
                         </div>
                         <div class="kpi-card" id="kpi-best-card" onclick="app.navigate('branches')">
                             <div class="kpi-title">Best Performing Branch</div>
@@ -3005,6 +3015,7 @@
                             <option value="all">All cases</option>
                             <option value="verified">✓ Verified</option>
                             <option value="fake">✕ Fake</option>
+                            <option value="not_responding">⏱ Not Responding</option>
                             <option value="review">⚑ Needs review</option>
                         </select>
                         <select class="select-input" id="inc-chan-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
@@ -3749,7 +3760,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.25';
+        const BUILD = 'v1.26';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -5465,15 +5476,16 @@
         }
 
         function selectIncidentValidity(btnEl, validity){
-            document.querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
+            const form = btnEl.closest('.inc-add-comment-v2');
+            (form || document).querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
             btnEl.classList.add('inc-validity-selected');
             window._selectedIncidentValidity = validity;
-            const closeBtn = document.getElementById('ivm-close-btn');
+            const closeBtn = form ? form.querySelector('.inc-close-btn-v2') : document.getElementById('ivm-close-btn');
             if(closeBtn) closeBtn.disabled = false;
         }
 
         function saveIncidentResolution(stableKey, note, btnEl, validity, category){
-            if(!validity){ alert('Please mark this complaint as Valid or Fake before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
+            if(!validity){ alert('Please mark this complaint as Valid, Fake, or Not Responding before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
@@ -5483,7 +5495,16 @@
             .then(r => r.json())
             .then(r => {
                 if(r.status !== 'success') throw new Error(r.message || 'save failed');
-                const resolvedCaseStatus = (validity === 'fake') ? 'fake' : 'verified';
+                // Not Responding is its own outcome, not a stand-in for Valid —
+                // closing the case this way still stops the resolution-time
+                // clock (so agents aren't stuck holding a case open just
+                // because a customer didn't pick up), but it's deliberately
+                // NOT locked in the way Valid/Fake are: the determination form
+                // stays visible for a not_responding case so that if the
+                // customer is reached on a later attempt, the agent can come
+                // back and set the real Valid/Fake — which then overwrites
+                // this and updates resolvedAt to reflect the true final close.
+                const resolvedCaseStatus = validity === 'fake' ? 'fake' : validity === 'not_responding' ? 'not_responding' : 'verified';
                 const resolvedAt = new Date().toISOString();
                 _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt, category || '');
                 (rawData.incidents||[]).forEach(inc => {
@@ -5934,8 +5955,13 @@
                     const ver    = p1.incs.filter(i => (i.caseStatus||'verified') === 'verified').length;
                     const fake   = p1.incs.filter(i => i.caseStatus === 'fake').length;
                     const review = p1.incs.filter(i => i.caseStatus === 'review').length;
+                    const notResponding = p1.incs.filter(i => i.caseStatus === 'not_responding').length;
                     countUp(document.getElementById('kpi-ver'), ver);
                     countUp(document.getElementById('kpi-fake'), fake);
+                    const kpiNotResp = document.getElementById('kpi-notresp');
+                    if(kpiNotResp) countUp(kpiNotResp, notResponding);
+                    const trendNotResp = document.getElementById('trend-notresp');
+                    if(trendNotResp) trendNotResp.innerHTML = `<span class="trend-text">awaiting recontact</span>`;
                     // Surface the Foodpanda "needs review" count under the Fake card (if the element exists)
                     const trendFake = document.getElementById('trend-fake');
                     if(trendFake) trendFake.innerHTML = review > 0
@@ -6379,17 +6405,22 @@
                 const isDark = document.body.classList.contains('dark-theme');
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
 
-                let agentValid = 0, agentFake = 0, notReviewed = 0;
+                let agentValid = 0, agentFake = 0, agentNotResponding = 0, notReviewed = 0;
                 incs.forEach(i => {
-                    if(i.agentVerdict){ if(i.caseStatus === 'fake') agentFake++; else agentValid++; }
+                    if(i.agentVerdict){
+                        if(i.caseStatus === 'fake') agentFake++;
+                        else if(i.caseStatus === 'not_responding') agentNotResponding++;
+                        else agentValid++;
+                    }
                     else notReviewed++;
                 });
-                const total = agentValid + agentFake + notReviewed;
+                const total = agentValid + agentFake + agentNotResponding + notReviewed;
                 const validPct = total ? Math.round((agentValid/total)*100) : 0;
 
                 const rows = [
                     { label:'Agent Confirmed Valid', val: agentValid, base:[5,150,105] },
                     { label:'Agent Flagged Fake', val: agentFake, base:[220,38,38] },
+                    { label:'Not Responding', val: agentNotResponding, base:[124,58,237] },
                     { label:'Not Yet Agent-Reviewed', val: notReviewed, base:[100,116,139] }
                 ];
 
@@ -6473,7 +6504,7 @@
                 // instead of a plain dot-and-label list.
                 const legendEl = document.getElementById('ia-validity-legend');
                 if(legendEl){
-                    const colorHex = { 'Agent Confirmed Valid':'#059669', 'Agent Flagged Fake':'#DC2626', 'Not Yet Agent-Reviewed':'#64748B' };
+                    const colorHex = { 'Agent Confirmed Valid':'#059669', 'Agent Flagged Fake':'#DC2626', 'Not Responding':'#7C3AED', 'Not Yet Agent-Reviewed':'#64748B' };
                     legendEl.innerHTML = rows.map(r => {
                         const pct = total ? ((r.val/total)*100) : 0;
                         const c = colorHex[r.label];
@@ -6527,12 +6558,14 @@
                 const verCount = incs.filter(i => (i.caseStatus||'verified')==='verified').length;
                 const fakeCount = incs.filter(i => i.caseStatus==='fake').length;
                 const reviewCount = incs.filter(i => i.caseStatus==='review').length;
+                const notRespCount = incs.filter(i => i.caseStatus==='not_responding').length;
 
                 const statsEl = document.getElementById('inc-stats');
                 if(statsEl) statsEl.innerHTML = `
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-check"></i> Verified</div><div class="inc-stat-value" style="color:var(--status-good);">${verCount.toLocaleString()}</div><div class="inc-stat-sub">${total?((verCount/total)*100).toFixed(0):0}% are real complaints</div></div>
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-xmark"></i> Fake / Invalid</div><div class="inc-stat-value" style="color:var(--status-critical);">${fakeCount.toLocaleString()}</div><div class="inc-stat-sub">mismatched or no context</div></div>
+                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-phone-slash"></i> Not Responding</div><div class="inc-stat-value" style="color:#7C3AED;">${notRespCount.toLocaleString()}</div><div class="inc-stat-sub">awaiting recontact</div></div>
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-flag"></i> Needs Review</div><div class="inc-stat-value" style="color:var(--status-warn);">${reviewCount.toLocaleString()}</div><div class="inc-stat-sub">Foodpanda quality / wrong-missing</div></div>
                     <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>`;
 
@@ -6603,7 +6636,7 @@
                     </div>`;
                     const cs = inc.caseStatus || 'verified';
                     const csMap = inc.agentVerdict
-                        ? { verified:['✓','#059669','Agent Confirmed'], fake:['✕','#DC2626','Agent: Fake'] }
+                        ? { verified:['✓','#059669','Agent Confirmed'], fake:['✕','#DC2626','Agent: Fake'], not_responding:['⏱','#7C3AED','Not Responding'] }
                         : { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr style="cursor:pointer;" onclick="app.openIncidentDetailModal(${idx})">
@@ -6699,9 +6732,10 @@
                     ${isClosed ? `
                     <div class="inc-tl-connector"></div>
                     <div class="inc-tl-entry-v2">
-                        <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
+                        <div class="inc-tl-icon-v2 ${inc.caseStatus==='not_responding'?'inc-tl-icon-notresp':'inc-tl-icon-resolved'}"><i class="fas ${inc.caseStatus==='not_responding'?'fa-phone-slash':'fa-thumbs-up'}"></i></div>
                         <div class="inc-tl-content-v2">
-                            <div class="inc-tl-title-v2">Incident resolved${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            <div class="inc-tl-title-v2">${inc.caseStatus==='not_responding'?'Customer not responding':'Incident resolved'}${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            ${inc.caseStatus==='not_responding' ? `<div class="inc-tl-sub-v2">Case closed to keep response-time accurate — still awaiting recontact. Set the real determination below once the customer is reached.</div>` : ''}
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
                     </div>` : ''}
@@ -6712,9 +6746,14 @@
                     .map(c => `<option value="${c.id}" ${c.id === currentCat.id ? 'selected' : ''}>${c.title}</option>`)
                     .join('');
 
-                const addCommentHtml = !isClosed ? `
+                // Not Responding is deliberately not a final state — keep the
+                // determination form available for it even though the case
+                // is "closed", so the real Valid/Fake call can still be made
+                // once the customer is actually reached.
+                const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
-                        <div class="inc-add-comment-label-v2">Add Remarks</div>
+                        <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
                         <textarea id="ivm-remarks" placeholder="What was done to resolve this? (contacted customer, verified order, etc.)"></textarea>
                         <div class="inc-validity-label">Category — confirm or correct the auto-detected type</div>
                         <select id="ivm-category" class="select-input" style="width:100%; margin-top:2px;">${categoryOptions}</select>
@@ -6722,8 +6761,9 @@
                         <div class="inc-validity-toggle">
                             <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
                             <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
+                            <button type="button" class="inc-validity-btn inc-validity-notresp" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
                         </div>
-                        <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity, document.getElementById('ivm-category').value)"><i class="fas fa-check"></i> Mark as Closed</button>
+                        <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity, document.getElementById('ivm-category').value)"><i class="fas fa-check"></i> ${needsRealDetermination ? 'Save Determination' : 'Mark as Closed'}</button>
                     </div>` : '';
 
                 const SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
@@ -6767,7 +6807,11 @@
                     </div>` : ''}
                 `;
 
-                document.getElementById('ivm-status').innerHTML = `<span class="inc-status-badge-v2 ${isClosed?'inc-status-resolved':'inc-status-open'}">${isClosed?'resolved':'open'}</span>`;
+                {
+                    const pillState = (isClosed && inc.caseStatus === 'not_responding') ? 'notresp' : (isClosed ? 'resolved' : 'open');
+                    const pillLabel = pillState === 'notresp' ? 'not responding' : pillState;
+                    document.getElementById('ivm-status').innerHTML = `<span class="inc-status-badge-v2 inc-status-${pillState}">${pillLabel}</span>`;
+                }
 
                 // Preserves in-progress state across a rebuild — this
                 // function gets called again on every background poll while
@@ -6866,20 +6910,36 @@
                     ${isClosed ? `
                     <div class="inc-tl-connector"></div>
                     <div class="inc-tl-entry-v2">
-                        <div class="inc-tl-icon-v2 inc-tl-icon-resolved"><i class="fas fa-thumbs-up"></i></div>
+                        <div class="inc-tl-icon-v2 ${inc.caseStatus==='not_responding'?'inc-tl-icon-notresp':'inc-tl-icon-resolved'}"><i class="fas ${inc.caseStatus==='not_responding'?'fa-phone-slash':'fa-thumbs-up'}"></i></div>
                         <div class="inc-tl-content-v2">
-                            <div class="inc-tl-title-v2">Incident resolved${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            <div class="inc-tl-title-v2">${inc.caseStatus==='not_responding'?'Customer not responding':'Incident resolved'}${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            ${inc.caseStatus==='not_responding' ? `<div class="inc-tl-sub-v2">Case closed to keep response-time accurate — still awaiting recontact. Set the real determination below once the customer is reached.</div>` : ''}
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
                     </div>` : ''}
                 `;
 
-                // Remarks + close — one-way (matches the sheet: no "reopen" written back)
-                const addCommentHtml = !isClosed ? `
+                // Remarks + close. Not Responding stays reopenable for a real
+                // Valid/Fake call once the customer is actually reached —
+                // same behavior as the main incident modal.
+                const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
+                const categoryOptions = [...COMPLAINT_CATEGORIES, CI_HEALTH_HAZARD, CI_OTHER]
+                    .map(c => `<option value="${c.id}" ${c.id === currentCat.id ? 'selected' : ''}>${c.title}</option>`)
+                    .join('');
+                const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
-                        <div class="inc-add-comment-label-v2">Add Remarks</div>
+                        <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
                         <textarea id="inc-remarks-${idx}" placeholder="What was done to resolve this?"></textarea>
-                        <button class="inc-close-btn-v2" onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this)"><i class="fas fa-check"></i> Mark as Closed</button>
+                        <div class="inc-validity-label">Category — confirm or correct the auto-detected type</div>
+                        <select id="inc-category-${idx}" class="select-input" style="width:100%; margin-top:2px;">${categoryOptions}</select>
+                        <div class="inc-validity-label">Your determination — is this complaint valid?</div>
+                        <div class="inc-validity-toggle">
+                            <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
+                            <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
+                            <button type="button" class="inc-validity-btn inc-validity-notresp" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
+                        </div>
+                        <button class="inc-close-btn-v2" id="inc-close-btn-${idx}" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this, window._selectedIncidentValidity, document.getElementById('inc-category-${idx}').value)"><i class="fas fa-check"></i> ${needsRealDetermination ? 'Save Determination' : 'Mark as Closed'}</button>
                     </div>` : '';
 
                 // Full survey Q&A straight from the raw sheet row — every
