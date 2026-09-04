@@ -5394,6 +5394,16 @@
                         if(cached.config.complaintTypes) config.complaintTypes = cached.config.complaintTypes;
                         rawData.submissions = cached.subs;
                         rawData.incidents = cached.incs;
+                        // Seeds the anti-flicker guard with what the cache already
+                        // confirmed, instead of leaving it at null. Without this,
+                        // the guard's protection resets on every reload — its
+                        // very first fetch after a fresh load would be accepted
+                        // with zero protection no matter what Google's CDN
+                        // happens to return at that instant, defeating the whole
+                        // point of the guard for exactly the moment it matters
+                        // most (right after a refresh).
+                        _rawSubsGuard.confirmed = cached.subs;
+                        _rawIncsGuard.confirmed = cached.incs;
                         initGlobalDates();
                         const bSelect = document.getElementById('filter-branch');
                         if(bSelect) config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
