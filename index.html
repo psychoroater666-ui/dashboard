@@ -1813,6 +1813,8 @@
         .inc-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
         @media (max-width: 1100px){ .inc-stats { grid-template-columns: repeat(2, 1fr); } }
         .inc-stat { background: var(--white); border: 1px solid var(--border-color); border-radius: 13px; padding: 16px 18px; }
+        .inc-stat-clickable { cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s; }
+        .inc-stat-clickable:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.07); border-color: var(--accent-blue); }
         .inc-stat-label { font-size: 0.66rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
         .inc-stat-value { font-size: 1.7rem; font-weight: 800; letter-spacing: -1px; margin-top: 6px; color: var(--text-main); line-height: 1; }
         .inc-stat-sub { font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-top: 5px; }
@@ -2400,12 +2402,6 @@
                             <div class="kpi-icon-wrapper icon-yellow"><i class="fas fa-user-secret"></i></div>
                             <div class="kpi-value" id="kpi-fake">0</div>
                             <div class="trend-indicator" id="trend-fake">--</div>
-                        </div>
-                        <div class="kpi-card" onclick="app.navigate('incidents')">
-                            <div class="kpi-title">Not Responding</div>
-                            <div class="kpi-icon-wrapper icon-purple"><i class="fas fa-phone-slash"></i></div>
-                            <div class="kpi-value" id="kpi-notresp">0</div>
-                            <div class="trend-indicator" id="trend-notresp">--</div>
                         </div>
                         <div class="kpi-card" id="kpi-best-card" onclick="app.navigate('branches')">
                             <div class="kpi-title">Best Performing Branch</div>
@@ -3760,7 +3756,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.26';
+        const BUILD = 'v1.27';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -5475,6 +5471,30 @@
             .catch(err => console.warn('Incident review save FAILED (network/CORS/parse error) for key:', stableKey, '—', err));
         }
 
+        // Incident Case Log stat cards — click one to filter the table below
+        // by that exact dimension, instead of just being a static count.
+        // 'total' clears both filters; 'critical' drives the rating filter;
+        // everything else (verified/fake/not_responding/review) drives the
+        // validity filter — each resets the other so the result is
+        // unambiguous rather than silently ANDing with a leftover filter.
+        function incStatFilterClick(kind){
+            const rfEl = document.getElementById('inc-rating-filter');
+            const vfEl = document.getElementById('inc-valid-filter');
+            if(kind === 'total'){
+                if(rfEl) rfEl.value = 'all';
+                if(vfEl) vfEl.value = 'all';
+            } else if(kind === 'critical'){
+                if(rfEl) rfEl.value = '1';
+                if(vfEl) vfEl.value = 'all';
+            } else {
+                if(rfEl) rfEl.value = 'all';
+                if(vfEl) vfEl.value = kind; // 'verified' | 'fake' | 'not_responding' | 'review'
+            }
+            if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
+            const tableEl = document.getElementById('inc-detail-table');
+            if(tableEl) tableEl.scrollIntoView({ behavior:'smooth', block:'start' });
+        }
+
         function selectIncidentValidity(btnEl, validity){
             const form = btnEl.closest('.inc-add-comment-v2');
             (form || document).querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
@@ -5955,13 +5975,8 @@
                     const ver    = p1.incs.filter(i => (i.caseStatus||'verified') === 'verified').length;
                     const fake   = p1.incs.filter(i => i.caseStatus === 'fake').length;
                     const review = p1.incs.filter(i => i.caseStatus === 'review').length;
-                    const notResponding = p1.incs.filter(i => i.caseStatus === 'not_responding').length;
                     countUp(document.getElementById('kpi-ver'), ver);
                     countUp(document.getElementById('kpi-fake'), fake);
-                    const kpiNotResp = document.getElementById('kpi-notresp');
-                    if(kpiNotResp) countUp(kpiNotResp, notResponding);
-                    const trendNotResp = document.getElementById('trend-notresp');
-                    if(trendNotResp) trendNotResp.innerHTML = `<span class="trend-text">awaiting recontact</span>`;
                     // Surface the Foodpanda "needs review" count under the Fake card (if the element exists)
                     const trendFake = document.getElementById('trend-fake');
                     if(trendFake) trendFake.innerHTML = review > 0
@@ -6562,12 +6577,12 @@
 
                 const statsEl = document.getElementById('inc-stats');
                 if(statsEl) statsEl.innerHTML = `
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-check"></i> Verified</div><div class="inc-stat-value" style="color:var(--status-good);">${verCount.toLocaleString()}</div><div class="inc-stat-sub">${total?((verCount/total)*100).toFixed(0):0}% are real complaints</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-circle-xmark"></i> Fake / Invalid</div><div class="inc-stat-value" style="color:var(--status-critical);">${fakeCount.toLocaleString()}</div><div class="inc-stat-sub">mismatched or no context</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-phone-slash"></i> Not Responding</div><div class="inc-stat-value" style="color:#7C3AED;">${notRespCount.toLocaleString()}</div><div class="inc-stat-sub">awaiting recontact</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-flag"></i> Needs Review</div><div class="inc-stat-value" style="color:var(--status-warn);">${reviewCount.toLocaleString()}</div><div class="inc-stat-sub">Foodpanda quality / wrong-missing</div></div>
-                    <div class="inc-stat"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>`;
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('total')"><div class="inc-stat-label"><i class="fas fa-triangle-exclamation"></i> Total Incidents</div><div class="inc-stat-value">${total.toLocaleString()}</div><div class="inc-stat-sub" style="color:${trendColor};"><i class="fas ${trendIcon}"></i> ${Math.abs(trendPct)}% vs prev period</div></div>
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('verified')"><div class="inc-stat-label"><i class="fas fa-circle-check"></i> Verified</div><div class="inc-stat-value" style="color:var(--status-good);">${verCount.toLocaleString()}</div><div class="inc-stat-sub">${total?((verCount/total)*100).toFixed(0):0}% are real complaints</div></div>
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('fake')"><div class="inc-stat-label"><i class="fas fa-circle-xmark"></i> Fake / Invalid</div><div class="inc-stat-value" style="color:var(--status-critical);">${fakeCount.toLocaleString()}</div><div class="inc-stat-sub">mismatched or no context</div></div>
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('not_responding')"><div class="inc-stat-label"><i class="fas fa-phone-slash"></i> Not Responding</div><div class="inc-stat-value" style="color:#7C3AED;">${notRespCount.toLocaleString()}</div><div class="inc-stat-sub">awaiting recontact</div></div>
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('review')"><div class="inc-stat-label"><i class="fas fa-flag"></i> Needs Review</div><div class="inc-stat-value" style="color:var(--status-warn);">${reviewCount.toLocaleString()}</div><div class="inc-stat-sub">Foodpanda quality / wrong-missing</div></div>
+                    <div class="inc-stat inc-stat-clickable" onclick="incStatFilterClick('critical')"><div class="inc-stat-label"><i class="fas fa-fire"></i> Critical (rated 1)</div><div class="inc-stat-value">${critical.toLocaleString()}</div><div class="inc-stat-sub">${total?((critical/total)*100).toFixed(0):0}% of all incidents</div></div>`;
 
                 // ── Breakdown bars ──
                 const barBlock = (obj, el) => {
