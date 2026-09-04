@@ -4081,12 +4081,38 @@
                 iconBg='rgba(217,119,6,.08)'; iconColor='#D97706'; icon='fa-bell'; label='Enable desktop alerts';
             }
             const clickable = perm === 'denied' || perm === 'default';
-            return `<button id="dp-notif-row" ${clickable ? 'onclick="_handleNotifPermClick()"' : 'disabled'}
-                    style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:${clickable?'pointer':'default'};font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;"
+            // Uses a <div>, not a disabled <button>, for the non-clickable
+            // states — the native browser styling for button[disabled]
+            // washes out its text/icon color regardless of what's set here,
+            // which made "Desktop alerts on" (a good, working state) look
+            // identical to broken/blocked at a glance. A plain div carries
+            // no such built-in styling, so the intended color always shows.
+            const tag = clickable ? 'button' : 'div';
+            const statusRow = `<${tag} ${clickable ? 'onclick="_handleNotifPermClick()"' : ''}
+                    style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:${clickable?'pointer':'default'};font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;box-sizing:border-box;"
                     ${clickable ? `onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"` : ''}>
                 <span style="width:26px;height:26px;border-radius:7px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas ${icon}"></i></span>
                 ${label}
-            </button>`;
+            </${tag}>`;
+            // Only shown once permission is actually granted — lets you
+            // confirm the full delivery path (browser + OS) works right now,
+            // instead of waiting on a real incident to find out. Real
+            // incidents only ever trigger this same underlying function, so
+            // a working test notification means the mechanism itself is
+            // fine — if real ones still don't show up after this test
+            // succeeds, the cause is upstream (no incident has actually
+            // happened) rather than notification delivery being broken.
+            const testRow = perm === 'granted' ? `
+                <button onclick="_sendTestNotification()"
+                        style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.78rem;font-weight:600;color:var(--text-muted);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;box-sizing:border-box;"
+                        onmouseover="this.style.background='var(--bg-light)';this.style.color='var(--text-main)'" onmouseout="this.style.background='transparent';this.style.color='var(--text-muted)'">
+                    <span style="width:26px;height:26px;border-radius:7px;background:rgba(1,1,151,.06);color:#010197;display:flex;align-items:center;justify-content:center;font-size:0.68rem;flex-shrink:0;"><i class="fas fa-paper-plane"></i></span>
+                    Send test notification
+                </button>` : '';
+            return `<div id="dp-notif-row">${statusRow}${testRow}</div>`;
+        }
+        function _sendTestNotification(){
+            _showDesktopIncidentNotification('🔔 Test notification', 'If you can see this, desktop alerts are working correctly on this device.');
         }
         function _refreshNotifPermRow(){
             const row = document.getElementById('dp-notif-row');
