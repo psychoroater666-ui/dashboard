@@ -3867,6 +3867,8 @@
                     tx.onerror = () => reject(tx.error);
                 });
                 db.close();
+                _lastCacheSaveAt = Date.now();
+                if(typeof _updateCacheDiagBadge === 'function') _updateCacheDiagBadge();
             } catch(e){ /* IndexedDB unavailable, blocked, or any other failure — caching is a nice-to-have, never worth breaking the app over */ }
         }
 
@@ -4137,6 +4139,35 @@
             }
             return false;
         }
+        // Visible diagnostic for exactly the cache/guard staleness issue —
+        // shows what's actually happening on THIS browser in real time,
+        // rather than guessing blind. Small floating badge, click to expand
+        // full detail. Safe to leave in permanently; costs nothing when not
+        // looked at.
+        let _lastCacheSaveAt = null;
+        function _updateCacheDiagBadge(){
+            let el = document.getElementById('cacheDiagBadge');
+            if(!el){
+                el = document.createElement('div');
+                el.id = 'cacheDiagBadge';
+                el.style.cssText = `position:fixed;bottom:56px;right:20px;z-index:9999;
+                    font-family:'Inter',sans-serif;font-size:0.66rem;font-weight:600;
+                    padding:6px 10px;border-radius:10px;cursor:pointer;max-width:280px;
+                    background:rgba(15,23,42,.92);color:#E2E8F0;line-height:1.5;
+                    box-shadow:0 4px 16px rgba(0,0,0,.2);`;
+                el.onclick = () => { el.dataset.expanded = el.dataset.expanded === '1' ? '0' : '1'; _updateCacheDiagBadge(); };
+                document.body.appendChild(el);
+            }
+            const saveAgeSec = _lastCacheSaveAt ? Math.round((Date.now()-_lastCacheSaveAt)/1000) : 'never';
+            const g = _rawSubsGuard;
+            const line1 = `Live subs: ${rawData.submissions.length} | Cache saved: ${saveAgeSec}${_lastCacheSaveAt?'s ago':''}`;
+            if(el.dataset.expanded === '1'){
+                el.innerHTML = `${line1}<br>Guard confirmed: ${g.confirmed?g.confirmed.length:'null'}<br>Guard pending: ${g.pending?g.pending.length:'none'} (${g.pendingConfirms} confirms)<br><span style="opacity:.6;">tap to collapse</span>`;
+            } else {
+                el.innerHTML = `${line1} <span style="opacity:.6;">(tap for detail)</span>`;
+            }
+        }
+
         function setLiveBadge(ok){
             let el = document.getElementById('liveBadge');
             if(!el){
@@ -5411,6 +5442,8 @@
                         this.applyFilters();
                         renderAlerts();
                         _revealApp();
+                        _lastCacheSaveAt = cached.cachedAt;
+                        _updateCacheDiagBadge();
                     }
                 } catch(e){ /* any problem with the cached paint — just proceed to the normal load below as if there were no cache at all */ }
 
@@ -5419,6 +5452,7 @@
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
                     if (!ok) { generateData(); setLiveBadge(false); }        // fall back to sample data
                     else { _saveDashCache(); }                               // fresh live data in hand — refresh the instant-paint cache for next time
+                    _updateCacheDiagBadge();
                     initGlobalDates();
                     const bSelect = document.getElementById('filter-branch');
                     config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
@@ -5445,6 +5479,7 @@
                             try {
                                 if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
                                 _saveDashCache(); // keep the instant-paint cache fresh on every successful poll, not just re-renders
+                                _updateCacheDiagBadge();
                                 applyGlobalFilters();
                                 checkForNewIncidents();
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
