@@ -3756,7 +3756,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.27';
+        const BUILD = 'v1.28';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -5703,7 +5703,26 @@
                                 window._isBackgroundRefresh = true;
                                 const _prevChartAnim = Chart.defaults.animation;
                                 Chart.defaults.animation = false; // silent redraw — charts can still be recreated on render, so without this each bg poll could replay the full draw-in animation
+                                // Rebuilding cards/tables/charts below can, even
+                                // briefly mid-rebuild, shrink a section's height
+                                // (old content cleared before new content is
+                                // inserted) — if that happens above where the
+                                // person is currently reading, the browser
+                                // clamps scroll position down to fit, and does
+                                // NOT snap back once the content regrows. That's
+                                // what was silently bumping people up/back to
+                                // the top on every silent auto-refresh. Explicitly
+                                // capturing and restoring scrollTop here closes
+                                // that gap regardless of which section causes it.
+                                const _mainScrollEl = document.getElementById('mainScroll');
+                                const _preservedScroll = _mainScrollEl ? _mainScrollEl.scrollTop : null;
                                 _s.applyFilters(); renderAlerts();
+                                if(_mainScrollEl && _preservedScroll !== null && _mainScrollEl.scrollTop !== _preservedScroll){
+                                    const _prevBehavior = _mainScrollEl.style.scrollBehavior;
+                                    _mainScrollEl.style.scrollBehavior = 'auto'; // instant, not an extra visible animated scroll
+                                    _mainScrollEl.scrollTop = _preservedScroll;
+                                    _mainScrollEl.style.scrollBehavior = _prevBehavior;
+                                }
                                 Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
                             } finally {
