@@ -5464,11 +5464,27 @@
                         }, LIVE.refreshMs);
 
                         document.addEventListener('visibilitychange', () => {
-                            if(!document.hidden && _pendingVisibilityRefresh){
+                            if(document.hidden){
+                                // Save right as the tab goes hidden — this is what
+                                // actually closes the staleness gap: a refresh or
+                                // tab close fires this reliably while the page is
+                                // still fully alive, so the write has a real chance
+                                // to finish, unlike trying to save during unload
+                                // itself. Captures whatever's currently in memory,
+                                // not a new fetch — no network wait, just persisting
+                                // the freshest data already on screen.
+                                _saveDashCache();
+                                return;
+                            }
+                            if(_pendingVisibilityRefresh){
                                 _pendingVisibilityRefresh = false;
                                 _doRefresh();
                             }
                         });
+                        // Best-effort second attempt for the same gap, specifically
+                        // covering a browser/tab close rather than a same-tab
+                        // refresh (where visibilitychange above already fires).
+                        window.addEventListener('pagehide', () => { _saveDashCache(); });
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
