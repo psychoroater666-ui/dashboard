@@ -3727,7 +3727,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.22';
+        const BUILD = 'v1.23';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -4807,6 +4807,81 @@
                     <div class="ia-footer" style="padding-top:8px;">
                         <button class="ia-btn-close" onclick="closeIncidentAlertSummary()">Dismiss</button>
                         <button class="ia-btn-view" onclick="viewIncidentsFromSummary()">View All</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users management — Admin-only, opened from the profile menu -->
+            <div class="ia-overlay" id="users-modal">
+                <div class="ia-card" style="max-width:640px;">
+                    <div class="ia-header">
+                        <div>
+                            <div class="ia-title">Manage Users</div>
+                            <div class="ia-sub">Create, edit, or remove dashboard accounts.</div>
+                        </div>
+                        <button class="ia-close-x" onclick="closeUsersModal()"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="ia-body" style="padding-bottom:16px;">
+                        <div id="users-list-wrap">
+                            <div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">Loading users…</div>
+                        </div>
+                    </div>
+                    <div class="ia-footer" style="justify-content:space-between;">
+                        <span id="users-error" style="font-size:0.78rem;color:#DC2626;font-weight:600;"></span>
+                        <button class="ia-btn-view" onclick="openUserForm()"><i class="fas fa-user-plus" style="margin-right:6px;"></i>Add User</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add / edit user form -->
+            <div class="ia-overlay" id="user-form-modal">
+                <div class="ia-card" style="max-width:420px;">
+                    <div class="ia-header">
+                        <div>
+                            <div class="ia-title" id="user-form-title">Add User</div>
+                            <div class="ia-sub">Sets what they can see and do in the dashboard.</div>
+                        </div>
+                        <button class="ia-close-x" onclick="closeUserForm()"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="ia-body">
+                        <input type="hidden" id="uf-original-email">
+                        <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0 14px;">
+                            <div>
+                                <div class="ia-label" style="margin-bottom:5px;">Name</div>
+                                <input id="uf-name" type="text" placeholder="Full name" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
+                            </div>
+                            <div>
+                                <div class="ia-label" style="margin-bottom:5px;">Email</div>
+                                <input id="uf-email" type="email" placeholder="name@crumble.com" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
+                            </div>
+                            <div>
+                                <div class="ia-label" style="margin-bottom:5px;">Password <span id="uf-pw-hint" style="text-transform:none;font-weight:500;color:var(--text-muted);"></span></div>
+                                <input id="uf-password" type="text" placeholder="Set a password" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                                <div>
+                                    <div class="ia-label" style="margin-bottom:5px;">Role</div>
+                                    <select id="uf-role" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
+                                        <option value="Admin">Admin</option>
+                                        <option value="Manager">Manager</option>
+                                        <option value="Viewer" selected>Viewer</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="ia-label" style="margin-bottom:5px;">Region</div>
+                                    <select id="uf-region" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);"></select>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="ia-label" style="margin-bottom:5px;">Branch</div>
+                                <select id="uf-branch" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);"></select>
+                            </div>
+                        </div>
+                        <div id="user-form-error" style="font-size:0.78rem;color:#DC2626;font-weight:600;margin-bottom:6px;"></div>
+                    </div>
+                    <div class="ia-footer">
+                        <button class="ia-btn-close" onclick="closeUserForm()">Cancel</button>
+                        <button class="ia-btn-view" id="uf-save-btn" onclick="saveUserForm()">Save User</button>
                     </div>
                 </div>
             </div>
@@ -11024,6 +11099,14 @@
                             <div style="padding:6px;border-top:1px solid var(--border-color);">
                                 ${_notifPermRowHTML()}
                             </div>
+                            ${PERM.role === 'Admin' ? `
+                            <!-- Admin: user management -->
+                            <div style="padding:6px;border-top:1px solid var(--border-color);">
+                                <button onclick="openUsersModal()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
+                                    <span style="width:26px;height:26px;border-radius:7px;background:rgba(1,1,151,.07);color:#010197;display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas fa-users-gear"></i></span>
+                                    Manage Users
+                                </button>
+                            </div>` : ''}
                             <!-- Sign out -->
                             <div style="padding:0 6px 6px;border-top:1px solid var(--border-color);margin-top:2px;padding-top:6px;">
                                 <button onclick="authLogout()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:#DC2626;text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;">
@@ -11179,6 +11262,168 @@
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: 'save_profile_photo', email: userEmail, photo: '' })
             }).catch(()=>{});
+        }
+
+        // ── User management (Admin only) ────────────────────────────────────
+        function _regionOptionsHTML(selected){
+            const regions = Array.from(new Set(config.branches.map(b => b.region))).sort();
+            return `<option value="All"${selected==='All'||!selected?' selected':''}>All regions</option>`
+                 + regions.map(r => `<option value="${r}"${r===selected?' selected':''}>${r}</option>`).join('');
+        }
+        function _branchOptionsHTML(selected){
+            const names = config.branches.map(b => b.name).sort();
+            return `<option value="All"${selected==='All'||!selected?' selected':''}>All branches</option>`
+                 + names.map(n => `<option value="${n}"${n===selected?' selected':''}>${n}</option>`).join('');
+        }
+
+        function openUsersModal(){
+            const menu = document.getElementById('dp-menu');
+            if(menu) menu.style.display = 'none';
+            document.getElementById('users-error').textContent = '';
+            document.getElementById('users-modal').style.display = 'flex';
+            _loadUsersList();
+        }
+        function closeUsersModal(){
+            document.getElementById('users-modal').style.display = 'none';
+        }
+
+        function _loadUsersList(){
+            const wrap = document.getElementById('users-list-wrap');
+            wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">Loading users…</div>`;
+            fetch(LIVE.slScriptUrl + '?action=get_users')
+                .then(r => r.json())
+                .then(res => {
+                    if(!res || res.status !== 'success'){
+                        wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:#DC2626;font-size:0.85rem;">Couldn't load users. Try again.</div>`;
+                        return;
+                    }
+                    _renderUsersList(res.users || []);
+                })
+                .catch(() => {
+                    wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:#DC2626;font-size:0.85rem;">Couldn't load users — check your connection.</div>`;
+                });
+        }
+
+        function _renderUsersList(users){
+            const wrap = document.getElementById('users-list-wrap');
+            if(!users.length){
+                wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">No users yet — add the first one.</div>`;
+                return;
+            }
+            const roleColor = r => r === 'Admin' ? '#64D0FF' : r === 'Manager' ? '#34D399' : '#CBD5E1';
+            wrap.innerHTML = users.map(u => {
+                const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region : 'All access');
+                const isSelf = (u.email||'').trim().toLowerCase() === (PERM.email||'').trim().toLowerCase();
+                return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
+                    <div style="width:34px;height:34px;border-radius:50%;background:${getAvatarColor(u.name||u.email).bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.72rem;flex-shrink:0;">${(u.name||u.email||'U').split(/\\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U'}</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.84rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.name||'—'}${isSelf?' <span style="font-weight:600;color:var(--text-muted);">(you)</span>':''}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
+                    </div>
+                    <span style="font-size:0.66rem;font-weight:800;padding:3px 8px;border-radius:20px;background:${roleColor(u.role)}26;color:${roleColor(u.role)};flex-shrink:0;">${u.role}</span>
+                    <span style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;min-width:80px;text-align:right;">${scope}</span>
+                    <button onclick='openUserForm(${JSON.stringify(u).replace(/'/g,"&apos;")})' title="Edit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;flex-shrink:0;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"><i class="fas fa-pen" style="font-size:0.72rem;"></i></button>
+                    <button onclick="deleteUserRow('${(u.email||'').replace(/'/g,"\\'")}')" title="${isSelf?'Cannot delete your own account':'Delete'}" ${isSelf?'disabled':''} style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:${isSelf?'var(--border-color)':'#DC2626'};cursor:${isSelf?'not-allowed':'pointer'};flex-shrink:0;" ${isSelf?'':`onmouseover="this.style.background='rgba(220,38,38,.08)'" onmouseout="this.style.background='transparent'"`}><i class="fas fa-trash-can" style="font-size:0.72rem;"></i></button>
+                </div>`;
+            }).join('');
+        }
+
+        function openUserForm(user){
+            document.getElementById('user-form-error').textContent = '';
+            document.getElementById('uf-region').innerHTML = _regionOptionsHTML(user ? user.region : 'All');
+            document.getElementById('uf-branch').innerHTML = _branchOptionsHTML(user ? user.branch : 'All');
+            if(user){
+                document.getElementById('user-form-title').textContent = 'Edit User';
+                document.getElementById('uf-original-email').value = user.email || '';
+                document.getElementById('uf-name').value = user.name || '';
+                document.getElementById('uf-email').value = user.email || '';
+                document.getElementById('uf-password').value = '';
+                document.getElementById('uf-password').placeholder = 'Leave blank to keep current password';
+                document.getElementById('uf-pw-hint').textContent = '(optional — only to change it)';
+                document.getElementById('uf-role').value = user.role || 'Viewer';
+            } else {
+                document.getElementById('user-form-title').textContent = 'Add User';
+                document.getElementById('uf-original-email').value = '';
+                document.getElementById('uf-name').value = '';
+                document.getElementById('uf-email').value = '';
+                document.getElementById('uf-password').value = '';
+                document.getElementById('uf-password').placeholder = 'Set a password';
+                document.getElementById('uf-pw-hint').textContent = '';
+                document.getElementById('uf-role').value = 'Viewer';
+            }
+            document.getElementById('user-form-modal').style.display = 'flex';
+        }
+        function closeUserForm(){
+            document.getElementById('user-form-modal').style.display = 'none';
+        }
+
+        function saveUserForm(){
+            const errEl = document.getElementById('user-form-error');
+            errEl.textContent = '';
+            const originalEmail = document.getElementById('uf-original-email').value.trim();
+            const isEdit = !!originalEmail;
+            const name     = document.getElementById('uf-name').value.trim();
+            const email    = document.getElementById('uf-email').value.trim().toLowerCase();
+            const password = document.getElementById('uf-password').value;
+            const role     = document.getElementById('uf-role').value;
+            const region   = document.getElementById('uf-region').value;
+            const branch   = document.getElementById('uf-branch').value;
+
+            if(!name){ errEl.textContent = 'Name is required.'; return; }
+            if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent = 'Enter a valid email.'; return; }
+            if(!isEdit && !password){ errEl.textContent = 'Set a password for the new user.'; return; }
+
+            const btn = document.getElementById('uf-save-btn');
+            const prevLabel = btn.textContent;
+            btn.disabled = true; btn.textContent = 'Saving…';
+
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'save_user',
+                    originalEmail: isEdit ? originalEmail : email,
+                    email, name, password, role, region, branch
+                })
+            })
+            .then(r => r.json())
+            .then(res => {
+                btn.disabled = false; btn.textContent = prevLabel;
+                if(!res || res.status !== 'success'){
+                    errEl.textContent = (res && res.message) ? res.message : 'Could not save — try again.';
+                    return;
+                }
+                closeUserForm();
+                _loadUsersList();
+            })
+            .catch(() => {
+                btn.disabled = false; btn.textContent = prevLabel;
+                errEl.textContent = 'Network error — check your connection and try again.';
+            });
+        }
+
+        function deleteUserRow(email){
+            if((email||'').trim().toLowerCase() === (PERM.email||'').trim().toLowerCase()){
+                alert("You can't delete your own account while logged in as it.");
+                return;
+            }
+            if(!confirm(`Remove ${email}? They will no longer be able to log in.`)) return;
+            const errEl = document.getElementById('users-error');
+            errEl.textContent = '';
+            fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'delete_user', email })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(!res || res.status !== 'success'){
+                    errEl.textContent = (res && res.message) ? res.message : 'Could not remove that user — try again.';
+                    return;
+                }
+                _loadUsersList();
+            })
+            .catch(() => { errEl.textContent = 'Network error — check your connection and try again.'; });
         }
 
         function authLogout(){
