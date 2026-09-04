@@ -4160,9 +4160,11 @@
             }
             const saveAgeSec = _lastCacheSaveAt ? Math.round((Date.now()-_lastCacheSaveAt)/1000) : 'never';
             const g = _rawSubsGuard;
+            const st = (typeof _subsStabilizer !== 'undefined') ? _subsStabilizer : null;
             const line1 = `Live subs: ${rawData.submissions.length} | Cache saved: ${saveAgeSec}${_lastCacheSaveAt?'s ago':''}`;
             if(el.dataset.expanded === '1'){
-                el.innerHTML = `${line1}<br>Guard confirmed: ${g.confirmed?g.confirmed.length:'null'}<br>Guard pending: ${g.pending?g.pending.length:'none'} (${g.pendingConfirms} confirms)<br><span style="opacity:.6;">tap to collapse</span>`;
+                const stLine = st ? `<br>Today-KPI stabilizer: ${st.stable===null?'null':st.stable} | pending: ${st.pending===null?'none':st.pending} (${st.pendingConfirms} confirms) | bgRefresh: ${!!window._isBackgroundRefresh}` : '';
+                el.innerHTML = `${line1}<br>Guard confirmed: ${g.confirmed?g.confirmed.length:'null'}<br>Guard pending: ${g.pending?g.pending.length:'none'} (${g.pendingConfirms} confirms)${stLine}<br><span style="opacity:.6;">tap to collapse</span>`;
             } else {
                 el.innerHTML = `${line1} <span style="opacity:.6;">(tap for detail)</span>`;
             }
@@ -5452,7 +5454,6 @@
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
                     if (!ok) { generateData(); setLiveBadge(false); }        // fall back to sample data
                     else { _saveDashCache(); }                               // fresh live data in hand — refresh the instant-paint cache for next time
-                    _updateCacheDiagBadge();
                     initGlobalDates();
                     const bSelect = document.getElementById('filter-branch');
                     config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
@@ -5466,8 +5467,23 @@
                     this.updateGreeting();
                     document.body.classList.add('do-anim');
                     setTimeout(() => document.body.classList.remove('do-anim'), 900);
+                    // This render is showing fresh server data for the first
+                    // time this session (replacing whatever the cache instant
+                    // -painted, if anything) — treated the same as a
+                    // background poll specifically so the "Today" KPI
+                    // stabilizer (_subsStabilizer/_incsStabilizer) applies its
+                    // usual anti-glitch protection here too. Without this, a
+                    // fresh page load's very first live fetch was accepted
+                    // with zero protection no matter what it returned — the
+                    // stabilizer's confirm-twice logic only ever engaged
+                    // during later background polls, never on the load that
+                    // actually follows a refresh, which is exactly the
+                    // opposite of when it's needed most.
+                    window._isBackgroundRefresh = true;
                     this.applyFilters();
+                    window._isBackgroundRefresh = false;
                     renderAlerts();
+                    _updateCacheDiagBadge();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
@@ -5492,6 +5508,7 @@
                                 _syncIncidentAlertReviewState();
                                 Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
+                                _updateCacheDiagBadge();
                             } finally {
                                 setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
