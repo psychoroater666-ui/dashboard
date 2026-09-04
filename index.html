@@ -3727,7 +3727,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.20';
+        const BUILD = 'v1.21';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -4058,6 +4058,50 @@
                 return true;
             }
             return false;
+        }
+
+        // Notification-permission control, shown as a row inside the profile
+        // dropdown (Settings) rather than a persistent floating badge on the
+        // main dashboard — this is a one-time-setup concern, not something
+        // that needs constant screen space next to the live/sample data
+        // status. _notifPermRowHTML() builds the row's current state;
+        // _refreshNotifPermRow() re-renders just that row, called every time
+        // the profile menu opens so it never shows a stale permission state.
+        function _notifPermRowHTML(){
+            const supported = typeof Notification !== 'undefined';
+            const perm = supported ? Notification.permission : 'unsupported';
+            let iconBg, iconColor, icon, label;
+            if(perm === 'granted'){
+                iconBg='rgba(5,150,105,.08)'; iconColor='#059669'; icon='fa-bell'; label='Desktop alerts on';
+            } else if(perm === 'denied'){
+                iconBg='rgba(220,38,38,.08)'; iconColor='#DC2626'; icon='fa-bell-slash'; label='Desktop alerts blocked — tap to fix';
+            } else if(perm === 'unsupported'){
+                iconBg='rgba(107,114,128,.08)'; iconColor='#6B7280'; icon='fa-bell-slash'; label='Desktop alerts not supported';
+            } else {
+                iconBg='rgba(217,119,6,.08)'; iconColor='#D97706'; icon='fa-bell'; label='Enable desktop alerts';
+            }
+            const clickable = perm === 'denied' || perm === 'default';
+            return `<button id="dp-notif-row" ${clickable ? 'onclick="_handleNotifPermClick()"' : 'disabled'}
+                    style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:${clickable?'pointer':'default'};font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;"
+                    ${clickable ? `onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"` : ''}>
+                <span style="width:26px;height:26px;border-radius:7px;background:${iconBg};color:${iconColor};display:flex;align-items:center;justify-content:center;font-size:0.72rem;flex-shrink:0;"><i class="fas ${icon}"></i></span>
+                ${label}
+            </button>`;
+        }
+        function _refreshNotifPermRow(){
+            const row = document.getElementById('dp-notif-row');
+            if(!row) return;
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = _notifPermRowHTML();
+            row.replaceWith(wrapper.firstElementChild);
+        }
+        function _handleNotifPermClick(){
+            if(typeof Notification === 'undefined') return;
+            if(Notification.permission === 'denied'){
+                alert('Desktop alerts were blocked previously — the browser will not show that prompt again automatically. To fix: click the icon just left of the address bar (usually a lock or "i") → Notifications → Allow, then reload this page.');
+                return;
+            }
+            Notification.requestPermission().then(() => _refreshNotifPermRow()).catch(()=>{});
         }
 
         function setLiveBadge(ok){
@@ -4796,7 +4840,7 @@
         // the first one while waiting on a permission prompt.
         try {
             if(typeof Notification !== 'undefined' && Notification.permission === 'default'){
-                Notification.requestPermission().catch(()=>{});
+                Notification.requestPermission().then(() => { if(typeof _refreshNotifPermRow === 'function') _refreshNotifPermRow(); }).catch(()=>{});
             }
         } catch(e){}
 
@@ -10860,6 +10904,10 @@
                                     Remove photo
                                 </button>
                             </div>
+                            <!-- Notification settings -->
+                            <div style="padding:6px;border-top:1px solid var(--border-color);">
+                                ${_notifPermRowHTML()}
+                            </div>
                             <!-- Sign out -->
                             <div style="padding:0 6px 6px;border-top:1px solid var(--border-color);margin-top:2px;padding-top:6px;">
                                 <button onclick="authLogout()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:#DC2626;text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;">
@@ -10885,6 +10933,11 @@
             const isOpen = menu.style.display !== 'none';
             menu.style.display = isOpen ? 'none' : 'block';
             if(!isOpen){
+                // Always show the current permission state, not whatever it
+                // was when this menu's HTML was first built at login — the
+                // user could grant/deny it via the browser prompt at any
+                // point in between.
+                if(typeof _refreshNotifPermRow === 'function') _refreshNotifPermRow();
                 // Close on outside click
                 setTimeout(() => {
                     document.addEventListener('click', function closeDp(e){
