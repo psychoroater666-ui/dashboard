@@ -2171,6 +2171,308 @@
             .crumble-tap, .crumble-tap-strong, .notif-item { animation: none !important; }
             .kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card { transform: none !important; }
         }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           UNIFORMITY & POLISH LAYER  —  last block in the stylesheet on purpose
+
+           The dashboard grew section by section, so radii, paddings, heading
+           sizes, button shapes and shadows drifted apart, and a lot of it is
+           locked into inline style attributes. This block is the single place
+           that pulls all of it back onto one scale. It only overrides
+           appearance (shape, weight, spacing, motion) — never layout structure,
+           colour semantics or anything functional.
+           ═══════════════════════════════════════════════════════════════════ */
+
+        :root{
+            /* One radius scale, used everywhere below */
+            --r-card:   14px;
+            --r-panel:  12px;
+            --r-ctl:    10px;   /* buttons, inputs, selects */
+            --r-chip:   999px;
+            --r-icon:   9px;
+
+            /* Three elevation levels — nothing else */
+            --e-1: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.04);
+            --e-2: 0 2px 4px -1px rgba(16,24,40,.05), 0 8px 20px -6px rgba(16,24,40,.10);
+            --e-3: 0 8px 16px -6px rgba(16,24,40,.10), 0 24px 48px -12px rgba(16,24,40,.18);
+
+            /* One easing + duration vocabulary */
+            --ease:      cubic-bezier(.32,.72,0,1);
+            --ease-out:  cubic-bezier(.16,1,.3,1);
+            --t-fast:    .14s;
+            --t-base:    .22s;
+            --t-slow:    .36s;
+
+            --ring: 0 0 0 3px rgba(1,1,151,.14);
+        }
+        body.dark-theme{
+            --e-1: 0 1px 2px rgba(0,0,0,.30);
+            --e-2: 0 2px 4px -1px rgba(0,0,0,.35), 0 8px 20px -6px rgba(0,0,0,.45);
+            --e-3: 0 8px 16px -6px rgba(0,0,0,.45), 0 24px 48px -12px rgba(0,0,0,.60);
+            --ring: 0 0 0 3px rgba(100,208,255,.22);
+        }
+
+        /* ── Scroll container: stable gutter stops the whole page shifting
+              sideways the moment content grows past one screen ───────────── */
+        .content-scroll{
+            scrollbar-gutter: stable;
+            overscroll-behavior: contain;   /* stops scroll chaining to the page behind */
+            gap: 18px;
+        }
+        .view{ gap: 18px; }                 /* was 24px — now matches the container */
+
+        /* ── Cards: one radius, one border, one shadow, one padding ───────── */
+        .card{
+            border-radius: var(--r-card) !important;
+            box-shadow: var(--e-1) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+        /* Collapsible/edge-to-edge cards declare padding:0 inline and manage
+           their own spacing — left alone. Everything else lands on one value. */
+        .card:not([style*="padding:0"]):not([style*="padding: 0"]){
+            padding: 20px 22px !important;
+        }
+        .card:hover{ box-shadow: var(--e-2) !important; }
+
+        .kpi-card,
+        .branch-kpi-card,
+        .form-perf-card,
+        .ai-tile,
+        .sl-mention-card,
+        .sl-kpi,
+        .voc-section,
+        .inc-stat,
+        .ci-card{
+            border-radius: var(--r-card) !important;
+            box-shadow: var(--e-1);
+        }
+        .kpi-card{ padding: 18px 20px !important; }
+
+        /* Rounded corner + a clipping container is the classic "1px of colour
+           leaking past the radius" artefact — this removes it everywhere. */
+        .card, .kpi-card, .table-wrapper, .sl-mention-card, .ai-tile,
+        .form-perf-card, .branch-kpi-card{ isolation: isolate; }
+
+        /* ── Headings: three sizes existed inline (0.78 / 0.85 / 0.92rem) ─── */
+        .section-header{ margin-bottom: 16px; }
+        .section-header h3{
+            font-size: 0.82rem !important;
+            font-weight: 800 !important;
+            letter-spacing: .4px !important;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+
+        /* ── Controls: buttons, inputs and selects on one shape + one height ─ */
+        .select-input,
+        input[type="text"], input[type="email"], input[type="password"],
+        input[type="date"], input[type="tel"], input[type="number"], input[type="url"],
+        textarea{
+            border-radius: var(--r-ctl) !important;
+            font-family: 'Inter', sans-serif !important;
+            transition: border-color var(--t-base) var(--ease),
+                        box-shadow  var(--t-base) var(--ease),
+                        background  var(--t-base) var(--ease) !important;
+        }
+        .select-input{ border-width: 1.5px !important; }
+        .select-input:hover{ border-color: rgba(1,1,151,.35) !important; }
+        .select-input:focus,
+        .select-input:focus-visible,
+        input:focus, textarea:focus{
+            border-color: var(--accent-blue) !important;
+            box-shadow: var(--ring) !important;
+            outline: none !important;
+        }
+
+        /* Every button in the app — including the many with inline styling —
+           gets the same corner, the same font and the same press response.
+           Colour and size stay whatever that button already declared. */
+        button,
+        .btn-icon, .btn-export, .btn-link, .view-btn, .preset-chip,
+        .sl-add-btn, .refresh-btn-el, .ia-btn-view, .ia-btn-close,
+        .inc-menu-btn, .cs-choice, .login-btn, .inc-close-btn-v2{
+            font-family: 'Inter', sans-serif !important;
+            border-radius: var(--r-ctl) !important;
+            cursor: pointer;
+            transition: transform var(--t-fast) var(--ease-out),
+                        box-shadow var(--t-base) var(--ease),
+                        background var(--t-base) var(--ease),
+                        border-color var(--t-base) var(--ease),
+                        color var(--t-base) var(--ease),
+                        opacity var(--t-base) var(--ease) !important;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .preset-chip, .sl-sentiment-chip, .voc-urgent-chip,
+        .inc-label-chip, .comp-tag, .ai-pri, .ai-badge{
+            border-radius: var(--r-chip) !important;
+        }
+        .btn-icon, .inc-menu-btn{ border-radius: var(--r-icon) !important; }
+
+        /* One press response for every clickable thing, instead of the
+           several slightly-different scales that were in use. */
+        button:not(:disabled):active,
+        .preset-chip:active, .view-btn:active, .cs-choice:active{
+            transform: scale(.97) !important;
+            transition-duration: .06s !important;
+        }
+        button:disabled{
+            opacity: .55 !important;
+            cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        /* Keyboard focus is visible and identical everywhere; mouse clicks
+           never show a ring. */
+        a:focus-visible, button:focus-visible, select:focus-visible,
+        input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+            outline: none !important;
+            box-shadow: var(--ring) !important;
+        }
+
+        /* ── Tables: one row rhythm, sticky headers, no jumpy hovers ──────── */
+        .table-wrapper{
+            border-radius: var(--r-panel) !important;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+        }
+        .table-wrapper thead th{
+            position: sticky; top: 0; z-index: 2;
+            background: var(--bg-light);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .table-wrapper tbody td{
+            font-size: 0.82rem;
+            /* Fixed vertical rhythm — rows used to change height slightly as
+               their content changed on refresh, which shifted everything
+               below them. */
+            padding-top: 11px; padding-bottom: 11px;
+            vertical-align: middle;
+        }
+        .table-wrapper tbody tr{
+            transition: background var(--t-fast) var(--ease) !important;
+        }
+        .table-wrapper tbody tr:hover{ background: var(--bg-light); }
+        /* Rows shift on hover in a couple of places — a background change is
+           enough, and it can't nudge neighbouring rows. */
+        .table-wrapper tbody tr:hover{ transform: none !important; }
+
+        /* ── Modals: identical surface + entrance everywhere ──────────────── */
+        .ia-card, .sl-modal-box, #cs-modal-box{
+            border-radius: 18px !important;
+            box-shadow: var(--e-3) !important;
+            border: 1px solid var(--border-color);
+        }
+        .ia-overlay{
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            background: rgba(15,23,42,.45);
+        }
+
+        /* ── Motion discipline ────────────────────────────────────────────── */
+        /* Entry animations only ever run when the app explicitly asks for them
+           (a real navigation sets body.do-anim). A background repaint, a
+           filter change or a save coming back from the sheet repaints in
+           place — this is what stops the whole page "re-flashing" every 20s. */
+        body:not(.do-anim) .kpi-card,
+        body:not(.do-anim) .card,
+        body:not(.do-anim) .sl-mention-card,
+        body:not(.do-anim) .ai-tile,
+        body:not(.do-anim) .branch-kpi-card,
+        body:not(.do-anim) .form-perf-card{
+            animation: none !important;
+        }
+        /* During a silent repaint nothing transitions either — no colour
+           fades, no width tweens on bars, no chart draw-in. */
+        body.bg-refresh, body.bg-refresh *{
+            transition: none !important;
+            animation: none !important;
+        }
+        body.bg-refresh .crumble-ripple{ display: none !important; }
+
+        /* Cards keep their own layer so a hover lift can't force the whole
+           column to repaint. */
+        .kpi-card, .branch-kpi-card, .ai-tile, .form-perf-card{
+            backface-visibility: hidden;
+        }
+
+        /* ── Hover lift: one distance, one easing, for every card type ────── */
+        .kpi-card:hover,
+        .branch-kpi-card:hover,
+        .form-perf-card:hover,
+        .sl-mention-card:hover{
+            transform: translateY(-2px);
+            box-shadow: var(--e-2);
+        }
+        .card:hover{ transform: none; }   /* big panels stay put — only tiles lift */
+
+        /* ── Charts: reserve the box so a redraw can't collapse the row ───── */
+        .chart-container{
+            position: relative;
+            min-height: 0;
+            contain: layout paint;
+        }
+        .chart-container > canvas{ display: block; }
+
+        /* ── Collapsible sections: consistent chevron behaviour ───────────── */
+        .collapse-chevron{
+            border-radius: var(--r-icon) !important;
+            transition: transform var(--t-slow) var(--ease-out), background var(--t-base) var(--ease) !important;
+        }
+        .collapse-chevron.open{ transform: rotate(180deg); }
+        .collapse-header:hover .collapse-chevron{ background: var(--accent-blue-light); color: var(--accent-blue); }
+
+        /* ── Scrollbars: one treatment on every scrollable pane ───────────── */
+        .content-scroll::-webkit-scrollbar,
+        .table-wrapper::-webkit-scrollbar,
+        #exec-incident-monitor::-webkit-scrollbar,
+        .ai-scroll::-webkit-scrollbar,
+        .voc-section-body::-webkit-scrollbar,
+        .ia-body::-webkit-scrollbar{ width: 9px; height: 9px; }
+        .content-scroll::-webkit-scrollbar-thumb,
+        .table-wrapper::-webkit-scrollbar-thumb,
+        #exec-incident-monitor::-webkit-scrollbar-thumb,
+        .ai-scroll::-webkit-scrollbar-thumb,
+        .voc-section-body::-webkit-scrollbar-thumb,
+        .ia-body::-webkit-scrollbar-thumb{
+            background: rgba(100,116,139,.28);
+            border-radius: var(--r-chip);
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        .content-scroll::-webkit-scrollbar-thumb:hover,
+        .table-wrapper::-webkit-scrollbar-thumb:hover{ background: rgba(100,116,139,.5); background-clip: content-box; }
+        .content-scroll::-webkit-scrollbar-track,
+        .table-wrapper::-webkit-scrollbar-track{ background: transparent; }
+
+        /* ── Numbers never re-flow while they animate ─────────────────────── */
+        .kpi-value, .inc-stat-value, .ci-mon-val, .sl-kpi-value,
+        .bkc-stat-val, .form-stat-val, .branch-comp-val{
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+        }
+
+        /* ── Text selection + image drag: small things that read as unfinished */
+        .kpi-card, .inc-stat, .topnav-link, .preset-chip, .view-btn,
+        .collapse-header, .mon-form-head, .mon-branch, .branch-inc-row, .form-inc-header{
+            -webkit-user-select: none; user-select: none;
+        }
+
+        /* ── Accessibility: honour the OS setting properly ────────────────── */
+        @media (prefers-reduced-motion: reduce){
+            *, *::before, *::after{
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .content-scroll{ scroll-behavior: auto !important; }
+        }
     </style>
 </head>
 <body class="app-loading">
@@ -4107,7 +4409,13 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
-                if(typeof app !== 'undefined' && app.applyFilters){ try{ app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); }catch(e){} }   // repaint with fresh data
+                if(typeof app !== 'undefined' && app.applyFilters){
+                    // Wrapped so a poll landing while someone is reading
+                    // halfway down a page can't move them. Falls back to a
+                    // plain call if UI isn't defined yet (very first load).
+                    const _repaint = () => { app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); };
+                    try{ (typeof UI !== 'undefined') ? UI.silent(_repaint) : _repaint(); }catch(e){}
+                }   // repaint with fresh data
                 setLiveBadge(true);
                 return true;
             }
@@ -4267,6 +4575,12 @@
         let state = {
             currentView: 'executive',
             execMode: 'overview',
+            // Seeded empty so any render that happens to run before the first
+            // applyGlobalFilters() (a race that could otherwise white-screen a
+            // whole tab) degrades to "no data" instead of throwing.
+            branchGroups: {},
+            regionGroups: { North:{subs:[],incs:[]}, South:{subs:[],incs:[]}, Central:{subs:[],incs:[]}, Other:{subs:[],incs:[]} },
+            _navRequested: false,
             p1: { subs: [], incs: [] }, 
             p2: { subs: [], incs: [] }, 
             periodLabels: { p1: 'Period 1', p2: 'Period 2' },
@@ -4883,8 +5197,7 @@
             const btn = document.getElementById('submissions-refresh-btn');
             if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Refreshing…'; }
             loadLive().then(() => {
-                applyGlobalFilters();
-                app.applyFilters();
+                UI.silent(() => { applyGlobalFilters(); app.applyFilters(); });
             }).finally(() => {
                 if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Refresh'; }
             });
@@ -5721,6 +6034,186 @@
             return chart;
         }
 
+
+        /* ═══════════════════════════════════════════════════════════════
+           UI STABILITY LAYER
+           One place that owns "a re-render must never move anything the
+           user is looking at". Every render path routes through here
+           instead of each one remembering to save/restore scroll itself —
+           which is why that fix kept getting lost every time a new
+           section was added.
+
+           - UI.silent(fn)  : run a re-render that must not scroll, animate,
+                              or reset any in-page state.
+           - UI.pin(ms)     : hold the main scroll position across the next
+                              few frames. Needed because a rebuild can shrink
+                              content height mid-flight (browser clamps
+                              scrollTop and never restores it), and because
+                              charts/fonts settle a frame or two later.
+                              Releases instantly the moment the user
+                              themselves scrolls, so it never fights them.
+           - UI.capture()/restore() : same protection for every inner
+                              scrollable pane (tables, feeds, monitors), not
+                              just the page itself.
+           ═══════════════════════════════════════════════════════════════ */
+        const UI = (function(){
+            // Every independently-scrollable region in the app. Each of these
+            // container elements survives its own innerHTML rebuild, so a
+            // direct element reference stays valid across a render.
+            const PANE_SELECTOR = [
+                '#mainScroll',
+                '.table-wrapper',
+                '#exec-incident-monitor',
+                '#trend-complaint-breakdown',
+                '.ai-scroll',
+                '.voc-section-body',
+                '#incident-view-body',
+                '#sdm-body'
+            ].join(',');
+
+            let silentDepth = 0;
+            let pinUntil    = 0;
+            let pinY        = 0;
+            let pinRaf      = null;
+            let userScrolled = false;
+
+            function mainEl(){ return document.getElementById('mainScroll'); }
+
+            function releasePin(){
+                pinUntil = 0;
+                if(pinRaf){ cancelAnimationFrame(pinRaf); pinRaf = null; }
+            }
+
+            // Any genuine user scroll input immediately hands control back.
+            ['wheel','touchmove','keydown','pointerdown'].forEach(function(evt){
+                document.addEventListener(evt, function(){
+                    userScrolled = true;
+                    releasePin();
+                }, { passive:true, capture:true });
+            });
+
+            function pin(ms){
+                const el = mainEl();
+                if(!el) return;
+                userScrolled = false;
+                pinY     = el.scrollTop;
+                pinUntil = performance.now() + (ms || 700);
+                if(pinRaf) return; // already running — just extended the window
+                const tick = function(){
+                    pinRaf = null;
+                    if(userScrolled || performance.now() > pinUntil) return;
+                    const e = mainEl();
+                    if(e && Math.abs(e.scrollTop - pinY) > 1){
+                        const prev = e.style.scrollBehavior;
+                        e.style.scrollBehavior = 'auto';   // never animate a correction
+                        e.scrollTop = pinY;
+                        e.style.scrollBehavior = prev;
+                    }
+                    pinRaf = requestAnimationFrame(tick);
+                };
+                pinRaf = requestAnimationFrame(tick);
+            }
+
+            function capture(){
+                const snap = [];
+                document.querySelectorAll(PANE_SELECTOR).forEach(function(el){
+                    if(el.scrollTop > 0) snap.push([el, el.scrollTop]);
+                });
+                return snap;
+            }
+
+            function restore(snap){
+                if(!snap) return;
+                const apply = function(){
+                    snap.forEach(function(pair){
+                        const el = pair[0];
+                        if(el && el.isConnected && Math.abs(el.scrollTop - pair[1]) > 1){
+                            const prev = el.style.scrollBehavior;
+                            el.style.scrollBehavior = 'auto';
+                            el.scrollTop = pair[1];
+                            el.style.scrollBehavior = prev;
+                        }
+                    });
+                };
+                apply();
+                requestAnimationFrame(apply);   // again after layout settles
+            }
+
+            // Records which collapsible rows inside a rebuilt container were
+            // open, keyed by a stable data-ui-key, and reopens them after.
+            // Without this, expanding a branch on the Overview monitor
+            // silently snapped shut on every 20s poll.
+            function captureOpen(root){
+                const el = (typeof root === 'string') ? document.getElementById(root) : root;
+                if(!el) return [];
+                return Array.from(el.querySelectorAll('[data-ui-key].open')).map(function(n){
+                    return n.getAttribute('data-ui-key');
+                });
+            }
+            // Each collapsible family toggles a different pair of icon classes
+            // in its own inline onclick, so the reopened chevron has to match
+            // whichever convention that section uses — otherwise a restored
+            // row shows an arrow pointing the wrong way.
+            const CHEVRON_OPEN_STATE = [
+                { sel:'.mon-fx',             off:['fa-chevron-right'], on:['fa-chevron-down'] },
+                { sel:'.mon-bx',             off:[],                   on:['fa-chevron-up']   },
+                { sel:'.fi-chevron',         off:['fa-chevron-right'], on:['fa-chevron-down'] },
+                { sel:'.branch-expand-icon', off:['fa-chevron-down'],  on:['fa-chevron-up']   }
+            ];
+            function restoreOpen(root, keys){
+                const el = (typeof root === 'string') ? document.getElementById(root) : root;
+                if(!el || !keys || !keys.length) return;
+                keys.forEach(function(k){
+                    const safe = (window.CSS && CSS.escape) ? CSS.escape(k) : k.replace(/"/g,'\\"');
+                    const n = el.querySelector('[data-ui-key="' + safe + '"]');
+                    if(!n) return;                       // that row no longer exists in the fresh data
+                    n.classList.add('open');
+                    const head = n.previousElementSibling;
+                    if(!head) return;
+                    CHEVRON_OPEN_STATE.forEach(function(c){
+                        const chev = head.querySelector(c.sel);
+                        if(!chev) return;
+                        c.off.forEach(function(x){ chev.classList.remove(x); });
+                        c.on.forEach(function(x){ chev.classList.add(x); });
+                    });
+                });
+            }
+
+            function isSilent(){
+                return silentDepth > 0 || window._isBackgroundRefresh === true;
+            }
+
+            // Runs a render with every "this is not a user action" protection
+            // switched on: no scroll reset, no entry animations, no chart
+            // draw-in replay, inner pane scroll preserved.
+            function silent(fn){
+                const body = document.body;
+                const hadClass = body.classList.contains('bg-refresh');
+                silentDepth++;
+                if(!hadClass){ body.classList.add('bg-refresh'); void body.offsetHeight; }
+                const prevFlag = window._isBackgroundRefresh;
+                const prevAnim = (typeof Chart !== 'undefined') ? Chart.defaults.animation : null;
+                if(typeof Chart !== 'undefined') Chart.defaults.animation = false;
+                window._isBackgroundRefresh = true;
+                const snap = capture();
+                pin(900);
+                try { fn(); }
+                finally {
+                    restore(snap);
+                    window._isBackgroundRefresh = prevFlag;
+                    if(typeof Chart !== 'undefined') Chart.defaults.animation = prevAnim;
+                    silentDepth--;
+                    if(!hadClass){
+                        // Held briefly so any late layout settle (charts
+                        // resizing, fonts) still lands inside the quiet window.
+                        setTimeout(function(){ if(silentDepth === 0) body.classList.remove('bg-refresh'); }, 400);
+                    }
+                }
+            }
+
+            return { pin, capture, restore, captureOpen, restoreOpen, silent, isSilent };
+        })();
+
         const app = {
             async init() {
                 const _revealApp = () => document.body.classList.remove('app-loading');
@@ -5827,31 +6320,14 @@
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 if(ns===_lsc&&ni===_lic&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
                                 _lsc=ns; _lic=ni; _needsRenderCatchup=false;
-                                window._isBackgroundRefresh = true;
-                                const _prevChartAnim = Chart.defaults.animation;
-                                Chart.defaults.animation = false; // silent redraw — charts can still be recreated on render, so without this each bg poll could replay the full draw-in animation
-                                // Rebuilding cards/tables/charts below can, even
-                                // briefly mid-rebuild, shrink a section's height
-                                // (old content cleared before new content is
-                                // inserted) — if that happens above where the
-                                // person is currently reading, the browser
-                                // clamps scroll position down to fit, and does
-                                // NOT snap back once the content regrows. That's
-                                // what was silently bumping people up/back to
-                                // the top on every silent auto-refresh. Explicitly
-                                // capturing and restoring scrollTop here closes
-                                // that gap regardless of which section causes it.
-                                const _mainScrollEl = document.getElementById('mainScroll');
-                                const _preservedScroll = _mainScrollEl ? _mainScrollEl.scrollTop : null;
-                                _s.applyFilters(); renderAlerts();
-                                if(_mainScrollEl && _preservedScroll !== null && _mainScrollEl.scrollTop !== _preservedScroll){
-                                    const _prevBehavior = _mainScrollEl.style.scrollBehavior;
-                                    _mainScrollEl.style.scrollBehavior = 'auto'; // instant, not an extra visible animated scroll
-                                    _mainScrollEl.scrollTop = _preservedScroll;
-                                    _mainScrollEl.style.scrollBehavior = _prevBehavior;
-                                }
-                                Chart.defaults.animation = _prevChartAnim;
-                                window._isBackgroundRefresh = false;
+                                // UI.silent owns all of it now: the background
+                                // flag, chart-animation suppression, main scroll
+                                // pinning across the mid-rebuild height collapse,
+                                // and every inner pane's scroll position
+                                // (tables, feeds, the incident monitor). One
+                                // place, so a new section added later inherits
+                                // the protection instead of needing its own copy.
+                                UI.silent(() => { _s.applyFilters(); renderAlerts(); });
                             } finally {
                                 if(!skipRender) setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
@@ -5962,7 +6438,13 @@
             refreshData() { this.applyFilters(); if(typeof compareEngine!=='undefined' && compareEngine.render) compareEngine.render(); },
 
             navigate(viewId, elEvt) {
+                if(state.currentView === viewId && document.querySelector('.view.active')){
+                    // Re-clicking the tab you're already on shouldn't tear the
+                    // whole view down and rebuild it — that read as a flicker.
+                    return;
+                }
                 state.currentView = viewId;
+                state._navRequested = true;   // the one flag that authorises a scroll-to-top
                 try { sessionStorage.setItem('crumble_current_view', viewId); } catch(e){}
                 document.querySelectorAll('.topnav-link').forEach(el => el.classList.remove('active'));
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
@@ -6038,13 +6520,27 @@
             },
 
             renderCurrentView() {
-                // Scroll content area to top only on a genuine view switch —
-                // not during a silent background auto-refresh (bg-refresh),
-                // which re-renders the current view in place and shouldn't
-                // yank the user's scroll position while they're reading.
-                if(!document.body.classList.contains('bg-refresh')){
-                    const cs = document.querySelector('.content-scroll');
-                    if(cs) cs.scrollTo({ top:0, behavior:'smooth' });
+                // Scroll only ever moves for a genuine tab switch, which sets
+                // state._navRequested. Everything else — auto-refresh, manual
+                // refresh, a filter change, a save coming back from the sheet —
+                // re-renders in place and holds position via UI.pin(), which
+                // also survives the mid-rebuild height collapse that used to
+                // yank the page back to the top.
+                const _cs = document.getElementById('mainScroll');
+                // Captured once here: the flag is cleared immediately below,
+                // but the Social branch further down still needs to know
+                // whether this render came from a real tab switch.
+                const _isNavigation = !!state._navRequested && !UI.isSilent();
+                if(_isNavigation){
+                    state._navRequested = false;
+                    if(_cs){
+                        const _prev = _cs.style.scrollBehavior;
+                        _cs.style.scrollBehavior = 'auto';   // instant — a smooth scroll here races the re-render
+                        _cs.scrollTop = 0;
+                        _cs.style.scrollBehavior = _prev;
+                    }
+                } else {
+                    UI.pin(900);
                 }
                 if (state.currentView === 'executive') this.renderExecutive();
                 else if (state.currentView === 'branches') this.renderBranchesView();
@@ -6055,7 +6551,10 @@
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
                 else if (state.currentView === 'social') {
-                    if(document.body.classList.contains('bg-refresh') || document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
+                    // Any non-navigation render (auto-refresh, manual refresh
+                    // button, filter change) repaints in place and leaves the
+                    // user's search / sentiment / keyword filters alone.
+                    if(!_isNavigation || document.body.classList.contains('no-anim')){ renderSocialListening(); return; }
                     // User-navigated: reset preset and clear all keyword/kpi filters
                     window._slPresetInited    = false;
                     window._slKeywordFilter   = '';
@@ -8782,6 +9281,7 @@
         app.renderTrendBreakdown = function() {
             const container = document.getElementById('trend-complaint-breakdown');
             if (!container) return;
+            const _openKeys = UI.captureOpen(container);
 
             // Group by surveyForm -> branches -> complaint types
             const formGroups = {};
@@ -8858,7 +9358,7 @@
                                     <i class="fas fa-chevron-down branch-expand-icon" style="color:var(--text-muted);font-size:0.7rem;transition:0.2s;"></i>
                                 </div>
                             </div>
-                            <div class="branch-inc-detail">
+                            <div class="branch-inc-detail" data-ui-key="tb:${formName}:${brName}">
                                 <div style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:8px; margin-top:4px;">What went wrong at ${brName}</div>
                                 <div class="inc-card-list">${incidentCards}</div>
                             </div>`;
@@ -8878,11 +9378,12 @@
                             <i class="fas fa-chevron-right fi-chevron" style="color:var(--text-muted);font-size:0.75rem;transition:0.2s;"></i>
                         </div>
                     </div>
-                    <div class="form-inc-body">
+                    <div class="form-inc-body" data-ui-key="tf:${formName}">
                         ${branchRows || '<div style="padding:14px 20px;font-size:0.82rem;color:var(--text-muted);">No incidents recorded for this form.</div>'}
                     </div>
                 </div>`;
             }).join('');
+            UI.restoreOpen(container, _openKeys);
         };
 
         app.renderIncidentMonitor = function() {
@@ -8897,15 +9398,16 @@
             // Small chart summary above the expandable list below — the list
             // stays as the interactive drill-down (click a form to see which
             // branches), this just gives the at-a-glance comparison first.
+            // Updated in place rather than destroyed and rebuilt on every
+            // render — a destroy blanks the canvas for a frame, which is
+            // exactly the flicker this chart showed on each 20s poll.
             const chartCanvasId = 'execIncByFormChart';
-            if (state.charts[chartCanvasId]) state.charts[chartCanvasId].destroy();
             const chartEl = document.getElementById(chartCanvasId);
             if(chartEl){
-                const chartCtx = chartEl.getContext('2d');
                 const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
                 const gridColor = document.body.classList.contains('dark-theme') ? '#334155' : '#F1F5F9';
                 const counts = allForms.map(fn => state.p1.incs.filter(i=>i.surveyForm===fn).length);
-                state.charts[chartCanvasId] = new Chart(chartCtx, {
+                _renderOrUpdateChart(chartCanvasId, {
                     type: 'bar',
                     data: { labels: allForms, datasets: [{ data: counts, backgroundColor: allForms.map(fn=>colorMap[fn]||'#64748B'), borderRadius:5, maxBarThickness:26 }] },
                     options: {
@@ -8918,6 +9420,10 @@
                     }
                 });
             }
+
+            // Which form/branch rows the user had expanded — reapplied after
+            // the rebuild below so a poll doesn't collapse what they opened.
+            const _openKeys = UI.captureOpen('exec-incident-monitor');
 
             const html = allForms.map(fn => {
                 const fIncs = state.p1.incs.filter(i => i.surveyForm === fn);
@@ -8937,7 +9443,7 @@
                                 <span><i class="fas fa-store" style="font-size:0.65rem;color:var(--text-muted);margin-right:6px;"></i>${br}</span>
                                 <span style="display:flex;align-items:center;gap:7px;"><span class="mon-bcount">${incs.length}</span><i class="fas fa-chevron-down mon-bx" style="font-size:0.6rem;color:var(--text-muted);"></i></span>
                             </div>
-                            <div class="mon-detail"><div class="mon-collapse-inner">${detail}</div></div>`;
+                            <div class="mon-detail" data-ui-key="b:${fn}:${br}"><div class="mon-collapse-inner">${detail}</div></div>`;
                 }).join('') || '<div class="mon-empty">No incidents in this period.</div>';
 
                 return `<div class="mon-form">
@@ -8949,10 +9455,11 @@
                             <i class="fas fa-chevron-right mon-fx" style="font-size:0.65rem;color:var(--text-muted);"></i>
                         </span>
                     </div>
-                    <div class="mon-form-body"><div class="mon-collapse-inner">${branchRows}</div></div>
+                    <div class="mon-form-body" data-ui-key="f:${fn}"><div class="mon-collapse-inner">${branchRows}</div></div>
                 </div>`;
             }).join('');
             container.innerHTML = html;
+            UI.restoreOpen('exec-incident-monitor', _openKeys);
         };
 
         // ═══════════════════════════════════════════
@@ -11203,15 +11710,17 @@
 
             // ── Phase 2: Refresh data after 1s ──
             setTimeout(() => {
-                try { app.refreshData(); } catch(e){}
+                // Silent = repaint in place. Pressing Refresh while reading
+                // the middle of a page should update the numbers, not throw
+                // you back to the top or re-run every entry animation.
+                try { UI.silent(() => app.refreshData()); } catch(e){}
 
-                // Animate KPI cards on refresh
-                document.querySelectorAll('.kpi-card').forEach((el, i) => {
-                    el.classList.remove('kpi-refreshing');
-                    el.style.animation = 'none';
-                    el.offsetHeight; // reflow
-                    el.style.animation = `slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.05}s both`;
-                });
+                // Clear the shimmer from EVERY element it was applied to.
+                // Previously this only cleared '.kpi-card', so the '.card'
+                // elements in shimmerTargets kept their shimmer overlay
+                // running permanently after the first refresh — the drifting
+                // sheen people were seeing on panels long after it finished.
+                shimmerTargets.forEach(el => el.classList.remove('kpi-refreshing'));
 
                 // ── Phase 3: Success state — checkmark ──
                 icon.style.animation = 'none';
@@ -11288,7 +11797,12 @@
                 '.card','.sl-mention-card','.sl-kpi','.bd-item','.form-card',
                 '.insight-block','.notif-item','.collapse-header',
                 '.branch-inc-row','.preset-chip','.sl-keyword',
-                'tbody tr','td','th','.inc-stat','.ci-card','.ai-row',
+                // Table rows/cells deliberately excluded: rippling inside a
+                // <td> forced overflow:hidden onto cells (clipping content)
+                // and fired on every cell of every row on long tables, which
+                // is what made the tables feel heavy and jittery. Rows still
+                // get the CSS hover + press feedback.
+                '.inc-stat','.ci-card','.ai-row',
                 '.voc-praise-item','.voc-complaint-item','.voc-suggest-item',
                 '.date-range-pill'
             ].join(',');
@@ -11319,20 +11833,32 @@
                 // Ensure host has relative positioning
                 const pos = getComputedStyle(el).position;
                 if(pos === 'static') el.style.position = 'relative';
-                // Only force overflow:hidden on elements that can safely clip
-                // Never on nav links (clips ::after underline) or elements with CSS overflow already set
-                const noClip = el.matches('.topnav-link, .collapse-chevron, .branch-inc-row, tbody tr, td, th');
-                if(!noClip && getComputedStyle(el).overflow === 'visible') el.style.overflow = 'hidden';
+                // Only force overflow:hidden on elements that can safely clip,
+                // and only for the life of the ripple — this used to be set
+                // permanently, which quietly clipped dropdowns, tooltips and
+                // hover lifts on any card that had ever been clicked.
+                const noClip = el.matches('.topnav-link, .collapse-chevron, .branch-inc-row, .card, .kpi-card');
+                let clipped = false;
+                if(!noClip && getComputedStyle(el).overflow === 'visible'){
+                    el.style.overflow = 'hidden';
+                    clipped = true;
+                }
 
                 el.appendChild(rip);
-                setTimeout(() => rip.remove(), 600);
+                setTimeout(() => {
+                    rip.remove();
+                    if(clipped && !el.querySelector('.crumble-ripple')) el.style.overflow = '';
+                }, 600);
             }
 
             document.addEventListener('pointerdown', function(e){
+                if(e.button !== undefined && e.button !== 0) return;   // right/middle click shouldn't ripple
                 const darkEl  = e.target.closest(DARK_SELECTORS);
                 const lightEl = e.target.closest(LIGHT_SELECTORS);
 
                 if(lightEl){ spawnRipple(lightEl, e, false); return; }
+                // Only ripple the innermost card — a click on a tile inside a
+                // card used to fire two overlapping ripples at once.
                 if(darkEl) { spawnRipple(darkEl,  e, true);  return; }
             }, { passive:true });
         })();
@@ -11384,6 +11910,8 @@
             }
 
             document.addEventListener('pointerdown', function(e){
+                if(e.button !== undefined && e.button !== 0) return;
+                if(document.body.classList.contains('bg-refresh')) return;
                 // Only vibrate for actual touch/pen input — mouse clicks stay silent on devices that support it,
                 // but the visual pulse still plays everywhere for consistent feel.
                 const isTouch = e.pointerType === 'touch' || e.pointerType === 'pen';
@@ -11416,20 +11944,35 @@
             if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
             const TILT_SELECTOR = '.kpi-card, .ai-tile, .form-perf-card, .branch-kpi-card';
-            const MAX_TILT = 6; // degrees — subtle, not gimmicky
+            const MAX_TILT = 4; // degrees — restrained; 6 read as wobbly on wide cards
+
+            // pointermove fires far faster than the screen refreshes. Writing
+            // four custom properties on every single event forced a style
+            // recalc per event and was a real source of the stutter while
+            // moving across the KPI row. Now coalesced to one write per frame.
+            let tiltEl = null, tiltX = 0, tiltY = 0, tiltRaf = null;
+            function flushTilt(){
+                tiltRaf = null;
+                if(!tiltEl || !tiltEl.isConnected) return;
+                const ry = (tiltX - 0.5) * MAX_TILT * 2;
+                const rx = (0.5 - tiltY) * MAX_TILT * 2;
+                tiltEl.style.setProperty('--rx', rx.toFixed(2) + 'deg');
+                tiltEl.style.setProperty('--ry', ry.toFixed(2) + 'deg');
+                tiltEl.style.setProperty('--mx', (tiltX * 100).toFixed(1) + '%');
+                tiltEl.style.setProperty('--my', (tiltY * 100).toFixed(1) + '%');
+            }
 
             document.addEventListener('pointermove', function(e){
+                // No tilt while a modal is open or a silent refresh is
+                // repainting underneath — both made cards twitch.
+                if(document.body.classList.contains('bg-refresh')) return;
                 const el = e.target.closest(TILT_SELECTOR);
                 if(!el) return;
                 const rect = el.getBoundingClientRect();
-                const px = (e.clientX - rect.left) / rect.width;   // 0..1
-                const py = (e.clientY - rect.top)  / rect.height;  // 0..1
-                const ry = (px - 0.5) * MAX_TILT * 2;
-                const rx = (0.5 - py) * MAX_TILT * 2;
-                el.style.setProperty('--rx', rx.toFixed(2) + 'deg');
-                el.style.setProperty('--ry', ry.toFixed(2) + 'deg');
-                el.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
-                el.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+                tiltEl = el;
+                tiltX = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                tiltY = Math.min(1, Math.max(0, (e.clientY - rect.top)  / rect.height));
+                if(!tiltRaf) tiltRaf = requestAnimationFrame(flushTilt);
             }, { passive:true });
 
             document.addEventListener('pointerout', function(e){
@@ -11437,6 +11980,7 @@
                 if(!el) return;
                 // Only reset once the pointer has actually left the card (not a child->child move)
                 if(el.contains(e.relatedTarget)) return;
+                if(tiltEl === el) tiltEl = null;
                 el.style.setProperty('--rx', '0deg');
                 el.style.setProperty('--ry', '0deg');
                 el.style.setProperty('--mx', '50%');
@@ -11453,21 +11997,31 @@
             if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
             const MAG_SELECTOR = '.login-btn, #cs-next-btn';
-            const PULL = 6; // max px drift — subtle magnetism, not a jump
+            const PULL = 5; // max px drift — subtle magnetism, not a jump
+
+            // Same one-write-per-frame treatment as the tilt engine.
+            let magEl = null, magDx = 0, magDy = 0, magRaf = null;
+            function flushMag(){
+                magRaf = null;
+                if(!magEl || !magEl.isConnected || magEl.disabled) return;
+                magEl.style.transform = `translate(${magDx.toFixed(1)}px, ${magDy.toFixed(1)}px)`;
+            }
 
             document.addEventListener('pointermove', function(e){
                 const el = e.target.closest(MAG_SELECTOR);
                 if(!el || el.disabled) return;
                 const rect = el.getBoundingClientRect();
-                const dx = ((e.clientX - rect.left) / rect.width  - 0.5) * PULL;
-                const dy = ((e.clientY - rect.top)  / rect.height - 0.5) * PULL;
-                el.style.transform = `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`;
+                magEl = el;
+                magDx = ((e.clientX - rect.left) / rect.width  - 0.5) * PULL;
+                magDy = ((e.clientY - rect.top)  / rect.height - 0.5) * PULL;
+                if(!magRaf) magRaf = requestAnimationFrame(flushMag);
             }, { passive:true });
 
             document.addEventListener('pointerout', function(e){
                 const el = e.target.closest(MAG_SELECTOR);
                 if(!el) return;
                 if(el.contains(e.relatedTarget)) return;
+                if(magEl === el) magEl = null;
                 el.style.transform = '';
             }, { passive:true });
         })();
