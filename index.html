@@ -3727,7 +3727,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.18';
+        const BUILD = 'v1.20';
         const _num  = v => { const n = parseFloat(String(v==null?'':v).replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; };
         const _bool = v => /^(true|yes|1|y)$/i.test(String(v).trim());
 
@@ -4788,6 +4788,31 @@
             document.addEventListener(evt, _ensureIncidentAudioUnlocked, { once:true, passive:true });
         });
 
+        // Real OS-level desktop notification — the kind that pops up in the
+        // corner of the screen regardless of which app/window has focus, not
+        // just the in-page popup. Needs one-time browser permission; requested
+        // once here on load rather than at alert time, so it's already
+        // available by the time a real incident comes in instead of missing
+        // the first one while waiting on a permission prompt.
+        try {
+            if(typeof Notification !== 'undefined' && Notification.permission === 'default'){
+                Notification.requestPermission().catch(()=>{});
+            }
+        } catch(e){}
+
+        function _showDesktopIncidentNotification(title, body){
+            try {
+                if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+                const n = new Notification(title, {
+                    body,
+                    tag: 'crumble-incident-alert',  // replaces any still-open one instead of stacking a pile of banners
+                    renotify: true,                 // ...but still re-alerts (sound/vibrate) each time, per OS
+                    requireInteraction: true         // stays on screen until dismissed, doesn't auto-vanish after a few seconds
+                });
+                n.onclick = () => { window.focus(); n.close(); };
+            } catch(e){}
+        }
+
         function playIncidentAlertSound(){
             try {
                 _ensureIncidentAudioUnlocked();
@@ -4899,6 +4924,12 @@
             document.getElementById('ia-id').textContent = inc.id || '—';
 
             document.getElementById('incident-alert-modal').style.display = 'flex';
+
+            const ratingTxt = (inc.smileScore !== undefined && inc.smileScore !== null) ? `${inc.smileScore}/5` : 'no rating';
+            _showDesktopIncidentNotification(
+                '🚨 New Incident — ' + (inc.branch || 'Unknown branch'),
+                `${inc.surveyForm || inc.form || 'Survey'} · ${ratingTxt}${inc.complaintType ? ' · ' + inc.complaintType : ''}`
+            );
         }
 
         function closeIncidentAlert(){
@@ -4952,6 +4983,7 @@
             startRepeatingIncidentSound();
             document.getElementById('ia-summary-count').textContent = count;
             document.getElementById('incident-alert-summary-modal').style.display = 'flex';
+            _showDesktopIncidentNotification('🚨 ' + count + ' New Incidents', 'Open the dashboard to review them.');
         }
         function closeIncidentAlertSummary(){
             stopRepeatingIncidentSound();
@@ -5333,21 +5365,35 @@
                     this.applyFilters();
                     window._isBackgroundRefresh = false;
                     renderAlerts();
+                    // Seeds _seenIncidentKeys right away instead of waiting for
+                    // the first background poll (up to refreshMs later) — closes
+                    // a blind window where an incident arriving between page
+                    // load and that first poll would otherwise get silently
+                    // absorbed into "already seen" without ever alerting.
+                    checkForNewIncidents();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
                         let _lsc=-1,_lic=-1; const _s=this;
-                        let _pendingVisibilityRefresh = false;
+                        let _needsRenderCatchup = false;
 
+                        // Notification detection (loadLive + checkForNewIncidents)
+                        // always runs on schedule, tab visible or not — this is
+                        // what makes alerts ring even while you're on another
+                        // browser tab or window. Only the expensive chart/UI
+                        // rebuild is deferred while hidden (no point redrawing
+                        // charts nobody's looking at) — it catches up instantly
+                        // the moment you switch back.
                         const _doRefresh = async () => {
-                            document.body.classList.add('bg-refresh');
-                            void document.body.offsetHeight;
+                            const skipRender = document.hidden;
+                            if(!skipRender){ document.body.classList.add('bg-refresh'); void document.body.offsetHeight; }
                             try {
-                                if(!await loadLive()){ document.body.classList.remove('bg-refresh'); return; }
+                                if(!await loadLive()){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
+                                if(skipRender){ _needsRenderCatchup = true; return; }
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
-                                if(ns===_lsc&&ni===_lic){ document.body.classList.remove('bg-refresh'); return; }
-                                _lsc=ns; _lic=ni;
+                                if(ns===_lsc&&ni===_lic&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
+                                _lsc=ns; _lic=ni; _needsRenderCatchup=false;
                                 window._isBackgroundRefresh = true;
                                 const _prevChartAnim = Chart.defaults.animation;
                                 Chart.defaults.animation = false; // silent redraw — charts can still be recreated on render, so without this each bg poll could replay the full draw-in animation
@@ -5356,27 +5402,20 @@
                                 Chart.defaults.animation = _prevChartAnim;
                                 window._isBackgroundRefresh = false;
                             } finally {
-                                setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
+                                if(!skipRender) setTimeout(() => document.body.classList.remove('bg-refresh'), 1500);
                             }
                         };
 
-                        // Pause the expensive work (fetch, filter, chart
-                        // rebuilds) while the tab isn't visible — nothing is
-                        // gained refreshing charts nobody's looking at. Catches
-                        // up immediately the moment the tab becomes visible
-                        // again, rather than waiting up to refreshMs for the
-                        // next scheduled tick.
-                        setInterval(() => {
-                            if(document.hidden){ _pendingVisibilityRefresh = true; return; }
-                            _doRefresh();
-                        }, LIVE.refreshMs);
+                        setInterval(() => { _doRefresh(); }, LIVE.refreshMs);
 
+                        // Catch up immediately on return — covers both the
+                        // deferred chart rebuild above and any ticks the browser
+                        // throttled while the tab was hidden (background tabs
+                        // can get slowed to roughly once a minute after a
+                        // while — a real browser limit, not something a page
+                        // can override).
                         document.addEventListener('visibilitychange', () => {
-                            if(document.hidden) return;
-                            if(_pendingVisibilityRefresh){
-                                _pendingVisibilityRefresh = false;
-                                _doRefresh();
-                            }
+                            if(!document.hidden) _doRefresh();
                         });
                     }
                 } finally {
