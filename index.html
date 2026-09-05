@@ -4554,7 +4554,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.48';
+        const BUILD = 'v1.49';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -9559,19 +9559,18 @@
             // was comparing item.date (bare "YYYY-MM-DD") via new Date(),
             // which parses as UTC midnight and can misplace early-morning
             // submissions across a date boundary in a UTC+5 timezone.
-            const getItemTs = (item) => {
-                const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
-                return !isNaN(t) ? t : (item.date ? new Date(item.date + 'T12:00:00').getTime() : 0);
-            };
             const inRange = (item) => {
                 if(!startDate || !endDate) return true;
                 let sRaw = new Date(startDate), eRaw = new Date(endDate);
                 // Tolerate the range being picked in either click order.
                 if(sRaw > eRaw){ const t = sRaw; sRaw = eRaw; eRaw = t; }
-                const s = new Date(sRaw); s.setHours(0,0,0,0);
-                const e = new Date(eRaw); e.setHours(23,59,59,999);
-                const itemTs = getItemTs(item);
-                return itemTs >= s.getTime() && itemTs <= e.getTime();
+                // Business-day basis, identical to Overview and Compare. This
+                // drill-down feeds the numbers behind a branch card, so if it
+                // filtered on a different definition of "which day is this"
+                // the modal would contradict the card that opened it.
+                const sStr = _fmtDate(sRaw), eStr = _fmtDate(eRaw);
+                const day = item.date;
+                return !!day && day >= sStr && day <= eStr;
             };
             const subs = rawData.submissions.filter(x => x.branch === branchName && inRange(x));
             const incs = rawData.incidents.filter(x => x.branch === branchName && inRange(x));
