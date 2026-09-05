@@ -2889,6 +2889,20 @@
             background: rgba(1,1,151,.07); color: #010197;
             display: flex; align-items: center; justify-content: center; font-size: 0.76rem;
         }
+
+        /* Ledger volume bar — length is the category's share of the top
+           category this window; the green/amber split is agent-confirmed vs
+           auto-classified. Purely additive: it sits under the existing
+           leaders line and displaces none of the card's numbers. */
+        .ci-bar-wrap{ margin-top:8px; width:100%; }
+        .ci-bar{
+            height:7px; border-radius:20px; overflow:hidden;
+            background:var(--bg-light); display:flex; min-width:6px;
+            transition: width .35s var(--ease, cubic-bezier(.32,.72,0,1));
+        }
+        .ci-bar-conf{ background:#059669; }
+        .ci-bar-auto{ background:#D97706; }
+        body.dark-theme .ci-bar{ background:rgba(255,255,255,.08); }
     </style>
     <script>
         // Runs before the body exists so a returning dark-mode user never
@@ -4559,7 +4573,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.58';
+        const BUILD = 'v1.59';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -12343,6 +12357,10 @@
                 `${totalConfirmed} agent-confirmed (${confirmedPct}%) · ${totalAuto} auto-classified · ` +
                 `${totalOther} unclassified · trend vs ${monthLabels[1]}`;
 
+            // Bars are scaled against the biggest category in the latest
+            // window, so length is directly comparable across rows.
+            const peakM0 = Math.max(1, ...ledgerRows.map(r => r.months[0]));
+
             ledgerEl.uiHTML = ledgerRows.map((r, idx) => {
                 const isOther = r.cat.id === 'other';
                 const rank = isOther ? '—' : String(idx+1).padStart(2,'0');
@@ -12382,6 +12400,23 @@
                         })()}</div>
                         <div class="ci-cause">${r.cat.cause} <span class="ci-op">· ${r.cat.op}</span></div>
                         ${leaderHtml}
+                        ${(() => {
+                            const [c0] = r.months;
+                            if(!c0) return '';
+                            const conf = r.confirmed || 0, au = r.auto || 0, tot = conf + au;
+                            const widthPct = Math.max(2, (c0 / peakM0) * 100);
+                            const confPct = tot ? (conf / tot) * 100 : 0;
+                            // Length = volume relative to the top category.
+                            // Colour split = how much of it a human confirmed.
+                            // Both readable at a glance without displacing any
+                            // of the numbers already on the card.
+                            return `<div class="ci-bar-wrap" title="${c0} in ${monthLabels[0]} — ${conf} agent-confirmed, ${au} auto-classified">
+                                <div class="ci-bar" style="width:${widthPct.toFixed(1)}%;">
+                                    <div class="ci-bar-conf" style="width:${confPct.toFixed(1)}%;"></div>
+                                    <div class="ci-bar-auto" style="width:${(100-confPct).toFixed(1)}%;"></div>
+                                </div>
+                            </div>`;
+                        })()}
                     </div>
                     <div class="ci-months">
                         <div class="ci-mon m0"><div class="ci-mon-val">${m0}</div><div class="ci-mon-label">${monthLabels[0]}</div></div>
