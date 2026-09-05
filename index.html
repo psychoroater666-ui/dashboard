@@ -4554,7 +4554,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.44';
+        const BUILD = 'v1.45';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -5035,19 +5035,25 @@
             const list = document.getElementById('notifList'); if(!list) return;
             const subs = (state.p1&&state.p1.subs)||[], incs = (state.p1&&state.p1.incs)||[];
             const byBranch = {};
-            config.branches.forEach(b => byBranch[b.name] = {sub:0, inc:0, pos:0, unres:0});
-            subs.forEach(s => { const x=byBranch[s.branch]; if(x){ x.sub++; if(s.smileScore>=4) x.pos++; } });
+            config.branches.forEach(b => byBranch[b.name] = {sub:0, rated:0, inc:0, pos:0, unres:0});
+            // rated is tracked separately from sub: positive-feedback % is a
+            // share of submissions that actually carried a rating, which is
+            // how every other surface in the dashboard computes it (branch
+            // cards, branch drill-down, rankings). This engine was dividing
+            // by ALL submissions, so the same branch could show two different
+            // "positive feedback" numbers depending on where you looked.
+            subs.forEach(s => { const x=byBranch[s.branch]; if(x){ x.sub++; if(s.smileScore != null){ x.rated++; if(s.smileScore>=4) x.pos++; } } });
             incs.forEach(i => { const x=byBranch[i.branch]; if(x){ x.inc++; if(!i.resolved) x.unres++; } });
 
             const alerts = [];
             Object.keys(byBranch).forEach(name => {
                 const b = byBranch[name]; if(b.sub===0 && b.inc===0) return;
                 const rate   = b.sub ? (b.inc/b.sub*100) : 0;
-                const posPct = b.sub ? (b.pos/b.sub*100) : 100;
+                const posPct = b.rated ? (b.pos/b.rated*100) : 100;
                 if(b.inc >= 3)      alerts.push({sev:'critical', t:`${name}: ${b.inc} incidents`, d:'Critical escalation — incidents at or above 3.'});
                 else if(b.inc === 2) alerts.push({sev:'warn', t:`${name}: 2 incidents`, d:'Warning threshold — monitor closely.'});
                 if(rate > 4)        alerts.push({sev:'warn', t:`${name}: ${rate.toFixed(1)}% incident rate`, d:'Above the 4% incident-rate threshold.'});
-                if(b.sub>=5 && posPct < 95) alerts.push({sev: posPct<90?'critical':'warn', t:`${name}: ${posPct.toFixed(0)}% positive`, d:'Below the 95% positive-feedback target.'});
+                if(b.rated>=5 && posPct < 95) alerts.push({sev: posPct<90?'critical':'warn', t:`${name}: ${posPct.toFixed(0)}% positive`, d:'Below the 95% positive-feedback target.'});
                 if(b.unres >= 3)    alerts.push({sev:'warn', t:`${name}: ${b.unres} unresolved`, d:'Multiple incidents still open.'});
             });
             const ct = {}; incs.forEach(i => ct[i.complaintType] = (ct[i.complaintType]||0)+1);
@@ -5140,6 +5146,16 @@
             return `${y}-${m}-${day}`;   // local calendar day — avoids UTC toISOString() off-by-one in +offset timezones
         };
         const _shiftDays = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return _fmtDate(d); };
+        // The current BUSINESS day, applying the same night-shift rule that
+        // _isoDate() stamps onto every row: before NIGHT_SHIFT_CUTOFF_HOUR
+        // still belongs to the previous day. Anything comparing "now" against
+        // a stored .date must use this, not the raw calendar date, or the two
+        // silently disagree for the first 9 hours of every day.
+        const _businessToday = () => {
+            const d = new Date();
+            if(NIGHT_SHIFT_CUTOFF_HOUR > 0 && d.getHours() < NIGHT_SHIFT_CUTOFF_HOUR) d.setDate(d.getDate() - 1);
+            return _fmtDate(d);
+        };
 
         function initGlobalDates() {
             computeDataDateRange();
@@ -7279,8 +7295,16 @@
                     const branchMetrics = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                         const s = (state.branchGroups[b.name] || {subs:[]}).subs.length;
                         const i = (state.branchGroups[b.name] || {incs:[]}).incs.length;
-                        return { name: b.name, rate: s ? (i/s)*100 : 0 };
-                    }).sort((a,b) => a.rate - b.rate); 
+                        return { name: b.name, subs: s, rate: s ? (i/s)*100 : 0 };
+                    })
+                    // A branch with no submissions in the period has no
+                    // incident rate — it was previously defaulted to 0% and
+                    // therefore sorted straight to the top, so "Lowest
+                    // Incident Rate Branch" could name a branch that simply
+                    // reported nothing. Same reasoning that already excludes
+                    // "Unspecified" above: absence of data is not performance.
+                    .filter(b => b.subs > 0)
+                    .sort((a,b) => a.rate - b.rate); 
 
                     if (branchMetrics.length > 0) {
                         document.getElementById('kpi-best').innerText = branchMetrics[0].name;
@@ -9180,8 +9204,26 @@
             renderExecNeedsAttention() {
                 const container = document.getElementById('exec-needs-attention');
                 if(!container) return;
-                const todayStr = _fmtDate(new Date());
-                const todaysUnresolved = (rawData.incidents||[]).filter(inc => inc.date === todayStr && !inc.resolved);
+                // Two bugs fixed here:
+                //
+                // 1. SCOPE — this read rawData.incidents directly, which is
+                //    the raw unfiltered set. It ignored the Region/Branch/
+                //    Channel/Form filters AND, more seriously, the PERM lock,
+                //    so a Viewer restricted to one branch could see other
+                //    branches' incidents in this panel. Every other incident
+                //    surface goes through _getScopeFilteredIncidents(); this
+                //    one was the exception.
+                //
+                // 2. "TODAY" — incident .date is night-shift adjusted (see
+                //    _isoDate: anything before NIGHT_SHIFT_CUTOFF_HOUR counts
+                //    as the previous business day), but this compared against
+                //    the raw calendar date. Between midnight and 9am the two
+                //    disagreed, so the panel showed nothing at all during the
+                //    night shift — exactly when an unresolved incident most
+                //    needs surfacing. _businessToday() applies the same rule
+                //    the data itself was stored with.
+                const todayStr = _businessToday();
+                const todaysUnresolved = _getScopeFilteredIncidents().filter(inc => inc.date === todayStr && !inc.resolved);
                 todaysUnresolved.sort((a,b) => {
                     const sa = a.smileScore||0, sb = b.smileScore||0;
                     if(sa !== sb) return sa - sb;
@@ -9544,7 +9586,10 @@
                 const rated = subs.filter(x => x.smileScore != null);
                 const smile = rated.length ? (rated.filter(x=>x.smileScore>=4).length/rated.length)*100 : null;
                 const incidentRate = subs.length ? (incs.length/subs.length)*100 : null;
-                return { branch: b.name, region: b.region, city: b.city || b.name, subs: subs.length, incs: incs.length, smile, incidentRate };
+                // ratedCount is carried through so the OM/SOM/HOP/city/region
+                // roll-ups below can weight each branch's smile score by the
+                // number of responses that score was actually derived from.
+                return { branch: b.name, region: b.region, city: b.city || b.name, subs: subs.length, incs: incs.length, ratedCount: rated.length, smile, incidentRate };
             });
 
             const scoreOf = m => metric === 'incident' ? m.incidentRate : m.smile;
@@ -9562,7 +9607,14 @@
                     if(!groups[key]) groups[key] = { subs:0, incs:0, smileNum:0, smileDen:0, branches:0 };
                     const g = groups[key];
                     g.subs += m.subs; g.incs += m.incs; g.branches++;
-                    if(m.smile != null){ g.smileNum += m.smile * m.subs; g.smileDen += m.subs; }
+                    // Weighted by RATED responses, not total submissions.
+                    // m.smile is a percentage of rated submissions only, so
+                    // weighting it by every submission (most of which may
+                    // carry no rating at all) let a branch with 500 unrated
+                    // rows dominate the group average off the back of maybe
+                    // 5 actual ratings — skewing every OM/SOM/HOP, city and
+                    // region ranking.
+                    if(m.smile != null){ g.smileNum += m.smile * m.ratedCount; g.smileDen += m.ratedCount; }
                 });
                 return Object.keys(groups)
                     .map(key => {
