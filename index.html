@@ -188,7 +188,8 @@
             .topnav-link { padding: 5px 9px !important; font-size: 0.72rem !important; }
             #refresh-btn span { display: none !important; }
             #refresh-btn { padding: 6px 8px !important; }
-            .user-meta { display: none !important; }
+            .user-name { display: none !important; }
+            .user-chip-chevron { display: none !important; }
             .header-divider { display: none !important; }
 
             /* Filter bar */
@@ -1801,7 +1802,7 @@
             background: rgba(255,255,255,0.07);
             border: 1px solid rgba(255,255,255,0.1);
             transition: background .2s, border-color .2s;
-            cursor: default;
+            cursor: pointer;
         }
         .user-chip:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.16); }
         .user-avatar {
@@ -1810,9 +1811,20 @@
             font-weight: 800; font-size: 0.72rem; letter-spacing: 0.5px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
-        .user-meta { display: flex; flex-direction: column; line-height: 1.2; }
+        /* Role, region, and branch scope already live one click away at the
+           top of the dropdown — repeating them in the header chip itself
+           was the extra layer of chrome (a colored pill on top of a colored
+           avatar) that made it feel busy rather than considered. Down to
+           the two things someone actually needs at a glance: who's signed
+           in, and that there's a menu here. */
         .user-name { font-size: 0.8rem; font-weight: 700; color: #fff; white-space: nowrap; }
-        .user-sub { font-size: 0.62rem; font-weight: 600; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+        .user-chip-chevron {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.45);
+            transition: transform var(--t-base, .22s) var(--ease, ease), color var(--t-base, .22s) var(--ease, ease);
+        }
+        .user-chip:hover .user-chip-chevron { color: rgba(255,255,255,0.75); }
+        .user-chip-chevron.is-open { transform: rotate(180deg); }
         .user-role {
             font-size: 0.58rem; font-weight: 800; text-transform: uppercase;
             letter-spacing: 0.6px; padding: 2px 6px; border-radius: 20px;
@@ -4510,7 +4522,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.40';
+        const BUILD = 'v1.41';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -12731,7 +12743,6 @@
             // ── Show user chip in header ──
             const nameEl = document.getElementById('auth-user-name');
             if(nameEl){
-                const roleColor = PERM.role === 'Admin' ? '#64D0FF' : PERM.role === 'Manager' ? '#34D399' : '#CBD5E1';
                 const displayName = PERM.name || PERM.email || 'User';
                 const initials = displayName.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase() || 'U';
                 const scope = PERM.branch !== 'All' ? PERM.branch : (PERM.region !== 'All' ? PERM.region : '');
@@ -12747,15 +12758,10 @@
 
                 nameEl.innerHTML = `
                     <div style="position:relative;">
-                        <div class="user-chip" onclick="toggleDpMenu()" style="cursor:pointer;" title="Click to change photo">
+                        <div class="user-chip" onclick="toggleDpMenu()" title="Account">
                             <div class="user-avatar" id="user-avatar-el" style="${avatarStyle}">${avatarContent}</div>
-                            <div class="user-meta">
-                                <span class="user-name">${displayName}</span>
-                                <span class="user-sub">
-                                    <span class="user-role" style="background:${roleColor}26;color:${roleColor};border:1px solid ${roleColor}55;">${PERM.role}</span>
-                                    ${scope ? `<span>${scope}</span>` : ''}
-                                </span>
-                            </div>
+                            <span class="user-name">${displayName}</span>
+                            <i class="fas fa-chevron-down user-chip-chevron"></i>
                         </div>
                         <!-- DP dropdown menu -->
                         <div id="dp-menu" style="display:none;position:absolute;top:calc(100% + 10px);right:0;background:var(--white);border:1.5px solid var(--border-color);border-radius:14px;box-shadow:0 20px 48px rgba(0,0,0,.16),0 4px 12px rgba(0,0,0,.08);min-width:200px;z-index:9999;overflow:hidden;animation:collapseIn .25s cubic-bezier(.16,1,.3,1) both;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);">
@@ -12764,7 +12770,7 @@
                                 <div style="width:34px;height:34px;border-radius:50%;background:${avatarColor.bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.78rem;flex-shrink:0;">${initials}</div>
                                 <div>
                                     <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${displayName}</div>
-                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">${PERM.role}</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">${PERM.role}${scope ? ' · ' + scope : ''}</div>
                                 </div>
                             </div>
                             <!-- Photo options -->
@@ -12822,6 +12828,8 @@
             if(!menu) return;
             const isOpen = menu.style.display !== 'none';
             menu.style.display = isOpen ? 'none' : 'block';
+            const chevron = document.querySelector('.user-chip-chevron');
+            if(chevron) chevron.classList.toggle('is-open', !isOpen);
             if(!isOpen){
                 // Always show the current permission state, not whatever it
                 // was when this menu's HTML was first built at login — the
@@ -12835,6 +12843,8 @@
                            !e.target.closest('.user-chip')){
                             const m = document.getElementById('dp-menu');
                             if(m) m.style.display = 'none';
+                            const c = document.querySelector('.user-chip-chevron');
+                            if(c) c.classList.remove('is-open');
                         }
                         document.removeEventListener('click', closeDp);
                     });
@@ -13375,7 +13385,11 @@
                     const notif = document.getElementById('notifDropdown');
                     if(notif && notif.classList.contains('active')){ notif.classList.remove('active'); return; }
                     const dp = document.getElementById('dp-menu');
-                    if(dp && dp.style.display !== 'none'){ dp.style.display = 'none'; }
+                    if(dp && dp.style.display !== 'none'){
+                        dp.style.display = 'none';
+                        const c = document.querySelector('.user-chip-chevron');
+                        if(c) c.classList.remove('is-open');
+                    }
                     return;
                 }
                 if(e.key !== 'Tab') return;
