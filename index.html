@@ -4522,7 +4522,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.41';
+        const BUILD = 'v1.42';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -7144,7 +7144,32 @@
                     const searchBox = document.getElementById('sl-search'); if(searchBox) searchBox.value = '';
                     const feed = document.getElementById('sl-feed');
                     const kpi  = document.getElementById('sl-kpi-strip');
-                    if(feed){
+                    // Social's feed isn't kept warm by the 20s background
+                    // poller the way Overview/Incidents/etc. are — it only
+                    // fetches when this tab is actually opened. But that
+                    // doesn't mean every single revisit needs to look like a
+                    // cold load: once this tab has successfully loaded once
+                    // this session, later revisits show that content
+                    // immediately (matching how every other tab behaves — a
+                    // screen with existing data doesn't wipe itself blank
+                    // just because you tabbed away and back), and the fetch
+                    // below quietly refreshes it underneath. The skeleton is
+                    // reserved for the one genuine first visit, and even then
+                    // hands off with a cross-fade rather than a hard cut —
+                    // the abrupt swap was what actually read as
+                    // "unstandardised" next to how smoothly everything else
+                    // in the app transitions.
+                    //
+                    // This deliberately does NOT key off slMentions.length —
+                    // that array is pre-seeded with fallback demo content at
+                    // boot (see slLoadData below), so checking its length
+                    // would skip the skeleton on the very first visit too,
+                    // just to silently flash fake placeholder mentions
+                    // instead of an honest loading state. window._slHasLoadedOnce
+                    // only flips true after a real attempt (success or
+                    // fallback) has actually completed.
+                    const isFirstLoad = feed && !window._slHasLoadedOnce;
+                    if(isFirstLoad){
                         if(kpi) kpi.innerHTML = [1,2,3].map(()=>`
                             <div class="sl-kpi">
                                 <div class="skel" style="height:10px;width:60%;border-radius:6px;margin-bottom:8px;"></div>
@@ -7163,17 +7188,21 @@
                                 <div class="skel" style="height:10px;width:55%;border-radius:6px;margin-bottom:14px;"></div>
                                 <div class="skel" style="height:8px;width:40%;border-radius:6px;"></div>
                             </div>`).join('');
+                    } else {
+                        renderSocialListening();
                     }
 
                     // Load data then render
                     loadSocialFromSheet()
                         .then(loaded => {
                             if(!loaded && !slMentions.length) slLoadData();
-                            renderSocialListening();
+                            window._slHasLoadedOnce = true;
+                            _paintSocialWithCrossfade(isFirstLoad, feed, kpi);
                         })
                         .catch(() => {
                             if(!slMentions.length) slLoadData();
-                            renderSocialListening();
+                            window._slHasLoadedOnce = true;
+                            _paintSocialWithCrossfade(isFirstLoad, feed, kpi);
                         });
                 }
                 else this.renderUniversalAnalytics(state.currentView);
@@ -11151,6 +11180,25 @@
             });
         }
 
+        // Hands the Social tab off from its skeleton to real content with a
+        // cross-fade rather than a hard cut. Only used on a genuine first
+        // load this session (isFirstLoad) — every other repaint of this tab
+        // goes through renderSocialListening() directly and is unaffected.
+        function _paintSocialWithCrossfade(isFirstLoad, feed, kpi){
+            if(!isFirstLoad || !feed){ renderSocialListening(); return; }
+            feed.style.opacity = '0';
+            if(kpi) kpi.style.opacity = '0';
+            renderSocialListening();
+            requestAnimationFrame(() => {
+                feed.style.transition = 'opacity .3s var(--ease)';
+                feed.style.opacity = '1';
+                if(kpi){ kpi.style.transition = 'opacity .3s var(--ease)'; kpi.style.opacity = '1'; }
+                setTimeout(() => {
+                    feed.style.transition = ''; feed.style.opacity = '';
+                    if(kpi){ kpi.style.transition = ''; kpi.style.opacity = ''; }
+                }, 320);
+            });
+        }
         function renderSocialListening(){
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
