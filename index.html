@@ -4573,7 +4573,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.59';
+        const BUILD = 'v1.60';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -5029,6 +5029,16 @@
 
         function setLiveBadge(ok){
             let el = document.getElementById('liveBadge');
+            // The "Live · synced" state is deliberately not shown any more —
+            // it sat on screen permanently saying nothing was wrong, which is
+            // just noise. The "Sample data" state IS still shown, because that
+            // one is a genuine warning: it means the live feed failed and every
+            // number on screen is fabricated demo data. Silently hiding that
+            // would let someone read fake figures as real ones.
+            if(ok){
+                if(el) el.remove();
+                return;
+            }
             if(!el){
                 el = document.createElement('div');
                 el.id = 'liveBadge';
