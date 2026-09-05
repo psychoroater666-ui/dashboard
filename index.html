@@ -4559,7 +4559,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.57';
+        const BUILD = 'v1.58';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -12167,6 +12167,16 @@
             return CI_OTHER;
         }
 
+        // Where a complaint's category actually came from. Kept separate
+        // from classifyComplaint() so the shared category objects are never
+        // mutated with per-incident state.
+        //   'agent' — a human picked it during review/close
+        //   'auto'  — derived from the customer's text, the sheet tag, or the
+        //             health-hazard override; nobody has confirmed it
+        function complaintCategorySource(inc){
+            return (inc.agentCategory && _resolveComplaintCategory(inc.agentCategory)) ? 'agent' : 'auto';
+        }
+
         app.renderCTTrendChart = function(rows, labels){
             const canvasId = 'ctTrendChart';
             const canvasEl = document.getElementById(canvasId);
@@ -12283,10 +12293,15 @@
             keyed.forEach(({inc, dt, cat}) => {
                 const wi = windowOf(dt);
                 if(wi < 0) return;
-                if(!agg[cat.id]) agg[cat.id] = { cat, months:[0,0,0], latestBranches:{}, colCounts:{}, samples:[] };
+                if(!agg[cat.id]) agg[cat.id] = { cat, months:[0,0,0], latestBranches:{}, colCounts:{}, samples:[], confirmed:0, auto:0 };
                 const s = agg[cat.id];
                 s.months[wi]++;
                 if(wi === 0){
+                    // Provenance is tracked for the latest window only — that's
+                    // the window the ledger ranks and the heatmap breaks down,
+                    // so it's the one where "is this number human-verified?"
+                    // actually affects a decision.
+                    if(complaintCategorySource(inc) === 'agent') s.confirmed++; else s.auto++;
                     s.latestBranches[inc.branch] = (s.latestBranches[inc.branch]||0)+1;
                     const col = colOf(inc); s.colCounts[col] = (s.colCounts[col]||0)+1;
                     if(cat.id === 'other' && s.samples.length < 12) s.samples.push(inc);
@@ -12315,8 +12330,18 @@
             const totalClassified = realRows.reduce((n, r) => n + r.months[0], 0);
             const totalOther = otherRow ? otherRow.months[0] : 0;
             const totalAll = totalClassified + totalOther;
+            // Provenance headline: how much of what's being ranked was
+            // actually decided by a person, versus derived from the
+            // customer's wording. Without this the ledger reads as equally
+            // authoritative throughout, when in reality its reliability
+            // varies row by row.
+            const totalConfirmed = ledgerRows.reduce((n, r) => n + (r.confirmed || 0), 0);
+            const totalAuto = ledgerRows.reduce((n, r) => n + (r.auto || 0), 0);
+            const confirmedPct = totalAll ? Math.round((totalConfirmed / totalAll) * 100) : 0;
             document.getElementById('ct-ledger-note').textContent =
-                `${monthLabels[0]}: ${totalAll} complaint${totalAll===1?'':'s'} · ${totalClassified} classified + ${totalOther} unclassified · trend vs ${monthLabels[1]}`;
+                `${monthLabels[0]}: ${totalAll} complaint${totalAll===1?'':'s'} · ` +
+                `${totalConfirmed} agent-confirmed (${confirmedPct}%) · ${totalAuto} auto-classified · ` +
+                `${totalOther} unclassified · trend vs ${monthLabels[1]}`;
 
             ledgerEl.uiHTML = ledgerRows.map((r, idx) => {
                 const isOther = r.cat.id === 'other';
@@ -12344,7 +12369,17 @@
                 return `<div class="ci-card ${sevHot}">
                     <div class="ci-rank">${rank}</div>
                     <div class="ci-main">
-                        <div class="ci-title">${r.cat.title}</div>
+                        <div class="ci-title">${r.cat.title}${(() => {
+                            const conf = r.confirmed || 0, au = r.auto || 0, tot = conf + au;
+                            if(!tot) return '';
+                            // Fully confirmed rows get a quiet green check;
+                            // anything with unconfirmed rows states the split
+                            // explicitly rather than implying the whole row is
+                            // verified.
+                            if(au === 0) return ` <span title="All ${conf} confirmed by an agent" style="font-size:0.62rem;font-weight:700;color:#059669;background:rgba(5,150,105,.1);border-radius:20px;padding:2px 7px;margin-left:6px;vertical-align:middle;"><i class="fas fa-user-check" style="font-size:0.6rem;"></i> confirmed</span>`;
+                            if(conf === 0) return ` <span title="None of these ${au} have been confirmed by an agent yet" style="font-size:0.62rem;font-weight:700;color:#B45309;background:rgba(217,119,6,.12);border-radius:20px;padding:2px 7px;margin-left:6px;vertical-align:middle;"><i class="fas fa-wand-magic-sparkles" style="font-size:0.6rem;"></i> auto</span>`;
+                            return ` <span title="${conf} confirmed by an agent, ${au} still auto-classified" style="font-size:0.62rem;font-weight:700;color:var(--text-muted);background:var(--bg-light);border-radius:20px;padding:2px 7px;margin-left:6px;vertical-align:middle;">${conf}/${tot} confirmed</span>`;
+                        })()}</div>
                         <div class="ci-cause">${r.cat.cause} <span class="ci-op">· ${r.cat.op}</span></div>
                         ${leaderHtml}
                     </div>
