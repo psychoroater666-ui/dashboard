@@ -3212,13 +3212,14 @@
                         </div>
                     </div>
 
-                    <!-- Channel mix — how submission volume splits across Dine In / Delivery / Call Center -->
+                    <!-- Needs Attention Today — the one direct action list on
+                         an otherwise all-chart page -->
                     <div class="card" style="padding:20px;">
-                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">CHANNEL MIX</h3></div>
-                        <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;">
-                            <div class="chart-container" style="height:200px;"><canvas id="execChannelMixChart"></canvas></div>
-                            <div id="exec-channel-mix-legend" style="display:flex;flex-direction:column;gap:10px;"></div>
+                        <div class="section-header" style="margin-bottom:12px;">
+                            <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3>
+                            <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                         </div>
+                        <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                     </div>
 
                     <!-- Health trends — the ratios that actually say whether
@@ -3260,14 +3261,13 @@
                         <div class="card rank-card" style="padding:20px;" data-rank-kind="hop"></div>
                     </div>
 
-                    <!-- Needs Attention Today — the one direct action list on
-                         an otherwise all-chart page -->
+                    <!-- Channel mix — how submission volume splits across Dine In / Delivery / Call Center -->
                     <div class="card" style="padding:20px;">
-                        <div class="section-header" style="margin-bottom:12px;">
-                            <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3>
-                            <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
+                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">CHANNEL MIX</h3></div>
+                        <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;">
+                            <div class="chart-container" style="height:200px;"><canvas id="execChannelMixChart"></canvas></div>
+                            <div id="exec-channel-mix-legend" style="display:flex;flex-direction:column;gap:10px;"></div>
                         </div>
-                        <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                     </div>
 
                     <!-- EXECUTIVE SUMMARY horizontal strip -->
@@ -4522,7 +4522,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.42';
+        const BUILD = 'v1.43';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
