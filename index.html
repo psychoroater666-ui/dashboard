@@ -1710,6 +1710,22 @@
             transition-duration:       0.001ms !important;
             transition-delay:          0ms     !important;
         }
+        /* ...except the reconnect overlay. It is a direct <body> child, so it
+           was caught by the rule above on every single 20s silent poll —
+           the spinner froze for that instant, then resumed, over and over,
+           which read as a repeated stutter rather than one clean spin. A
+           lost-connection screen has to keep moving regardless of what the
+           app underneath is quietly doing. The #id selector out-specifies
+           the class+universal selector above even against its !important.
+           Each animation is restated explicitly rather than with `revert` —
+           revert jumps to the user-agent default (i.e. no animation at all),
+           it does not fall back to this same stylesheet's own rule below. */
+        body.bg-refresh #sentinel-reconnect .sr-ring{ animation: srSpin 1s linear infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-glyph{ animation: srBreathe 2.2s ease-in-out infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i{ animation: srDot 1.4s ease-in-out infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i:nth-child(2){ animation-delay: .18s !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i:nth-child(3){ animation-delay: .36s !important; }
+        body.bg-refresh #sentinel-reconnect{ transition: opacity .4s var(--ease) !important; }
 
         /* Cards / tiles / KPIs only animate when body.do-anim is present (set by navigate, removed after) */
         body.do-anim .view.active > .card,
@@ -2393,6 +2409,12 @@
             transition: none !important;
             animation: none !important;
         }
+        body.bg-refresh #sentinel-reconnect{ transition: opacity .4s var(--ease) !important; }
+        body.bg-refresh #sentinel-reconnect .sr-ring{ animation: srSpin 1s linear infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-glyph{ animation: srBreathe 2.2s ease-in-out infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i{ animation: srDot 1.4s ease-in-out infinite !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i:nth-child(2){ animation-delay: .18s !important; }
+        body.bg-refresh #sentinel-reconnect .sr-dots i:nth-child(3){ animation-delay: .36s !important; }
         body.bg-refresh .crumble-ripple{ display: none !important; }
 
         /* Cards keep their own layer so a hover lift can't force the whole
@@ -2801,9 +2823,37 @@
             line-height: 1.55;
         }
 
+        /* Text swaps are content changes, not new elements, so they always
+           deserve a quick cross-fade rather than popping instantly. */
+        .sr-title, #sr-label-text, .sr-sub{
+            transition: opacity .18s var(--ease);
+        }
+
+        /* ── "Connection restored" — shown briefly the moment a poll
+              actually succeeds again, so recovering silently isn't the only
+              feedback a person gets after watching this screen. ────────── */
+        #sr-mark.success .sr-ring{
+            animation: srPop .45s var(--ease-out) both;
+            border-color: #34D399;                 /* solid ring, not a spinner */
+        }
+        #sr-mark.success .sr-glyph{
+            animation: srPop .45s var(--ease-out) both;
+            color: #34D399;
+        }
+        @keyframes srPop{
+            from{ transform: scale(.55); opacity: 0; }
+            60% { transform: scale(1.12); opacity: 1; }
+            to  { transform: scale(1);    opacity: 1; }
+        }
+        /* Kept in step with the two bg-refresh overrides above — the success
+           flourish is just as capable of landing mid-poll as the spinner is. */
+        body.bg-refresh #sr-mark.success .sr-ring,
+        body.bg-refresh #sr-mark.success .sr-glyph{ animation: srPop .45s var(--ease-out) both !important; }
+
         @media (prefers-reduced-motion: reduce){
             .sr-glyph, .sr-ring, .sr-dots i{ animation: none !important; }
             .sr-ring{ border-top-color: #64D0FF; border-right-color: transparent; border-bottom-color: rgba(100,208,255,.35); border-left-color: rgba(100,208,255,.15); }
+            #sr-mark.success .sr-ring, #sr-mark.success .sr-glyph{ animation: none !important; }
         }
 
         /* ═══════════════════════════════════════════════════════════════════
@@ -2846,15 +2896,15 @@
          app — a lost connection outranks anything already on screen.
          ═══════════════════════════════════════════════════════════════ -->
     <div id="sentinel-reconnect" aria-live="assertive" role="status">
-        <div class="sr-mark">
+        <div class="sr-mark" id="sr-mark">
             <span class="sr-ring"></span>
-            <span class="sr-glyph">S</span>
+            <span class="sr-glyph" id="sr-glyph">S</span>
         </div>
         <div class="sr-text">
-            <div class="sr-title">Sentinel lost the connection</div>
-            <div class="sr-label">Reconnecting<span class="sr-dots"><i></i><i></i><i></i></span></div>
+            <div class="sr-title" id="sr-title">Sentinel lost the connection</div>
+            <div class="sr-label"><span id="sr-label-text">Reconnecting</span><span class="sr-dots" id="sr-dots"><i></i><i></i><i></i></span></div>
         </div>
-        <div class="sr-sub">Trying to reconnect to the server</div>
+        <div class="sr-sub" id="sr-sub">Trying to reconnect to the server</div>
     </div>
     <script>
         (function(){
@@ -4460,7 +4510,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.39';
+        const BUILD = 'v1.40';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -13401,11 +13451,54 @@
         const ConnWatch = (function(){
             let failStreak = 0;
             let visible = false;
+            let restoring = false;      // showing the "Connection restored" flourish right now
+            let restoreTimer = null;
             const FAIL_THRESHOLD = 2;
+            const RESTORED_HOLD_MS = 1400;   // long enough to actually read it, short enough not to nag
 
             function el(){ return document.getElementById('sentinel-reconnect'); }
+            function q(sel){ const e = el(); return e ? e.querySelector(sel) : null; }
+
+            const COPY = {
+                lost:     { title: 'Sentinel lost the connection', label: 'Reconnecting',         sub: 'Trying to reconnect to the server' },
+                restored: { title: 'Sentinel is back online',      label: 'Connection restored',   sub: "You're all set" }
+            };
+
+            function applyCopy(which){
+                const c = COPY[which];
+                const title = document.getElementById('sr-title');
+                const label = document.getElementById('sr-label-text');
+                const sub   = document.getElementById('sr-sub');
+                // Cross-fades the text swap itself (see the .18s transition
+                // on these elements) rather than snapping straight to new
+                // wording, which read as a glitch rather than a message.
+                [title, label, sub].forEach(node => { if(node) node.style.opacity = '0'; });
+                setTimeout(() => {
+                    if(title){ title.textContent = c.title; title.style.opacity = ''; }
+                    if(label){ label.textContent = c.label; label.style.opacity = ''; }
+                    if(sub)  { sub.textContent   = c.sub;   sub.style.opacity   = ''; }
+                }, 180);
+            }
+
+            function setSuccessVisual(on){
+                const mark = document.getElementById('sr-mark');
+                const dots = document.getElementById('sr-dots');
+                if(mark) mark.classList.toggle('success', on);
+                if(dots) dots.style.display = on ? 'none' : '';
+                if(on){
+                    // Re-trigger the pop animation even if .success was
+                    // already applied a moment ago (defensive — shouldn't
+                    // normally happen since show()/hide() fully reset state).
+                    const ring = q('.sr-ring'), glyph = document.getElementById('sr-glyph');
+                    [ring, glyph].forEach(node => { if(!node) return; node.style.animation = 'none'; void node.offsetHeight; node.style.animation = ''; });
+                }
+            }
 
             function show(){
+                if(restoreTimer){ clearTimeout(restoreTimer); restoreTimer = null; }
+                restoring = false;
+                setSuccessVisual(false);
+                applyCopy('lost');
                 if(visible) return;
                 visible = true;
                 const e = el(); if(!e) return;
@@ -13418,14 +13511,42 @@
                 visible = false;
                 const e = el(); if(!e) return;
                 e.classList.remove('showing');
-                setTimeout(() => { if(!visible) e.classList.remove('visible'); }, 400);
+                setTimeout(() => {
+                    if(!visible){
+                        e.classList.remove('visible');
+                        // Reset back to the default "lost connection" look
+                        // now that it's fully faded, ready for next time —
+                        // never leave it sitting in the restored state.
+                        setSuccessVisual(false);
+                        applyCopy('lost');
+                    }
+                }, 400);
+            }
+
+            // Confirms the connection is back, holds a "Connection restored"
+            // state on screen briefly, then fades out the normal way. Only
+            // called when the overlay was genuinely visible to the person —
+            // a routine successful poll with nothing ever having gone wrong
+            // has no reason to announce anything.
+            function celebrate(){
+                restoring = true;
+                setSuccessVisual(true);
+                applyCopy('restored');
+                restoreTimer = setTimeout(() => {
+                    restoreTimer = null;
+                    hide();
+                }, RESTORED_HOLD_MS);
             }
 
             // report(true)  = this poll reached the server (even if some
             //                 individual sheets errored)
             // report(false) = every source failed this poll
             function report(ok){
-                if(ok){ failStreak = 0; hide(); return; }
+                if(ok){
+                    failStreak = 0;
+                    if(visible && !restoring) celebrate();
+                    return;
+                }
                 failStreak++;
                 if(failStreak >= FAIL_THRESHOLD) show();
             }
