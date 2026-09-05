@@ -3246,6 +3246,14 @@
                         </div>
                     </div>
 
+                    <!-- Sentiment Trend — weekly average Smile Score, so a
+                         slow drift in how customers feel shows up on its own
+                         line instead of being buried inside daily noise. -->
+                    <div class="card" style="padding:20px;">
+                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SENTIMENT TREND</h3><span class="text-xs text-muted" style="font-weight:600;">Weekly average smile score — getting happier or unhappier?</span></div>
+                        <div class="chart-container" style="height:200px;"><canvas id="execSentimentTrendChart"></canvas></div>
+                    </div>
+
                     <!-- Staff & Location Rankings — BM/City/Region on one row,
                          OM/SOM/HOP (each an aggregate across the branches they
                          oversee) on the next. Each card's metric is switchable
@@ -3895,6 +3903,17 @@
                         <div id="ia-validity-legend" style="display:flex;flex-direction:column;gap:14px;"></div>
                     </div>
                 </div>
+
+                <!-- Peak Hour Analysis — which hours across ALL branches
+                     generate the most incidents, so staffing/oversight can be
+                     shifted to when it's actually needed rather than spread
+                     evenly across the day. -->
+                <div class="card" style="padding:18px 20px;">
+                    <div class="section-header" style="margin-bottom:12px;"><h3><i class="fas fa-clock" style="color:var(--accent-blue);margin-right:6px;"></i> Peak Hour Analysis</h3><span class="text-xs text-muted" style="font-weight:600;">When incidents actually happen — plan staffing and oversight around it</span></div>
+                    <div class="chart-container" style="height:220px;"><canvas id="iaPeakHoursChart"></canvas></div>
+                    <div id="ia-peak-hour-callout" style="margin-top:14px;padding:10px 14px;background:rgba(220,38,38,.06);border:1px solid rgba(220,38,38,.15);border-radius:9px;font-size:0.82rem;color:var(--text-main);"></div>
+                    <div id="ia-peak-hour-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px;"></div>
+                </div>
             </div>
 
             <!-- RESOLUTION -->
@@ -4279,6 +4298,19 @@
                     <div id="ct-ledger" class="ci-list" style="margin-top:8px;"></div>
                 </div>
 
+                <!-- Repeat Complaint Detection — same branch + same
+                     classified category recurring on 3 or more CONSECUTIVE
+                     calendar days is a pattern, not a coincidence of
+                     unrelated one-off incidents. Deliberately independent of
+                     the 7d/30d/Monthly range toggle above: a streak can span
+                     across those window boundaries, so this always looks at
+                     the full scoped history and reports the single longest
+                     run found for each branch+category pair. -->
+                <div class="card" style="padding:14px 18px;">
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;"><i class="fas fa-repeat" style="color:#DC2626;margin-right:6px;"></i>REPEAT COMPLAINT PATTERNS</h3><span class="text-xs text-muted" id="ct-repeat-note" style="font-weight:600;font-size:0.7rem;">Same branch, same category, 3+ days running</span></div>
+                    <div id="ct-repeat-patterns" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;"></div>
+                </div>
+
                 <div class="card" style="padding:14px 18px;">
                     <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;">TOPOGRAPHY HEATMAP</h3><span class="text-xs text-muted" id="ct-heat-note" style="font-weight:600;font-size:0.7rem;">Darker = more complaints this month</span></div>
                     <div class="ct-heat-wrap" style="margin-top:8px;"><table class="ct-heat" id="ct-heatmap"></table></div>
@@ -4522,7 +4554,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.43';
+        const BUILD = 'v1.44';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -7310,6 +7342,7 @@
                     this.renderExecRateTrendChart();
                     this.renderExecResSpeedChart();
                     this.renderExecVerFakeChart();
+                    this.renderExecSentimentTrendChart();
                     this.renderExecSocialSentimentChart();
                     this.renderExecPeakHoursChart();
                     this.renderExecRegionalChart();
@@ -7533,6 +7566,7 @@
                 this.renderIALocationsChart(incs);
                 this.renderIAComplaintTypesChart(incs);
                 this.renderIAValidityChart(incs);
+                this.renderIAPeakHoursChart(incs);
             },
 
             renderIANewIncidentsChart(incs) {
@@ -7787,6 +7821,80 @@
                             </div>
                         </div>`;
                     }).join('') || `<div style="color:var(--text-muted);font-size:0.8rem;">No incidents yet.</div>`;
+                }
+            },
+
+            renderIAPeakHoursChart(incs) {
+                const canvasId = 'iaPeakHoursChart';
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                // Same exact hour-extraction the Overview "Submissions by
+                // Hour" chart already uses for its incident overlay line
+                // (_parseSheetDateTime + getHours on the real Created At
+                // timestamp) — this is the proven-correct source for "what
+                // hour did this actually happen", not a guess from the date
+                // string alone.
+                const counts = new Array(24).fill(0);
+                let withTs = 0;
+                incs.forEach(inc => {
+                    const ts = _parseSheetDateTime(_rawFieldExact(inc._raw, 'Created At'));
+                    if(isNaN(ts)) return;
+                    counts[new Date(ts).getHours()]++;
+                    withTs++;
+                });
+
+                const hourLabel = h => h===0 ? '12 AM' : h<12 ? `${h} AM` : h===12 ? '12 PM' : `${h-12} PM`;
+                const hourRange = h => `${hourLabel(h)}–${hourLabel((h+1)%24)}`;
+                const labels = Array.from({length:24}, (_,h) => hourLabel(h));
+
+                const maxCount = Math.max(...counts, 0);
+                const colors = counts.map(c => (c === maxCount && maxCount > 0) ? '#DC2626' : '#3B5BDB');
+
+                _renderOrUpdateChart(canvasId, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label:'Incidents', data: counts, backgroundColor: colors, borderRadius:4, maxBarThickness:16 }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: {
+                            legend:{display:false},
+                            tooltip:{ callbacks:{ title: items => hourRange(items[0].dataIndex) } }
+                        },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                        }
+                    }
+                });
+
+                const calloutEl = document.getElementById('ia-peak-hour-callout');
+                const listEl = document.getElementById('ia-peak-hour-list');
+                if(!withTs){
+                    if(calloutEl) calloutEl.textContent = 'No incidents with a tracked Created At timestamp in this range.';
+                    if(listEl) listEl.innerHTML = '';
+                    return;
+                }
+
+                const ranked = counts.map((c,h) => ({ h, c })).filter(x => x.c > 0).sort((a,b) => b.c - a.c);
+                if(calloutEl){
+                    const top = ranked[0];
+                    const pct = ((top.c / withTs) * 100).toFixed(0);
+                    calloutEl.innerHTML = `<i class="fas fa-triangle-exclamation" style="color:#DC2626;margin-right:6px;"></i><strong>${hourRange(top.h)}</strong> is the peak incident window across all branches in this range — <strong>${pct}%</strong> of all incidents (${top.c} of ${withTs}) happen then.`;
+                }
+                if(listEl){
+                    listEl.innerHTML = ranked.slice(0,3).map((x,i) => {
+                        const pct = ((x.c / withTs) * 100).toFixed(0);
+                        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <span style="width:22px;height:22px;border-radius:6px;background:${i===0?'rgba(220,38,38,.1)':'rgba(59,91,219,.08)'};color:${i===0?'#DC2626':'#3B5BDB'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.72rem;flex-shrink:0;">${i+1}</span>
+                                <span style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${hourRange(x.h)}</span>
+                            </div>
+                            <span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);">${x.c} incident${x.c===1?'':'s'} · ${pct}%</span>
+                        </div>`;
+                    }).join('');
                 }
             },
 
@@ -8836,6 +8944,86 @@
                         scales: {
                             x: { stacked:true, grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
                             y: { stacked:true, beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} }
+                        }
+                    }
+                });
+            },
+
+            renderExecSentimentTrendChart() {
+                const canvasId = 'execSentimentTrendChart';
+                const canvasEl = document.getElementById(canvasId);
+                if(!canvasEl) return;
+                const isDark = document.body.classList.contains('dark-theme');
+                const gridColor = isDark ? '#334155' : '#F1F5F9';
+                const textColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+
+                // Monday-start ISO week bucketing — daily smile score bounces
+                // around too much submission-to-submission to show a real
+                // trend; a week at a time is the smallest window where a
+                // genuine shift (not just noise) becomes visible.
+                const weekStartOf = (dateStr) => {
+                    const d = new Date(dateStr + 'T00:00:00');
+                    const day = d.getDay();                      // 0=Sun..6=Sat
+                    const diff = (day === 0 ? -6 : 1) - day;      // shift back to Monday
+                    d.setDate(d.getDate() + diff);
+                    return d;
+                };
+                const byWeek = {};
+                state.p1.subs.forEach(s => {
+                    // Same null-check as every other smile-score aggregate in
+                    // the app (see the KPI cards, branch tables, etc.) —
+                    // smileScore is deliberately null (not 0) for a
+                    // submission that never carried a rating at all, and
+                    // averaging it in as a zero would drag the line down for
+                    // a reason that has nothing to do with sentiment.
+                    if(s.smileScore == null || !s.date) return;
+                    const ws = weekStartOf(s.date);
+                    const key = ws.getTime();
+                    if(!byWeek[key]) byWeek[key] = { sum:0, count:0, weekStart:ws };
+                    byWeek[key].sum += s.smileScore;
+                    byWeek[key].count++;
+                });
+                const weekKeys = Object.keys(byWeek).map(Number).sort((a,b)=>a-b);
+
+                if(!weekKeys.length){
+                    if(state.charts[canvasId]){ state.charts[canvasId].destroy(); state.charts[canvasId] = null; }
+                    const ctx = canvasEl.getContext('2d');
+                    ctx.clearRect(0,0,canvasEl.width,canvasEl.height);
+                    ctx.save();
+                    ctx.font = '12px Inter, sans-serif';
+                    ctx.fillStyle = textColor;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No rated submissions in the selected range', canvasEl.width/2, canvasEl.height/2);
+                    ctx.restore();
+                    return;
+                }
+
+                const labels = weekKeys.map(k => {
+                    const d = byWeek[k].weekStart;
+                    return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`;
+                });
+                // 1–5 average -> /100 scale, the exact same conversion (v*20)
+                // used everywhere else Smile Score is displayed (KPI cards,
+                // branch tables, ranking cards) — so this line is directly
+                // comparable to those numbers, not a second, different scale.
+                const scores = weekKeys.map(k => +((byWeek[k].sum / byWeek[k].count) * 20).toFixed(1));
+
+                _renderOrUpdateChart(canvasId, {
+                    type: 'line',
+                    data: { labels, datasets: [{
+                        label:'Smile Score', data: scores,
+                        borderColor:'#3B5BDB', backgroundColor:'rgba(59,91,219,.12)',
+                        borderWidth:2.5, pointRadius:3, pointHoverRadius:5, tension:0.3, fill:true
+                    }] },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        plugins: {
+                            legend:{display:false},
+                            tooltip:{ callbacks:{ label: ctx => `Smile score: ${ctx.parsed.y}/100` } }
+                        },
+                        scales: {
+                            x: { grid:{display:false}, ticks:{color:textColor,font:{size:10}} },
+                            y: { min:0, max:100, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10}, callback:v=>v+'%'} }
                         }
                     }
                 });
@@ -11921,6 +12109,98 @@
             } else {
                 uncCard.style.display = 'none';
             }
+
+            this.renderRepeatComplaintPatterns();
+        };
+
+        // Repeat Complaint Detection — same branch + same classified
+        // category recurring on 3 or more CONSECUTIVE calendar days.
+        // Deliberately its own function using _getScopeFilteredIncidents()
+        // directly (region/branch/channel/survey scope + permission lock,
+        // but NOT the 7d/30d/Monthly range toggle) rather than reusing the
+        // `keyed`/`agg` built above — a real streak can run right across
+        // one of those window boundaries, so windowing it here would
+        // silently cut a genuine 5-day streak into two invisible 2- and
+        // 3-day pieces and miss it entirely.
+        app.renderRepeatComplaintPatterns = function(){
+            const container = document.getElementById('ct-repeat-patterns');
+            if(!container) return;
+            const incs = _getScopeFilteredIncidents();
+
+            // Group into (branch, category) buckets, keeping only the
+            // distinct calendar dates each pair occurred on — a bucket with
+            // 3 incidents all logged on the same afternoon is one bad day,
+            // not a pattern, and must not count the same as 3 separate days.
+            const groups = {};
+            incs.forEach(inc => {
+                if(!inc.date) return;
+                const cat = classifyComplaint(inc);
+                const key = inc.branch + '||' + cat.id;
+                if(!groups[key]) groups[key] = { branch: inc.branch, cat, dates: new Set() };
+                groups[key].dates.add(inc.date);
+            });
+
+            // Longest run of back-to-back calendar days (gaps break the
+            // streak) within one bucket's set of affected dates. Dates are
+            // converted to whole-day integers so "consecutive" is exact day
+            // arithmetic, not a string or timezone comparison.
+            function longestStreak(dateSet){
+                const days = Array.from(dateSet)
+                    .map(d => Math.round(new Date(d + 'T00:00:00').getTime() / 86400000))
+                    .sort((a,b) => a - b);
+                let bestLen = 1, bestEnd = days[0], curLen = 1;
+                for(let i = 1; i < days.length; i++){
+                    if(days[i] === days[i-1] + 1){
+                        curLen++;
+                    } else {
+                        if(curLen > bestLen){ bestLen = curLen; bestEnd = days[i-1]; }
+                        curLen = 1;
+                    }
+                }
+                if(curLen > bestLen){ bestLen = curLen; bestEnd = days[days.length-1]; }
+                return { length: bestLen, startDay: bestEnd - bestLen + 1, endDay: bestEnd };
+            }
+
+            const patterns = [];
+            Object.values(groups).forEach(g => {
+                const streak = longestStreak(g.dates);
+                if(streak.length >= 3){
+                    patterns.push({
+                        branch: g.branch, cat: g.cat,
+                        streakLen: streak.length, startDay: streak.startDay, endDay: streak.endDay,
+                        totalDays: g.dates.size
+                    });
+                }
+            });
+            patterns.sort((a,b) => b.streakLen - a.streakLen || b.totalDays - a.totalDays);
+
+            const noteEl = document.getElementById('ct-repeat-note');
+            if(noteEl) noteEl.textContent = patterns.length
+                ? `${patterns.length} pattern${patterns.length===1?'':'s'} found · same branch, same category, 3+ days running`
+                : 'Same branch, same category, 3+ days running';
+
+            if(!patterns.length){
+                container.uiHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>No repeat patterns — nothing has recurred at the same branch for 3+ days running.</div>`;
+                return;
+            }
+
+            const fmtDay = dayNum => {
+                const d = new Date(dayNum * 86400000);
+                return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`;
+            };
+
+            container.uiHTML = patterns.slice(0, 12).map(p => {
+                const dateRange = p.startDay === p.endDay ? fmtDay(p.startDay) : `${fmtDay(p.startDay)} – ${fmtDay(p.endDay)}`;
+                const hot = p.streakLen >= 5;
+                return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${hot?'rgba(220,38,38,.3)':'var(--border-color)'};border-radius:9px;background:${hot?'rgba(220,38,38,.04)':'transparent'};">
+                    <span style="width:38px;height:38px;border-radius:9px;background:${hot?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${hot?'#DC2626':'#D97706'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;flex-shrink:0;">${p.streakLen}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.86rem;font-weight:700;color:var(--text-main);">${p.branch} — ${p.cat.title}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">${p.streakLen} days in a row · ${dateRange}</div>
+                    </div>
+                    <div style="font-size:0.7rem;font-weight:700;color:${hot?'#DC2626':'#D97706'};text-transform:uppercase;letter-spacing:.3px;flex-shrink:0;">${hot ? 'Recurring' : 'Pattern'}</div>
+                </div>`;
+            }).join('');
         };
 
         // Init social data on page load
