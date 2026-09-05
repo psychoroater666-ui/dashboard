@@ -4559,7 +4559,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.56';
+        const BUILD = 'v1.57';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -12358,11 +12358,26 @@
             }).join('') || '<div style="text-align:center;padding:30px;color:var(--text-muted);">No classified complaints in the latest month.</div>';
 
             // ── HEATMAP (category × branch/region, latest month) ──
+            // Uses the same ledgerRows as the table above (so "Other" is
+            // included here too) — the heatmap is a breakdown of the ledger,
+            // and the two disagreeing on which categories exist is exactly
+            // the kind of thing that makes numbers look untrustworthy.
+            const heatRows = ledgerRows;
             const colTotals = {};
-            realRows.forEach(r => Object.entries(r.colCounts).forEach(([c,n]) => colTotals[c] = (colTotals[c]||0)+n));
-            const cols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).slice(0, CT_SCOPE==='region'?3:16).map(x=>x[0]);
-            let maxCell = 1;
-            realRows.forEach(r => cols.forEach(c => { if((r.colCounts[c]||0) > maxCell) maxCell = r.colCounts[c]; }));
+            heatRows.forEach(r => Object.entries(r.colCounts).forEach(([c,n]) => colTotals[c] = (colTotals[c]||0)+n));
+            const allCols = Object.entries(colTotals).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+            // Regions were capped at 3 — but _regionFor can also return
+            // "Other" for any branch not mapped to North/South/Central, so a
+            // whole region's worth of complaints could be silently dropped off
+            // the right edge. Every region is shown; branches stay capped for
+            // width, but the count of hidden ones is now stated rather than
+            // being invisible.
+            const colCap = CT_SCOPE === 'region' ? allCols.length : 16;
+            const cols = allCols.slice(0, colCap);
+            const hiddenCols = allCols.length - cols.length;
+
+            let maxCell = 0;
+            heatRows.forEach(r => cols.forEach(c => { const v = r.colCounts[c]||0; if(v > maxCell) maxCell = v; }));
             // Curated 5-band scale instead of raw alpha-blended red — cleaner,
             // more consistent-looking than computed opacity, and each band's
             // text color is fixed rather than derived, so contrast is always
@@ -12378,7 +12393,17 @@
             ];
             const cellColor = n => {
                 if(!n) return '';
-                const t = n/maxCell;
+                // Normalised across the range ACTUALLY present, not against a
+                // floor of 1. The old `n/maxCell` with maxCell initialised to
+                // 1 meant that when every branch had exactly one complaint,
+                // every single cell computed t = 1.0 and rendered in the
+                // darkest crisis-red band — a completely calm week looked
+                // identical to a catastrophic one. Now the lowest count present
+                // maps to the lightest band and the highest to the darkest, so
+                // the shading always describes real relative severity. When
+                // there is no spread at all (every cell equal), everything
+                // correctly shows as the lightest band.
+                const t = maxCell > 1 ? (n - 1) / (maxCell - 1) : 0;
                 const band = HEAT_BANDS.find(b => t <= b.max) || HEAT_BANDS[HEAT_BANDS.length-1];
                 return `--cell-bg:${band.bg};color:${band.text};`;
             };
@@ -12386,17 +12411,34 @@
             const heat = document.getElementById('ct-heatmap');
             if(!cols.length){ heat.uiHTML = '<tr><td style="color:var(--text-muted);padding:16px;">No data for the latest month.</td></tr>'; }
             else {
-                let html = '<thead><tr><th class="ct-row-h">Category</th>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
-                html += realRows.map(r => {
+                // A Total column that sums across EVERY column, including any
+                // branch hidden by the width cap. That way the row totals
+                // always equal the ledger's count for that category, and a
+                // hidden branch can never make a number silently not add up.
+                const rowTotal = r => Object.values(r.colCounts).reduce((a,b)=>a+b, 0);
+
+                let html = '<thead><tr><th class="ct-row-h">Category</th>' +
+                    cols.map(c=>`<th>${c}</th>`).join('') +
+                    '<th style="font-weight:800;">Total</th></tr></thead><tbody>';
+                html += heatRows.map(r => {
                     return `<tr><td class="ct-row-h">${r.cat.title}</td>` + cols.map(c=>{
                         const n = r.colCounts[c]||0;
                         return n ? `<td class="ct-cell" style="${cellColor(n)}">${n}</td>` : `<td class="ct-cell zero">·</td>`;
-                    }).join('') + '</tr>';
+                    }).join('') + `<td class="ct-cell" style="font-weight:800;">${rowTotal(r)}</td></tr>`;
                 }).join('');
+                // Column totals close the loop the other way: each branch's
+                // complaint count across all categories, and a grand total that
+                // must match the ledger headline.
+                const grand = heatRows.reduce((a,r)=>a+rowTotal(r), 0);
+                html += `<tr style="font-weight:800;"><td class="ct-row-h">Total</td>` +
+                    cols.map(c => `<td class="ct-cell">${heatRows.reduce((a,r)=>a+(r.colCounts[c]||0),0)}</td>`).join('') +
+                    `<td class="ct-cell">${grand}</td></tr>`;
                 html += '</tbody>';
                 heat.uiHTML = html;
             }
-            document.getElementById('ct-heat-note').textContent = `${monthLabels[0]} · darker = more complaints (top ${cols.length} ${CT_SCOPE==='region'?'regions':'branches'})`;
+            document.getElementById('ct-heat-note').textContent =
+                `${monthLabels[0]} · darker = more complaints · showing ${cols.length} ${CT_SCOPE==='region'?'region':'branch'}${cols.length===1?'':'es'}` +
+                (hiddenCols > 0 ? ` (${hiddenCols} more folded into Total)` : '');
             const legend = document.getElementById('ct-legend');
             if(legend) legend.innerHTML = HEAT_BANDS.map(b=>`<span style="background:${b.bg};"></span>`).join('');
 
