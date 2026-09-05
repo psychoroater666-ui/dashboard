@@ -1919,6 +1919,11 @@
         .inc-detail-field.full { grid-column: 1 / -1; }
         .inc-contact-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); font-size:0.78rem; font-weight:700; text-decoration:none; cursor:pointer; }
         .inc-contact-btn:hover { background:var(--bg-light); }
+        /* The Copy Number button is a real <button>, not an <a> like its
+           siblings — native buttons ignore inherited font/line-height on
+           some browsers, so that's reset explicitly to keep the three
+           contact buttons visually identical. */
+        button.inc-contact-btn { font-family: 'Inter', sans-serif; line-height: normal; -webkit-appearance: none; appearance: none; }
         .inc-contact-wa { border-color:rgba(37,211,102,.4); color:#25D366; }
         .inc-contact-wa:hover { background:rgba(37,211,102,.08); }
         .inc-df-comment { font-style: italic; color: var(--text-main); background: var(--white); border-left: 3px solid var(--accent-blue); padding: 10px 14px; border-radius: 0 8px 8px 0; }
@@ -4554,7 +4559,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.50';
+        const BUILD = 'v1.51';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -8278,6 +8283,7 @@
                         ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:8px;">${custPhone}</div>` : ''}
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
+                            ${custPhone ? `<button type="button" onclick="copyCustomerPhone('${custPhone}')" class="inc-contact-btn" style="justify-content:center;width:100%;"><i class="fas fa-copy"></i> Copy Number for Vicidial</button>` : ''}
                             ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa" style="justify-content:center;"><i class="fab fa-whatsapp"></i> WhatsApp Customer</a>` : ''}
                         </div>
                     </div>` : ''}
@@ -8457,6 +8463,7 @@
                         ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:10px;">${custPhone}</div>` : ''}
                         <div style="display:flex;flex-direction:column;gap:8px;">
                             ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
+                            ${custPhone ? `<button type="button" onclick="copyCustomerPhone('${custPhone}')" class="inc-contact-btn" style="justify-content:center;width:100%;"><i class="fas fa-copy"></i> Copy Number for Vicidial</button>` : ''}
                             ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" rel="noopener" class="inc-contact-btn inc-contact-wa" style="justify-content:center;"><i class="fab fa-whatsapp"></i> WhatsApp Customer</a>` : ''}
                         </div>
                     </div>` : ''}
@@ -13906,6 +13913,48 @@
                 setTimeout(() => el.remove(), 260);
             }, 3200);
         };
+
+        /* Copies a customer's phone number for pasting into Vicidial's
+           manual-dial box. This is a stopgap, not a real click-to-dial
+           integration — Vicidial's dial form has onsubmit="return false"
+           and its "Dial Now" link calls a JS function directly against the
+           agent's own live session (NeWManuaLDiaLCalLSubmiT), rather than
+           submitting to any URL. That means there is no link Sentinel can
+           open that would auto-dial in a fresh tab — the dial has to happen
+           inside the agent's own already-connected Vicidial tab. What this
+           button *can* do safely is put the exact right digits on the
+           clipboard, removing the one place a wrong number actually gets
+           dialed today: mis-reading or mis-typing it by hand. */
+        function copyCustomerPhone(phone){
+            const done = (ok) => UI.toast(
+                ok ? 'Number copied — paste into Vicidial\u2019s Manual Dial box'
+                   : 'Could not copy — number is ' + phone,
+                ok ? 'success' : 'error'
+            );
+            if(navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+                navigator.clipboard.writeText(phone).then(() => done(true)).catch(() => _copyPhoneFallback(phone, done));
+            } else {
+                // navigator.clipboard requires a secure context (https or
+                // localhost) — an internal dashboard served over plain http
+                // to agent PCs, which is a normal setup for an on-prem tool
+                // like this one, doesn't get it at all. The old
+                // execCommand path still works everywhere.
+                _copyPhoneFallback(phone, done);
+            }
+        }
+        function _copyPhoneFallback(phone, done){
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = phone;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus(); ta.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(ta);
+                done(ok);
+            } catch(e){ done(false); }
+        }
 
         /* ═══════════════════════════════════════════════════════════════
            CONNECTION WATCHER
