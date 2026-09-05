@@ -4184,7 +4184,7 @@
                             <label>Type</label>
                             <select id="sl-m-type" class="select-input" style="width:100%;" onchange="slOnTypeChange()">
                                 <option value="Post">Post / Caption</option>
-                                <option value="Comment on Crumble Post" selected>Comment on Crumble's Post</option>
+                                <option value="Comment on Crumble Post" selected>Comment</option>
                                 <option value="Story">Story / Tag</option>
                                 <option value="Review">Review</option>
                                 <option value="Reel">Reel / Video</option>
@@ -4559,7 +4559,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.52';
+        const BUILD = 'v1.56';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -11134,7 +11134,7 @@
                     const go = confirm(
                         `⚠️  No Crumble Keywords Found\n\n` +
                         `This content doesn't contain any Crumble Pakistan keywords.\n\n` +
-                        `If you're adding a comment made on Crumble's own post, choose "Comment on Crumble's Post" as the Type — it will be auto-confirmed.\n\n` +
+                        `If you're adding a comment made on Crumble's own post, choose "Comment" as the Type — it will be auto-confirmed.\n\n` +
                         `Press OK to save anyway, or Cancel to review.`
                     );
                     if(!go) return;
@@ -12020,6 +12020,55 @@
         const CI_HEALTH_HAZARD = { id:'health_hazard', title:'Food Poisoning / Health Hazard', cause:'Food safety incident', op:'Immediate escalation — Quality & Safety', critical:true };
         const HEALTH_HAZARD_RE = /\b(food\s*poisoning|poisoned|vomit(ing)?|diarrh(o|e)a|stomach\s*(ache|pain|upset)|allergic\s*reaction|hospitali[sz]ed|fell\s*(sick|ill)|got\s*sick|food\s*safety)\b/i;
         const CI_OTHER = { id:'other', title:'Other / Unspecified', cause:'Uncategorised feedback', op:'Review manually' };
+        // Sheet / form labels folded onto the canonical category they mean.
+        //
+        // Without this, any sheet tag whose wording didn't EXACTLY equal a
+        // category title became its own synthetic "sheet_*" category and got
+        // its own row in the ledger. "Taste and Flavor" (the Foodpanda form's
+        // own wording) therefore appeared as a separate line item sitting
+        // right next to "Taste" — the same complaint type split across two
+        // rows, each with half the count, and both ranked as if they were
+        // independent problems. That is the single biggest reason the ledger's
+        // numbers looked wrong.
+        const COMPLAINT_CATEGORY_ALIASES = {
+            'taste and flavor':'taste', 'taste and flavour':'taste', 'taste & flavor':'taste',
+            'taste & flavour':'taste', 'flavor':'taste', 'flavour':'taste', 'product quality':'taste',
+            'quality':'taste', 'food quality':'taste',
+            'missing items':'missing', 'missing item':'missing', 'item missing':'missing',
+            'incomplete order':'missing',
+            'wrong items':'wrong', 'wrong item':'wrong', 'incorrect order':'wrong', 'wrong order':'wrong',
+            'damaged':'broken', 'damaged item':'broken', 'broken':'broken', 'broken item':'broken',
+            'broken / smashed':'broken', 'smashed':'broken', 'melted':'broken',
+            'cold':'cold', 'cold food':'cold', 'stale':'cold', 'not fresh':'cold', 'cold / stale':'cold',
+            'too sweet':'sweet', 'sweetness':'sweet',
+            'portion size':'portion', 'quantity':'portion', 'portion / quantity':'portion',
+            'less quantity':'portion',
+            'delay in serving':'delayserve', 'delay serving':'delayserve', 'service delay':'delayserve',
+            'late service':'delayserve', 'slow service':'delayserve',
+            'late delivery':'delivery', 'delivery delay':'delivery', 'rider issue':'delivery',
+            'rider':'delivery', 'delivery issue':'delivery',
+            'staff behavior':'staff', 'staff behaviour':'staff', 'staff attitude':'staff',
+            'rude staff':'staff', 'misbehavior':'staff', 'misbehaviour':'staff',
+            'food poisoning':'health_hazard', 'health hazard':'health_hazard', 'food safety':'health_hazard'
+        };
+        function _resolveComplaintCategory(label){
+            const raw = String(label || '').trim().toLowerCase();
+            if(!raw) return null;
+            if(raw === CI_HEALTH_HAZARD.id || COMPLAINT_CATEGORY_ALIASES[raw] === 'health_hazard') return CI_HEALTH_HAZARD;
+            // "Other / Unspecified" is a real option in the agent's dropdown
+            // and CI_OTHER is not a member of COMPLAINT_CATEGORIES, so it
+            // resolved to null and the agent's explicit choice fell straight
+            // through to the keyword guesser. An agent who has read the note,
+            // possibly phoned the customer, and deliberately concluded "this
+            // doesn't fit any category" was being overruled by a keyword
+            // match — the one verdict the classifier should never second-guess.
+            if(raw === CI_OTHER.id || raw === CI_OTHER.title.toLowerCase()) return CI_OTHER;
+            const direct = COMPLAINT_CATEGORIES.find(c => c.id === raw || c.title.toLowerCase() === raw);
+            if(direct) return direct;
+            const aliased = COMPLAINT_CATEGORY_ALIASES[raw];
+            if(aliased) return COMPLAINT_CATEGORIES.find(c => c.id === aliased) || null;
+            return null;
+        }
         // Pre-compile whole-word regexes for each keyword
         COMPLAINT_CATEGORIES.forEach(c => {
             c._re = c.keywords.map(kw => new RegExp('\\b' + kw.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+') + '\\b', 'i'));
@@ -12032,12 +12081,23 @@
             // customer. This is human-verified and should always win over any
             // automated guess.
             if(inc.agentCategory){
-                if(inc.agentCategory === CI_HEALTH_HAZARD.id) return CI_HEALTH_HAZARD;
-                const known = COMPLAINT_CATEGORIES.find(c => c.id === inc.agentCategory);
-                if(known) return known;
+                const resolved = _resolveComplaintCategory(inc.agentCategory);
+                if(resolved) return resolved;
             }
 
-            const text = [inc.fullText || inc.note, inc.product, inc.complaintType].filter(Boolean).join(' ').toLowerCase();
+            // ONLY the customer's own words are classified.
+            //
+            // inc.product and inc.complaintType used to be concatenated in
+            // here, and complaintType is literally the product name (see
+            // mapSource: `const complaintType = prod || (form + ' Issue')`).
+            // For a dessert brand that is actively harmful: a product called
+            // "Choco Melt" hit the 'melt' keyword and filed every complaint
+            // about it under Broken/Smashed; anything with "Cold" in the name
+            // filed under Cold/Stale; "Sweet" in the name under Too Sweet.
+            // The category ledger was partly reporting the menu, not the
+            // complaints. Product stays available on the incident record for
+            // display and filtering — it just no longer votes on category.
+            const text = String(inc.fullText || inc.note || '').toLowerCase();
 
             // 2. Health-hazard override — checked first and independently of
             // the scoring below, so a real safety issue can never lose out to
@@ -12049,12 +12109,35 @@
             // pre-selected default (e.g. Foodpanda's form defaults to "Taste
             // and Flavor" whether or not the customer chose it) or simply not
             // match what the customer actually described.
-            let best = null, bestScore = 0;
+            // Scored by SPECIFICITY, not by how many keyword variants a
+            // category happens to list. Two problems with the old `score++`
+            // per matching regex:
+            //   - Categories with redundant phrasings inflated themselves:
+            //     "delivery late" matched 'delivery late', 'late delivery'
+            //     and 'delivery time' = 3 points, while a single decisive
+            //     word elsewhere scored 1.
+            //   - Ties were broken by array position, so 'missing' (first in
+            //     the list) silently won every tie against every other
+            //     category. "cold and rude staff" went to Cold/Stale purely
+            //     because cold is declared above staff.
+            // Now each match is worth its own word count, so a precise
+            // multi-word phrase ("wrong order") outranks an incidental
+            // single word ("order"), and ties fall to the longest single
+            // matched phrase — a real signal rather than declaration order.
+            let best = null, bestScore = 0, bestLongest = 0;
             if(text.trim()){
                 for(const c of COMPLAINT_CATEGORIES){
-                    let score = 0;
-                    for(const re of c._re){ if(re.test(text)) score++; }
-                    if(score > bestScore){ bestScore = score; best = c; }
+                    let score = 0, longest = 0;
+                    c._re.forEach((re, i) => {
+                        if(re.test(text)){
+                            const kw = c.keywords[i];
+                            score += kw.trim().split(/\s+/).length;
+                            if(kw.length > longest) longest = kw.length;
+                        }
+                    });
+                    if(score > bestScore || (score === bestScore && score > 0 && longest > bestLongest)){
+                        bestScore = score; bestLongest = longest; best = c;
+                    }
                 }
             }
             if(best) return best;
@@ -12070,9 +12153,12 @@
                 const isBareFoodpandaDefault = (inc.channel === 'Delivery' || inc.surveyForm === 'Delivery') &&
                     sheetCat.toLowerCase() === 'taste and flavor' && !text.trim();
                 if(!isBareFoodpandaDefault){
-                    const known = COMPLAINT_CATEGORIES.find(c => c.title.toLowerCase() === sheetCat.toLowerCase() || c.id === sheetCat.toLowerCase());
+                    const known = _resolveComplaintCategory(sheetCat);
                     if(known) return known;
-                    return { id:'sheet_'+sheetCat.toLowerCase().replace(/\s+/g,'_'), title:sheetCat, cause:'Sheet-defined category', op:'Review mapping', _re:[] };
+                    // Genuinely unrecognised label — still surfaced as its own
+                    // row so it's visible and can be added to the alias table,
+                    // rather than being silently swallowed into "Other".
+                    return { id:'sheet_'+sheetCat.toLowerCase().replace(/\s+/g,'_'), title:sheetCat, cause:'Unmapped sheet category', op:'Add to category mapping', _re:[], keywords:[] };
                 }
             }
 
@@ -12155,7 +12241,17 @@
             }
 
             // Classify + attach a parsed date
-            const parse = d => { const dt = new Date(d); return isNaN(dt) ? null : dt; };
+            // new Date('2026-09-05') parses as UTC midnight, which lands on
+            // the PREVIOUS day for any timezone behind UTC and is exactly the
+            // parsing bug already fixed in the Overview and Compare filters.
+            // Appending T00:00:00 forces local-midnight parsing so a complaint
+            // can never be bucketed into the wrong window.
+            const parse = d => {
+                if(!d) return null;
+                const s = String(d).trim();
+                const dt = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T00:00:00') : new Date(s);
+                return isNaN(dt) ? null : dt;
+            };
             const keyed = incs.map(i => ({ inc:i, dt:parse(i.date), cat:classifyComplaint(i) })).filter(x => x.dt);
             if(!keyed.length){
                 ledgerEl.uiHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.9rem;">No complaint data available.</div>';
@@ -12203,15 +12299,39 @@
             this.renderCTTrendChart(rows.filter(r => r.cat.id !== 'other').slice(0, 7), monthLabels);
 
             // ── LEDGER (ranked cards) ──
+            // realRows drives the trend chart and heatmap, which are about
+            // actionable categories — "Other" has no cause or owning team, so
+            // a trend line for it isn't something anyone can act on.
             const realRows = rows.filter(r => r.cat.id !== 'other');
-            document.getElementById('ct-ledger-note').textContent = `${monthLabels[0]} leaders shown · trend vs ${monthLabels[1]}`;
-            ledgerEl.uiHTML = realRows.map((r, idx) => {
-                const rank = String(idx+1).padStart(2,'0');
+
+            // The ledger itself now shows EVERYTHING, so the numbers on screen
+            // account for every complaint in the window rather than quietly
+            // omitting the unclassified ones. "Other" is always pinned last
+            // regardless of its count — it isn't competing for a rank, it's a
+            // remainder — and is never styled as a "hot" leader.
+            const otherRow = rows.find(r => r.cat.id === 'other');
+            const ledgerRows = otherRow ? [...realRows, otherRow] : realRows;
+
+            const totalClassified = realRows.reduce((n, r) => n + r.months[0], 0);
+            const totalOther = otherRow ? otherRow.months[0] : 0;
+            const totalAll = totalClassified + totalOther;
+            document.getElementById('ct-ledger-note').textContent =
+                `${monthLabels[0]}: ${totalAll} complaint${totalAll===1?'':'s'} · ${totalClassified} classified + ${totalOther} unclassified · trend vs ${monthLabels[1]}`;
+
+            ledgerEl.uiHTML = ledgerRows.map((r, idx) => {
+                const isOther = r.cat.id === 'other';
+                const rank = isOther ? '—' : String(idx+1).padStart(2,'0');
                 const [m0,m1,m2] = r.months;
-                let pct; if(m1===0){ pct = m0>0?100:0; } else { pct = Math.round(((m0-m1)/m1)*100); }
+                // A category that had zero complaints last window has no
+                // percentage change — going 0 -> 12 was being rendered as a
+                // flat "100%", which reads as a mild uptick when it is in fact
+                // a brand-new problem appearing from nothing. Shown as NEW.
+                const isNew = (m1 === 0 && m0 > 0);
+                let pct; if(m1===0){ pct = 0; } else { pct = Math.round(((m0-m1)/m1)*100); }
                 const dir = m0>m1?'up':m0<m1?'down':'flat';
                 const arrow = dir==='up'?'fa-arrow-up':dir==='down'?'fa-arrow-down':'fa-minus';
-                const sevHot = idx < 2 ? 'sev-hot' : '';
+                const trendText = isNew ? 'NEW' : `${Math.abs(pct)}%`;
+                const sevHot = (!isOther && idx < 2) ? 'sev-hot' : '';
                 const leaders = Object.entries(r.latestBranches).sort((a,b)=>b[1]-a[1]);
                 let leaderHtml;
                 if(leaders.length){
@@ -12233,7 +12353,7 @@
                         <div class="ci-mon m1"><div class="ci-mon-val">${m1}</div><div class="ci-mon-label">${monthLabels[1]}</div></div>
                         <div class="ci-mon m2"><div class="ci-mon-val">${m2}</div><div class="ci-mon-label">${monthLabels[2]}</div></div>
                     </div>
-                    <div class="ci-trend ${dir}"><div class="ci-trend-val"><i class="fas ${arrow}" style="font-size:0.7rem;"></i> ${Math.abs(pct)}%</div><div class="ci-trend-sub">vs ${monthLabels[1]}</div></div>
+                    <div class="ci-trend ${dir}"><div class="ci-trend-val">${isNew ? '' : `<i class="fas ${arrow}" style="font-size:0.7rem;"></i> `}${trendText}</div><div class="ci-trend-sub">vs ${monthLabels[1]}</div></div>
                 </div>`;
             }).join('') || '<div style="text-align:center;padding:30px;color:var(--text-muted);">No classified complaints in the latest month.</div>';
 
