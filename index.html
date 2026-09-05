@@ -4317,6 +4317,13 @@
                     <div id="ct-ledger" class="ci-list" style="margin-top:8px;"></div>
                 </div>
 
+                <!-- Repeat Customers — the same person across multiple
+                     separate incidents. Highest churn risk in the dataset. -->
+                <div class="card" style="padding:14px 18px;">
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;"><i class="fas fa-clock-rotate-left" style="color:#B45309;margin-right:6px;"></i>REPEAT CUSTOMERS</h3><span class="text-xs text-muted" id="ct-repeat-cust-note" style="font-weight:600;font-size:0.7rem;">Same customer, multiple complaints</span></div>
+                    <div id="ct-repeat-customers" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;"></div>
+                </div>
+
                 <!-- Repeat Complaint Detection — same branch + same
                      classified category recurring on 3 or more CONSECUTIVE
                      calendar days is a pattern, not a coincidence of
@@ -4573,7 +4580,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.60';
+        const BUILD = 'v1.61';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -8339,6 +8346,35 @@
                     ${(custName || custPhone) ? `
                     <div class="inc-sb-card-v2">
                         ${custName ? `<div class="inc-sb-label-v2">Name</div><div class="inc-sb-val-v2" style="margin-bottom:6px;">${custName}</div>` : ''}
+${(() => {
+                            const repeatCount = customerComplaintCount(inc);
+                            if(repeatCount < 2) return '';
+                            const hist = buildCustomerHistory(_getScopeFilteredIncidents())[_customerKey(inc)];
+                            const others = hist ? hist.incidents.filter(i => _incidentStableKey(i) !== _incidentStableKey(inc)) : [];
+                            const brs = hist ? Object.keys(hist.branches) : [];
+                            const sev = repeatCount >= 4;
+                            // Surfaced at the top of the sidebar, before the
+                            // agent decides how to handle the case — a customer
+                            // on their 4th complaint needs different handling
+                            // from a first-time complainant, and that context
+                            // was previously invisible.
+                            return `<div style="border-radius:9px;padding:10px 12px;margin-bottom:12px;background:${sev?'rgba(220,38,38,.07)':'rgba(217,119,6,.08)'};border:1px solid ${sev?'rgba(220,38,38,.25)':'rgba(217,119,6,.25)'};">
+                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#B45309'};display:flex;align-items:center;gap:6px;">
+                                    <i class="fas fa-clock-rotate-left"></i> REPEAT CUSTOMER · ${repeatCount} COMPLAINTS
+                                </div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.5;">
+                                    ${sev ? 'High churn risk — consider escalating or offering recovery.' : 'This customer has complained before.'}
+                                    ${brs.length > 1 ? `<br>Across ${brs.length} branches: ${brs.join(', ')}` : ''}
+                                </div>
+                                ${others.length ? `<div style="margin-top:7px;border-top:1px solid ${sev?'rgba(220,38,38,.18)':'rgba(217,119,6,.18)'};padding-top:6px;">
+                                    ${others.slice(0,4).map(o => `<div style="font-size:0.7rem;color:var(--text-muted);display:flex;justify-content:space-between;gap:8px;padding:2px 0;">
+                                        <span>${o.date || '—'} · ${o.branch || '—'}</span>
+                                        <span style="font-weight:700;color:${o.resolved?'#059669':'#DC2626'};">${o.resolved?'resolved':'open'}</span>
+                                    </div>`).join('')}
+                                    ${others.length > 4 ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">+${others.length-4} more</div>` : ''}
+                                </div>` : ''}
+                            </div>`;
+                        })()}
                         ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:8px;">${custPhone}</div>` : ''}
                         <div style="display:flex;flex-direction:column;gap:6px;">
                             ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
@@ -8529,6 +8565,35 @@
                     ${(custName || custPhone) ? `
                     <div class="inc-sb-card-v2">
                         ${custName ? `<div class="inc-sb-label-v2">Name</div><div class="inc-sb-val-v2" style="margin-bottom:8px;">${custName}</div>` : ''}
+${(() => {
+                            const repeatCount = customerComplaintCount(inc);
+                            if(repeatCount < 2) return '';
+                            const hist = buildCustomerHistory(_getScopeFilteredIncidents())[_customerKey(inc)];
+                            const others = hist ? hist.incidents.filter(i => _incidentStableKey(i) !== _incidentStableKey(inc)) : [];
+                            const brs = hist ? Object.keys(hist.branches) : [];
+                            const sev = repeatCount >= 4;
+                            // Surfaced at the top of the sidebar, before the
+                            // agent decides how to handle the case — a customer
+                            // on their 4th complaint needs different handling
+                            // from a first-time complainant, and that context
+                            // was previously invisible.
+                            return `<div style="border-radius:9px;padding:10px 12px;margin-bottom:12px;background:${sev?'rgba(220,38,38,.07)':'rgba(217,119,6,.08)'};border:1px solid ${sev?'rgba(220,38,38,.25)':'rgba(217,119,6,.25)'};">
+                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#B45309'};display:flex;align-items:center;gap:6px;">
+                                    <i class="fas fa-clock-rotate-left"></i> REPEAT CUSTOMER · ${repeatCount} COMPLAINTS
+                                </div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.5;">
+                                    ${sev ? 'High churn risk — consider escalating or offering recovery.' : 'This customer has complained before.'}
+                                    ${brs.length > 1 ? `<br>Across ${brs.length} branches: ${brs.join(', ')}` : ''}
+                                </div>
+                                ${others.length ? `<div style="margin-top:7px;border-top:1px solid ${sev?'rgba(220,38,38,.18)':'rgba(217,119,6,.18)'};padding-top:6px;">
+                                    ${others.slice(0,4).map(o => `<div style="font-size:0.7rem;color:var(--text-muted);display:flex;justify-content:space-between;gap:8px;padding:2px 0;">
+                                        <span>${o.date || '—'} · ${o.branch || '—'}</span>
+                                        <span style="font-weight:700;color:${o.resolved?'#059669':'#DC2626'};">${o.resolved?'resolved':'open'}</span>
+                                    </div>`).join('')}
+                                    ${others.length > 4 ? `<div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">+${others.length-4} more</div>` : ''}
+                                </div>` : ''}
+                            </div>`;
+                        })()}
                         ${custPhone ? `<div class="inc-sb-label-v2">Phone Number</div><div class="inc-sb-val-v2" style="margin-bottom:10px;">${custPhone}</div>` : ''}
                         <div style="display:flex;flex-direction:column;gap:8px;">
                             ${custPhone ? `<a href="tel:${custPhone}" class="inc-contact-btn" style="justify-content:center;"><i class="fas fa-phone"></i> Call Customer</a>` : ''}
@@ -12191,6 +12256,74 @@
             return CI_OTHER;
         }
 
+        /* ═══════════════════════════════════════════════════════════════
+           CUSTOMER HISTORY
+           Identifies repeat complainers — the same person appearing across
+           multiple separate incidents. These are the highest churn risk in
+           the whole dataset and were previously invisible: every complaint
+           was treated as a first offence, so a customer on their fourth bad
+           experience got the same handling as someone on their first.
+           ═══════════════════════════════════════════════════════════════ */
+
+        // Phone number is the identity key — the only field consistently
+        // present across all three forms. Normalised hard, because the same
+        // person genuinely appears as "0300 1234567", "+92 300 1234567" and
+        // "923001234567" across different agents and channels; without this
+        // they'd count as three separate customers and no repeat would ever
+        // be detected.
+        function _customerKey(inc){
+            let p = String(_rawFieldExact(inc._raw, 'Phone Number') || '').replace(/\D/g, '');
+            if(!p) return '';
+            // Strip Pakistan country code / trunk zero down to the 10-digit
+            // national number so all three spellings collapse to one key.
+            if(p.length > 10 && p.startsWith('92')) p = p.slice(2);
+            if(p.length > 10 && p.startsWith('0'))  p = p.slice(1);
+            if(p.length === 11 && p.startsWith('0')) p = p.slice(1);
+            // Too short to be a real number — treat as unidentifiable rather
+            // than risk collapsing unrelated customers onto one key.
+            return p.length >= 9 ? p : '';
+        }
+
+        // Builds { key -> { count, incidents[], name, phone, branches:Set } }
+        // over whatever incident set it's given.
+        function buildCustomerHistory(incs){
+            const map = {};
+            (incs || []).forEach(inc => {
+                const key = _customerKey(inc);
+                if(!key) return;
+                if(!map[key]){
+                    map[key] = {
+                        key,
+                        phone: _rawFieldExact(inc._raw, 'Phone Number') || '',
+                        name: _rawFieldExact(inc._raw, 'Name') || '',
+                        incidents: [],
+                        branches: {}
+                    };
+                }
+                const c = map[key];
+                c.incidents.push(inc);
+                if(inc.branch) c.branches[inc.branch] = (c.branches[inc.branch] || 0) + 1;
+                // Keep the fullest name seen — some rows have it blank.
+                const n = _rawFieldExact(inc._raw, 'Name') || '';
+                if(n && n.length > (c.name||'').length) c.name = n;
+            });
+            Object.values(map).forEach(c => {
+                c.count = c.incidents.length;
+                c.incidents.sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+                c.lastDate = c.incidents.length ? c.incidents[0].date : '';
+                c.unresolved = c.incidents.filter(i => !i.resolved).length;
+            });
+            return map;
+        }
+
+        // How many times THIS customer has complained, across the currently
+        // scoped data. Returns 1 for a first-time complainant.
+        function customerComplaintCount(inc){
+            const key = _customerKey(inc);
+            if(!key) return 0;   // 0 = unidentifiable, not "first time"
+            return _getScopeFilteredIncidents().filter(i => _customerKey(i) === key).length;
+        }
+
         // Where a complaint's category actually came from. Kept separate
         // from classifyComplaint() so the shared category objects are never
         // mutated with per-incident state.
@@ -12537,6 +12670,53 @@
             }
 
             this.renderRepeatComplaintPatterns();
+            this.renderRepeatCustomers();
+        };
+
+        app.renderRepeatCustomers = function(){
+            const el = document.getElementById('ct-repeat-customers');
+            if(!el) return;
+            const incs = _getScopeFilteredIncidents();
+            const hist = buildCustomerHistory(incs);
+
+            const repeats = Object.values(hist).filter(c => c.count >= 2)
+                .sort((a,b) => b.count - a.count || String(b.lastDate||'').localeCompare(String(a.lastDate||'')));
+
+            const identified = Object.keys(hist).length;
+            const noPhone = incs.length - Object.values(hist).reduce((n,c)=>n+c.count, 0);
+            const noteEl = document.getElementById('ct-repeat-cust-note');
+            if(noteEl){
+                noteEl.textContent = repeats.length
+                    ? `${repeats.length} repeat customer${repeats.length===1?'':'s'} of ${identified} identified` +
+                      (noPhone > 0 ? ` · ${noPhone} complaint${noPhone===1?'':'s'} had no phone number` : '')
+                    : `No repeat customers among ${identified} identified` +
+                      (noPhone > 0 ? ` · ${noPhone} had no phone number` : '');
+            }
+
+            if(!repeats.length){
+                el.uiHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>No customer has complained more than once in this scope.</div>`;
+                return;
+            }
+
+            el.uiHTML = repeats.slice(0, 15).map(c => {
+                const sev = c.count >= 4;
+                const brs = Object.keys(c.branches);
+                const cats = {};
+                c.incidents.forEach(i => { const t = classifyComplaint(i).title; cats[t] = (cats[t]||0)+1; });
+                const topCats = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>`${t} ${n}`).join(' · ');
+                const label = (c.name && c.name.trim()) ? c.name : (c.phone || 'Unknown');
+                return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${sev?'rgba(220,38,38,.3)':'var(--border-color)'};border-radius:9px;background:${sev?'rgba(220,38,38,.04)':'transparent'};">
+                    <span style="width:38px;height:38px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;background:${sev?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${sev?'#DC2626':'#D97706'};">${c.count}</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.86rem;font-weight:700;color:var(--text-main);">${label}${c.name && c.phone ? ` <span style="font-weight:500;color:var(--text-muted);font-size:0.74rem;">${c.phone}</span>` : ''}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">${topCats || '—'}${brs.length>1?` · ${brs.length} branches`:` · ${brs[0]||'—'}`}</div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;">
+                        <div style="font-size:0.7rem;font-weight:700;color:${c.unresolved?'#DC2626':'#059669'};">${c.unresolved ? c.unresolved+' open' : 'all resolved'}</div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">last ${c.lastDate||'—'}</div>
+                    </div>
+                </div>`;
+            }).join('');
         };
 
         // Repeat Complaint Detection — same branch + same classified
