@@ -4559,7 +4559,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.51';
+        const BUILD = 'v1.52';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -6338,7 +6338,26 @@
             if(!LIVE.incidentResolutionUrl) return null;
             try {
                 const res = await _fetch(LIVE.incidentResolutionUrl);
-                if(!res || !res.length) return null;
+                // A failed or empty read is NOT the same as "nothing is
+                // resolved". Every incident is rebuilt as unresolved on each
+                // poll and then has its real status re-applied from this
+                // sheet, so returning null here caused every agent-resolved
+                // case to silently flip back to Unresolved for that cycle —
+                // then flip back again on the next successful read. Google's
+                // published-CSV feed hiccups often enough (stale cache, rate
+                // limiting, slow response) that this was happening regularly.
+                //
+                // The last known good map is kept and reused instead. Same
+                // principle as _guardRawArray for the main data sources; this
+                // read-back just never got the same protection.
+                if(!res || !res.length){
+                    if(_lastGoodIncidentResolutions){
+                        console.warn('Incident resolution read-back came back empty — reusing last known good map (' +
+                                     Object.keys(_lastGoodIncidentResolutions).length + ' entries) rather than reverting to unresolved.');
+                        return _lastGoodIncidentResolutions;
+                    }
+                    return null;
+                }
                 const map = {};
                 res.forEach(row => {
                     const keys = Object.keys(row);
@@ -6358,8 +6377,18 @@
                     const category   = catKey      ? String(row[catKey]||'').trim()      : '';
                     if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category };
                 });
+                _lastGoodIncidentResolutions = map;
                 return map;
-            } catch(err){ console.warn('Incident resolution read-back failed:', err); return null; }
+            } catch(err){
+                console.warn('Incident resolution read-back failed:', err);
+                // Same reasoning as the empty-response branch above: a thrown
+                // fetch must not be read as "everything became unresolved".
+                if(_lastGoodIncidentResolutions){
+                    console.warn('Reusing last known good resolution map after read failure.');
+                    return _lastGoodIncidentResolutions;
+                }
+                return null;
+            }
         }
 
         function applyIncidentResolutions(map){
@@ -6389,6 +6418,12 @@
         // overriding whatever the sheet read-back says during that window.
         const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
         const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
+        // Last successfully-read resolution map, held so a failed or empty
+        // read never causes resolved cases to appear unresolved. Survives for
+        // the life of the page; a genuinely-deleted resolution row will clear
+        // on the next SUCCESSFUL read, which is the only safe time to trust
+        // an absence.
+        let _lastGoodIncidentResolutions = null;
 
         // Repaints EVERY surface after an incident is reviewed or closed.
         //
@@ -8310,7 +8345,17 @@
                 const preservedFocusWasRemarks = document.activeElement === prevRemarksEl;
                 const preservedScrollTop = bodyEl ? bodyEl.scrollTop : 0;
 
-                document.getElementById('incident-view-body').innerHTML = `
+                // uiHTML, not innerHTML: filterIncidents() re-invokes this
+                // function on every 20-second poll while the modal is open, so
+                // the modal was being torn down and rebuilt from scratch
+                // roughly three times a minute even when absolutely nothing
+                // about the incident had changed. That rebuild is what made
+                // the modal visibly jitter and shift its layout while someone
+                // was reading it. The idempotent setter compares the markup
+                // and skips the write entirely when it's identical, which is
+                // the overwhelmingly common case — so an untouched incident
+                // now costs zero DOM work per poll.
+                document.getElementById('incident-view-body').uiHTML = `
                     <div class="inc-columns-v2">
                         <div class="inc-main-col-v2">
                             ${timelineHtml}
