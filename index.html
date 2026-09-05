@@ -4554,7 +4554,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.45';
+        const BUILD = 'v1.48';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -5217,12 +5217,33 @@
             // is capped to the same time-of-day as right now, so it's "yesterday
             // up to 1:50pm" vs "today up to 1:50pm", not "yesterday's whole day".
             const now = new Date();
-            const nowTimeMs = now.getHours()*3600000 + now.getMinutes()*60000 + now.getSeconds()*1000;
-            const isViewingToday = (_fmtDate(end) === _fmtDate(now));
+            // Everything below now works in BUSINESS days, not calendar days.
+            //
+            // The night-shift rule (see _isoDate) already stamps every row's
+            // .date with the business day it belongs to — a 2am submission
+            // belongs to the previous working day. But filtering used to
+            // compare raw wall-clock timestamps against calendar midnight
+            // boundaries, so that same 2am row was FILTERED as today while
+            // being GROUPED under yesterday. At the edges of any selected
+            // range that put bars slightly outside the range you picked, and
+            // made period totals disagree with the charts built from them.
+            //
+            // Filtering on the .date string is also inherently timezone-proof
+            // (plain YYYY-MM-DD string comparison), which removes the whole
+            // class of UTC-vs-local parsing bugs this code has been bitten by
+            // before.
+            const isViewingToday = (_fmtDate(end) === _businessToday());
 
-            // Needs each item's real precise timestamp, not just its day — the
-            // old version compared everything at midnight, which can't tell
-            // "8am" from "11pm" and so couldn't support a time-of-day cutoff.
+            // How far into its BUSINESS day a timestamp sits. The business day
+            // starts at NIGHT_SHIFT_CUTOFF_HOUR, so 9am is offset 0 and 2am
+            // the following morning is offset 17h — still the same business
+            // day, and correctly ordered after 11pm rather than before 9am.
+            const businessOffsetMs = (d) => {
+                const h = (d.getHours() - NIGHT_SHIFT_CUTOFF_HOUR + 24) % 24;
+                return h*3600000 + d.getMinutes()*60000 + d.getSeconds()*1000;
+            };
+            const nowOffsetMs = businessOffsetMs(now);
+
             const getItemTs = (item) => {
                 const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
                 if(!isNaN(t)) return t;
@@ -5230,15 +5251,19 @@
             };
 
             const filter = (ds, dS, dE, capEndToNow) => {
-                const s = new Date(dS); s.setHours(0,0,0,0);
-                const e = new Date(dE);
-                if(capEndToNow){ e.setHours(0,0,0,0); e.setTime(e.getTime() + nowTimeMs); }
-                else { e.setHours(23,59,59,999); }
-                const sTs = s.getTime(), eTs = e.getTime();
+                const sStr = _fmtDate(dS), eStr = _fmtDate(dE);
                 return ds.filter(item => {
-                    const itemTs = getItemTs(item);
-                    return itemTs >= sTs && itemTs <= eTs &&
-                           (region === 'all' || _regionOf(item.branch) === region) &&
+                    const day = item.date;
+                    if(!day || day < sStr || day > eStr) return false;
+                    // Partial-day cap: when the range runs to the current
+                    // business day, the comparison period's matching final day
+                    // is trimmed to the same point in the business day, so a
+                    // part-finished day is never compared against a whole one.
+                    if(capEndToNow && day === eStr){
+                        const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
+                        if(!isNaN(t) && businessOffsetMs(new Date(t)) > nowOffsetMs) return false;
+                    }
+                    return (region === 'all' || _regionOf(item.branch) === region) &&
                            (branch === 'all' || item.branch === branch) &&
                            (channel === 'all' || item.channel === channel) &&
                            (survey === 'all' || item.surveyForm === survey);
@@ -5388,13 +5413,16 @@
                     // Overview mismatches. Now uses the same precise-timestamp
                     // approach as Overview's own filter.
                     const filterDs = (ds) => {
-                        const s = new Date(start); s.setHours(0,0,0,0);
-                        const e = new Date(end); e.setHours(23,59,59,999);
-                        const sTs = s.getTime(), eTs = e.getTime();
+                        // Matches Overview exactly: range membership is decided
+                        // on the BUSINESS day stamped onto each row (.date),
+                        // not a wall-clock timestamp. Overnight rows therefore
+                        // land on the same side of a boundary here as they do
+                        // in every chart, and plain YYYY-MM-DD string
+                        // comparison sidesteps timezone parsing entirely.
+                        const sStr = _fmtDate(start), eStr = _fmtDate(end);
                         return ds.filter(item => {
-                            const t = _parseSheetDateTime(_rawFieldExact(item._raw, 'Created At'));
-                            const itemTs = !isNaN(t) ? t : (item.date ? new Date(item.date + 'T12:00:00').getTime() : 0);
-                            if(itemTs < sTs || itemTs > eTs) return false;
+                            const day = item.date;
+                            if(!day || day < sStr || day > eStr) return false;
                             if(br !== 'all' && !br.includes(item.branch)) return false;
                             if(ch !== 'all' && !ch.includes(item.channel)) return false;
                             if(fo !== 'all' && !fo.includes(item.form)) return false;
@@ -7427,25 +7455,36 @@
                             // denominator while it can never count in the
                             // numerator would silently drag both down.
                             const rated = s.filter(x => x.smileScore != null);
-                            const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : 4.0;
-                            const avgSmile = (avgSmileRaw * 20).toFixed(0);
-                            const emojiColor = avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)');
-                            const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(0) : 0;
+                            // A branch with no rated submissions has NO smile
+                            // score and NO positive-feedback figure. These
+                            // previously fell back to invented constants
+                            // (4.0/5 -> "80/100", and 0%), which are not
+                            // missing-data markers — they render identically
+                            // to a real measurement and were being read,
+                            // ranked and acted on as though the branch had
+                            // actually been scored. Null now flows through to
+                            // an explicit "—" in the cell.
+                            const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : null;
+                            const avgSmile = avgSmileRaw === null ? null : (avgSmileRaw * 20).toFixed(0);
+                            const emojiColor = avgSmileRaw === null ? 'var(--text-muted)' : (avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)'));
+                            const posFB = rated.length ? +((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(0) : null;
                             const res = i.filter(x=>x.resolved).length;
-                            const resRate = iL ? ((res/iL)*100).toFixed(0) : 100;
+                            // 100% "resolved" out of zero incidents is not an
+                            // achievement, it's an absence of cases.
+                            const resRate = iL ? ((res/iL)*100).toFixed(0) : null;
                             return { name: b.name, sL, iL, rate, emojiColor, posFB: +posFB, res, resRate, avgSmile };
                         }).sort((a,b) => a.rate - b.rate);
                         this.renderExecBranchPosFBChart(rows);
                         return rows.map(b => `
                         <tr>
                             <td class="font-bold">${b.name}</td>
-                            <td><span class="smile-pill" style="color:${b.emojiColor}; background:${b.emojiColor}15;">${b.avgSmile}/100</span></td>
+                            <td><span class="smile-pill" style="color:${b.emojiColor}; background:${b.emojiColor}15;">${b.avgSmile === null ? '—' : b.avgSmile + '/100'}</span></td>
                             <td>${b.sL.toLocaleString()}</td>
                             <td style="font-weight:700;">${b.iL}</td>
                             <td class="font-bold" style="color:${b.rate<3?'var(--status-good)':(b.rate<5?'var(--status-warn)':'var(--status-critical)')}">${b.rate.toFixed(2)}%</td>
-                            <td>${b.posFB}%</td>
+                            <td>${b.posFB === null ? '—' : b.posFB + '%'}</td>
                             <td>${b.res}</td>
-                            <td>${b.resRate}%</td>
+                            <td>${b.resRate === null ? '—' : b.resRate + '%'}</td>
                         </tr>
                     `).join('');
                 })();
@@ -7469,21 +7508,25 @@
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
                     const rated = s.filter(x => x.smileScore != null);
-                    const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : 4.4;
-                    const avgSmile = (avgSmileRaw * 20).toFixed(0); // 1–5 → 0–100
-                    const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(1) : "90.0";
-                    const resolved = iL ? ((i.filter(x=>x.resolved).length/iL)*100).toFixed(1) : "100.0";
+                    // Same fabricated-default problem as the expanded table
+                    // above: "4.4" and "90.0" were invented stand-ins that
+                    // displayed as real measurements (88/100, 90.0% positive)
+                    // for branches that had never been rated at all.
+                    const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : null;
+                    const avgSmile = avgSmileRaw === null ? null : (avgSmileRaw * 20).toFixed(0); // 1–5 → 0–100
+                    const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(1) : null;
+                    const resolved = iL ? ((i.filter(x=>x.resolved).length/iL)*100).toFixed(1) : null;
                     return `
                         <tr>
                             <td class="font-semibold">${b.name}</td>
                             <td>${b.region}</td>
                             <td>${sL.toLocaleString()}</td>
                             <td>${iL.toLocaleString()}</td>
-                            <td><span class="score-pill ${avgSmileRaw>=4.2?'score-high':'score-mid'}">${avgSmile}/100</span></td>
+                            <td><span class="score-pill ${avgSmileRaw !== null && avgSmileRaw>=4.2?'score-high':'score-mid'}">${avgSmile === null ? '—' : avgSmile + '/100'}</span></td>
                             <td>${b.basePq}%</td>
                             <td>${b.baseSvc}%</td>
-                            <td>${posFB}%</td>
-                            <td style="color:${resolved>=70?'var(--status-good)':'var(--status-critical)'}; font-weight:600;">${resolved}%</td>
+                            <td>${posFB === null ? '—' : posFB + '%'}</td>
+                            <td style="color:${resolved === null ? 'var(--text-muted)' : (resolved>=70?'var(--status-good)':'var(--status-critical)')}; font-weight:600;">${resolved === null ? '—' : resolved + '%'}</td>
                             <td class="font-semibold" style="color:${rate<3?'var(--status-good)':(rate<5?'var(--status-warn)':'var(--status-critical)')}; background:rgba(37,99,235,0.02);">${rate.toFixed(2)}%</td>
                         </tr>
                     `;
@@ -8426,26 +8469,34 @@
             },
 
             renderResolution() {
+                // Branches with zero incidents are excluded from the ranked
+                // chart entirely. They previously defaulted to a 100%
+                // resolution rate, which put "nothing was ever reported here"
+                // at the top of a chart explicitly labelled worst-to-best —
+                // so an inactive branch outranked one that genuinely resolved
+                // most of its real cases.
                 const branchRates = config.branches.map(b => {
                     const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const res = i.filter(x=>x.resolved).length;
-                    const rate = i.length ? (res/i.length)*100 : 100;
+                    const rate = i.length ? (res/i.length)*100 : null;
                     return { name: b.name, total: i.length, rate };
                 });
-                this.renderResRateChart(branchRates);
+                this.renderResRateChart(branchRates.filter(b => b.rate !== null));
 
                 document.querySelector('#res-current-table tbody').uiHTML = config.branches.map(b => {
                     const i = (state.branchGroups[b.name] || {incs:[]}).incs;
                     const res = i.filter(x=>x.resolved).length;
                     const unres = i.length - res;
-                    const rate = i.length ? ((res/i.length)*100).toFixed(1) : "100.0";
+                    // No incidents means there is no resolution rate to
+                    // report — not a perfect one.
+                    const rate = i.length ? ((res/i.length)*100).toFixed(1) : null;
                     return `
                         <tr>
                             <td class="font-semibold">${b.name}</td>
                             <td>${i.length}</td>
                             <td>${res}</td>
                             <td>${unres}</td>
-                            <td style="color:${rate>=70?'var(--status-good)':'var(--status-critical)'}; font-weight:700;">${rate}%</td>
+                            <td style="color:${rate === null ? 'var(--text-muted)' : (rate>=70?'var(--status-good)':'var(--status-critical)')}; font-weight:700;">${rate === null ? '—' : rate + '%'}</td>
                         </tr>
                     `;
                 }).join('');
