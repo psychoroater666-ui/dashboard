@@ -4589,7 +4589,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.62';
+        const BUILD = 'v1.65';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -5831,6 +5831,23 @@
                         <div class="ia-note-box" id="ia-note-row" style="display:none;">
                             <span id="ia-note"></span>
                         </div>
+                        <!-- Customer history — shown only for someone who has
+                             complained before, so the agent can judge severity
+                             and pattern before they pick up the phone. -->
+                        <div class="ia-row" id="ia-history-row" style="display:none;">
+                            <div id="ia-hist-total-card" style="border-radius:9px;padding:9px 11px;">
+                                <div class="ia-label" style="margin-bottom:2px;">Total Complaints</div>
+                                <div style="display:flex;align-items:baseline;gap:6px;">
+                                    <span id="ia-hist-total" style="font-size:1.35rem;font-weight:800;line-height:1;">—</span>
+                                    <span id="ia-hist-total-sub" style="font-size:0.66rem;font-weight:700;"></span>
+                                </div>
+                            </div>
+                            <div style="border-radius:9px;padding:9px 11px;background:var(--bg-light);border:1px solid var(--border-color);">
+                                <div class="ia-label" style="margin-bottom:2px;">Previous Complaint</div>
+                                <div id="ia-hist-last-date" style="font-size:0.8rem;font-weight:800;color:var(--text-main);line-height:1.25;">—</div>
+                                <div id="ia-hist-last-what" style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;line-height:1.35;">—</div>
+                            </div>
+                        </div>
                         <div class="ia-row">
                             <div><div class="ia-label">Created At</div><div class="ia-val" id="ia-created" style="font-size:0.8rem;">—</div></div>
                             <div><div class="ia-label">Time Taken</div><div class="ia-val" id="ia-time-taken" style="font-size:0.8rem;">—</div></div>
@@ -6164,6 +6181,48 @@
             const noteRow = document.getElementById('ia-note-row');
             if(inc.note){ noteRow.style.display = ''; document.getElementById('ia-note').textContent = inc.note; }
             else { noteRow.style.display = 'none'; }
+            // ── Customer history ──────────────────────────────────────
+            (function(){
+                const row = document.getElementById('ia-history-row');
+                if(!row) return;
+                const key = _customerKey(inc);
+                if(!key){ row.style.display = 'none'; return; }
+                const all = _getScopeFilteredIncidents().filter(i => _customerKey(i) === key);
+                if(all.length < 2){ row.style.display = 'none'; return; }   // first-time customer — nothing to warn about
+
+                // Most recent OTHER complaint, i.e. excluding the one that
+                // just came in and triggered this alert.
+                const thisKey = _incidentStableKey(inc);
+                const prior = all.filter(i => _incidentStableKey(i) !== thisKey)
+                                 .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+                const last = prior[0];
+
+                const sev = all.length >= 4;
+                const card = document.getElementById('ia-hist-total-card');
+                card.style.background = sev ? 'rgba(220,38,38,.08)' : 'rgba(217,119,6,.09)';
+                card.style.border = '1px solid ' + (sev ? 'rgba(220,38,38,.28)' : 'rgba(217,119,6,.28)');
+                const totalEl = document.getElementById('ia-hist-total');
+                totalEl.textContent = all.length;
+                totalEl.style.color = sev ? '#DC2626' : '#B45309';
+                const subEl = document.getElementById('ia-hist-total-sub');
+                subEl.textContent = sev ? 'HIGH RISK' : 'REPEAT';
+                subEl.style.color = sev ? '#DC2626' : '#B45309';
+
+                if(last){
+                    const d = last.date ? new Date(last.date + 'T00:00:00') : null;
+                    const daysAgo = d ? Math.round((new Date().setHours(0,0,0,0) - d.getTime()) / 86400000) : null;
+                    document.getElementById('ia-hist-last-date').textContent =
+                        (d ? d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—') +
+                        (daysAgo !== null && daysAgo >= 0 ? ` · ${daysAgo === 0 ? 'today' : daysAgo === 1 ? '1 day ago' : daysAgo + ' days ago'}` : '');
+                    document.getElementById('ia-hist-last-what').textContent =
+                        `${classifyComplaint(last).title} · ${last.branch || '—'} · ${last.resolved ? 'resolved' : 'still open'}`;
+                } else {
+                    document.getElementById('ia-hist-last-date').textContent = '—';
+                    document.getElementById('ia-hist-last-what').textContent = '—';
+                }
+                row.style.display = '';
+            })();
+
             document.getElementById('ia-created').textContent = createdDisp;
             document.getElementById('ia-time-taken').textContent = timeTaken;
             document.getElementById('ia-id').textContent = inc.id || '—';
@@ -9483,7 +9542,6 @@ ${(() => {
                         <i class="fas ${dicon}" style="font-size:0.66rem;"></i>
                         ${dir === 'flat' ? 'Steady vs previous period' : `${Math.abs(delta).toFixed(1)} pts vs previous period`}
                     </div>
-                    ${noPhone > 0 ? `<div style="margin-top:10px;padding-top:9px;border-top:1px solid var(--border-color);font-size:0.68rem;color:var(--text-muted);">${noPhone} complaint${noPhone===1?'':'s'} had no phone number and couldn't be matched</div>` : ''}
                 `;
             },
 
