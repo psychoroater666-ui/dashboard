@@ -4554,7 +4554,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.49';
+        const BUILD = 'v1.50';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -6385,6 +6385,31 @@
         const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
         const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
 
+        // Repaints EVERY surface after an incident is reviewed or closed.
+        //
+        // Saving used to call app.filterIncidents() alone, which only rebuilds
+        // the Incidents table. Everything else derives from the same incident
+        // rows — the six Overview KPIs, Needs Attention, Incident Analytics,
+        // the Resolution view and its charts, Complaint Topography, the branch
+        // tables and the alert bell — and none of them were told anything had
+        // changed. So the agent saw the row they just closed update, while
+        // every count elsewhere stayed stale until the next 20s poll or a full
+        // page reload. That's the "have to refresh the whole tab" symptom.
+        //
+        // Routed through UI.silent so this is a repaint, not a navigation:
+        // scroll position holds, no entry animations replay, open sections stay
+        // open, and the identical-HTML guard means untouched sections aren't
+        // even rebuilt. Cheap enough to run on every save.
+        function _refreshAfterIncidentChange(){
+            try {
+                const run = () => {
+                    if(typeof app !== 'undefined' && app.applyFilters) app.applyFilters();
+                    if(typeof renderAlerts === 'function') renderAlerts();
+                };
+                (typeof UI !== 'undefined' && UI.silent) ? UI.silent(run) : run();
+            } catch(e){ console.warn('Post-save refresh failed:', e); }
+        }
+
         function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote, resolvedAt, agentCategory){
             const existing = _incidentResolutionProtected[stableKey] || {};
             _incidentResolutionProtected[stableKey] = Object.assign({}, existing, {
@@ -6445,6 +6470,9 @@
                     if(_incidentStableKey(inc) === stableKey) inc.reviewedAt = reviewedAt;
                 });
                 _protectIncidentReview(stableKey, reviewedAt);
+                // Marking an incident reviewed changes the "unreviewed" counts
+                // and badges too, so the same full repaint applies.
+                _refreshAfterIncidentChange();
             })
             .catch(err => console.warn('Incident review save FAILED (network/CORS/parse error) for key:', stableKey, '—', err));
         }
@@ -6515,7 +6543,9 @@
                         if(category) inc.agentCategory = category;
                     }
                 });
-                if(typeof app !== 'undefined' && app.filterIncidents) app.filterIncidents();
+                // Full repaint, not just the incidents table — see
+                // _refreshAfterIncidentChange above.
+                _refreshAfterIncidentChange();
             })
             .catch(err => {
                 console.warn('Incident resolution save failed:', err);
