@@ -2701,8 +2701,10 @@
             inset: 0;
             z-index: 200000;
             display: none;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            gap: 22px;
             /* Dims and blurs whatever's frozen underneath rather than
                blacking it out completely — the frosted-glass look reads as
                far more premium than a flat opaque screen, and it keeps a
@@ -2715,28 +2717,6 @@
         }
         #sentinel-reconnect.visible{ display: flex; }
         #sentinel-reconnect.showing{ opacity: 1; }
-
-        /* The floating glass card itself — its own lighter, more saturated
-           blur layer on top of the dimmed backdrop, so it visibly sits
-           forward of the page rather than being just centered text. */
-        .sr-card{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            padding: 40px 44px 34px;
-            border-radius: 22px;
-            background: linear-gradient(155deg, rgba(255,255,255,.09), rgba(255,255,255,.03));
-            border: 1px solid rgba(255,255,255,.12);
-            box-shadow: 0 24px 60px -18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.08);
-            backdrop-filter: blur(28px) saturate(160%);
-            -webkit-backdrop-filter: blur(28px) saturate(160%);
-            animation: srCardIn .4s var(--ease-out) both;
-        }
-        @keyframes srCardIn{
-            from{ opacity: 0; transform: translateY(10px) scale(.97); }
-            to  { opacity: 1; transform: translateY(0)    scale(1);   }
-        }
 
         .sr-mark{
             position: relative;
@@ -2822,7 +2802,7 @@
         }
 
         @media (prefers-reduced-motion: reduce){
-            .sr-glyph, .sr-ring, .sr-dots i, .sr-card{ animation: none !important; }
+            .sr-glyph, .sr-ring, .sr-dots i{ animation: none !important; }
             .sr-ring{ border-top-color: #64D0FF; border-right-color: transparent; border-bottom-color: rgba(100,208,255,.35); border-left-color: rgba(100,208,255,.15); }
         }
 
@@ -2866,17 +2846,15 @@
          app — a lost connection outranks anything already on screen.
          ═══════════════════════════════════════════════════════════════ -->
     <div id="sentinel-reconnect" aria-live="assertive" role="status">
-        <div class="sr-card">
-            <div class="sr-mark">
-                <span class="sr-ring"></span>
-                <span class="sr-glyph">S</span>
-            </div>
-            <div class="sr-text">
-                <div class="sr-title">Sentinel lost the connection</div>
-                <div class="sr-label">Reconnecting<span class="sr-dots"><i></i><i></i><i></i></span></div>
-            </div>
-            <div class="sr-sub">Trying to reconnect to the live feed automatically</div>
+        <div class="sr-mark">
+            <span class="sr-ring"></span>
+            <span class="sr-glyph">S</span>
         </div>
+        <div class="sr-text">
+            <div class="sr-title">Sentinel lost the connection</div>
+            <div class="sr-label">Reconnecting<span class="sr-dots"><i></i><i></i><i></i></span></div>
+        </div>
+        <div class="sr-sub">Trying to reconnect to the server</div>
     </div>
     <script>
         (function(){
@@ -4482,7 +4460,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.38';
+        const BUILD = 'v1.39';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
