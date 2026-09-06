@@ -2450,6 +2450,19 @@
         body.bg-refresh .sl-modal-overlay *,
         body.bg-refresh #cs-modal,
         body.bg-refresh #cs-modal *,
+        /* The three dialogs the original rule missed -- submission detail,
+           users list, and the user add/edit form all open via inline
+           style.display and so were never covered here. Belt and braces:
+           the refresh now also skips rendering entirely while any dialog
+           is open (see _anyModalOpen in the refresh loop), but keeping
+           this makes the protection hold even if a refresh is already
+           mid-flight when a dialog opens. */
+        body.bg-refresh #submission-detail-modal,
+        body.bg-refresh #submission-detail-modal *,
+        body.bg-refresh #users-modal,
+        body.bg-refresh #users-modal *,
+        body.bg-refresh #user-form-modal,
+        body.bg-refresh #user-form-modal *,
         body.bg-refresh #crumble-toasts,
         body.bg-refresh #crumble-toasts *{
             animation-duration:  revert !important;
@@ -7147,8 +7160,43 @@
                         // rebuild is deferred while hidden (no point redrawing
                         // charts nobody's looking at) — it catches up instantly
                         // the moment you switch back.
+                        // Is any modal / popup / overlay currently open?
+                        //
+                        // The app opens dialogs three different ways --
+                        // inline style.display='flex' (submission detail,
+                        // incident alert, users, user form, cs-modal),
+                        // a class that flips display via CSS
+                        // (.sl-modal-overlay.open), and .ia-overlay driven
+                        // by JS. Rather than tracking each one by name and
+                        // forgetting the next one someone adds, this just
+                        // asks the browser what's actually visible: if any
+                        // known overlay container has a computed display
+                        // other than 'none', a dialog is up.
+                        //
+                        // This is what stops the mid-review flicker: the
+                        // 20s background refresh used to rebuild tables and
+                        // charts underneath an open dialog, visibly
+                        // redrawing the page while the user was reading or
+                        // typing in it.
+                        const _anyModalOpen = () => {
+                            const sel = '#cs-modal, #incident-alert-modal,'
+                                      + '#incident-alert-summary-modal, #incident-view-modal,'
+                                      + '#sl-add-modal, #submission-detail-modal,'
+                                      + '#users-modal, #user-form-modal,'
+                                      + '.ia-overlay, .sl-modal-overlay';
+                            return Array.prototype.some.call(
+                                document.querySelectorAll(sel),
+                                el => getComputedStyle(el).display !== 'none'
+                            );
+                        };
+
                         const _doRefresh = async () => {
-                            const skipRender = document.hidden;
+                            // Defer the visual rebuild while a dialog is
+                            // open, exactly like the document.hidden case
+                            // below -- data still loads and alerts still
+                            // fire, only the re-render waits. _needsRenderCatchup
+                            // makes it repaint the moment the dialog closes.
+                            const skipRender = document.hidden || _anyModalOpen();
                             if(!skipRender){ document.body.classList.add('bg-refresh'); void document.body.offsetHeight; }
                             try {
                                 if(!await loadLive()){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
@@ -7193,6 +7241,30 @@
                         document.addEventListener('visibilitychange', () => {
                             if(!document.hidden) _doRefresh();
                         });
+
+                        // Same catch-up idea for dialogs: the moment the
+                        // last open modal closes, repaint straight away
+                        // instead of leaving stale numbers on screen for
+                        // up to another full refresh interval. Watching the
+                        // DOM directly (rather than patching every close
+                        // handler) means dialogs added later are covered
+                        // automatically, and it correctly handles all three
+                        // ways this app closes them -- inline style, class
+                        // toggle, or JS-driven.
+                        (function watchModalClose(){
+                            let wasOpen = _anyModalOpen();
+                            const check = () => {
+                                const isOpen = _anyModalOpen();
+                                if(wasOpen && !isOpen) _doRefresh();
+                                wasOpen = isOpen;
+                            };
+                            const obs = new MutationObserver(check);
+                            obs.observe(document.body, {
+                                subtree: true,
+                                attributes: true,
+                                attributeFilter: ['style', 'class']
+                            });
+                        })();
                     }
                 } finally {
                     _revealApp();   // data (live or sample) is rendered — swap skeleton for real content
