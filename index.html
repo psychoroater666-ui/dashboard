@@ -2998,36 +2998,20 @@
                     <div class="login-tagline">Customer Experience<br><span>Intelligence</span> Dashboard</div>
                 </div>
             </div>
-            <!-- Right form panel -->
+            <!-- Right panel — no password form. Cloudflare Access already
+                 authenticated the visitor before this page ever loaded; this
+                 panel just resolves who they are and shows brief status
+                 while that happens, or an access-denied dead end if their
+                 email isn't provisioned in the Users sheet. -->
             <div class="login-right">
                 <div class="login-welcome">Welcome back</div>
-                <div class="login-title">Sign in</div>
-                <div class="login-sub">Enter your credentials to access the dashboard</div>
-
-                <label class="login-label" for="login-email">Email address</label>
-                <div class="login-input-wrap">
-                    <i class="fas fa-envelope login-input-icon"></i>
-                    <input id="login-email" class="login-input" type="email"
-                        placeholder="your@email.com"
-                        onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
-                </div>
-
-                <label class="login-label" for="login-password">Password</label>
-                <div class="login-input-wrap">
-                    <i class="fas fa-lock login-input-icon"></i>
-                    <input id="login-password" class="login-input" type="password"
-                        placeholder="••••••••"
-                        onkeydown="if(event.key==='Enter') doLogin()">
-                </div>
+                <div class="login-title" id="login-status-title">Signing you in</div>
+                <div class="login-sub" id="login-status-sub">Verifying your Cloudflare Access session…</div>
 
                 <div id="login-error" class="login-error">
                     <i class="fas fa-circle-exclamation" style="font-size:0.82rem;flex-shrink:0;"></i>
                     <span id="login-error-text"></span>
                 </div>
-
-                <button id="login-btn" class="login-btn" onclick="doLogin()">
-                    Sign In &nbsp;<i class="fas fa-arrow-right" style="font-size:0.8rem;"></i>
-                </button>
 
                 <div class="login-footer">Protected · Internal access only</div>
             </div>
@@ -4575,7 +4559,12 @@
         const LIVE = {
             refreshMs: 20000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
-            slScriptUrl: 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec',
+            // Same-origin, behind Cloudflare Access. The Worker at /api/* forwards
+            // to Apps Script with the visitor's verified identity attached.
+            // Trailing slash matters: Cloudflare's route pattern is /api/*, which
+            // requires the literal slash to match — '/api' with no slash can miss
+            // the Worker entirely and fall through to the static site instead.
+            slScriptUrl: '/api/',
             // Social Listening — published CSV (reads rows back from Sheet)
             // NOTE: after publishing the sheet, get the gid for Social_Listening tab from:
             // File → Share → Publish to web → Social_Listening tab → CSV → copy link
@@ -13003,7 +12992,10 @@ ${(() => {
         // ═══════════════════════════════════════════
         // CREATE SUBMISSION — 8-step call center form
         // ═══════════════════════════════════════════
-        const CS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec';
+        // Same-origin, behind Cloudflare Access — see LIVE.slScriptUrl for
+        // the full explanation. Kept as a separate constant since that's how
+        // the original code was structured; both now point at the same path.
+        const CS_SCRIPT_URL = '/api/';
 
         let csCurrentStep = 1;
         const csData = {};
@@ -13731,10 +13723,34 @@ ${(() => {
         })();
 
         // ═══════════════════════════════════════════
-        // AUTH — Google Sheets login system
+        // AUTH — Cloudflare Access SSO (single login screen)
         // ═══════════════════════════════════════════
-        const AUTH_URL = 'https://script.google.com/macros/s/AKfycbxXUVEj06_15RnPo_wpBnpKbIuQ-pISAiFHNeLfYpPtTpmz9Yh9zxOX-7ew_SgcR8ia/exec';
         const AUTH_SESSION_KEY = 'crumble_auth_session';
+
+        /**
+         * Single call path for every backend request. Same origin as the
+         * page itself, so the browser attaches whatever cookies Cloudflare
+         * Access set — that's what lets the Worker see the visitor's
+         * identity without any code here having to handle it explicitly.
+         */
+        async function apiCall(action, payload){
+            const res = await fetch(LIVE.slScriptUrl, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(Object.assign({ action }, payload || {}))
+            });
+
+            // If the Access session expired, Cloudflare intercepts the request
+            // with its own login redirect and we get HTML back instead of JSON.
+            // Reloading lets the browser follow that redirect properly.
+            const text = await res.text();
+            if (text.trimStart().startsWith('<')) {
+                window.location.reload();
+                throw new Error('session_expired');
+            }
+            return JSON.parse(text);
+        }
 
         // Global permission state — set on login, used everywhere
         const PERM = { role:'Admin', region:'All', branch:'All', name:'' };
@@ -14265,54 +14281,25 @@ ${(() => {
             app.init();
         }
 
-        async function doLogin(){
-            const emailEl = document.getElementById('login-email');
-            const passEl  = document.getElementById('login-password');
+        /**
+         * Shown when Cloudflare let someone through Access but their email
+         * isn't in the Users sheet. Deliberately a dead end — there's no
+         * password box to fall back to, because there's nothing to fall
+         * back to. Signing out of Access and back in as a provisioned
+         * account is the only way past this screen.
+         */
+        function showAccessDenied(message){
+            document.body.classList.add('app-ready');
+            const ls = document.getElementById('login-screen');
+            if (ls) ls.classList.add('visible');
+            const title = document.getElementById('login-status-title');
+            const sub   = document.getElementById('login-status-sub');
+            if (title) title.textContent = 'Access unavailable';
+            if (sub)   sub.textContent   = 'Cloudflare recognised you, but this dashboard doesn\'t have an account for you yet.';
+            const errText = document.getElementById('login-error-text');
             const errEl   = document.getElementById('login-error');
-            const btn     = document.getElementById('login-btn');
-
-            const email    = (emailEl.value || '').trim();
-            const password = (passEl.value  || '').trim();
-
-            errEl.classList.remove('visible');
-
-            if(!email || !password){
-                errEl.textContent = 'Please enter your email and password.';
-                errEl.classList.add('visible');
-                return;
-            }
-
-            btn.disabled    = true;
-            btn.textContent = 'Signing in…';
-
-            try {
-                const url = AUTH_URL
-                    + '?action=login'
-                    + '&email='    + encodeURIComponent(email)
-                    + '&password=' + encodeURIComponent(password);
-
-                const res  = await fetch(url);
-                const data = await res.json();
-
-                if(data.status === 'success'){
-                    authSaveSession({ name: data.name, email: data.email, role: data.role, region: data.region || 'All', branch: data.branch || 'All' });
-                    authShowApp(data);
-                } else {
-                    const errText = document.getElementById('login-error-text');
-                    if(errText) errText.textContent = 'The email or password you entered is incorrect. Please try again.';
-                    else errEl.textContent = 'The email or password you entered is incorrect. Please try again.';
-                    errEl.classList.add('visible');
-                    btn.disabled    = false;
-                    btn.textContent = 'Sign In';
-                    passEl.value    = '';
-                    passEl.focus();
-                }
-            } catch(err){
-                errEl.textContent = 'Connection error. Please try again.';
-                errEl.classList.add('visible');
-                btn.disabled    = false;
-                btn.textContent = 'Sign In';
-            }
+            if (errText) errText.textContent = message || 'This account is not authorized for the dashboard. Contact the Customer Experience team if you believe this is a mistake.';
+            if (errEl) errEl.classList.add('visible');
         }
 
         // On page load — check for existing session first
@@ -14343,20 +14330,50 @@ ${(() => {
             requestAnimationFrame(step);
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const session = authGetSession();
             if(session && session.email){
-                // Already logged in — skip login screen
+                // Cached session — instant paint, no round trip.
                 authShowApp(session);
-            } else {
-                // Show login screen, focus email field
-                const ls = document.getElementById('login-screen');
-                if(ls) ls.classList.add('visible');
-                document.body.classList.add('app-ready');
-                setTimeout(() => {
-                    const el = document.getElementById('login-email');
-                    if(el) el.focus();
-                }, 300);
+                // Revalidate in the background: catches a user removed since
+                // the cache was written, without making them wait for it.
+                apiCall('cf_session').then(data => {
+                    if (data.status === 'success') {
+                        authSaveSession({
+                            name: data.name, email: data.email, role: data.role,
+                            region: data.region || 'All', branch: data.branch || 'All'
+                        });
+                    } else {
+                        authClearSession();
+                        showAccessDenied(data.message);
+                    }
+                }).catch(() => { /* offline — leave the cached session as-is */ });
+                return;
+            }
+
+            // No cached session. Cloudflare has already authenticated whoever
+            // is here before this page could even load — resolve their
+            // identity and go straight in. No password prompt exists anymore.
+            const ls = document.getElementById('login-screen');
+            if(ls) ls.classList.add('visible');
+            document.body.classList.add('app-ready');
+
+            try {
+                const data = await apiCall('cf_session');
+                if (data.status === 'success') {
+                    const user = {
+                        name: data.name, email: data.email, role: data.role,
+                        region: data.region || 'All', branch: data.branch || 'All'
+                    };
+                    authSaveSession(user);
+                    authShowApp(user);
+                } else {
+                    showAccessDenied(data.message);
+                }
+            } catch (err) {
+                if (err.message !== 'session_expired') {
+                    showAccessDenied('We could not reach the dashboard backend. Please try again shortly.');
+                }
             }
         });
 
