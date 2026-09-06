@@ -3836,6 +3836,9 @@
                         <select class="select-input" id="inc-chan-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
                             <option value="all">All channels</option>
                         </select>
+                        <select class="select-input" id="inc-survey-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
+                            <option value="all">All surveys</option>
+                        </select>
                     </div>
                 </div>
 
@@ -4617,7 +4620,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.66';
+        const BUILD = 'v1.67';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -8253,11 +8256,12 @@
                 const total = incs.length;
                 const prevTotal = state.p2 ? state.p2.incs.length : 0;
                 const critical = incs.filter(i => (i.smileScore||i.rating||0) <= 1).length;
-                const byBranch = {}, byChannel = {}, byType = {};
+                const byBranch = {}, byChannel = {}, byType = {}, bySurvey = {};
                 incs.forEach(i => {
                     byBranch[i.branch] = (byBranch[i.branch]||0)+1;
                     const ch = i.channel || '—'; byChannel[ch] = (byChannel[ch]||0)+1;
                     const t = i.complaintType || i.product || 'Unspecified'; byType[t] = (byType[t]||0)+1;
+                    const sv = i.surveyForm || i.form || '—'; bySurvey[sv] = (bySurvey[sv]||0)+1;
                 });
                 const topBranch = Object.entries(byBranch).sort((a,b)=>b[1]-a[1])[0];
                 const topChannel = Object.entries(byChannel).sort((a,b)=>b[1]-a[1])[0];
@@ -8296,6 +8300,12 @@
                 // ── Populate channel filter ──
                 UI.syncSelect(document.getElementById('inc-chan-filter'), Object.keys(byChannel).sort(), true);
 
+                // ── Populate survey filter (Dine In / Delivery / Call Center...) ──
+                // Lets you isolate, for example, only Call Center incidents —
+                // i.e. the ones your own agents logged themselves — to track
+                // that they're being closed out promptly.
+                UI.syncSelect(document.getElementById('inc-survey-filter'), Object.keys(bySurvey).sort(), true);
+
                 this.filterIncidents();
             },
 
@@ -8305,11 +8315,13 @@
                 const rf = document.getElementById('inc-rating-filter')?.value || 'all';
                 const cf = document.getElementById('inc-chan-filter')?.value || 'all';
                 const vf = document.getElementById('inc-valid-filter')?.value || 'all';
+                const sf = document.getElementById('inc-survey-filter')?.value || 'all';
                 const filtered = incs.filter(i => {
                     const score = i.smileScore || i.rating || 0;
                     if(rf !== 'all' && String(score) !== rf) return false;
                     if(cf !== 'all' && (i.channel||'—') !== cf) return false;
                     if(vf !== 'all' && (i.caseStatus||'verified') !== vf) return false;
+                    if(sf !== 'all' && (i.surveyForm||i.form||'—') !== sf) return false;
                     if(q){
                         const hay = `${i.branch} ${i.product} ${i.complaintType} ${i.note||''} ${_rawOrderId(i._raw)}`.toLowerCase();
                         if(!hay.includes(q)) return false;
