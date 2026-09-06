@@ -2434,6 +2434,32 @@
         body.bg-refresh #sentinel-reconnect .sr-dots i:nth-child(3){ animation-delay: .36s !important; }
         body.bg-refresh .crumble-ripple{ display: none !important; }
 
+        /* Open dialogs are exempt from the background-refresh suppressor for
+           the same reason the reconnect overlay is. The suppressor is applied
+           to <body> and removed again on EVERY 20-second poll; with the
+           universal selector that invalidates styles across the whole
+           document twice a minute, and any dialog on screen had its entrance
+           animation and transitions zeroed and then restored each time. That
+           repeated kill-and-restore is what made an open incident modal
+           visibly twitch while it was just sitting there being read.
+           A modal is a foreground surface the user is actively looking at —
+           it should never be touched by a background data refresh. */
+        body.bg-refresh .ia-overlay,
+        body.bg-refresh .ia-overlay *,
+        body.bg-refresh .sl-modal-overlay,
+        body.bg-refresh .sl-modal-overlay *,
+        body.bg-refresh #cs-modal,
+        body.bg-refresh #cs-modal *,
+        body.bg-refresh #crumble-toasts,
+        body.bg-refresh #crumble-toasts *{
+            animation-duration:  revert !important;
+            animation-delay:     revert !important;
+            transition-duration: revert !important;
+            transition-delay:    revert !important;
+        }
+        body.bg-refresh .ia-overlay.is-open > .ia-card{ animation: crumbleDialogIn .32s var(--ease-out) both !important; }
+        body.bg-refresh .crumble-toast{ animation: crumbleToastIn .3s var(--ease-out) both !important; }
+
         /* Cards keep their own layer so a hover lift can't force the whole
            column to repaint. */
         .kpi-card, .branch-kpi-card, .ai-tile, .form-perf-card{
@@ -4589,7 +4615,7 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
-        const BUILD = 'v1.65';
+        const BUILD = 'v1.66';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
@@ -6895,7 +6921,20 @@
             // draw-in replay, inner pane scroll preserved.
             function silent(fn){
                 const body = document.body;
-                const hadClass = body.classList.contains('bg-refresh');
+                // Never apply the animation suppressor while a dialog is open.
+                //
+                // bg-refresh carries universal-selector rules that zero every
+                // animation and transition in the document, and it is added
+                // and removed again on EVERY 20-second poll. With a modal on
+                // screen that meant its entrance animation and transitions
+                // were killed and restored three times a minute, which is what
+                // the user sees as the modal twitching while they read it.
+                // Suppressing background animation is pointless anyway when
+                // the background is covered by an overlay — so the cleanest
+                // fix is simply not to apply it, rather than trying to out-
+                // specify those universal rules for every dialog surface.
+                const modalOpen = body.classList.contains('modal-open');
+                const hadClass = body.classList.contains('bg-refresh') || modalOpen;
                 silentDepth++;
                 if(!hadClass){ body.classList.add('bg-refresh'); void body.offsetHeight; }
                 const prevFlag = window._isBackgroundRefresh;
@@ -8273,8 +8312,32 @@
                 // the old row-DOM-matching this replaced, since a modal isn't
                 // tied to any specific table row's position.
                 if(window._openIncidentModalKey){
-                    const match = rows.find(inc => _incidentStableKey(inc) === window._openIncidentModalKey);
-                    if(match) this.openIncidentDetailModalDirect(match);
+                    // Prefer the LIVE record over the filtered row: `rows` can
+                    // be a stabilised snapshot, so a resolution that just came
+                    // back from the sheet may not be reflected in it yet. The
+                    // change signature has to be computed against the record
+                    // the rest of the app treats as current, or a real update
+                    // is silently judged to be "no change" and the modal never
+                    // refreshes.
+                    const live = (rawData.incidents || []).find(i => _incidentStableKey(i) === window._openIncidentModalKey);
+                    const match = live || rows.find(inc => _incidentStableKey(inc) === window._openIncidentModalKey);
+                    if(match){
+                        // Re-render ONLY when something the modal actually
+                        // shows has changed. This ran unconditionally on every
+                        // 20s poll, so even a completely idle incident had its
+                        // whole modal rebuilt three times a minute — forcing a
+                        // style recalc, replaying the dialog animation and
+                        // waking the overlay observer each time. That repeated
+                        // churn is what read as the modal jittering while
+                        // someone was reading it.
+                        const sig = [match.resolved, match.caseStatus, match.agentVerdict,
+                                     match.agentCategory, match.resolutionNote, match.reviewedAt,
+                                     match.resolvedAt, match.category].join('|');
+                        if(window._openIncidentModalSig !== sig){
+                            window._openIncidentModalSig = sig;
+                            this.openIncidentDetailModalDirect(match);
+                        }
+                    }
                 }
             },
 
@@ -8309,6 +8372,9 @@
 
             openIncidentDetailModalDirect(inc) {
                 window._openIncidentModalKey = _incidentStableKey(inc);
+                window._openIncidentModalSig = [inc.resolved, inc.caseStatus, inc.agentVerdict,
+                                                inc.agentCategory, inc.resolutionNote, inc.reviewedAt,
+                                                inc.resolvedAt, inc.category].join('|');
                 window._selectedIncidentValidity = null; // reset per-incident — don't carry over a selection from a previously-viewed incident
                 if(!inc.reviewedAt) saveIncidentReview(_incidentStableKey(inc));
                 const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
@@ -8456,7 +8522,7 @@ ${(() => {
                 {
                     const pillState = (isClosed && inc.caseStatus === 'not_responding') ? 'notresp' : (isClosed ? 'resolved' : 'open');
                     const pillLabel = pillState === 'notresp' ? 'not responding' : pillState;
-                    document.getElementById('ivm-status').innerHTML = `<span class="inc-status-badge-v2 inc-status-${pillState}">${pillLabel}</span>`;
+                    document.getElementById('ivm-status').uiHTML = `<span class="inc-status-badge-v2 inc-status-${pillState}">${pillLabel}</span>`;
                 }
 
                 // Preserves in-progress state across a rebuild — this
@@ -8495,7 +8561,8 @@ ${(() => {
                         </div>
                     </div>
                 `;
-                document.getElementById('incident-view-modal').style.display = 'flex';
+                const _ivm = document.getElementById('incident-view-modal');
+                if(_ivm.style.display !== 'flex') _ivm.style.display = 'flex';
 
                 if(preservedRemarks){
                     const newRemarksEl = document.getElementById('ivm-remarks');
@@ -8515,6 +8582,7 @@ ${(() => {
 
             closeIncidentDetailModal() {
                 window._openIncidentModalKey = null;
+                window._openIncidentModalSig = null;
                 const modal = document.getElementById('incident-view-modal');
                 if(modal) modal.style.display = 'none';
             },
