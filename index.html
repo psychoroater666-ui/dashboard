@@ -4108,7 +4108,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data sourced from Google Sheets via published CSV. Refreshes on tab open.</span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.0 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4647,6 +4647,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
+        const BUILD_VERSION = 'v2.1.0 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -4709,8 +4710,11 @@
             function open(){
                 return new Promise((res, rej) => {
                     if(!window.indexedDB) return rej(new Error('no-idb'));
-                    const r = indexedDB.open(DB, 1);
-                    r.onupgradeneeded = () => { r.result.createObjectStore(STORE); };
+                    // Same DB as DataFeed -> must open with the same version and
+                    // create both stores, otherwise whichever module opens second
+                    // gets a VersionError and silently stops caching.
+                    const r = indexedDB.open(DB, 2);
+                    r.onupgradeneeded = () => { const db = r.result; if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); if(!db.objectStoreNames.contains('feed')) db.createObjectStore('feed'); };
                     r.onsuccess = () => res(r.result);
                     r.onerror   = () => rej(r.error);
                 });
@@ -7438,6 +7442,7 @@
 
         const app = {
             async init() {
+                console.info('%cCrumble Sentinel build ' + BUILD_VERSION, 'color:#3B5BDB;font-weight:700');
                 const _revealApp = () => document.body.classList.remove('app-loading');
                 setTimeout(_revealApp, 20000);   // safety net: never leave the skeleton stuck
 
@@ -7482,9 +7487,23 @@
                     // now and lift the skeleton, so the page is usable while
                     // the live fetch below is still in flight.
                     let painted = false;
-                    try { await DataFeed.load(); } catch(e){}   // last session's rows -> first sync is a delta, not a full download
+                    let feedReady = false;
+                    try { feedReady = await DataFeed.load(); } catch(e){}   // last session's rows -> first sync is a delta, not a full download
                     try {
-                        const snap = await DataCache.get();
+                        let snap = await DataCache.get();
+                        // No snapshot but the feed has rows (e.g. snapshot save failed):
+                        // map them now so the page still paints before the network.
+                        if(!snap && feedReady && typeof mapSource === 'function'){
+                            try {
+                                const out = { subs:[], incs:[] };
+                                (LIVE.sources||[]).forEach(src => { const rows = DataFeed.rowsFor(src.url); if(rows && rows.length) mapSource(rows, src, out); });
+                                if(out.subs.length){
+                                    rawData.submissions.length = 0; rawData.incidents.length = 0;
+                                    out.subs.forEach(x => rawData.submissions.push(x)); out.incs.forEach(x => rawData.incidents.push(x));
+                                    snap = DataCache.build();
+                                }
+                            } catch(e){ console.warn('feed pre-paint skipped:', e); }
+                        }
                         if(snap){
                             DataCache.hydrate(snap);
                             LIVE_MODE = true;
@@ -14421,6 +14440,7 @@ ${(() => {
                                     <span class="support-icon"><i class="fas fa-comment-dots"></i></span>
                                     <span>Contact Support</span>
                                 </a>
+                                <div style="padding:4px 10px 2px;font-size:0.62rem;color:var(--text-muted);font-family:monospace;">build ${BUILD_VERSION}</div>
                             </div>
                             <!-- Sign out -->
                             <div style="padding:0 6px 6px;border-top:1px solid var(--border-color);margin-top:2px;padding-top:6px;">
