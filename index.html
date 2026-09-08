@@ -4192,7 +4192,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.4 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.5 · 9 Sep 2026 · csv · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4731,7 +4731,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.3.4 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.3.5 · 9 Sep 2026 · csv · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -4860,7 +4860,10 @@
             const AI_POLL_MS = 5 * 60 * 1000;        // AI sheets change once a day
             const FULL_EVERY_MS = 6 * 60 * 60 * 1000; // re-verify history (catches in-place edits)
             const tabs = {};                          // key -> { state, headers, rows:[{}], objRows, changed }
-            let enabled = true, lastAiPoll = 0, lastFull = 0, syncing = null, historyLoading = false;
+            // Feature flag: the authenticated feed is OFF until its data is verified
+            // against the CSVs (set localStorage crumble_feed=on to test it).
+            let enabled = (function(){ try { return localStorage.getItem('crumble_feed') === 'on'; } catch(e){ return false; } })();
+            let lastAiPoll = 0, lastFull = 0, syncing = null, historyLoading = false;
 
             // old CSV url -> tab key
             function urlKey(url){
@@ -4887,11 +4890,18 @@
             // ── persistence (IndexedDB) ──
             function open(){ return new Promise((res, rej) => { if(!window.indexedDB) return rej(new Error('no-idb')); const r = indexedDB.open(DB, 2); r.onupgradeneeded = () => { const db = r.result; if(!db.objectStoreNames.contains('snapshot')) db.createObjectStore('snapshot'); if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
             async function load(){
+                if(!enabled) return false;
                 try {
                     const db = await open();
                     const saved = await new Promise((res, rej) => { const q = db.transaction(STORE,'readonly').objectStore(STORE).get(KEY); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); });
                     if(!saved || saved.v !== VER || !saved.tabs) return false;
-                    for(const k in saved.tabs){ const t = saved.tabs[k]; if(!t || !t.headers) continue; tabs[k] = { state: t.state, headers: t.headers, rows: t.rows || [], objRows: toObjects(t.headers, t.rows || []), changed: true, complete: t.complete !== false }; }
+                    for(const k in saved.tabs){
+                        const t = saved.tabs[k]; if(!t || !t.headers) continue;
+                        const complete = t.complete !== false;
+                        // A half-loaded tab whose resume point wasn't saved can't be continued -- reload it fully.
+                        if(!complete && !(t.before > 1)) continue;
+                        tabs[k] = { state: t.state, headers: t.headers, rows: t.rows || [], objRows: toObjects(t.headers, t.rows || []), changed: true, complete, before: t.before || 0 };
+                    }
                     lastFull = saved.lastFull || 0;
                     return Object.keys(tabs).length > 0;
                 } catch(e){ return false; }
@@ -4907,7 +4917,7 @@
                 try {
                     const db = await open();
                     const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
-                    for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false }; }
+                    for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0 }; }
                     await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                 } catch(e){ /* quota/private mode: fine */ }
             }
@@ -4924,7 +4934,7 @@
                     try {
                         const db = await open();
                         const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
-                        for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false }; }
+                        for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0 }; }
                         await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                     } catch(e){ /* quota/private mode: fine */ }
                 }, 2000);
@@ -4960,7 +4970,9 @@
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
                     const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []);
-                    const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state && tabs[k].complete !== false) state[k] = tabs[k].state; });
+                    // Always send the state we hold -- even mid-history. Omitting it made the
+                    // server treat us as new, resend the newest chunk, and restart history forever.
+                    const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
                     const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
                     for(const k in res.tabs) apply(k, res.tabs[k]);
@@ -5331,7 +5343,7 @@
             clearTimeout(_historyRepaintTimer);
             // Repaint once the whole history is in (or every few chunks), through the same silent path as a poll.
             if(DataFeed.isComplete()){
-                _historyRepaintTimer = setTimeout(() => { loadLive().catch(()=>{}); }, 300);
+                _historyRepaintTimer = setTimeout(() => { loadLive().then(() => { try { UI.silent(() => { applyGlobalFilters(); app.applyFilters(); }); } catch(e){} }).catch(()=>{}); }, 300);
             }
         };
 
@@ -5439,9 +5451,7 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 window.__fromCache = false;
-                // Snapshot writes retired: the DataFeed persists the raw rows and the
-                // boot maps them for the instant paint, so a second full-dataset
-                // clone per poll would only add main-thread stalls.
+                if(!DataFeed.enabled) DataCache.scheduleSave();   // feed off -> snapshot is the instant-paint source
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 // During the 20s background poll the repaint is owned by
                 // _doRefresh (which also knows about open dialogs and
@@ -7644,7 +7654,7 @@
 
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
                     if (!ok && !painted) { generateData(); setLiveBadge(false); }   // fall back to sample data only if nothing real is on screen
-                    if (!painted) initGlobalDates();
+                    initGlobalDates();   // always: the pre-paint may have used a partial dataset
                     _syncBranchOptions();
 
                     // Populate Region + Channel dropdowns from the ACTUAL data so their
