@@ -1684,12 +1684,36 @@
         .login-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
         .login-error {
             display: none; background: #fef2f2;
-            border: 1.5px solid #fecaca; border-radius: 8px;
-            padding: 10px 14px; font-size: 0.78rem; font-weight: 700;
-            color: #dc2626; margin-bottom: 14px;
-            display: flex; align-items: center; gap: 8px;
+            border: 1.5px solid #fecaca; border-radius: 10px;
+            padding: 12px 14px; font-size: 0.8rem; font-weight: 600; line-height: 1.45;
+            color: #b91c1c; margin: 6px 0 16px;
+            align-items: flex-start; gap: 10px;
         }
         .login-error.visible { display: flex; }
+        .login-error i { margin-top: 2px; }
+        /* Sign-in handshake: steps + progress bar */
+        .login-steps { list-style: none; margin: 0 0 22px; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+        .login-step { display: flex; align-items: center; gap: 12px; font-size: 0.86rem; font-weight: 600; color: #94a3b8; transition: color .25s; }
+        .login-step .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff; flex-shrink: 0; transition: all .25s; position: relative; }
+        .login-step[data-state="active"] { color: #0f172a; }
+        .login-step[data-state="active"] .dot { border-color: #3B5BDB; }
+        .login-step[data-state="active"] .dot::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: #3B5BDB; animation: loginPulse 1.1s ease-in-out infinite; }
+        .login-step[data-state="done"] { color: #0f172a; }
+        .login-step[data-state="done"] .dot { background: #059669; border-color: #059669; }
+        .login-step[data-state="done"] .dot::before { content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+        .login-step[data-state="error"] .dot { background: #dc2626; border-color: #dc2626; }
+        .login-step[data-state="error"] .dot::before { content: '\f00d'; font-family: 'Font Awesome 6 Free'; font-weight: 900; }
+        @keyframes loginPulse { 0%,100% { transform: scale(.7); opacity: .6; } 50% { transform: scale(1); opacity: 1; } }
+        .login-progress { height: 4px; border-radius: 4px; background: #eef2ff; overflow: hidden; margin-bottom: 26px; position: relative; }
+        .login-progress::after { content: ''; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; border-radius: 4px; background: linear-gradient(90deg, #010197, #3B5BDB, #64D0FF); animation: loginSlide 1.4s cubic-bezier(.4,0,.2,1) infinite; }
+        @keyframes loginSlide { 0% { left: -40%; } 100% { left: 100%; } }
+        #login-screen.is-error .login-progress { display: none; }
+        #login-screen.is-error .login-steps { display: none; }
+        .login-actions { display: none; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+        #login-screen.is-error .login-actions { display: flex; }
+        .login-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer; text-decoration: none; border: 1.5px solid #e2e8f0; background: #fff; color: #0f172a; font-family: 'Inter', sans-serif; }
+        .login-btn.primary { border: none; background: linear-gradient(135deg, #010197, #3B5BDB); color: #fff; box-shadow: 0 4px 12px rgba(1,1,151,.25); }
+        .login-btn:hover { transform: translateY(-1px); }
         .login-footer {
             text-align: center; font-size: 0.68rem;
             color: #cbd5e1; margin-top: 24px; font-weight: 500;
@@ -3086,13 +3110,26 @@
                  while that happens, or an access-denied dead end if their
                  email isn't provisioned in the Users sheet. -->
             <div class="login-right">
-                <div class="login-welcome">Welcome back</div>
-                <div class="login-title" id="login-status-title">Signing you in</div>
-                <div class="login-sub" id="login-status-sub">Verifying your Cloudflare Access session…</div>
+                <div class="login-welcome" id="login-status-eyebrow">Welcome back</div>
+                <div class="login-title" id="login-status-title">Preparing your dashboard</div>
+                <div class="login-sub" id="login-status-sub" style="margin-bottom:22px;">This only takes a moment.</div>
+
+                <div class="login-progress" aria-hidden="true"></div>
+
+                <ul class="login-steps" id="login-steps">
+                    <li class="login-step" data-step="1" data-state="done"><span class="dot"></span><span>Verified with Cloudflare Access</span></li>
+                    <li class="login-step" data-step="2" data-state="active"><span class="dot"></span><span>Loading your profile &amp; permissions</span></li>
+                    <li class="login-step" data-step="3" data-state=""><span class="dot"></span><span>Connecting to live data</span></li>
+                </ul>
 
                 <div id="login-error" class="login-error">
-                    <i class="fas fa-circle-exclamation" style="font-size:0.82rem;flex-shrink:0;"></i>
+                    <i class="fas fa-circle-exclamation"></i>
                     <span id="login-error-text"></span>
+                </div>
+
+                <div class="login-actions">
+                    <a class="login-btn primary" href="/cdn-cgi/access/logout"><i class="fas fa-right-from-bracket"></i> Sign out &amp; try another account</a>
+                    <a class="login-btn" href="https://wa.me/923392116663" target="_blank" rel="noopener"><i class="fas fa-comment-dots"></i> Contact support</a>
                 </div>
 
                 <div class="login-footer">Protected · Internal access only</div>
@@ -4108,7 +4145,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.1 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.2 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4647,7 +4684,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.1.1 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.1.2 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14802,6 +14839,7 @@ ${(() => {
         }
 
         function authShowApp(user){
+            loginSetStep(3);
             const ls = document.getElementById('login-screen');
             if(ls) ls.classList.remove('visible');
             document.body.classList.add('app-ready');
@@ -14818,13 +14856,24 @@ ${(() => {
          * back to. Signing out of Access and back in as a provisioned
          * account is the only way past this screen.
          */
+        // Sign-in handshake steps: 1 = Cloudflare (always done by the time
+        // this page loads), 2 = profile lookup, 3 = connecting data.
+        function loginSetStep(n, state){
+            document.querySelectorAll('#login-steps .login-step').forEach(li => {
+                const k = Number(li.dataset.step);
+                li.dataset.state = k < n ? 'done' : (k === n ? (state || 'active') : '');
+            });
+        }
         function showAccessDenied(message){
             document.body.classList.add('app-ready');
             const ls = document.getElementById('login-screen');
-            if (ls) ls.classList.add('visible');
+            if (ls) { ls.classList.add('visible'); ls.classList.add('is-error'); }
+            loginSetStep(2, 'error');
+            const eyebrow = document.getElementById('login-status-eyebrow');
+            if (eyebrow) eyebrow.textContent = 'Access';
             const title = document.getElementById('login-status-title');
             const sub   = document.getElementById('login-status-sub');
-            if (title) title.textContent = 'Access unavailable';
+            if (title) title.textContent = 'We can\'t sign you in';
             if (sub)   sub.textContent   = 'Cloudflare recognised you, but this dashboard doesn\'t have an account for you yet.';
             const errText = document.getElementById('login-error-text');
             const errEl   = document.getElementById('login-error');
