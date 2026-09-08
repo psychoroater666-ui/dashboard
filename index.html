@@ -4738,26 +4738,44 @@
             const k = keys.find(key => { const low = key.toLowerCase(); return keywords.every(w => low.includes(w.toLowerCase())); });
             return k !== undefined ? row[k] : '';
         };
+        // ── Change-aware CSV fetch ─────────────────────────────────────────
+        // Every poll used to download AND re-parse ~10 CSVs on the main
+        // thread, then repaint, whether or not a single byte had changed.
+        // That parse is the lag; the repaint is the flicker. Now each URL's
+        // last response is fingerprinted (cheap 32-bit hash of the text):
+        // if the sheet hasn't changed, the previously parsed rows are
+        // returned instantly with no parse, and _fetch.changed(url) reports
+        // false so callers can skip the repaint entirely. A short reuse
+        // window also stops the same sheet being downloaded twice within
+        // one poll (loadLive prefetches, the resolution loader re-asks).
+        const _fetchCache = new Map();   // url -> { hash, rows, at }
+        const _hashText = t => { let h = 2166136261 >>> 0; for(let i=0;i<t.length;i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h + ':' + t.length; };
         const _fetch = url => new Promise(resolve => {
             let done = false;
             const finish = v => { if(!done){ done = true; clearTimeout(to); resolve(v); } };
             const to = setTimeout(() => finish(null), 15000);
+            const prev = _fetchCache.get(url);
+            if(prev && (Date.now() - prev.at) < 4000){ finish(prev.rows); return; }   // same poll, already have it -- keep its changed flag
             try {
                 if (typeof Papa === 'undefined') { finish(null); return; }
                 // Cache-bust every request. Google's Publish-to-Web CSV export
                 // (and the browser's own HTTP cache) can otherwise serve a
                 // slightly stale or inconsistent snapshot on one request that
-                // only "catches up" a request or two later — this is what
-                // caused KPI counts to briefly jump backward then forward
-                // again across separate page refreshes. A unique query
-                // parameter on every fetch forces a genuinely fresh read
-                // every single time instead of a cached one.
+                // only "catches up" a request or two later.
                 const bustUrl = url + (url.indexOf('?') === -1 ? '?' : '&') + '_cb=' + Date.now();
-                Papa.parse(bustUrl, { download:true, header:true, skipEmptyLines:true,
-                    complete:r=>finish(r.data.filter(row=>Object.values(row).some(v=>String(v).trim()!==''))),
-                    error:()=>finish(null) });
+                fetch(bustUrl, { cache:'no-store' }).then(r => r.ok ? r.text() : null).then(text => {
+                    if(text === null){ finish(null); return; }
+                    const hash = _hashText(text);
+                    if(prev && prev.hash === hash){ prev.at = Date.now(); prev.changed = false; finish(prev.rows); return; }
+                    const r = Papa.parse(text, { header:true, skipEmptyLines:true });
+                    const rows = r.data.filter(row=>Object.values(row).some(v=>String(v).trim()!==''));
+                    _fetchCache.set(url, { hash, rows, at: Date.now(), changed: true });
+                    finish(rows);
+                }).catch(() => finish(null));
             } catch(e){ finish(null); }
         });
+        _fetch.changed = url => { const c = _fetchCache.get(url); return !c || c.changed !== false; };
+        _fetch.anyChanged = urls => urls.filter(Boolean).some(u => _fetch.changed(u));
         const _PALETTE = ['#8B5CF6','#10B981','#F59E0B','#3B82F6','#F43F5E','#FBBF24','#06B6D4','#EC4899','#84CC16','#6366F1'];
         // Add any branch/form/channel/complaint found in the data but missing from config
         function _ensure(kind, name){
@@ -4970,11 +4988,21 @@
         async function loadLive(){
             const sources = (LIVE.sources||[]).filter(s=>s.url);
             if(!sources.length) return false;
-            const results = await Promise.all(sources.map(s => _fetch(s.url)));
+            const wasLive = LIVE_MODE;
+            // Prefetch the two side sheets in the same round trip so the
+            // change check below covers them too (a resolution saved on
+            // another device changes Incident_Resolution, not the forms).
+            const sideUrls = [LIVE.incidentResolutionUrl, LIVE.branchStaffUrl].filter(Boolean);
+            const [results] = await Promise.all([
+                Promise.all(sources.map(s => _fetch(s.url))),
+                Promise.all(sideUrls.map(u => _fetch(u)))
+            ]);
             // Every source came back null (timeout or parse failure) = the
             // live feed is unreachable, as opposed to one form's sheet
             // having a genuine hiccup. Feeds the reconnect overlay below.
             if(typeof ConnWatch !== 'undefined') ConnWatch.report(results.some(r => r !== null));
+            const dataChanged = !wasLive || _fetch.anyChanged(sources.map(s => s.url).concat(sideUrls));
+            window.__liveChanged = dataChanged;
             // Fetch the AI Executive Summary + the four AI Insights feeds (independent of form data)
             try {
                 const [sr, ap, bx, rd, ci] = await Promise.all([
@@ -5004,10 +5032,19 @@
                 window.__aiBranchDx = bx || null;
                 window.__aiRadar = rd || null;
                 if(ci && ci[0]){ window.__aiChannelInsight = String(_find(ci[0],'insight')||'').trim(); }
-                if(typeof renderAISuite === 'function') renderAISuite();
-                // Re-render VOC section with AI data now available
-                if(typeof app !== 'undefined' && typeof app.renderVoiceOfCustomer === 'function') app.renderVoiceOfCustomer();
+                // Only rebuild the AI panels when one of the AI sheets
+                // actually changed (they update once a day, not every 20s).
+                const aiChanged = !wasLive || _fetch.anyChanged([LIVE.summaryUrl, LIVE.actionPlanUrl, LIVE.branchDxUrl, LIVE.radarUrl, LIVE.channelInsightUrl]);
+                if(aiChanged){
+                    if(typeof renderAISuite === 'function') renderAISuite();
+                    // Re-render VOC section with AI data now available
+                    if(typeof app !== 'undefined' && typeof app.renderVoiceOfCustomer === 'function') app.renderVoiceOfCustomer();
+                }
             } catch(e){}
+            // Fast path: nothing in any form/resolution sheet changed since
+            // the last poll. Skip the remap and every repaint -- the page
+            // stays exactly as it is, no flicker, no work.
+            if(!dataChanged){ setLiveBadge(true); return true; }
             window.__diag = sources.map((s,i)=> s.form.replace(/\s/g,'')+':'+(results[i]===null?'ERR':results[i].length)).join(' ');
             const out = { subs:[], incs:[] };
             const mapped = results.map((rows, idx) => (rows && rows.length) ? mapSource(rows, sources[idx], out) : (rows===null?'ERR':0));
@@ -5042,7 +5079,12 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
-                if(typeof app !== 'undefined' && app.applyFilters){
+                // During the 20s background poll the repaint is owned by
+                // _doRefresh (which also knows about open dialogs and
+                // hidden tabs). Painting here as well caused every poll to
+                // rebuild the view twice. Direct callers (first load,
+                // manual refresh, reconnect) still get their repaint.
+                if(!window.__pollRepaintDeferred && typeof app !== 'undefined' && app.applyFilters){
                     // Wrapped so a poll landing while someone is reading
                     // halfway down a page can't move them. Falls back to a
                     // plain call if UI isn't defined yet (very first load).
@@ -7275,7 +7317,13 @@
                             const skipRender = document.hidden || _anyModalOpen();
                             if(!skipRender){ document.body.classList.add('bg-refresh'); void document.body.offsetHeight; }
                             try {
-                                if(!await loadLive()){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
+                                window.__pollRepaintDeferred = true;
+                                let ok;
+                                try { ok = await loadLive(); } finally { window.__pollRepaintDeferred = false; }
+                                if(!ok){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
+                                // Nothing changed in any sheet -> nothing to do.
+                                // No remap, no alert check, no repaint.
+                                if(window.__liveChanged === false && !_needsRenderCatchup){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
                                 // Runs unconditionally, even when the render
@@ -13965,8 +14013,7 @@ ${(() => {
         let _sharedProfilePhotos = null;
         function _fetchSharedProfilePhotos(){
             if(!LIVE.slScriptUrl) return;
-            fetch(LIVE.slScriptUrl + '?action=get_profile_photos')
-                .then(r => r.json())
+            apiCall('get_profile_photos')
                 .then(res => {
                     if(res && res.status === 'success' && res.photos){
                         _sharedProfilePhotos = res.photos;
