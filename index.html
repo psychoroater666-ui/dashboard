@@ -13,6 +13,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- FontAwesome Icons -->
+    <link rel="preconnect" href="https://docs.google.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -4693,6 +4695,63 @@
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
         let LIVE_MODE = false;
+
+        // ── Local data snapshot (instant paint on reload) ──────────────────
+        // Every reload used to show a skeleton until ~10 sheets had been
+        // downloaded and parsed. Now the last good dataset is kept in
+        // IndexedDB; on boot the app paints from it immediately, then
+        // loadLive() replaces it with fresh data in the background. Same
+        // idea as the cached Cloudflare session: show what we know, verify
+        // after. Anything that fails here degrades to the old behaviour.
+        const DataCache = (function(){
+            const DB = 'crumble_dashboard', STORE = 'snapshot', KEY = 'latest', VER = 1, MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+            const AI_KEYS = ['__aiSummary','__aiSummaryTime','__vocPraise','__vocComplaints','__vocSuggestions','__vocSentiment','__aiActionPlan','__aiBranchDx','__aiRadar','__aiChannelInsight'];
+            function open(){
+                return new Promise((res, rej) => {
+                    if(!window.indexedDB) return rej(new Error('no-idb'));
+                    const r = indexedDB.open(DB, 1);
+                    r.onupgradeneeded = () => { r.result.createObjectStore(STORE); };
+                    r.onsuccess = () => res(r.result);
+                    r.onerror   = () => rej(r.error);
+                });
+            }
+            async function get(){
+                try {
+                    const db = await open();
+                    const snap = await new Promise((res, rej) => { const q = db.transaction(STORE, 'readonly').objectStore(STORE).get(KEY); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); });
+                    if(!snap || snap.v !== VER || !Array.isArray(snap.subs) || !snap.subs.length) return null;
+                    if(Date.now() - (snap.savedAt || 0) > MAX_AGE_MS) return null;   // too old to be worth showing
+                    return snap;
+                } catch(e){ return null; }
+            }
+            async function set(snap){
+                try {
+                    const db = await open();
+                    await new Promise((res, rej) => { const t = db.transaction(STORE, 'readwrite'); t.objectStore(STORE).put(snap, KEY); t.oncomplete = res; t.onerror = () => rej(t.error); });
+                } catch(e){ /* quota / private mode — fine, next load just takes the slow path */ }
+            }
+            function build(){
+                const ai = {}; AI_KEYS.forEach(k => { ai[k] = window[k]; });
+                return {
+                    v: VER, savedAt: Date.now(),
+                    subs: rawData.submissions, incs: rawData.incidents, branchStaff: rawData.branchStaff,
+                    cfg: { branches: config.branches, forms: config.forms, channels: config.channels, surveyForms: config.surveyForms, complaints: config.complaints },
+                    ai
+                };
+            }
+            function hydrate(snap){
+                rawData.submissions.length = 0; rawData.incidents.length = 0;
+                snap.subs.forEach(x => rawData.submissions.push(x));
+                (snap.incs || []).forEach(x => rawData.incidents.push(x));
+                rawData.branchStaff = snap.branchStaff || {};
+                if(snap.cfg){ ['branches','forms','channels','surveyForms','complaints'].forEach(k => { if(Array.isArray(snap.cfg[k])) config[k] = snap.cfg[k]; }); }
+                if(snap.ai) AI_KEYS.forEach(k => { if(snap.ai[k] !== undefined) window[k] = snap.ai[k]; });
+                window.__fromCache = true;
+            }
+            let timer = null;
+            function scheduleSave(){ clearTimeout(timer); timer = setTimeout(() => set(build()), 1500); }
+            return { get, set, build, hydrate, scheduleSave };
+        })();
         const BUILD = 'v1.67';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
@@ -5078,6 +5137,8 @@
                 }
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
+                window.__fromCache = false;
+                DataCache.scheduleSave();   // fresh data on disk for the next reload
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 // During the 20s background poll the repaint is owned by
                 // _doRefresh (which also knows about open dialogs and
@@ -7229,11 +7290,39 @@
 
                 try {
                     let ok = false;
-                    try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
-                    if (!ok) { generateData(); setLiveBadge(false); }        // fall back to sample data
-                    initGlobalDates();
                     const bSelect = document.getElementById('filter-branch');
-                    config.branches.forEach(b => bSelect.add(new Option(b.name, b.name)));
+                    const _syncBranchOptions = () => {
+                        const have = new Set(Array.from(bSelect.options).map(o => o.value));
+                        config.branches.forEach(b => { if(!have.has(b.name)) bSelect.add(new Option(b.name, b.name)); });
+                    };
+
+                    // ── Instant paint from the last good snapshot ─────────
+                    // If this browser has seen data before, show it right
+                    // now and lift the skeleton, so the page is usable while
+                    // the live fetch below is still in flight.
+                    let painted = false;
+                    try {
+                        const snap = await DataCache.get();
+                        if(snap){
+                            DataCache.hydrate(snap);
+                            LIVE_MODE = true;
+                            initGlobalDates();
+                            _syncBranchOptions();
+                            this.populateRegionChannelFilters();
+                            applyGlobalFilters();
+                            window._isBackgroundRefresh = true;
+                            this.applyFilters();
+                            window._isBackgroundRefresh = false;
+                            if(typeof renderAISuite === 'function') renderAISuite();
+                            _revealApp();
+                            painted = true;
+                        }
+                    } catch(e){ console.warn('snapshot paint skipped:', e); }
+
+                    try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
+                    if (!ok && !painted) { generateData(); setLiveBadge(false); }   // fall back to sample data only if nothing real is on screen
+                    if (!painted) initGlobalDates();
+                    _syncBranchOptions();
 
                     // Populate Region + Channel dropdowns from the ACTUAL data so their
                     // values always match what the sheet produces (no hardcoded mismatch).
