@@ -2983,6 +2983,48 @@
         })();
     </script>
 <style id="fb-styles">
+        /* ═══════════ BRANCH COMPARISON v2 ═══════════ */
+        .bc2 { display:flex; flex-direction:column; gap:14px; }
+        .bc2-head { display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:16px 20px; }
+        .bc2-side { display:flex; align-items:center; gap:12px; min-width:0; }
+        .bc2-side.b { justify-content:flex-end; text-align:right; }
+        .bc2-avatar { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem; color:#fff; flex-shrink:0; letter-spacing:.3px; }
+        .bc2-side.a .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(1,1,151,.25); }
+        .bc2-side.b .bc2-avatar { background:linear-gradient(135deg,#D97706,#F59E0B); box-shadow:0 6px 16px rgba(217,119,6,.25); }
+        .bc2-eyebrow { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
+        .bc2-name { font-size:1.05rem; font-weight:800; color:var(--text-main); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .bc2-region { font-size:0.7rem; color:var(--text-muted); font-weight:600; }
+        .bc2-score { text-align:center; min-width:220px; }
+        .bc2-score .wins { display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; margin-bottom:6px; }
+        .bc2-score .wins .a { color:#3B5BDB; } .bc2-score .wins .b { color:#D97706; }
+        .bc2-scorebar { height:8px; border-radius:8px; background:var(--bg-light); overflow:hidden; display:flex; }
+        .bc2-scorebar span { height:100%; transition:width .5s cubic-bezier(.4,0,.2,1); }
+        .bc2-scorebar .a { background:linear-gradient(90deg,#010197,#3B5BDB); }
+        .bc2-scorebar .b { background:linear-gradient(90deg,#F59E0B,#D97706); margin-left:auto; }
+        .bc2-verdict { margin-top:8px; font-size:0.78rem; font-weight:600; color:var(--text-main); display:flex; align-items:center; justify-content:center; gap:6px; }
+        .bc2-verdict i { color:#F59E0B; }
+        .bc2-group { background:var(--white); border:1px solid var(--border-color); border-radius:14px; overflow:hidden; }
+        .bc2-group-title { padding:10px 20px; font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); background:var(--bg-light); border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:8px; }
+        .bc2-row { display:grid; grid-template-columns:110px 1fr 220px 1fr 110px; align-items:center; gap:10px; padding:11px 20px; border-bottom:1px solid var(--border-color); }
+        .bc2-row:last-child { border-bottom:none; }
+        .bc2-row:hover { background:rgba(1,1,151,.015); }
+        .bc2-val { font-size:0.95rem; font-weight:800; color:var(--text-muted); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+        .bc2-val.win { color:var(--text-main); }
+        .bc2-val.win .crown { color:#F59E0B; font-size:0.62rem; }
+        .bc2-val.right { justify-content:flex-end; }
+        .bc2-bar { height:10px; border-radius:6px; background:var(--bg-light); position:relative; overflow:hidden; }
+        .bc2-bar span { position:absolute; top:0; bottom:0; border-radius:6px; transition:width .5s cubic-bezier(.4,0,.2,1); }
+        .bc2-bar.a span { right:0; background:linear-gradient(90deg,rgba(59,91,219,.55),#3B5BDB); }
+        .bc2-bar.b span { left:0;  background:linear-gradient(90deg,#F59E0B,rgba(245,158,11,.55)); }
+        .bc2-bar.lose span { opacity:.35; }
+        .bc2-mid { text-align:center; min-width:0; }
+        .bc2-metric { font-size:0.74rem; font-weight:700; color:var(--text-main); }
+        .bc2-delta { font-size:0.64rem; font-weight:700; color:var(--text-muted); margin-top:2px; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; background:var(--bg-light); }
+        .bc2-delta.a { color:#3B5BDB; background:rgba(59,91,219,.08); } .bc2-delta.b { color:#D97706; background:rgba(245,158,11,.1); }
+        .bc2-note { font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+        @media (max-width:900px){ .bc2-row { grid-template-columns:80px 1fr 150px 1fr 80px; padding:10px 12px; } .bc2-head { grid-template-columns:1fr; } .bc2-side.b { justify-content:flex-start; text-align:left; } .bc2-score { min-width:0; } }
+        body.dark-theme .bc2-row:hover { background:rgba(255,255,255,.02); }
+
         /* ═══════════ MULTI-SELECT (branch picker) ═══════════ */
         .ms-wrap { position: relative; }
         .ms-wrap.ms-single { display: contents; }   /* button sits exactly where the <select> was */
@@ -4192,7 +4234,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.5 · 9 Sep 2026 · csv · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.4.0 · 9 Sep 2026 · csv · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4731,7 +4773,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.3.5 · 9 Sep 2026 · csv · data-api';
+        const BUILD_VERSION = 'v2.4.0 · 9 Sep 2026 · csv · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10539,6 +10581,12 @@ ${(() => {
             { key: 'totalVolumeScore',label: 'Total Volume',         fmt: v => v.toLocaleString(),    lowerBetter: false },
         ];
 
+        // Display grouping for the comparison view (keys must exist in COMP_METRICS)
+        const COMP_GROUPS = [
+            { title:'Volume',     icon:'fa-layer-group',      keys:['submissions','dineinSubs','deliverySubs','callSubs','totalVolumeScore'] },
+            { title:'Quality',    icon:'fa-triangle-exclamation', keys:['incidents','incidentRate','complaintRate','dineinIncs','deliveryIncs','callIncs'] },
+            { title:'Experience', icon:'fa-face-smile',        keys:['smileScore','posFeedback','custSatisfaction','resolutionRate'] }
+        ];
         function getBranchMetrics(branchName, startDate, endDate) {
             // Same fix as Compare's Timeline filterDs and Overview's filter —
             // was comparing item.date (bare "YYYY-MM-DD") via new Date(),
@@ -10805,33 +10853,12 @@ ${(() => {
                 const mA = getBranchMetrics(bA, startDate, endDate);
                 const mB = getBranchMetrics(bB, startDate, endDate);
 
-                // Build row HTML
-                let flatRows = '';
+                const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const initials = n => String(n||'').split(/\s+/).map(w => w[0]).join('').slice(0,3).toUpperCase();
+                const regionOf = n => (config.branches.find(b => b.name === n) || {}).region || (typeof _regionFor === 'function' ? _regionFor(n) : '');
+                const byKey = Object.fromEntries(COMP_METRICS.map(m => [m.key, m]));
 
-                COMP_METRICS.forEach(m => {
-                    const vA = mA[m.key] ?? 0, vB = mB[m.key] ?? 0;
-                    const aBetter = m.lowerBetter ? vA <= vB : vA >= vB;
-                    const equal = Math.abs(vA - vB) < 0.001;
-                    const clsA = equal ? '' : (aBetter ? 'best' : 'worst');
-                    const clsB = equal ? '' : (aBetter ? 'worst' : 'best');
-                    const iconA = equal ? '' : (aBetter ? '<i class="fas fa-crown" style="font-size:0.6rem;color:#F59E0B;margin-left:4px;"></i>' : '');
-                    const iconB = equal ? '' : (aBetter ? '' : '<i class="fas fa-crown" style="font-size:0.6rem;color:#F59E0B;margin-left:4px;"></i>');
-
-                    flatRows += `
-                        <div class="bcomp-cell bcomp-a">
-                            <span class="branch-comp-metric">${m.label}</span>
-                            <span class="branch-comp-val ${clsA}">${m.fmt(vA)} ${iconA}</span>
-                        </div>
-                        <div class="bcomp-cell bcomp-mid">
-                            <span class="vs-label">${m.lowerBetter ? '↓ lower' : '↑ higher'}</span>
-                        </div>
-                        <div class="bcomp-cell bcomp-b">
-                            <span class="branch-comp-val ${clsB}">${m.fmt(vB)} ${iconB}</span>
-                            <span class="branch-comp-metric">${m.label}</span>
-                        </div>`;
-                });
-
-                // Count wins
+                // wins
                 let winsA = 0, winsB = 0;
                 COMP_METRICS.forEach(m => {
                     const vA = mA[m.key]??0, vB = mB[m.key]??0;
@@ -10839,46 +10866,61 @@ ${(() => {
                     const aBetter = m.lowerBetter ? vA < vB : vA > vB;
                     if (aBetter) winsA++; else winsB++;
                 });
+                const totalWins = winsA + winsB || 1;
+                const verdict = winsA > winsB ? `<b style="color:#3B5BDB">${esc(bA)}</b> leads on ${winsA} of ${winsA+winsB} metrics`
+                              : winsB > winsA ? `<b style="color:#D97706">${esc(bB)}</b> leads on ${winsB} of ${winsA+winsB} metrics`
+                              : 'Evenly matched';
 
-                const overallWinner = winsA > winsB ? `<span style="color:var(--accent-blue);font-weight:800;">${bA}</span> leads overall (${winsA} vs ${winsB} metrics)`
-                    : winsB > winsA ? `<span style="color:var(--status-warn);font-weight:800;">${bB}</span> leads overall (${winsB} vs ${winsA} metrics)`
-                    : 'Both branches are evenly matched';
+                const deltaText = (m, vA, vB) => {
+                    const d = Math.abs(vA - vB);
+                    if (d < 0.001) return 'Tie';
+                    const f = m.fmt(d);
+                    return (m.key.endsWith('Rate') || /%$/.test(m.fmt(0))) ? f.replace('%', ' pts') : f;
+                };
+
+                const groupsHtml = COMP_GROUPS.map(g => {
+                    const rows = g.keys.map(k => byKey[k]).filter(Boolean).map(m => {
+                        const vA = mA[m.key] ?? 0, vB = mB[m.key] ?? 0;
+                        const equal = Math.abs(vA - vB) < 0.001;
+                        const aWin = !equal && (m.lowerBetter ? vA < vB : vA > vB);
+                        const bWin = !equal && !aWin;
+                        const max = Math.max(vA, vB) || 1;
+                        const wA = Math.max(4, Math.round(vA / max * 100)), wB = Math.max(4, Math.round(vB / max * 100));
+                        const crown = '<i class="fas fa-crown crown"></i>';
+                        return `<div class="bc2-row">
+                            <div class="bc2-val ${aWin?'win':''}">${aWin ? crown : ''}${m.fmt(vA)}</div>
+                            <div class="bc2-bar a ${bWin?'lose':''}"><span style="width:${wA}%"></span></div>
+                            <div class="bc2-mid">
+                                <div class="bc2-metric">${esc(m.label)}</div>
+                                <div class="bc2-delta ${aWin?'a':(bWin?'b':'')}">${equal ? '<i class="fas fa-equals"></i> Tie' : `<i class="fas fa-arrow-${aWin?'left':'right'}"></i> ${esc(deltaText(m, vA, vB))} ${m.lowerBetter ? 'fewer' : 'more'}`}</div>
+                            </div>
+                            <div class="bc2-bar b ${aWin?'lose':''}"><span style="width:${wB}%"></span></div>
+                            <div class="bc2-val right ${bWin?'win':''}">${m.fmt(vB)}${bWin ? crown : ''}</div>
+                        </div>`;
+                    }).join('');
+                    if(!rows) return '';
+                    return `<div class="bc2-group"><div class="bc2-group-title"><i class="fas ${g.icon}"></i> ${esc(g.title)}</div>${rows}</div>`;
+                }).join('');
 
                 out.uiHTML = `
-                    <div style="background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(245,158,11,.02));border:1.5px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                        <span style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#F59E0B,#FBBF24);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(245,158,11,.3);">
-                            <i class="fas fa-trophy" style="color:#fff;font-size:0.9rem;"></i>
-                        </span>
-                        <div>
-                            <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px;">Verdict</div>
-                            <div style="font-size:0.88rem;color:var(--text-main);font-weight:600;">${overallWinner}</div>
-                        </div>
-                        <span style="margin-left:auto;font-size:0.68rem;color:var(--text-muted);display:flex;align-items:center;gap:5px;white-space:nowrap;">
-                            <i class="fas fa-crown" style="color:#F59E0B;font-size:0.65rem;"></i> = winner metric
-                        </span>
-                    </div>
-
-                    <div class="bcomp-grid">
-                        <!-- Header row -->
-                        <div class="bcomp-cell bcomp-a bcomp-header-cell" style="background:rgba(37,99,235,.04);border-bottom:1px solid rgba(37,99,235,.15);">
-                            <div>
-                                <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-blue);margin-bottom:3px;">Branch A</div>
-                                <span class="branch-comp-name">${bA}</span>
+                    <div class="bc2">
+                        <div class="bc2-head">
+                            <div class="bc2-side a">
+                                <div class="bc2-avatar">${esc(initials(bA))}</div>
+                                <div style="min-width:0;"><div class="bc2-eyebrow">Branch A</div><div class="bc2-name">${esc(bA)}</div><div class="bc2-region">${esc(regionOf(bA))}</div></div>
                             </div>
-                            <span class="branch-comp-badge" style="background:rgba(37,99,235,.1);color:var(--accent-blue);border:1px solid rgba(37,99,235,.2);">${winsA} wins</span>
-                        </div>
-                        <div class="bcomp-cell bcomp-mid bcomp-header-cell" style="border-bottom:1px solid var(--border-color);">
-                            <div class="vs-circle">VS</div>
-                        </div>
-                        <div class="bcomp-cell bcomp-b bcomp-header-cell" style="background:rgba(245,158,11,.04);border-bottom:1px solid rgba(245,158,11,.15);">
-                            <span class="branch-comp-badge" style="background:rgba(245,158,11,.1);color:var(--status-warn);border:1px solid rgba(245,158,11,.2);">${winsB} wins</span>
-                            <div style="text-align:right;">
-                                <div style="font-size:0.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--status-warn);margin-bottom:3px;">Branch B</div>
-                                <span class="branch-comp-name">${bB}</span>
+                            <div class="bc2-score">
+                                <div class="wins"><span class="a">${winsA} wins</span><span class="b">${winsB} wins</span></div>
+                                <div class="bc2-scorebar"><span class="a" style="width:${Math.round(winsA/totalWins*100)}%"></span><span class="b" style="width:${Math.round(winsB/totalWins*100)}%"></span></div>
+                                <div class="bc2-verdict"><i class="fas fa-trophy"></i> ${verdict}</div>
+                            </div>
+                            <div class="bc2-side b">
+                                <div style="min-width:0;"><div class="bc2-eyebrow">Branch B</div><div class="bc2-name">${esc(bB)}</div><div class="bc2-region">${esc(regionOf(bB))}</div></div>
+                                <div class="bc2-avatar">${esc(initials(bB))}</div>
                             </div>
                         </div>
-                        <!-- Metric rows — all aligned automatically by CSS Grid -->
-                        ${flatRows}
+                        ${groupsHtml}
+                        <div class="bc2-note" style="text-align:center;padding:4px 0 2px;"><i class="fas fa-crown" style="color:#F59E0B;"></i> better on that metric · bar length = value relative to the other branch · muted bar = trailing</div>
                     </div>
                 `;
             }
