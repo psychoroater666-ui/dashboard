@@ -3009,7 +3009,13 @@
         .ms-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 8px 3px 10px; border-radius:20px; background:rgba(1,1,151,.07); color:#010197; font-size:0.7rem; font-weight:700; }
         .ms-chip button { border:none; background:none; color:inherit; cursor:pointer; padding:0; font-size:0.7rem; line-height:1; opacity:.7; }
         .ms-chip button:hover { opacity:1; }
-
+        .ms-single .ms-btn { padding-right:34px; }
+        .ms-opt .tick { width:16px; display:flex; align-items:center; justify-content:center; font-size:0.62rem; color:#010197; opacity:0; flex-shrink:0; }
+        .ms-opt.on .tick { opacity:1; }
+        .ms-single .ms-opt.on { background:rgba(1,1,151,.06); color:#010197; }
+        .ms-opt.dis { opacity:.45; pointer-events:none; }
+        .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
+        .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
         /* ═══════════ FORM BUILDER ═══════════ */
         .fb-wrap { display:grid; grid-template-columns: minmax(0,1fr) 380px; gap:20px; align-items:start; }
         @media (max-width: 1180px){ .fb-wrap { grid-template-columns: 1fr; } .fb-preview-col { display:none; } }
@@ -4172,7 +4178,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.2.1 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.0 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4542,7 +4548,7 @@
                         </div>
                         <div>
                             <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Branch</div>
-                            <select id="export-branch-select" class="select-input" style="width:100%;" onchange="submissionsFilterChanged()">
+                            <select id="export-branch-select" class="select-input" data-ms="multi" style="width:100%;" onchange="submissionsFilterChanged()">
                                 <option value="">All Branches</option>
                             </select>
                         </div>
@@ -4711,7 +4717,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.2.1 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.3.0 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14877,6 +14883,7 @@ ${(() => {
 
         function authShowApp(user){
             loginSetStep(3);
+            try { if(typeof MultiSelect !== 'undefined') MultiSelect.watch(); } catch(e){ console.warn('select enhance skipped:', e); }
             const ls = document.getElementById('login-screen');
             if(ls) ls.classList.remove('visible');
             document.body.classList.add('app-ready');
@@ -15411,35 +15418,56 @@ ${(() => {
             function attach(selectId, opts){
                 const sel = document.getElementById(selectId);
                 if(!sel || instances[selectId]) return instances[selectId];
-                opts = Object.assign({ allLabel:'All Branches', noun:'branch', nounPlural:'branches', meta:null, onChange:null, chips:true }, opts || {});
-                sel.multiple = true; sel.style.display = 'none';
+                opts = Object.assign({ single:false, allLabel:'All Branches', noun:'option', nounPlural:'options', meta:null, onChange:null, chips:true, searchFrom:8 }, opts || {});
+                const single = !!opts.single;
+                if(!single) sel.multiple = true;
+                sel.style.display = 'none';
+                sel.dataset.msAttached = '1';
 
-                const wrap = document.createElement('div'); wrap.className = 'ms-wrap';
+                const wrap = document.createElement('div'); wrap.className = 'ms-wrap' + (single ? ' ms-single' : '');
+                // Match the original control's footprint so layouts don't shift.
+                if(sel.style.width) wrap.style.width = sel.style.width;
+                if(sel.style.minWidth) wrap.style.minWidth = sel.style.minWidth;
+                if(sel.style.maxWidth) wrap.style.maxWidth = sel.style.maxWidth;
                 wrap.innerHTML = `
                     <button type="button" class="select-input ms-btn"><span class="ms-label">${esc(opts.allLabel)}</span><span class="ms-count" style="display:none;"></span></button>
                     <div class="ms-panel">
                         <div class="ms-search-wrap"><i class="fas fa-magnifying-glass"></i><input class="ms-search" type="text" placeholder="Search ${esc(opts.nounPlural)}…"></div>
-                        <div class="ms-tools"><button type="button" data-act="all">Select all</button><button type="button" data-act="none">Clear</button></div>
+                        ${single ? '' : '<div class="ms-tools"><button type="button" data-act="all">Select all</button><button type="button" data-act="none">Clear</button></div>'}
                         <div class="ms-list"></div>
                     </div>
-                    ${opts.chips ? '<div class="ms-chips"></div>' : ''}`;
+                    ${(!single && opts.chips) ? '<div class="ms-chips"></div>' : ''}`;
                 sel.parentNode.insertBefore(wrap, sel.nextSibling);
+                // Carry over font-size / padding tweaks the original had inline.
+                const btn0 = wrap.querySelector('.ms-btn');
+                ['fontSize','padding','borderRadius','height','minWidth'].forEach(k => { if(sel.style[k]) btn0.style[k] = sel.style[k]; });
+                if(sel.style.padding) btn0.style.paddingRight = '34px';
+                btn0.disabled = sel.disabled;
 
                 const btn = wrap.querySelector('.ms-btn'), panel = wrap.querySelector('.ms-panel'), list = wrap.querySelector('.ms-list'),
                       search = wrap.querySelector('.ms-search'), chips = wrap.querySelector('.ms-chips'), label = wrap.querySelector('.ms-label'), count = wrap.querySelector('.ms-count');
                 const inst = { sel, wrap, opts, open:false };
                 instances[selectId] = inst;
 
-                const options = () => Array.from(sel.options).filter(o => o.value !== '');
+                const options = () => single ? Array.from(sel.options) : Array.from(sel.options).filter(o => o.value !== '');
                 const selected = () => options().filter(o => o.selected).map(o => o.value);
+                const searchWrap = panel.querySelector('.ms-search-wrap');
 
                 function renderList(){
                     const q = search.value.trim().toLowerCase();
                     const opt = options().filter(o => !q || o.text.toLowerCase().includes(q));
                     if(!opt.length){ list.innerHTML = `<div class="ms-empty">No ${esc(opts.nounPlural)} match "${esc(search.value)}"</div>`; return; }
-                    list.innerHTML = opt.map(o => `<div class="ms-opt ${o.selected ? 'on' : ''}" data-v="${esc(o.value)}"><span class="box"><i class="fas fa-check"></i></span><span>${esc(o.text)}</span>${opts.meta ? `<span class="region">${esc(opts.meta(o.value) || '')}</span>` : ''}</div>`).join('');
+                    const all = options();
+                    list.innerHTML = opt.map(o => `<div class="ms-opt ${o.selected ? 'on' : ''} ${o.disabled ? 'dis' : ''}" data-i="${all.indexOf(o)}">${single ? '<span class="tick"><i class="fas fa-check"></i></span>' : '<span class="box"><i class="fas fa-check"></i></span>'}<span>${esc(o.text)}</span>${opts.meta ? `<span class="region">${esc(opts.meta(o.value) || '')}</span>` : ''}</div>`).join('');
                 }
                 function renderSummary(){
+                    btn.disabled = sel.disabled;
+                    if(single){
+                        const o = sel.options[sel.selectedIndex] || sel.options[0];
+                        label.textContent = o ? o.text : '';
+                        count.style.display = 'none';
+                        return;
+                    }
                     const v = selected();
                     if(!v.length){ label.textContent = opts.allLabel; count.style.display = 'none'; }
                     else if(v.length === 1){ label.textContent = v[0]; count.style.display = 'none'; }
@@ -15459,7 +15487,19 @@ ${(() => {
                     if(below < 320 && r.top > below){ panel.style.top = ''; panel.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
                     else { panel.style.bottom = ''; panel.style.top = (r.bottom + 6) + 'px'; }
                 }
-                function setOpen(o){ inst.open = o; if(o){ place(); search.value=''; renderList(); } panel.classList.toggle('open', o); if(o) setTimeout(() => search.focus(), 30); }
+                function setOpen(o){
+                    inst.open = o;
+                    if(o){
+                        // Only one open at a time.
+                        Object.values(instances).forEach(i => { if(i !== inst && i.open) i.close(); });
+                        searchWrap.style.display = (options().length >= opts.searchFrom) ? '' : 'none';
+                        place(); search.value=''; renderList();
+                    }
+                    panel.classList.toggle('open', o);
+                    if(o && searchWrap.style.display !== 'none') setTimeout(() => search.focus(), 30);
+                    if(o){ const cur = list.querySelector('.ms-opt.on'); if(cur) cur.scrollIntoView && cur.scrollIntoView({ block:'nearest' }); }
+                }
+                inst.close = () => setOpen(false);
                 window.addEventListener('resize', () => { if(inst.open) place(); });
                 window.addEventListener('scroll', () => { if(inst.open) place(); }, true);
 
@@ -15468,10 +15508,12 @@ ${(() => {
                 search.addEventListener('input', renderList);
                 list.addEventListener('click', e => {
                     const row = e.target.closest('.ms-opt'); if(!row) return;
-                    const o = options().find(x => x.value === row.dataset.v); if(!o) return;
+                    const idx = Number(row.dataset.i);
+                    const o = options()[idx]; if(!o) return;
+                    if(single){ if(sel.selectedIndex !== o.index){ sel.selectedIndex = o.index; fire(); } else renderSummary(); setOpen(false); return; }
                     o.selected = !o.selected; fire();
                 });
-                panel.querySelector('.ms-tools').addEventListener('click', e => {
+                if(!single) panel.querySelector('.ms-tools').addEventListener('click', e => {
                     const act = e.target.closest('button')?.dataset.act; if(!act) return;
                     const q = search.value.trim().toLowerCase();
                     // Select all = the visible (searched) rows; Clear = everything.
@@ -15483,6 +15525,17 @@ ${(() => {
                 document.addEventListener('keydown', e => { if(e.key === 'Escape' && inst.open) setOpen(false); });
 
                 inst.refresh = () => { renderSummary(); if(inst.open) renderList(); };
+
+                // Keep in step with code that rewrites options or sets .value directly.
+                new MutationObserver(() => inst.refresh()).observe(sel, { childList:true, subtree:true, attributes:true, attributeFilter:['disabled','selected'] });
+                const vDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+                const iDesc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
+                try {
+                    Object.defineProperty(sel, 'value', { configurable:true, get(){ return vDesc.get.call(sel); }, set(v){ vDesc.set.call(sel, v); inst.refresh(); } });
+                    Object.defineProperty(sel, 'selectedIndex', { configurable:true, get(){ return iDesc.get.call(sel); }, set(v){ iDesc.set.call(sel, v); inst.refresh(); } });
+                } catch(e){}
+                sel.addEventListener('change', () => inst.refresh());
+
                 renderSummary();
                 return inst;
             }
@@ -15492,7 +15545,27 @@ ${(() => {
             }
             function refresh(selectId){ const i = instances[selectId]; if(i) i.refresh(); }
             function clear(selectId){ const sel = document.getElementById(selectId); if(!sel) return; Array.from(sel.options).forEach(o => o.selected = false); refresh(selectId); }
-            return { attach, values, refresh, clear };
+
+            // ── auto-enhance every <select> in the app (single mode) ──
+            // Skips selects marked data-native (keep the browser control) or
+            // data-ms="multi" (attached explicitly with multi options).
+            let autoId = 0;
+            function enhance(sel){
+                if(!(sel instanceof HTMLSelectElement) || sel.dataset.msAttached || sel.dataset.native !== undefined || sel.dataset.ms === 'multi' || sel.multiple) return;
+                if(!sel.id) sel.id = 'ms-auto-' + (++autoId);
+                attach(sel.id, { single:true, nounPlural:'options' });
+            }
+            function enhanceAll(root){ (root || document).querySelectorAll('select').forEach(enhance); }
+            function watch(){
+                enhanceAll(document);
+                new MutationObserver(muts => {
+                    for(const m of muts) for(const n of m.addedNodes){
+                        if(n.nodeType !== 1) continue;
+                        if(n.tagName === 'SELECT') enhance(n); else if(n.querySelectorAll) n.querySelectorAll('select').forEach(enhance);
+                    }
+                }).observe(document.body, { childList:true, subtree:true });
+            }
+            return { attach, values, refresh, clear, enhance, enhanceAll, watch };
         })();
 
         const FB = (function(){
