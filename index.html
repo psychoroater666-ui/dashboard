@@ -2983,6 +2983,33 @@
         })();
     </script>
 <style id="fb-styles">
+        /* ═══════════ MULTI-SELECT (branch picker) ═══════════ */
+        .ms-wrap { position: relative; width: 100%; }
+        .ms-btn { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; cursor:pointer; }
+        .ms-btn .ms-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .ms-btn .ms-count { font-size:0.66rem; font-weight:800; padding:2px 7px; border-radius:20px; background:rgba(1,1,151,.08); color:#010197; }
+        .ms-panel { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:max(100%, 260px); background:var(--white); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.14); z-index:5000; padding:10px; display:none; }
+        .ms-panel.open { display:block; animation: iaPopIn .16s ease-out; }
+        .ms-search { width:100%; padding:8px 10px 8px 30px; border:1.5px solid var(--border-color); border-radius:9px; font-family:'Inter',sans-serif; font-size:0.8rem; color:var(--text-main); background:var(--white); outline:none; box-sizing:border-box; }
+        .ms-search:focus { border-color:#3B5BDB; }
+        .ms-search-wrap { position:relative; margin-bottom:8px; }
+        .ms-search-wrap i { position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:0.72rem; color:var(--text-muted); }
+        .ms-tools { display:flex; justify-content:space-between; align-items:center; padding:0 2px 8px; font-size:0.7rem; font-weight:700; }
+        .ms-tools button { border:none; background:none; color:#3B5BDB; cursor:pointer; font-weight:700; font-size:0.7rem; padding:2px 4px; font-family:'Inter',sans-serif; }
+        .ms-tools button:hover { text-decoration:underline; }
+        .ms-list { max-height:260px; overflow-y:auto; margin:0 -4px; padding:0 4px; }
+        .ms-opt { display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:8px; font-size:0.82rem; font-weight:600; color:var(--text-main); cursor:pointer; user-select:none; }
+        .ms-opt:hover { background:var(--bg-light); }
+        .ms-opt.on { background:rgba(1,1,151,.06); }
+        .ms-opt .box { width:16px; height:16px; border-radius:5px; border:1.5px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#fff; flex-shrink:0; transition:.12s; }
+        .ms-opt.on .box { background:#010197; border-color:#010197; }
+        .ms-opt .region { margin-left:auto; font-size:0.64rem; color:var(--text-muted); font-weight:600; }
+        .ms-empty { padding:14px; text-align:center; font-size:0.78rem; color:var(--text-muted); }
+        .ms-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+        .ms-chip { display:inline-flex; align-items:center; gap:6px; padding:3px 8px 3px 10px; border-radius:20px; background:rgba(1,1,151,.07); color:#010197; font-size:0.7rem; font-weight:700; }
+        .ms-chip button { border:none; background:none; color:inherit; cursor:pointer; padding:0; font-size:0.7rem; line-height:1; opacity:.7; }
+        .ms-chip button:hover { opacity:1; }
+
         /* ═══════════ FORM BUILDER ═══════════ */
         .fb-wrap { display:grid; grid-template-columns: minmax(0,1fr) 380px; gap:20px; align-items:start; }
         @media (max-width: 1180px){ .fb-wrap { grid-template-columns: 1fr; } .fb-preview-col { display:none; } }
@@ -4145,7 +4172,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.2 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.2.0 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4684,7 +4711,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.1.2 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.2.0 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5999,21 +6026,21 @@
 
         function exportFiltered() {
             const dataset  = document.getElementById('export-dataset-select')?.value || 'submissions';
-            const branch   = document.getElementById('export-branch-select')?.value || '';
+            const branches = _subsBranches();
             const form     = document.getElementById('export-form-select')?.value || '';
             const validity = document.getElementById('export-validity-select')?.value || '';
             const orderSrc     = document.getElementById('submissions-order-source-select')?.value || '';
             const complaintSrc = document.getElementById('submissions-complaint-source-select')?.value || '';
 
             let items = (dataset === 'incidents') ? state.p1.incs : state.p1.subs;
-            if(branch) items = items.filter(x => x.branch === branch);
+            if(branches.length) items = items.filter(x => branches.includes(x.branch));
             if(form) items = items.filter(x => (x.surveyForm || x.form) === form);
             if(dataset === 'incidents' && validity) items = items.filter(x => (x.caseStatus || 'verified') === validity);
             if(orderSrc)     items = items.filter(x => _rawFieldContains(x._raw,'order','source').trim().toLowerCase() === orderSrc);
             if(complaintSrc) items = items.filter(x => _rawFieldContains(x._raw,'source','complaint').trim().toLowerCase() === complaintSrc);
 
             const nameParts = [dataset === 'incidents' ? 'Incidents' : 'Submissions'];
-            if(branch) nameParts.push(branch.replace(/\s+/g,'_'));
+            if(branches.length) nameParts.push(branches.length === 1 ? branches[0].replace(/\s+/g,'_') : branches.length + 'branches');
             if(form) nameParts.push(form.replace(/\s+/g,'_'));
             if(validity) nameParts.push(validity);
             if(orderSrc) nameParts.push(orderSrc.replace(/\s+/g,'_'));
@@ -6113,6 +6140,9 @@
         // never touched them, so the on-screen table kept showing everyone.
         // This actually applies them to what's displayed, live, the moment
         // either one changes — no separate "apply" step needed.
+        // Selected branches on the Submissions page ([] = all). Backed by the
+        // hidden multi-select; the visible control is a MultiSelect widget.
+        function _subsBranches(){ return (typeof MultiSelect !== 'undefined') ? MultiSelect.values('export-branch-select') : (document.getElementById('export-branch-select')?.value ? [document.getElementById('export-branch-select').value] : []); }
         function submissionsFilterChanged() {
             _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
@@ -9545,11 +9575,11 @@ ${(() => {
                         // Branch/Form filters live right above this table (in the
                         // export panel) — applying them here too, not just at
                         // export time, so picking one actually changes what's shown.
-                        const filterBranch = document.getElementById('export-branch-select')?.value || '';
+                        const filterBranches = _subsBranches();
                         const filterForm   = document.getElementById('export-form-select')?.value || '';
                         const filterOrderSrc = document.getElementById('submissions-order-source-select')?.value || '';
                         const filterComplaintSrc = document.getElementById('submissions-complaint-source-select')?.value || '';
-                        if(filterBranch) sorted = sorted.filter(s => s.branch === filterBranch);
+                        if(filterBranches.length) sorted = sorted.filter(s => filterBranches.includes(s.branch));
                         if(filterForm)   sorted = sorted.filter(s => (s.surveyForm||s.form) === filterForm);
                         // Compared case-insensitively — Harley and this
                         // dashboard's own Create Submission form have used
@@ -9672,8 +9702,15 @@ ${(() => {
                     if(view === 'submissions'){
                         exportCard.style.display = '';
                         const branchSel = document.getElementById('export-branch-select');
-                        if(branchSel && branchSel.options.length <= 1){
-                            config.branches.forEach(b => branchSel.add(new Option(b.name, b.name)));
+                        if(branchSel){
+                            const have = new Set(Array.from(branchSel.options).map(o => o.value));
+                            config.branches.forEach(b => { if(!have.has(b.name)) branchSel.add(new Option(b.name, b.name)); });
+                            if(typeof MultiSelect !== 'undefined'){
+                                MultiSelect.attach('export-branch-select', { allLabel:'All Branches', noun:'branch', nounPlural:'branches',
+                                    meta: name => (config.branches.find(b => b.name === name) || {}).region || '',
+                                    onChange: () => submissionsFilterChanged() });
+                                MultiSelect.refresh('export-branch-select');
+                            }
                         }
                     } else {
                         exportCard.style.display = 'none';
@@ -15358,6 +15395,92 @@ ${(() => {
         // the same Cloudflare-authenticated backend as everything else
         // (get_forms / save_form in Code.gs).
         // ═══════════════════════════════════════════════════════════════════
+
+        // ═══════════════════════════════════════════════════════════════════
+        // MultiSelect — turns a plain <select> into a searchable multi-picker
+        // (button + dropdown with checkboxes, Select all / Clear, chips).
+        // The original <select> stays in the DOM (hidden, multiple=true) as
+        // the source of truth, so anything that reads its options/selection
+        // keeps working. MultiSelect.values(id) returns the chosen values
+        // ([] = everything).
+        // ═══════════════════════════════════════════════════════════════════
+        const MultiSelect = (function(){
+            const instances = {};
+            const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+            function attach(selectId, opts){
+                const sel = document.getElementById(selectId);
+                if(!sel || instances[selectId]) return instances[selectId];
+                opts = Object.assign({ allLabel:'All Branches', noun:'branch', nounPlural:'branches', meta:null, onChange:null, chips:true }, opts || {});
+                sel.multiple = true; sel.style.display = 'none';
+
+                const wrap = document.createElement('div'); wrap.className = 'ms-wrap';
+                wrap.innerHTML = `
+                    <button type="button" class="select-input ms-btn"><span class="ms-label">${esc(opts.allLabel)}</span><span class="ms-count" style="display:none;"></span><i class="fas fa-chevron-down" style="font-size:0.66rem;color:var(--text-muted);"></i></button>
+                    <div class="ms-panel">
+                        <div class="ms-search-wrap"><i class="fas fa-magnifying-glass"></i><input class="ms-search" type="text" placeholder="Search ${esc(opts.nounPlural)}…"></div>
+                        <div class="ms-tools"><button type="button" data-act="all">Select all</button><button type="button" data-act="none">Clear</button></div>
+                        <div class="ms-list"></div>
+                    </div>
+                    ${opts.chips ? '<div class="ms-chips"></div>' : ''}`;
+                sel.parentNode.insertBefore(wrap, sel.nextSibling);
+
+                const btn = wrap.querySelector('.ms-btn'), panel = wrap.querySelector('.ms-panel'), list = wrap.querySelector('.ms-list'),
+                      search = wrap.querySelector('.ms-search'), chips = wrap.querySelector('.ms-chips'), label = wrap.querySelector('.ms-label'), count = wrap.querySelector('.ms-count');
+                const inst = { sel, wrap, opts, open:false };
+                instances[selectId] = inst;
+
+                const options = () => Array.from(sel.options).filter(o => o.value !== '');
+                const selected = () => options().filter(o => o.selected).map(o => o.value);
+
+                function renderList(){
+                    const q = search.value.trim().toLowerCase();
+                    const opt = options().filter(o => !q || o.text.toLowerCase().includes(q));
+                    if(!opt.length){ list.innerHTML = `<div class="ms-empty">No ${esc(opts.nounPlural)} match "${esc(search.value)}"</div>`; return; }
+                    list.innerHTML = opt.map(o => `<div class="ms-opt ${o.selected ? 'on' : ''}" data-v="${esc(o.value)}"><span class="box"><i class="fas fa-check"></i></span><span>${esc(o.text)}</span>${opts.meta ? `<span class="region">${esc(opts.meta(o.value) || '')}</span>` : ''}</div>`).join('');
+                }
+                function renderSummary(){
+                    const v = selected();
+                    if(!v.length){ label.textContent = opts.allLabel; count.style.display = 'none'; }
+                    else if(v.length === 1){ label.textContent = v[0]; count.style.display = 'none'; }
+                    else { label.textContent = `${v.length} ${opts.nounPlural} selected`; count.style.display = ''; count.textContent = v.length; }
+                    if(chips) chips.innerHTML = v.length > 1 ? v.map(x => `<span class="ms-chip">${esc(x)}<button type="button" title="Remove" data-remove="${esc(x)}"><i class="fas fa-xmark"></i></button></span>`).join('') : '';
+                }
+                function fire(){ renderSummary(); renderList(); if(typeof opts.onChange === 'function') opts.onChange(selected()); else sel.dispatchEvent(new Event('change', { bubbles:true })); }
+                function setOpen(o){ inst.open = o; panel.classList.toggle('open', o); if(o){ search.value=''; renderList(); setTimeout(() => search.focus(), 30); } }
+
+                btn.addEventListener('click', e => { e.stopPropagation(); setOpen(!inst.open); });
+                panel.addEventListener('click', e => e.stopPropagation());
+                search.addEventListener('input', renderList);
+                list.addEventListener('click', e => {
+                    const row = e.target.closest('.ms-opt'); if(!row) return;
+                    const o = options().find(x => x.value === row.dataset.v); if(!o) return;
+                    o.selected = !o.selected; fire();
+                });
+                wrap.querySelector('.ms-tools').addEventListener('click', e => {
+                    const act = e.target.closest('button')?.dataset.act; if(!act) return;
+                    const q = search.value.trim().toLowerCase();
+                    // Select all = the visible (searched) rows; Clear = everything.
+                    options().forEach(o => { if(act === 'none') o.selected = false; else if(!q || o.text.toLowerCase().includes(q)) o.selected = true; });
+                    fire();
+                });
+                if(chips) chips.addEventListener('click', e => { const b = e.target.closest('[data-remove]'); if(!b) return; const o = options().find(x => x.value === b.dataset.remove); if(o){ o.selected = false; fire(); } });
+                document.addEventListener('click', () => { if(inst.open) setOpen(false); });
+                document.addEventListener('keydown', e => { if(e.key === 'Escape' && inst.open) setOpen(false); });
+
+                inst.refresh = () => { renderSummary(); if(inst.open) renderList(); };
+                renderSummary();
+                return inst;
+            }
+            function values(selectId){
+                const sel = document.getElementById(selectId); if(!sel) return [];
+                return Array.from(sel.options).filter(o => o.selected && o.value !== '').map(o => o.value);
+            }
+            function refresh(selectId){ const i = instances[selectId]; if(i) i.refresh(); }
+            function clear(selectId){ const sel = document.getElementById(selectId); if(!sel) return; Array.from(sel.options).forEach(o => o.selected = false); refresh(selectId); }
+            return { attach, values, refresh, clear };
+        })();
+
         const FB = (function(){
             const PUBLIC_FORM_ORIGIN = 'https://feedback.crumblesentinel.com';
             const TYPES = {
