@@ -2985,10 +2985,10 @@
 <style id="fb-styles">
         /* ═══════════ MULTI-SELECT (branch picker) ═══════════ */
         .ms-wrap { position: relative; width: 100%; }
-        .ms-btn { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; cursor:pointer; }
+        .ms-btn { width:100%; display:flex; align-items:center; justify-content:flex-start; gap:8px; text-align:left; cursor:pointer; padding-right:34px !important; }
         .ms-btn .ms-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ms-btn .ms-count { font-size:0.66rem; font-weight:800; padding:2px 7px; border-radius:20px; background:rgba(1,1,151,.08); color:#010197; }
-        .ms-panel { position:absolute; top:calc(100% + 6px); left:0; min-width:100%; width:max(100%, 260px); background:var(--white); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.14); z-index:5000; padding:10px; display:none; }
+        .ms-panel { position:fixed; z-index:200001; min-width:280px; background:var(--white); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.14); z-index:5000; padding:10px; display:none; }
         .ms-panel.open { display:block; animation: iaPopIn .16s ease-out; }
         .ms-search { width:100%; padding:8px 10px 8px 30px; border:1.5px solid var(--border-color); border-radius:9px; font-family:'Inter',sans-serif; font-size:0.8rem; color:var(--text-main); background:var(--white); outline:none; box-sizing:border-box; }
         .ms-search:focus { border-color:#3B5BDB; }
@@ -4172,7 +4172,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.2.0 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.2.1 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4711,7 +4711,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.2.0 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.2.1 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15416,7 +15416,7 @@ ${(() => {
 
                 const wrap = document.createElement('div'); wrap.className = 'ms-wrap';
                 wrap.innerHTML = `
-                    <button type="button" class="select-input ms-btn"><span class="ms-label">${esc(opts.allLabel)}</span><span class="ms-count" style="display:none;"></span><i class="fas fa-chevron-down" style="font-size:0.66rem;color:var(--text-muted);"></i></button>
+                    <button type="button" class="select-input ms-btn"><span class="ms-label">${esc(opts.allLabel)}</span><span class="ms-count" style="display:none;"></span></button>
                     <div class="ms-panel">
                         <div class="ms-search-wrap"><i class="fas fa-magnifying-glass"></i><input class="ms-search" type="text" placeholder="Search ${esc(opts.nounPlural)}…"></div>
                         <div class="ms-tools"><button type="button" data-act="all">Select all</button><button type="button" data-act="none">Clear</button></div>
@@ -15447,7 +15447,21 @@ ${(() => {
                     if(chips) chips.innerHTML = v.length > 1 ? v.map(x => `<span class="ms-chip">${esc(x)}<button type="button" title="Remove" data-remove="${esc(x)}"><i class="fas fa-xmark"></i></button></span>`).join('') : '';
                 }
                 function fire(){ renderSummary(); renderList(); if(typeof opts.onChange === 'function') opts.onChange(selected()); else sel.dispatchEvent(new Event('change', { bubbles:true })); }
-                function setOpen(o){ inst.open = o; panel.classList.toggle('open', o); if(o){ search.value=''; renderList(); setTimeout(() => search.focus(), 30); } }
+                // The panel lives on <body> (position:fixed) so a parent card's
+                // overflow:hidden can never clip it; it's placed under the button on open.
+                document.body.appendChild(panel);
+                function place(){
+                    const r = btn.getBoundingClientRect();
+                    const w = Math.max(r.width, 280);
+                    let left = r.left; if(left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w);
+                    panel.style.left = left + 'px'; panel.style.width = w + 'px';
+                    const below = window.innerHeight - r.bottom;
+                    if(below < 320 && r.top > below){ panel.style.top = ''; panel.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
+                    else { panel.style.bottom = ''; panel.style.top = (r.bottom + 6) + 'px'; }
+                }
+                function setOpen(o){ inst.open = o; if(o){ place(); search.value=''; renderList(); } panel.classList.toggle('open', o); if(o) setTimeout(() => search.focus(), 30); }
+                window.addEventListener('resize', () => { if(inst.open) place(); });
+                window.addEventListener('scroll', () => { if(inst.open) place(); }, true);
 
                 btn.addEventListener('click', e => { e.stopPropagation(); setOpen(!inst.open); });
                 panel.addEventListener('click', e => e.stopPropagation());
@@ -15457,7 +15471,7 @@ ${(() => {
                     const o = options().find(x => x.value === row.dataset.v); if(!o) return;
                     o.selected = !o.selected; fire();
                 });
-                wrap.querySelector('.ms-tools').addEventListener('click', e => {
+                panel.querySelector('.ms-tools').addEventListener('click', e => {
                     const act = e.target.closest('button')?.dataset.act; if(!act) return;
                     const q = search.value.trim().toLowerCase();
                     // Select all = the visible (searched) rows; Clear = everything.
