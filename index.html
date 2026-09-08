@@ -4775,7 +4775,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.5.0 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.5.2 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -4986,12 +4986,16 @@
 
             // ── apply one tab's server result ──
             function apply(key, res){
-                if(!res || res.mode === 'missing'){ if(!tabs[key]) tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true, missing:true }; else tabs[key].changed = false; return; }
+                // `changed` is a DIRTY flag: set when rows arrive, cleared only by
+                // markConsumed() after the dashboard has mapped them. An "unchanged"
+                // poll must never clear it -- that hid freshly loaded history and,
+                // when the first mapping failed, left the page empty forever.
+                if(!res || res.mode === 'missing'){ if(!tabs[key]) tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true, missing:true }; return; }
                 const t = tabs[key] || (tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true });
-                if(res.mode === 'unchanged'){ t.changed = false; if(res.state) t.state = res.state; return; }
+                if(res.mode === 'unchanged'){ if(res.state) t.state = res.state; return; }
                 if(res.mode === 'delta'){
                     t.headers = res.headers || t.headers; t.state = res.state;
-                    if(res.rows && res.rows.length){ t.rows = t.rows.concat(res.rows); t.objRows = t.objRows.concat(toObjects(t.headers, res.rows)); t.changed = true; } else t.changed = false;
+                    if(res.rows && res.rows.length){ t.rows = t.rows.concat(res.rows); t.objRows = t.objRows.concat(toObjects(t.headers, res.rows)); t.changed = true; }
                     return;
                 }
                 if(res.mode === 'full'){
@@ -5020,7 +5024,6 @@
                     const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
                     for(const k in res.tabs) apply(k, res.tabs[k]);
-                    keys.forEach(k => { if(!res.tabs[k] && tabs[k]) tabs[k].changed = false; });
                     if(wantAi) lastAiPoll = now;
                     if(forceFull || !lastFull) lastFull = now;
                     window.__dataScope = res.scope || null;
@@ -5049,16 +5052,23 @@
                         }
                     }
                 } catch(e){ console.warn('history load paused:', e); }
-                finally { historyLoading = false; }
+                finally {
+                    historyLoading = false;
+                    // History just finished: persist the complete set right away so a
+                    // reload paints everything instead of a partial copy.
+                    if(isComplete()){ dirty = true; saveNow(); }
+                }
             }
 
             function rowsFor(url){ const k = urlKey(url); return k && tabs[k] ? tabs[k].objRows : null; }
             function has(url){ const k = urlKey(url); return !!(k && tabs[k] && !tabs[k].missing); }
-            function changed(url){ const k = urlKey(url); return !(k && tabs[k]) || tabs[k].changed !== false; }
+            function changed(url){ const k = urlKey(url); return !(k && tabs[k]) || tabs[k].changed === true; }
+            function anyDirty(){ return Object.keys(tabs).some(k => tabs[k].changed === true); }
+            function markConsumed(){ Object.keys(tabs).forEach(k => { tabs[k].changed = false; }); }
             function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
@@ -5125,6 +5135,7 @@
             const to = setTimeout(() => finish(null), 15000);
             // Authenticated feed first: same rows, no public download.
             if(typeof DataFeed !== 'undefined' && DataFeed.enabled && window.__feedOk !== false && DataFeed.has(url)){ finish(DataFeed.rowsFor(url)); return; }
+            if(window.__offlineLoad){ finish(null); return; }   // boot paint from disk: no network
             const prev = _fetchCache.get(url);
             if(prev && (Date.now() - prev.at) < 4000){ finish(prev.rows); return; }   // same poll, already have it -- keep its changed flag
             try {
@@ -5391,14 +5402,19 @@
             }
         };
 
-        async function loadLive(){
+        // opts.offline: map whatever the feed already holds (from disk) with no
+        // network hop -- used for the instant paint at boot through the exact
+        // same code path as a normal load, instead of a separate pre-paint.
+        async function loadLive(opts){
+            opts = opts || {};
             const sources = (LIVE.sources||[]).filter(s=>s.url);
             if(!sources.length) return false;
             const wasLive = LIVE_MODE;
+            window.__offlineLoad = !!opts.offline;
             // One authenticated round trip fetches/updates every tab; the
             // _fetch calls below then answer from memory. If it fails, they
             // fall back to the CSV download so the page never goes dark.
-            if(DataFeed.enabled){
+            if(DataFeed.enabled && !opts.offline){
                 try { await DataFeed.sync({ full: !!window.__forceFullNext }); window.__feedOk = true; window.__feedErr = null; }
                 catch(e){ window.__feedOk = false; window.__feedErr = String(e && e.message || e); console.error('[DataFeed] sync failed - falling back to CSV this round:', e); }
                 _feedErrorPill();
@@ -5417,7 +5433,11 @@
             // live feed is unreachable, as opposed to one form's sheet
             // having a genuine hiccup. Feeds the reconnect overlay below.
             if(typeof ConnWatch !== 'undefined') ConnWatch.report(results.some(r => r !== null));
-            const dataChanged = !wasLive || _fetch.anyChanged(sources.map(s => s.url).concat(sideUrls));
+            // Remap when: first live load, any feed tab has unconsumed rows, any CSV
+            // changed, or nothing has ever been mapped (a failed earlier map must
+            // never be able to park the dashboard on "unchanged" forever).
+            const nothingMapped = !rawData.submissions.length && !rawData.incidents.length;
+            const dataChanged = !wasLive || nothingMapped || (DataFeed.enabled && DataFeed.anyDirty()) || _fetch.anyChanged(sources.map(s => s.url).concat(sideUrls));
             window.__liveChanged = dataChanged;
             // Fetch the AI Executive Summary + the four AI Insights feeds (independent of form data)
             try {
@@ -5495,6 +5515,8 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 window.__fromCache = false;
+                if(DataFeed.enabled) DataFeed.markConsumed();
+                window.__offlineLoad = false;
                 // (snapshot writes retired -- the feed's own persistence covers instant paint)
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 // During the 20s background poll the repaint is owned by
@@ -7665,36 +7687,25 @@
                     let painted = false;
                     let feedReady = false;
                     try { feedReady = await DataFeed.load(); } catch(e){}   // last session's rows -> first sync is a delta, not a full download
-                    try {
-                        let snap = feedReady ? null : await DataCache.get();
-                        // Feed rows on disk: map them now so the page paints before the
-                        // network. (Legacy snapshot only used if no feed exists yet.)
-                        if(!snap && feedReady && typeof mapSource === 'function'){
-                            try {
-                                const out = { subs:[], incs:[] };
-                                (LIVE.sources||[]).forEach(src => { const rows = DataFeed.rowsFor(src.url); if(rows && rows.length) mapSource(rows, src, out); });
-                                if(out.subs.length){
-                                    rawData.submissions.length = 0; rawData.incidents.length = 0;
-                                    out.subs.forEach(x => rawData.submissions.push(x)); out.incs.forEach(x => rawData.incidents.push(x));
-                                    snap = DataCache.build();
-                                }
-                            } catch(e){ console.warn('feed pre-paint skipped:', e); }
-                        }
-                        if(snap){
-                            DataCache.hydrate(snap);
-                            LIVE_MODE = true;
-                            initGlobalDates();
-                            _syncBranchOptions();
-                            this.populateRegionChannelFilters();
-                            applyGlobalFilters();
-                            window._isBackgroundRefresh = true;
-                            this.applyFilters();
-                            window._isBackgroundRefresh = false;
-                            if(typeof renderAISuite === 'function') renderAISuite();
-                            _revealApp();
-                            painted = true;
-                        }
-                    } catch(e){ console.warn('snapshot paint skipped:', e); }
+                    if(feedReady){
+                        // Instant paint: same loader, same mapper, no network. Anything
+                        // that fails here just means we wait for the live load instead.
+                        try {
+                            if(await loadLive({ offline:true })){
+                                initGlobalDates();
+                                _syncBranchOptions();
+                                this.populateRegionChannelFilters();
+                                applyGlobalFilters();
+                                window._isBackgroundRefresh = true;
+                                this.applyFilters();
+                                window._isBackgroundRefresh = false;
+                                if(typeof renderAISuite === 'function') renderAISuite();
+                                _revealApp();
+                                painted = true;
+                            }
+                        } catch(e){ console.warn('instant paint skipped:', e); }
+                    }
+                    window.__offlineLoad = false;
 
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
                     if (!ok && !painted) { generateData(); setLiveBadge(false); }   // fall back to sample data only if nothing real is on screen
