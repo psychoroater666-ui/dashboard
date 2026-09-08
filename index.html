@@ -4648,7 +4648,7 @@
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
         const LIVE = {
-            refreshMs: 20000,
+            refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
             // Same-origin, behind Cloudflare Access. The Worker at /api/* forwards
             // to Apps Script with the visitor's verified identity attached.
@@ -4752,6 +4752,150 @@
             function scheduleSave(){ clearTimeout(timer); timer = setTimeout(() => set(build()), 1500); }
             return { get, set, build, hydrate, scheduleSave };
         })();
+
+        // ── DataFeed: authenticated, incremental data layer ────────────────
+        // Replaces the published-to-web CSV downloads. One POST to the
+        // backend (get_data, behind Cloudflare Access + the Users sheet)
+        // returns every tab the dashboard reads. Form tabs come as deltas
+        // ("rows after the N you already have"), so a poll where nothing
+        // changed is ~1 KB. Full history is pulled once per browser, newest
+        // chunk first so the page paints in seconds, and kept in IndexedDB
+        // so the next reload starts from a delta instead of from zero.
+        //
+        // Consumers keep calling _fetch(url) exactly as before: when the
+        // feed is on, _fetch maps the old CSV url to its tab and answers
+        // from memory. If the backend can't be reached, _fetch falls back
+        // to the CSV download, so nothing goes dark during the cutover.
+        const DataFeed = (function(){
+            const DB = 'crumble_dashboard', STORE = 'feed', KEY = 'tabs', VER = 1;
+            const AI_TABS = ['summary','actionplan','branchdx','radar','channelinsight'];
+            const AI_POLL_MS = 5 * 60 * 1000;        // AI sheets change once a day
+            const FULL_EVERY_MS = 6 * 60 * 60 * 1000; // re-verify history (catches in-place edits)
+            const tabs = {};                          // key -> { state, headers, rows:[{}], objRows, changed }
+            let enabled = true, lastAiPoll = 0, lastFull = 0, syncing = null, historyLoading = false;
+
+            // old CSV url -> tab key
+            function urlKey(url){
+                if(!url) return null;
+                const src = (LIVE.sources||[]).find(s => s.url === url);
+                if(src){ const f = String(src.form).toLowerCase(); if(f.includes('dine')) return 'feedback'; if(f.includes('deliver')) return 'delivery'; if(f.includes('call')) return 'callcenter'; }
+                const map = { slSheetUrl:'social', slResolutionUrl:'sl_resolution', incidentResolutionUrl:'incident_resolution', branchStaffUrl:'branch_staff',
+                              summaryUrl:'summary', actionPlanUrl:'actionplan', branchDxUrl:'branchdx', radarUrl:'radar', channelInsightUrl:'channelinsight' };
+                for(const k in map){ if(LIVE[k] && LIVE[k] === url) return map[k]; }
+                return null;
+            }
+
+            function toObjects(headers, rows){
+                const out = new Array(rows.length);
+                for(let i = 0; i < rows.length; i++){
+                    const r = rows[i], o = {};
+                    let any = false;
+                    for(let c = 0; c < headers.length; c++){ const v = r[c] == null ? '' : String(r[c]); if(v.trim() !== '') any = true; o[headers[c]] = v; }
+                    out[i] = any ? o : null;
+                }
+                return out.filter(Boolean);
+            }
+
+            // ── persistence (IndexedDB) ──
+            function open(){ return new Promise((res, rej) => { if(!window.indexedDB) return rej(new Error('no-idb')); const r = indexedDB.open(DB, 2); r.onupgradeneeded = () => { const db = r.result; if(!db.objectStoreNames.contains('snapshot')) db.createObjectStore('snapshot'); if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+            async function load(){
+                try {
+                    const db = await open();
+                    const saved = await new Promise((res, rej) => { const q = db.transaction(STORE,'readonly').objectStore(STORE).get(KEY); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); });
+                    if(!saved || saved.v !== VER || !saved.tabs) return false;
+                    for(const k in saved.tabs){ const t = saved.tabs[k]; if(!t || !t.headers) continue; tabs[k] = { state: t.state, headers: t.headers, rows: t.rows || [], objRows: toObjects(t.headers, t.rows || []), changed: true, complete: t.complete !== false }; }
+                    lastFull = saved.lastFull || 0;
+                    return Object.keys(tabs).length > 0;
+                } catch(e){ return false; }
+            }
+            let saveTimer = null;
+            function scheduleSave(){
+                clearTimeout(saveTimer);
+                saveTimer = setTimeout(async () => {
+                    try {
+                        const db = await open();
+                        const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
+                        for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false }; }
+                        await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+                    } catch(e){ /* quota/private mode: fine */ }
+                }, 2000);
+            }
+
+            // ── apply one tab's server result ──
+            function apply(key, res){
+                if(!res || res.mode === 'missing'){ if(!tabs[key]) tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true, missing:true }; else tabs[key].changed = false; return; }
+                const t = tabs[key] || (tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true });
+                if(res.mode === 'unchanged'){ t.changed = false; if(res.state) t.state = res.state; return; }
+                if(res.mode === 'delta'){
+                    t.headers = res.headers || t.headers; t.state = res.state;
+                    if(res.rows && res.rows.length){ t.rows = t.rows.concat(res.rows); t.objRows = t.objRows.concat(toObjects(t.headers, res.rows)); t.changed = true; } else t.changed = false;
+                    return;
+                }
+                if(res.mode === 'full'){
+                    t.headers = res.headers || [];
+                    if(res.state) t.state = res.state;                      // first chunk carries the state to keep
+                    if(res.state){ t.rows = res.rows || []; }               // first chunk: replace
+                    else { t.rows = (res.rows || []).concat(t.rows); }      // continuation: older rows go in front
+                    t.objRows = toObjects(t.headers, t.rows);
+                    t.changed = true;
+                    t.complete = !res.partial;
+                    t.before = res.partial ? res.before : 0;
+                }
+            }
+
+            // ── one sync round ──
+            async function sync(opts){
+                if(syncing) return syncing;          // never overlap two syncs
+                syncing = (async () => {
+                    const now = Date.now();
+                    const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
+                    const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []);
+                    const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state && tabs[k].complete !== false) state[k] = tabs[k].state; });
+                    const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
+                    if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
+                    for(const k in res.tabs) apply(k, res.tabs[k]);
+                    keys.forEach(k => { if(!res.tabs[k] && tabs[k]) tabs[k].changed = false; });
+                    if(wantAi) lastAiPoll = now;
+                    if(forceFull || !lastFull) lastFull = now;
+                    window.__dataScope = res.scope || null;
+                    scheduleSave();
+                    loadHistory();                     // continue any partial tabs in the background
+                    return true;
+                })();
+                try { return await syncing; } finally { syncing = null; }
+            }
+
+            // ── background: walk older chunks of any partial tab, newest→oldest ──
+            async function loadHistory(){
+                if(historyLoading) return;
+                const pending = Object.keys(tabs).filter(k => tabs[k].complete === false && tabs[k].before > 1);
+                if(!pending.length) return;
+                historyLoading = true;
+                try {
+                    for(const key of pending){
+                        let guard = 0;
+                        while(tabs[key].complete === false && tabs[key].before > 1 && guard++ < 40){
+                            const res = await apiCall('get_data', { tabs:[key], chunk: { [key]: { before: tabs[key].before } } });
+                            if(!res || res.status !== 'success' || !res.tabs || !res.tabs[key]) break;
+                            apply(key, res.tabs[key]);
+                            scheduleSave();
+                            if(typeof window.__onHistoryChunk === 'function') window.__onHistoryChunk(key, tabs[key]);
+                        }
+                    }
+                } catch(e){ console.warn('history load paused:', e); }
+                finally { historyLoading = false; }
+            }
+
+            function rowsFor(url){ const k = urlKey(url); return k && tabs[k] ? tabs[k].objRows : null; }
+            function has(url){ const k = urlKey(url); return !!(k && tabs[k] && !tabs[k].missing); }
+            function changed(url){ const k = urlKey(url); return !(k && tabs[k]) || tabs[k].changed !== false; }
+            function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
+            function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
+
+            return { sync, load, rowsFor, has, changed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs };
+        })();
+
         const BUILD = 'v1.67';
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
@@ -4813,6 +4957,8 @@
             let done = false;
             const finish = v => { if(!done){ done = true; clearTimeout(to); resolve(v); } };
             const to = setTimeout(() => finish(null), 15000);
+            // Authenticated feed first: same rows, no public download.
+            if(typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.has(url)){ finish(DataFeed.rowsFor(url)); return; }
             const prev = _fetchCache.get(url);
             if(prev && (Date.now() - prev.at) < 4000){ finish(prev.rows); return; }   // same poll, already have it -- keep its changed flag
             try {
@@ -4833,7 +4979,7 @@
                 }).catch(() => finish(null));
             } catch(e){ finish(null); }
         });
-        _fetch.changed = url => { const c = _fetchCache.get(url); return !c || c.changed !== false; };
+        _fetch.changed = url => { if(typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.has(url)) return DataFeed.changed(url); const c = _fetchCache.get(url); return !c || c.changed !== false; };
         _fetch.anyChanged = urls => urls.filter(Boolean).some(u => _fetch.changed(u));
         const _PALETTE = ['#8B5CF6','#10B981','#F59E0B','#3B82F6','#F43F5E','#FBBF24','#06B6D4','#EC4899','#84CC16','#6366F1'];
         // Add any branch/form/channel/complaint found in the data but missing from config
@@ -5044,10 +5190,44 @@
                 el.classList.add('active');
             })();
         }
+        // Small status pill while older history is still streaming in on
+        // a first-ever load; KPIs covering long ranges are partial until it
+        // finishes. Removed automatically when every tab is complete.
+        function _historyPill(){
+            const st = DataFeed.status();
+            let el = document.getElementById('history-pill');
+            if(st.complete){ if(el) el.remove(); return; }
+            if(!el){
+                el = document.createElement('div'); el.id = 'history-pill';
+                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:var(--white);border:1px solid var(--border-color);border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:var(--text-main);box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;';
+                document.body.appendChild(el);
+            }
+            const n = Object.values(st.rows).reduce((a,b)=>a+b,0);
+            el.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#3B5BDB;"></i> Loading full history\u2026 ' + n.toLocaleString() + ' rows';
+        }
+        let _historyRepaintTimer = null;
+        window.__onHistoryChunk = function(){
+            _historyPill();
+            clearTimeout(_historyRepaintTimer);
+            // Repaint once the whole history is in (or every few chunks), through the same silent path as a poll.
+            if(DataFeed.isComplete()){
+                _historyRepaintTimer = setTimeout(() => { loadLive().catch(()=>{}); }, 300);
+            }
+        };
+
         async function loadLive(){
             const sources = (LIVE.sources||[]).filter(s=>s.url);
             if(!sources.length) return false;
             const wasLive = LIVE_MODE;
+            // One authenticated round trip fetches/updates every tab; the
+            // _fetch calls below then answer from memory. If it fails, they
+            // fall back to the CSV download so the page never goes dark.
+            if(DataFeed.enabled){
+                try { await DataFeed.sync({ full: !!window.__forceFullNext }); window.__feedOk = true; }
+                catch(e){ window.__feedOk = false; console.warn('DataFeed sync failed - using CSV fallback:', e); }
+                window.__forceFullNext = false;
+            }
+            _historyPill();
             // Prefetch the two side sheets in the same round trip so the
             // change check below covers them too (a resolution saved on
             // another device changes Incident_Resolution, not the forms).
@@ -5986,6 +6166,7 @@
         function submissionsManualRefresh() {
             const btn = document.getElementById('submissions-refresh-btn');
             if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Refreshing…'; }
+            window.__forceFullNext = true;   // manual refresh = re-verify history, not just append
             loadLive().then(() => {
                 UI.silent(() => { applyGlobalFilters(); app.applyFilters(); });
             }).finally(() => {
@@ -7301,6 +7482,7 @@
                     // now and lift the skeleton, so the page is usable while
                     // the live fetch below is still in flight.
                     let painted = false;
+                    try { await DataFeed.load(); } catch(e){}   // last session's rows -> first sync is a delta, not a full download
                     try {
                         const snap = await DataCache.get();
                         if(snap){
