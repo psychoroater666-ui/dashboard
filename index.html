@@ -3070,6 +3070,8 @@
         .ms-opt.on .tick { opacity:1; }
         .ms-single .ms-opt.on { background:rgba(1,1,151,.06); color:#010197; }
         .ms-opt.dis { opacity:.45; pointer-events:none; }
+        .ms-opt.hl { outline:2px solid rgba(59,91,219,.45); outline-offset:-2px; }
+        .ms-btn:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
         .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
         /* ═══════════ FORM BUILDER ═══════════ */
@@ -4773,7 +4775,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.4.2 · 9 Sep 2026 · csv · data-api';
+        const BUILD_VERSION = 'v2.5.0 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -4902,9 +4904,9 @@
             const AI_POLL_MS = 5 * 60 * 1000;        // AI sheets change once a day
             const FULL_EVERY_MS = 6 * 60 * 60 * 1000; // re-verify history (catches in-place edits)
             const tabs = {};                          // key -> { state, headers, rows:[{}], objRows, changed }
-            // Feature flag: the authenticated feed is OFF until its data is verified
-            // against the CSVs (set localStorage crumble_feed=on to test it).
-            let enabled = (function(){ try { return localStorage.getItem('crumble_feed') === 'on'; } catch(e){ return false; } })();
+            // The authenticated feed is the primary data source. It is always on;
+            // the CSV path is only ever a per-round fallback when a sync fails.
+            let enabled = true;
             let lastAiPoll = 0, lastFull = 0, syncing = null, historyLoading = false;
 
             // old CSV url -> tab key
@@ -5374,7 +5376,7 @@
             if(window.__feedOk !== false){ if(el) el.remove(); return; }
             if(!el){
                 el = document.createElement('div'); el.id = 'feed-error-pill';
-                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
+                el.style.cssText = 'position:fixed;left:16px;bottom:62px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
                 document.body.appendChild(el);
             }
             el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Live feed error — showing fallback data. <span style="font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(window.__feedErr || '').replace(/</g,'&lt;').slice(0,160) + '</span>';
@@ -5493,7 +5495,7 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 window.__fromCache = false;
-                if(!DataFeed.enabled) DataCache.scheduleSave();   // feed off -> snapshot is the instant-paint source
+                // (snapshot writes retired -- the feed's own persistence covers instant paint)
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 // During the 20s background poll the repaint is owned by
                 // _doRefresh (which also knows about open dialogs and
@@ -15625,6 +15627,22 @@ ${(() => {
                     fire();
                 });
                 if(chips) chips.addEventListener('click', e => { const b = e.target.closest('[data-remove]'); if(!b) return; const o = options().find(x => x.value === b.dataset.remove); if(o){ o.selected = false; fire(); } });
+
+                // Keyboard: arrows move, Enter picks, Escape closes; Enter never submits a surrounding form.
+                let hl = -1;
+                const visibleOpts = () => Array.from(list.querySelectorAll('.ms-opt:not(.dis)'));
+                const setHl = i => { const o = visibleOpts(); if(!o.length) return; hl = (i + o.length) % o.length; o.forEach((el, k) => el.classList.toggle('hl', k === hl)); o[hl].scrollIntoView && o[hl].scrollIntoView({ block:'nearest' }); };
+                const onKey = e => {
+                    if(!inst.open){ if(e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' '){ e.preventDefault(); setOpen(true); setHl(Math.max(0, visibleOpts().findIndex(x => x.classList.contains('on')))); } return; }
+                    if(e.key === 'ArrowDown'){ e.preventDefault(); setHl(hl + 1); }
+                    else if(e.key === 'ArrowUp'){ e.preventDefault(); setHl(hl - 1); }
+                    else if(e.key === 'Enter'){ e.preventDefault(); const o = visibleOpts(); const target = o[hl] || o[0]; if(target) target.dispatchEvent(new MouseEvent('click', { bubbles:true })); }
+                    else if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); setOpen(false); btn.focus(); }
+                    else if(e.key === 'Tab'){ setOpen(false); }
+                };
+                btn.addEventListener('keydown', onKey);
+                panel.addEventListener('keydown', onKey);
+                search.addEventListener('input', () => { hl = -1; });
                 document.addEventListener('pointerdown', () => { if(inst.open) setOpen(false); });
                 document.addEventListener('keydown', e => { if(e.key === 'Escape' && inst.open) setOpen(false); });
 
