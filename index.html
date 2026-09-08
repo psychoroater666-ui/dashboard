@@ -4108,7 +4108,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.0 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.1.1 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4647,7 +4647,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.1.0 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.1.1 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14626,19 +14626,51 @@ ${(() => {
             document.getElementById('users-modal').style.display = 'none';
         }
 
+        // Users list: cached + prefetched so the modal never opens empty.
+        // Apps Script takes 2-4s to answer get_users; that wait used to be a
+        // bare "Loading users" line in a blank white box. Now the last known
+        // list is shown instantly (sessionStorage), a shimmer skeleton covers
+        // the truly-first-time case, and the fresh list swaps in silently.
+        const _USERS_CACHE_KEY = 'crumble_users_cache';
+        let _usersInFlight = null;
+        function _usersCached(){ try { const raw = sessionStorage.getItem(_USERS_CACHE_KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
+        function _usersSkeleton(n){
+            let h = '';
+            for(let i = 0; i < n; i++){
+                h += `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
+                    <div class="skel" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;"></div>
+                    <div style="flex:1;"><div class="skel skel-line" style="width:${45 + (i*13)%30}%;"></div><div class="skel skel-line" style="width:${60 + (i*7)%25}%;margin-bottom:0;height:10px;"></div></div>
+                    <div class="skel" style="width:56px;height:18px;border-radius:20px;"></div>
+                    <div class="skel" style="width:70px;height:12px;"></div>
+                </div>`;
+            }
+            return h;
+        }
+        function _fetchUsers(){
+            if(_usersInFlight) return _usersInFlight;
+            _usersInFlight = apiCall('get_users').then(res => {
+                if(!res || res.status !== 'success') throw new Error(res && res.message || 'get_users failed');
+                const users = res.users || [];
+                try { sessionStorage.setItem(_USERS_CACHE_KEY, JSON.stringify(users)); } catch(e){}
+                return users;
+            }).finally(() => { _usersInFlight = null; });
+            return _usersInFlight;
+        }
         function _loadUsersList(){
             const wrap = document.getElementById('users-list-wrap');
-            wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">Loading users…</div>`;
-            apiCall('get_users')
-                .then(res => {
-                    if(!res || res.status !== 'success'){
-                        wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:#DC2626;font-size:0.85rem;">Couldn't load users. Try again.</div>`;
-                        return;
-                    }
-                    _renderUsersList(res.users || []);
-                })
+            const cached = _usersCached();
+            if(cached && cached.length) _renderUsersList(cached);        // instant: last known list
+            else wrap.innerHTML = _usersSkeleton(4);                     // first time only
+            _fetchUsers()
+                .then(users => { const m = document.getElementById('users-modal'); if(m && m.style.display !== 'none') _renderUsersList(users); })
                 .catch(() => {
-                    wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:#DC2626;font-size:0.85rem;">Couldn't load users — check your connection.</div>`;
+                    if(cached && cached.length) return;                 // stale list still on screen is better than an error
+                    wrap.innerHTML = `<div style="text-align:center;padding:34px 0 26px;color:var(--text-muted);font-size:0.85rem;">
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;"><i class="fas fa-plug-circle-xmark"></i></div>
+                        <div style="font-weight:700;color:var(--text-main);margin-bottom:4px;">Couldn't reach the backend</div>
+                        <div>Check your connection, then try again.</div>
+                        <button class="fb-btn sm" style="margin-top:12px;" onclick="_loadUsersList()"><i class="fas fa-rotate"></i> Retry</button>
+                    </div>`;
                 });
         }
 
@@ -14775,6 +14807,7 @@ ${(() => {
             document.body.classList.add('app-ready');
             authApplyPermissions(user);
             _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
+            if(PERM.role === 'Admin') setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);   // warm the Manage Users list
             app.init();
         }
 
