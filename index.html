@@ -2984,8 +2984,10 @@
     </script>
 <style id="fb-styles">
         /* ═══════════ MULTI-SELECT (branch picker) ═══════════ */
-        .ms-wrap { position: relative; width: 100%; }
-        .ms-btn { width:100%; display:flex; align-items:center; justify-content:flex-start; gap:8px; text-align:left; cursor:pointer; padding-right:34px !important; }
+        .ms-wrap { position: relative; }
+        .ms-wrap.ms-single { display: contents; }   /* button sits exactly where the <select> was */
+        .ms-btn { display:inline-flex; align-items:center; justify-content:flex-start; gap:8px; text-align:left; cursor:pointer; padding-right:34px !important; box-sizing:border-box; }
+        .ms-wrap:not(.ms-single) .ms-btn { width:100%; }
         .ms-btn .ms-label { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .ms-btn .ms-count { font-size:0.66rem; font-weight:800; padding:2px 7px; border-radius:20px; background:rgba(1,1,151,.08); color:#010197; }
         .ms-panel { position:fixed; z-index:200001; min-width:280px; background:var(--white); border:1px solid var(--border-color); border-radius:12px; box-shadow:0 14px 40px rgba(0,0,0,.14); z-index:5000; padding:10px; display:none; }
@@ -4178,7 +4180,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.0 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.1 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4717,7 +4719,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.3.0 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.3.1 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15425,10 +15427,6 @@ ${(() => {
                 sel.dataset.msAttached = '1';
 
                 const wrap = document.createElement('div'); wrap.className = 'ms-wrap' + (single ? ' ms-single' : '');
-                // Match the original control's footprint so layouts don't shift.
-                if(sel.style.width) wrap.style.width = sel.style.width;
-                if(sel.style.minWidth) wrap.style.minWidth = sel.style.minWidth;
-                if(sel.style.maxWidth) wrap.style.maxWidth = sel.style.maxWidth;
                 wrap.innerHTML = `
                     <button type="button" class="select-input ms-btn"><span class="ms-label">${esc(opts.allLabel)}</span><span class="ms-count" style="display:none;"></span></button>
                     <div class="ms-panel">
@@ -15438,10 +15436,12 @@ ${(() => {
                     </div>
                     ${(!single && opts.chips) ? '<div class="ms-chips"></div>' : ''}`;
                 sel.parentNode.insertBefore(wrap, sel.nextSibling);
-                // Carry over font-size / padding tweaks the original had inline.
+                // The button takes the select's exact slot: same classes, same
+                // inline styles, so every existing layout stays as it was.
                 const btn0 = wrap.querySelector('.ms-btn');
-                ['fontSize','padding','borderRadius','height','minWidth'].forEach(k => { if(sel.style[k]) btn0.style[k] = sel.style[k]; });
-                if(sel.style.padding) btn0.style.paddingRight = '34px';
+                btn0.className = (sel.className ? sel.className + ' ' : '') + (sel.classList.contains('select-input') ? '' : 'select-input ') + 'ms-btn';
+                btn0.style.cssText = sel.dataset.msStyle || sel.style.cssText.replace(/display\s*:\s*none;?/,'');
+                if(!sel.dataset.msStyle) sel.dataset.msStyle = btn0.style.cssText;
                 btn0.disabled = sel.disabled;
 
                 const btn = wrap.querySelector('.ms-btn'), panel = wrap.querySelector('.ms-panel'), list = wrap.querySelector('.ms-list'),
