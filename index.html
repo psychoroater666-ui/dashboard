@@ -4192,7 +4192,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.3 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.4 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4731,7 +4731,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.3.3 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.3.4 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5002,7 +5002,8 @@
             function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs };
+            return { sync, load, rowsFor, has, changed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+                     debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
         const BUILD = 'v1.67';
@@ -5067,7 +5068,7 @@
             const finish = v => { if(!done){ done = true; clearTimeout(to); resolve(v); } };
             const to = setTimeout(() => finish(null), 15000);
             // Authenticated feed first: same rows, no public download.
-            if(typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.has(url)){ finish(DataFeed.rowsFor(url)); return; }
+            if(typeof DataFeed !== 'undefined' && DataFeed.enabled && window.__feedOk !== false && DataFeed.has(url)){ finish(DataFeed.rowsFor(url)); return; }
             const prev = _fetchCache.get(url);
             if(prev && (Date.now() - prev.at) < 4000){ finish(prev.rows); return; }   // same poll, already have it -- keep its changed flag
             try {
@@ -5088,7 +5089,7 @@
                 }).catch(() => finish(null));
             } catch(e){ finish(null); }
         });
-        _fetch.changed = url => { if(typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.has(url)) return DataFeed.changed(url); const c = _fetchCache.get(url); return !c || c.changed !== false; };
+        _fetch.changed = url => { if(typeof DataFeed !== 'undefined' && DataFeed.enabled && window.__feedOk !== false && DataFeed.has(url)) return DataFeed.changed(url); const c = _fetchCache.get(url); return !c || c.changed !== false; };
         _fetch.anyChanged = urls => urls.filter(Boolean).some(u => _fetch.changed(u));
         const _PALETTE = ['#8B5CF6','#10B981','#F59E0B','#3B82F6','#F43F5E','#FBBF24','#06B6D4','#EC4899','#84CC16','#6366F1'];
         // Add any branch/form/channel/complaint found in the data but missing from config
@@ -5314,6 +5315,16 @@
             const n = Object.values(st.rows).reduce((a,b)=>a+b,0);
             el.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#3B5BDB;"></i> Loading full history\u2026 ' + n.toLocaleString() + ' rows';
         }
+        function _feedErrorPill(){
+            let el = document.getElementById('feed-error-pill');
+            if(window.__feedOk !== false){ if(el) el.remove(); return; }
+            if(!el){
+                el = document.createElement('div'); el.id = 'feed-error-pill';
+                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
+                document.body.appendChild(el);
+            }
+            el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Live feed error — showing fallback data. <span style="font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(window.__feedErr || '').replace(/</g,'&lt;').slice(0,160) + '</span>';
+        }
         let _historyRepaintTimer = null;
         window.__onHistoryChunk = function(){
             _historyPill();
@@ -5332,8 +5343,9 @@
             // _fetch calls below then answer from memory. If it fails, they
             // fall back to the CSV download so the page never goes dark.
             if(DataFeed.enabled){
-                try { await DataFeed.sync({ full: !!window.__forceFullNext }); window.__feedOk = true; }
-                catch(e){ window.__feedOk = false; console.warn('DataFeed sync failed - using CSV fallback:', e); }
+                try { await DataFeed.sync({ full: !!window.__forceFullNext }); window.__feedOk = true; window.__feedErr = null; }
+                catch(e){ window.__feedOk = false; window.__feedErr = String(e && e.message || e); console.error('[DataFeed] sync failed - falling back to CSV this round:', e); }
+                _feedErrorPill();
                 window.__forceFullNext = false;
             }
             _historyPill();
