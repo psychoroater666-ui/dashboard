@@ -4192,7 +4192,7 @@
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.2 · 9 Sep 2026 · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.3.3 · 9 Sep 2026 · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -4731,7 +4731,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.3.2 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.3.3 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -4896,9 +4896,30 @@
                     return Object.keys(tabs).length > 0;
                 } catch(e){ return false; }
             }
-            let saveTimer = null;
+            // Persisting 33k rows is a synchronous structured-clone on the main
+            // thread (~hundreds of ms). Doing it on every changed poll caused a
+            // visible hitch, so: at most once every 2 minutes, plus a flush when
+            // the tab is hidden or closed so nothing is lost.
+            const SAVE_MIN_MS = 2 * 60 * 1000;
+            let saveTimer = null, lastSave = 0, dirty = false;
+            async function saveNow(){
+                if(!dirty) return; dirty = false; lastSave = Date.now();
+                try {
+                    const db = await open();
+                    const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
+                    for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false }; }
+                    await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+                } catch(e){ /* quota/private mode: fine */ }
+            }
+            document.addEventListener('visibilitychange', () => { if(document.hidden) saveNow(); });
+            window.addEventListener('pagehide', () => { saveNow(); });
             function scheduleSave(){
+                dirty = true;
                 clearTimeout(saveTimer);
+                const wait = Math.max(1500, SAVE_MIN_MS - (Date.now() - lastSave));
+                saveTimer = setTimeout(saveNow, wait);
+            }
+            function _unusedLegacySave(){
                 saveTimer = setTimeout(async () => {
                     try {
                         const db = await open();
@@ -5406,7 +5427,9 @@
                 _applyIncidentResolutionProtection();
                 LIVE_MODE = true;
                 window.__fromCache = false;
-                DataCache.scheduleSave();   // fresh data on disk for the next reload
+                // Snapshot writes retired: the DataFeed persists the raw rows and the
+                // boot maps them for the instant paint, so a second full-dataset
+                // clone per poll would only add main-thread stalls.
                 if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }   // keep filter options in sync with fresh data
                 // During the 20s background poll the repaint is owned by
                 // _doRefresh (which also knows about open dialogs and
@@ -7577,9 +7600,9 @@
                     let feedReady = false;
                     try { feedReady = await DataFeed.load(); } catch(e){}   // last session's rows -> first sync is a delta, not a full download
                     try {
-                        let snap = await DataCache.get();
-                        // No snapshot but the feed has rows (e.g. snapshot save failed):
-                        // map them now so the page still paints before the network.
+                        let snap = feedReady ? null : await DataCache.get();
+                        // Feed rows on disk: map them now so the page paints before the
+                        // network. (Legacy snapshot only used if no feed exists yet.)
                         if(!snap && feedReady && typeof mapSource === 'function'){
                             try {
                                 const out = { subs:[], incs:[] };
