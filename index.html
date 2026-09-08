@@ -4775,7 +4775,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.5.2 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.5.3 · 9 Sep 2026 · data-api';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5370,27 +5370,21 @@
         // Small status pill while older history is still streaming in on
         // a first-ever load; KPIs covering long ranges are partial until it
         // finishes. Removed automatically when every tab is complete.
-        function _historyPill(){
-            const st = DataFeed.status();
-            let el = document.getElementById('history-pill');
-            if(st.complete){ if(el) el.remove(); return; }
-            if(!el){
-                el = document.createElement('div'); el.id = 'history-pill';
-                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:var(--white);border:1px solid var(--border-color);border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:var(--text-main);box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;';
-                document.body.appendChild(el);
-            }
-            const n = Object.values(st.rows).reduce((a,b)=>a+b,0);
-            el.innerHTML = '<i class="fas fa-spinner fa-spin" style="color:#3B5BDB;"></i> Loading full history\u2026 ' + n.toLocaleString() + ' rows';
-        }
+        // History streaming is a background process; it is not surfaced in the
+        // UI. The newest rows arrive first, so current-period numbers are right
+        // from the first paint, and the page repaints once history completes.
+        function _historyPill(){ const el = document.getElementById('history-pill'); if(el) el.remove(); }
+        // A failed live sync IS surfaced -- quietly, but it must be: it means the
+        // page is on fallback data.
         function _feedErrorPill(){
             let el = document.getElementById('feed-error-pill');
             if(window.__feedOk !== false){ if(el) el.remove(); return; }
             if(!el){
                 el = document.createElement('div'); el.id = 'feed-error-pill';
-                el.style.cssText = 'position:fixed;left:16px;bottom:62px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
+                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
                 document.body.appendChild(el);
             }
-            el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Live feed error — showing fallback data. <span style="font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(window.__feedErr || '').replace(/</g,'&lt;').slice(0,160) + '</span>';
+            el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Live feed unavailable — showing last known data. <span style="font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(window.__feedErr || '').replace(/</g,'&lt;').slice(0,120) + '</span>';
         }
         let _historyRepaintTimer = null;
         window.__onHistoryChunk = function(){
