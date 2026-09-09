@@ -4953,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.7.1 · 9 Sep 2026 · mobile';
+        const BUILD_VERSION = 'v2.7.2 · 9 Sep 2026 · mobile';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8189,10 +8189,16 @@
                             el.style.opacity    = '';
                             el.style.transition = '';
                         });
+                        const gc = document.getElementById('global-controls');
+                        if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
                         if(targetView){
+                            // Render FIRST, while the view is still invisible, then reveal.
+                            // Rendering after the reveal replaced the children mid-animation
+                            // and restarted their fade from zero -- the visible flicker.
                             targetView.style.opacity   = '0';
                             targetView.style.transform = 'translateY(6px)';
                             targetView.classList.add('active');
+                            try { this.renderCurrentView(); } catch(e){ console.error(e); }
                             document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
                                 targetView.style.transition = 'opacity .26s var(--ease), transform .34s var(--ease-out)';
@@ -8201,19 +8207,18 @@
                                 setTimeout(() => { targetView.style.opacity = ''; targetView.style.transform = ''; targetView.style.transition = ''; }, 360);
                             });
                             setTimeout(() => document.body.classList.remove('do-anim'), 700);
+                        } else {
+                            this.renderCurrentView();
                         }
-                        const gc = document.getElementById('global-controls');
-                        if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
-                        this.renderCurrentView();
                     }, 160);
                 } else {
                     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                     if(targetView) targetView.classList.add('active');
                     const gc = document.getElementById('global-controls');
                     if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                    this.renderCurrentView();            // content in place before the entrance animation starts
                     document.body.classList.add('do-anim');
                     setTimeout(() => document.body.classList.remove('do-anim'), 700);
-                    this.renderCurrentView();
                 }
             },
 
