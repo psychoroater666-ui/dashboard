@@ -2999,6 +2999,9 @@
         body.no-export [onclick*="exportCSV"] { display:none !important; }
         .ac-readonly-note { display:none; align-items:center; gap:8px; font-size:0.72rem; font-weight:700; color:var(--text-muted); background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; padding:6px 10px; }
         body.no-write .ac-readonly-note { display:inline-flex; }
+        .inc-tl-by { font-size:0.74rem; color:var(--text-muted); margin-top:3px; display:flex; align-items:center; gap:6px; }
+        .inc-tl-by b { color:var(--text-main); font-weight:700; }
+        .inc-tl-by i { font-size:0.66rem; color:#3B5BDB; }
         /* ═══════════ ACTIVITY (audit) ═══════════ */
         .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
         .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
@@ -4807,7 +4810,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.6.1 · 9 Sep 2026 · access-v2';
+        const BUILD_VERSION = 'v2.6.2 · 9 Sep 2026 · access-v2';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7093,6 +7096,8 @@
                     const reviewedKey = keys.find(k => k.toLowerCase().trim() === 'reviewed at');
                     const resolvedKey = keys.find(k => k.toLowerCase().trim() === 'resolved at');
                     const catKey      = keys.find(k => k.toLowerCase().trim() === 'category');
+                    const revByKey    = keys.find(k => k.toLowerCase().trim() === 'reviewed by');
+                    const resByKey    = keys.find(k => k.toLowerCase().trim() === 'resolved by');
                     const id         = idKey       ? String(row[idKey]||'').trim()       : '';
                     const st         = stKey       ? String(row[stKey]||'').trim()       : '';
                     const note       = noteKey     ? String(row[noteKey]||'').trim()     : '';
@@ -7100,7 +7105,9 @@
                     const reviewedAt = reviewedKey ? String(row[reviewedKey]||'').trim() : '';
                     const resolvedAt = resolvedKey ? String(row[resolvedKey]||'').trim() : '';
                     const category   = catKey      ? String(row[catKey]||'').trim()      : '';
-                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category };
+                    const reviewedBy = revByKey    ? String(row[revByKey]||'').trim()    : '';
+                    const resolvedBy = resByKey    ? String(row[resByKey]||'').trim()    : '';
+                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category, reviewedBy: reviewedBy, resolvedBy: resolvedBy };
                 });
                 _lastGoodIncidentResolutions = map;
                 return map;
@@ -7130,6 +7137,8 @@
                     if(entry.reviewedAt) inc.reviewedAt = entry.reviewedAt;
                     if(entry.resolvedAt) inc.resolvedAt = entry.resolvedAt;
                     if(entry.category) inc.agentCategory = entry.category;
+                    if(entry.reviewedBy) inc.reviewedBy = entry.reviewedBy;
+                    if(entry.resolvedBy) inc.resolvedBy = entry.resolvedBy;
                 }
             });
         }
@@ -7278,6 +7287,7 @@
 
         function saveIncidentResolution(stableKey, note, btnEl, validity, category){
             if(!requireCap('write', 'resolving an incident')) return;
+            try { const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === stableKey); if(inc){ inc.resolvedBy = PERM.name || PERM.email; if(!inc.reviewedBy) inc.reviewedBy = PERM.name || PERM.email; } } catch(e){}
             if(!validity){ alert('Please mark this complaint as Valid, Fake, or Not Responding before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
@@ -9120,6 +9130,7 @@
                         <div class="inc-tl-icon-v2 inc-tl-icon-reviewed"><i class="fas fa-eye"></i></div>
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
+                            ${inc.reviewedBy ? `<div class="inc-tl-by"><i class="fas fa-user"></i> Reviewed by <b>${String(inc.reviewedBy).replace(/</g,'&lt;')}</b></div>` : ''}
                         </div>
                     </div>` : ''}
                     ${isClosed ? `
@@ -9128,6 +9139,7 @@
                         <div class="inc-tl-icon-v2 ${inc.caseStatus==='not_responding'?'inc-tl-icon-notresp':'inc-tl-icon-resolved'}"><i class="fas ${inc.caseStatus==='not_responding'?'fa-phone-slash':'fa-thumbs-up'}"></i></div>
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">${inc.caseStatus==='not_responding'?'Customer not responding':'Incident resolved'}${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            ${inc.resolvedBy ? `<div class="inc-tl-by"><i class="fas fa-user-check"></i> ${inc.caseStatus==='not_responding'?'Closed':'Resolved'} by <b>${String(inc.resolvedBy).replace(/</g,'&lt;')}</b></div>` : ''}
                             ${inc.caseStatus==='not_responding' ? `<div class="inc-tl-sub-v2">Case closed to keep response-time accurate — still awaiting recontact. Set the real determination below once the customer is reached.</div>` : ''}
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
@@ -9340,6 +9352,7 @@ ${(() => {
                         <div class="inc-tl-icon-v2 inc-tl-icon-reviewed"><i class="fas fa-eye"></i></div>
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
+                            ${inc.reviewedBy ? `<div class="inc-tl-by"><i class="fas fa-user"></i> Reviewed by <b>${String(inc.reviewedBy).replace(/</g,'&lt;')}</b></div>` : ''}
                         </div>
                     </div>` : ''}
                     ${isClosed ? `
@@ -9348,6 +9361,7 @@ ${(() => {
                         <div class="inc-tl-icon-v2 ${inc.caseStatus==='not_responding'?'inc-tl-icon-notresp':'inc-tl-icon-resolved'}"><i class="fas ${inc.caseStatus==='not_responding'?'fa-phone-slash':'fa-thumbs-up'}"></i></div>
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">${inc.caseStatus==='not_responding'?'Customer not responding':'Incident resolved'}${resolveDurationLabel ? ` in ${resolveDurationLabel}` : ''}</div>
+                            ${inc.resolvedBy ? `<div class="inc-tl-by"><i class="fas fa-user-check"></i> ${inc.caseStatus==='not_responding'?'Closed':'Resolved'} by <b>${String(inc.resolvedBy).replace(/</g,'&lt;')}</b></div>` : ''}
                             ${inc.caseStatus==='not_responding' ? `<div class="inc-tl-sub-v2">Case closed to keep response-time accurate — still awaiting recontact. Set the real determination below once the customer is reached.</div>` : ''}
                             ${inc.resolutionNote ? `<div class="inc-tl-comment-bubble">${String(inc.resolutionNote).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : ''}
                         </div>
