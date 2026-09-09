@@ -4953,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.7.2 · 9 Sep 2026 · mobile';
+        const BUILD_VERSION = 'v2.7.3 · 9 Sep 2026 · mobile';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9206,9 +9206,11 @@
                         // waking the overlay observer each time. That repeated
                         // churn is what read as the modal jittering while
                         // someone was reading it.
+                        // Presence, not exact timestamps: the server's stamp differs from
+                        // the local one by milliseconds and must not count as a change.
                         const sig = [match.resolved, match.caseStatus, match.agentVerdict,
-                                     match.agentCategory, match.resolutionNote, match.reviewedAt,
-                                     match.resolvedAt, match.category].join('|');
+                                     match.agentCategory, match.resolutionNote, !!match.reviewedAt,
+                                     !!match.resolvedAt, match.category, match.reviewedBy || '', match.resolvedBy || ''].join('|');
                         if(window._openIncidentModalSig !== sig){
                             window._openIncidentModalSig = sig;
                             this.openIncidentDetailModalDirect(match);
@@ -9252,7 +9254,13 @@
                                                 inc.agentCategory, inc.resolutionNote, inc.reviewedAt,
                                                 inc.resolvedAt, inc.category].join('|');
                 window._selectedIncidentValidity = null; // reset per-incident — don't carry over a selection from a previously-viewed incident
-                if(!inc.reviewedAt) saveIncidentReview(_incidentStableKey(inc));
+                if(!inc.reviewedAt && can('write')){
+                    // Mark reviewed locally right now, so the server's echo a few
+                    // seconds later matches and doesn't re-render the open modal.
+                    inc.reviewedAt = new Date().toISOString();
+                    inc.reviewedBy = PERM.name || PERM.email || '';
+                    saveIncidentReview(_incidentStableKey(inc));
+                }
                 const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
                 const parsedTs = _parseSheetDateTime(rawCreatedAt);
                 const dateStr = !isNaN(parsedTs)
