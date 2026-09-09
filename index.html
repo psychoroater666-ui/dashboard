@@ -4958,7 +4958,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.8.2 · 9 Sep 2026 · alerts';
+        const BUILD_VERSION = 'v2.8.3 · 9 Sep 2026 · alerts';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6819,9 +6819,34 @@
                 _incidentAudioCtx = new AudioCtx();
             } catch(e){}
         }
-        ['click','keydown','touchstart'].forEach(evt => {
-            document.addEventListener(evt, _ensureIncidentAudioUnlocked, { once:true, passive:true });
+        // Any real user gesture: create the context if needed AND resume it
+        // (a context created from a timer starts "suspended" and can only be
+        // resumed inside a gesture). Also clears the "sound muted" banner.
+        function _unlockAudioFromGesture(){
+            _ensureIncidentAudioUnlocked();
+            const ctx = _incidentAudioCtx;
+            if(ctx && ctx.state !== 'running'){
+                ctx.resume().then(() => { _hideSoundBlockedPill(); if(_soundWasBlockedWhileAlerting && _anyAlertVisible()){ _soundWasBlockedWhileAlerting = false; playIncidentAlertSound(); } }).catch(()=>{});
+            } else { _hideSoundBlockedPill(); }
+        }
+        ['pointerdown','keydown','touchstart'].forEach(evt => {
+            document.addEventListener(evt, _unlockAudioFromGesture, { passive:true });
         });
+        // Shown when an alert tried to ring but the browser's autoplay policy
+        // blocked it (no click on the page since it loaded). Tapping it is
+        // itself the gesture that unblocks sound, so the ring starts at once.
+        let _soundWasBlockedWhileAlerting = false;
+        function _showSoundBlockedPill(){
+            _soundWasBlockedWhileAlerting = true;
+            if(document.getElementById('sound-blocked-pill')) return;
+            const el = document.createElement('button');
+            el.id = 'sound-blocked-pill'; el.type = 'button';
+            el.style.cssText = 'position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483001;background:#0F172A;color:#fff;border:none;border-radius:999px;padding:12px 18px;font-size:0.84rem;font-weight:700;font-family:Inter,sans-serif;box-shadow:0 12px 32px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px;cursor:pointer;animation:iaPopIn .2s ease-out;';
+            el.innerHTML = '<i class="fas fa-volume-xmark" style="color:#F59E0B;"></i> Alert sound is muted by your browser — tap to enable';
+            el.onclick = () => _unlockAudioFromGesture();
+            document.body.appendChild(el);
+        }
+        function _hideSoundBlockedPill(){ const el = document.getElementById('sound-blocked-pill'); if(el) el.remove(); }
 
         // Real OS-level desktop notification — the kind that pops up in the
         // corner of the screen regardless of which app/window has focus, not
@@ -6860,6 +6885,9 @@
                 const ctx = _incidentAudioCtx;
                 if(!ctx) return;
                 if(ctx.state === 'suspended') ctx.resume().catch(()=>{});
+                // If it's still not running a moment later, the browser blocked it:
+                // tell the user how to unmute instead of failing silently.
+                setTimeout(() => { if(ctx.state !== 'running' && _anyAlertVisible()) _showSoundBlockedPill(); }, 250);
 
                 const playTone = (freq, startTime, duration) => {
                     const osc = ctx.createOscillator();
