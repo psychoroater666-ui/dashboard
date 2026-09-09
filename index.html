@@ -4979,7 +4979,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.9.1 · 9 Sep 2026 · taxonomy';
+        const BUILD_VERSION = 'v2.9.2 · 9 Sep 2026 · taxonomy';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14873,7 +14873,7 @@ ${(() => {
             }
             let data;
             try { data = JSON.parse(text); } catch(e){ if(_attempt < 3){ await new Promise(r => setTimeout(r, 600)); return apiCall(action, payload, _attempt + 1); } throw new Error('bad_response'); }
-            if(data && data.status === 'error' && /no longer accepts GET/i.test(String(data.message||'')) && _attempt < 3){
+            if(data && data.status === 'error' && (data.code === 'method' || /no longer accepts GET/i.test(String(data.message||''))) && _attempt < 3){
                 await new Promise(r => setTimeout(r, 400));
                 return apiCall(action, payload, _attempt + 1);
             }
