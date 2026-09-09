@@ -1419,7 +1419,7 @@
         .btn-export:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
         .sl-close-attach-btn { width:28px; height:28px; border-radius:8px; border:1.5px solid var(--border-color); background:var(--bg-light); color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; flex-shrink:0; }
         .ia-overlay { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:9999; display:none; align-items:center; justify-content:center; padding:20px; }
-        .ia-card { background:var(--white); border-radius:16px; width:100%; max-width:420px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,.35); animation:iaPopIn .25s cubic-bezier(.16,1,.3,1); }
+        .ia-card { background:var(--white); border-radius:16px; width:100%; max-width:420px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,.35); animation:none; }
         @keyframes iaPopIn { from{ opacity:0; transform:translateY(12px) scale(.97); } to{ opacity:1; transform:translateY(0) scale(1); } }
         .ia-header { padding:20px 22px 14px; display:flex; align-items:flex-start; justify-content:space-between; flex-shrink:0; }
         .ia-title { font-size:1.05rem; font-weight:800; color:var(--text-main); }
@@ -2491,7 +2491,7 @@
             transition-duration: revert !important;
             transition-delay:    revert !important;
         }
-        body.bg-refresh .ia-overlay.is-open > .ia-card{ animation: crumbleDialogIn .32s var(--ease-out) both !important; }
+        /* (removed) re-applying the dialog entrance under bg-refresh made an open modal replay its pop-in on every background repaint */
         body.bg-refresh .crumble-toast{ animation: crumbleToastIn .3s var(--ease-out) both !important; }
 
         /* Cards keep their own layer so a hover lift can't force the whole
@@ -2597,9 +2597,14 @@
             from{ opacity:0; transform: translateY(14px) scale(.975); }
             to  { opacity:1; transform: translateY(0)    scale(1);    }
         }
-        .ia-overlay.is-open{ animation: crumbleOverlayIn .18s var(--ease) both; }
-        .ia-overlay.is-open > .ia-card{ animation: crumbleDialogIn .32s var(--ease-out) both; }
-        .sl-modal-overlay.is-open > .sl-modal-box{ animation: crumbleDialogIn .32s var(--ease-out) both; }
+        /* Entrance animations run ONCE: the .entering class is added when the
+           modal opens and removed when the animation ends. After that the card
+           has no animation to restart, so bg-refresh (which toggles
+           animation:none on everything) can never make an open modal flicker. */
+        .ia-overlay.is-open.entering{ animation: crumbleOverlayIn .18s var(--ease) both; }
+        .ia-overlay.is-open.entering > .ia-card{ animation: crumbleDialogIn .32s var(--ease-out) both; }
+        .ia-overlay:not(.is-open) > .ia-card{ animation: none; }
+        .sl-modal-overlay.is-open.entering > .sl-modal-box{ animation: crumbleDialogIn .32s var(--ease-out) both; }
         /* The dialog is focused programmatically on open — that's for keyboard
            users and screen readers, it shouldn't draw a visible ring. */
         .ia-card:focus, .sl-modal-box:focus, #cs-modal-box:focus{ outline: none; }
@@ -15548,8 +15553,12 @@ ${(() => {
                     document.querySelectorAll(OVERLAYS).forEach(el => {
                         const shouldBeOpen = open.indexOf(el) !== -1;
                         const isMarked = el.classList.contains('is-open');
-                        if(shouldBeOpen && !isMarked) el.classList.add('is-open');
-                        else if(!shouldBeOpen && isMarked) el.classList.remove('is-open');
+                        if(shouldBeOpen && !isMarked){
+                            el.classList.add('is-open', 'entering');
+                            clearTimeout(el._enterT);
+                            el._enterT = setTimeout(() => el.classList.remove('entering'), 420);
+                        }
+                        else if(!shouldBeOpen && isMarked) el.classList.remove('is-open', 'entering');
                     });
                 } finally { syncing = false; }
             }
