@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.9 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.11 · 10 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5744,7 +5744,9 @@
                 const slDirty = DataFeed.enabled && ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
                 if(slDirty && !opts.offline && typeof state !== 'undefined' && state.currentView === 'social' && typeof loadSocialFromSheet === 'function' && window._slHasLoadedOnce){
                     ['social','sl_resolution'].forEach(k => { if(DataFeed.tabs[k]) DataFeed.tabs[k].changed = false; });   // consumed here, not re-fired every poll
+                    const sigBefore = _slDataSig();
                     loadSocialFromSheet().then(() => {
+                        if(_slDataSig() === sigBefore) return;   // nothing visible changed -> leave the screen alone
                         const modal = document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open');
                         if(modal) return;                       // never repaint under an open dialog
                         const r = () => renderSocialListening(); (typeof UI !== 'undefined' && UI.silent) ? UI.silent(r) : r();
@@ -7556,6 +7558,10 @@
         // open, and the identical-HTML guard means untouched sections aren't
         // even rebuilt. Cheap enough to run on every save.
         function _refreshAfterIncidentChange(){
+            // Never repaint the page behind an open dialog (the reader would see
+            // the background jump). Queue it; the next poll after the dialog
+            // closes paints it, and closing a modal triggers that poll path.
+            if(document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open')){ window.__needsRepaintAfterModal = true; return; }
             try {
                 const run = () => {
                     if(typeof app !== 'undefined' && app.applyFilters) app.applyFilters();
@@ -8240,6 +8246,7 @@
                                 if(!ok){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 // Nothing changed in any sheet -> nothing to do.
                                 // No remap, no alert check, no repaint.
+                                if(window.__needsRepaintAfterModal){ _needsRenderCatchup = true; window.__needsRepaintAfterModal = false; }
                                 if(window.__liveChanged === false && !_needsRenderCatchup){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
@@ -12761,6 +12768,10 @@ ${(() => {
             return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
         }
 
+        // Fingerprint of everything the Social view shows; used to skip repaints.
+        function _slDataSig(){
+            try { return (slMentions||[]).map(m => [m.id, m.sentiment, m.resolved, m.status, m.escalated, m.escalatedBy, m.resolutionNote, m.likes, m.comments].join(',')).join('|'); } catch(e){ return String(Math.random()); }
+        }
         async function loadSocialFromSheet(){
             try {
                 const res  = await _fetch(LIVE.slSheetUrl);
@@ -13127,7 +13138,7 @@ ${(() => {
             if(kpiStrip){
                 const _isMentionOnly  = !!window._slMentionFilter;
                 const _isComplaintOnly= !!window._slComplaintFilter;
-                kpiStrip.innerHTML = [
+                kpiStrip.uiHTML = [
                     { label:'Total Mentions', val:total,      sub:'across all platforms',         color:'var(--accent-blue)',    icon:'fa-hashtag',            fn:'slToggleMentionFilter',    active:_isMentionOnly   },
                     { label:'Complaints',     val:complaints, sub:`${unresolved} need attention`, color:'var(--status-critical)',icon:'fa-circle-exclamation', fn:'slToggleComplaintFilter',  active:_isComplaintOnly  },
                     { label:'Unresolved',     val:unresolved, sub:unresolved > 0 ? `${unresolved} open` : 'all resolved', color:'#D97706', icon:'fa-clock-rotate-left', fn:'slToggleUnresolved', active:_isUnresOnly },
@@ -13173,7 +13184,7 @@ ${(() => {
                     branchCompEl.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.82rem;">No complaints in the selected range — nothing to compare yet.</div>`;
                 } else {
                     const maxV = rows[0][1].total;
-                    branchCompEl.innerHTML = rows.map(([branch, d]) => {
+                    branchCompEl.uiHTML = rows.map(([branch, d]) => {
                         const sev = d.total >= 3 ? 'crit' : d.total === 2 ? 'warn' : 'good';
                         const sevColor = sev==='crit' ? 'var(--status-critical)' : sev==='warn' ? 'var(--status-warn)' : 'var(--status-good)';
                         const sevBg    = sev==='crit' ? 'var(--status-critical-bg)' : sev==='warn' ? 'var(--status-warn-bg)' : 'var(--status-good-bg)';
@@ -13404,7 +13415,7 @@ ${(() => {
             const kwEl = document.getElementById('sl-keywords');
             if(kwEl){
                 const _activeKw = window._slKeywordFilter || '';
-                kwEl.innerHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}${_activeKw===w?' sl-kw-active':''}" onclick="slFilterByKeyword('${w}')" title="${_activeKw===w?'Click to clear':'Filter by: '+w}">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
+                kwEl.uiHTML = topWords.map(([w,c])=>`<span class="sl-keyword${c>=3?' hot':''}${_activeKw===w?' sl-kw-active':''}" onclick="slFilterByKeyword('${w}')" title="${_activeKw===w?'Click to clear':'Filter by: '+w}">${w} <span style="opacity:.6;font-size:0.65rem;">${c}</span></span>`).join('');
             }
 
             // ── Platform breakdown — respects the active filters (excluding its
