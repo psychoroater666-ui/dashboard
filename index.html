@@ -3080,12 +3080,12 @@
         .cl-lead.muted { opacity:.6; }
         @media (max-width:820px){ .cl-group-head { grid-template-columns:30px 1fr auto 16px; } .cl-group-head .cl-spark, .cl-group-head .cl-chip { display:none; } .cl-row { grid-template-columns:26px 1fr 70px; } .cl-row .cl-spark, .cl-row .cl-leaders { display:none; } .cl-bar { max-width:none; } }
 
-        /* Submissions: long comments clip to one line inside the table (no
-           horizontal scroll); click the cell to expand it in place. */
-        .subs-comment { cursor:pointer; }
-        .subs-comment-text { display:block !important; max-width:300px !important; width:300px !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; }
-        .subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; width:auto !important; max-width:480px !important; line-height:1.45; }
-        @media (max-width:820px){ .subs-comment-text { width:180px; max-width:180px; } }
+        /* Submissions: the comment cell takes whatever width is LEFT in the
+           table (width:100% + max-width:0 is the auto-layout trick), then
+           clips to one line with an ellipsis. Click to expand in place. */
+        #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
+        #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
+        #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
         /* ═══════════ ACTIVITY (audit) ═══════════ */
         .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
         .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.8 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.9 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
