@@ -4979,7 +4979,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.9.0 · 9 Sep 2026 · taxonomy';
+        const BUILD_VERSION = 'v2.9.1 · 9 Sep 2026 · taxonomy';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14840,23 +14840,44 @@ ${(() => {
          * Access set — that's what lets the Worker see the visitor's
          * identity without any code here having to handle it explicitly.
          */
-        async function apiCall(action, payload){
-            const res = await fetch(LIVE.slScriptUrl, {
-                method: 'POST',
-                headers: { 'content-type': 'application/json' },
-                credentials: 'same-origin',
-                body: JSON.stringify(Object.assign({ action }, payload || {}))
-            });
-
-            // If the Access session expired, Cloudflare intercepts the request
-            // with its own login redirect and we get HTML back instead of JSON.
-            // Reloading lets the browser follow that redirect properly.
-            const text = await res.text();
-            if (text.trimStart().startsWith('<')) {
+        // Every backend call. Two failure modes are handled here so callers
+        // never see them:
+        //  - Access session expired -> Cloudflare answers with its login page
+        //    (HTML). Reload so the browser can complete the login redirect.
+        //  - Access session REFRESH (every ~10-15 min) -> Cloudflare answers
+        //    one request with a redirect; the browser follows it by re-sending
+        //    the POST as a GET, which reaches the backend's retired doGet
+        //    ("This endpoint no longer accepts GET requests"). The refresh has
+        //    completed by the time we see that, so a plain retry as POST works.
+        //    Also treated as retryable: a Worker/Apps Script HTML error page
+        //    that isn't the Access login, and a network blip.
+        async function apiCall(action, payload, _attempt){
+            _attempt = _attempt || 1;
+            const body = JSON.stringify(Object.assign({ action }, payload || {}));
+            let res, text;
+            try {
+                res = await fetch(LIVE.slScriptUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body, redirect: 'follow' });
+                text = await res.text();
+            } catch(netErr){
+                if(_attempt < 3){ await new Promise(r => setTimeout(r, 600 * _attempt)); return apiCall(action, payload, _attempt + 1); }
+                throw netErr;
+            }
+            const t = text.trimStart();
+            if (t.startsWith('<')) {
+                // Access login page = session gone. Anything else HTML (Cloudflare
+                // 5xx, Apps Script error page) = transient, retry.
+                const isAccessLogin = /cloudflareaccess|cdn-cgi\/access|Cloudflare Access|<title>Sign in/i.test(t);
+                if(!isAccessLogin && _attempt < 3){ await new Promise(r => setTimeout(r, 800 * _attempt)); return apiCall(action, payload, _attempt + 1); }
                 window.location.reload();
                 throw new Error('session_expired');
             }
-            return JSON.parse(text);
+            let data;
+            try { data = JSON.parse(text); } catch(e){ if(_attempt < 3){ await new Promise(r => setTimeout(r, 600)); return apiCall(action, payload, _attempt + 1); } throw new Error('bad_response'); }
+            if(data && data.status === 'error' && /no longer accepts GET/i.test(String(data.message||'')) && _attempt < 3){
+                await new Promise(r => setTimeout(r, 400));
+                return apiCall(action, payload, _attempt + 1);
+            }
+            return data;
         }
 
         // Global permission state — set on login, used everywhere
