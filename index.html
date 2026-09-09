@@ -3192,18 +3192,27 @@
             .header-divider, .user-name, .user-chip-chevron { display: none !important; }
             .user-chip { padding: 3px !important; }
 
-            /* ── Global filter bar: presets swipe, pickers stack ── */
-            .controls-wrapper { display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 8px !important; padding: 8px 12px !important; max-height: none !important; overflow: visible !important; }
-            .date-presets { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 6px !important; padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+            /* ── Global filter bar ──
+               The .filter-row holds everything (presets, date pill, three selects,
+               view toggles, refresh) as siblings, so it's laid out as a wrapping
+               flex row with explicit widths per item: presets / date / channel /
+               toggles / refresh full-width, Region + Branch side by side. */
+            .controls-wrapper { padding: 8px 12px !important; max-height: none !important; overflow: visible !important; display: block !important; }
+            .filter-row { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; width: 100% !important; align-items: stretch !important; }
+            .filter-row > * { min-width: 0 !important; }
+            .date-presets { flex: 1 1 100% !important; display: flex !important; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 6px !important; padding-bottom: 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; order: 1; }
             .date-presets::-webkit-scrollbar { display: none; }
             .preset-chip { flex: 0 0 auto !important; padding: 8px 12px !important; font-size: 0.78rem !important; min-height: 36px; }
-            .date-range-pill { width: 100% !important; justify-content: space-between !important; padding: 8px 12px !important; font-size: 0.8rem !important; }
-            .filter-row { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 8px !important; width: 100% !important; }
-            .filter-row > * { min-width: 0 !important; width: 100% !important; }
-            .filter-row .ms-btn, .filter-row .select-input { width: 100% !important; min-height: 40px !important; font-size: 0.82rem !important; }
-            #exec-view-toggles { order: 10; width: 100% !important; display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0 !important; }
-            #exec-view-toggles > * { justify-content: center !important; min-height: 38px !important; font-size: 0.78rem !important; padding: 6px 4px !important; }
-            #refresh-btn { width: 100% !important; justify-content: center !important; min-height: 40px !important; order: 11; }
+            .date-range-pill { flex: 1 1 100% !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 6px !important; padding: 6px 10px !important; order: 2; }
+            .date-range-pill input[type="date"] { flex: 1 1 0 !important; min-width: 0 !important; width: auto !important; font-size: 0.82rem !important; padding: 6px 4px !important; }
+            .date-range-pill > i, .date-range-pill > span { flex: 0 0 auto !important; }
+            .filter-row .ms-btn, .filter-row .select-input { min-height: 40px !important; font-size: 0.82rem !important; }
+            .filter-row .ms-btn[data-for="filter-region"], .filter-row .ms-btn[data-for="filter-branch"] { flex: 1 1 calc(50% - 4px) !important; order: 3; }
+            .filter-row .ms-btn[data-for="filter-channel"] { flex: 1 1 100% !important; order: 4; }
+            #exec-view-toggles { flex: 1 1 100% !important; display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 0 !important; order: 5; }
+            #exec-view-toggles > * { justify-content: center !important; min-height: 38px !important; font-size: 0.76rem !important; padding: 6px 2px !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            #refresh-btn { flex: 1 1 100% !important; justify-content: center !important; min-height: 40px !important; order: 6; }
+            #refresh-btn span { display: inline !important; }   /* label back (old rule hid it) */
 
             /* ── KPI tiles: 2-up ── */
             .kpi-grid, .skel-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
@@ -4944,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.7.0 · 9 Sep 2026 · mobile';
+        const BUILD_VERSION = 'v2.7.1 · 9 Sep 2026 · mobile';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15820,6 +15829,7 @@ ${(() => {
                 btn0.style.cssText = sel.dataset.msStyle || sel.style.cssText.replace(/display\s*:\s*none;?/,'');
                 if(!sel.dataset.msStyle) sel.dataset.msStyle = btn0.style.cssText;
                 btn0.disabled = sel.disabled;
+                btn0.dataset.for = sel.id;
 
                 const btn = wrap.querySelector('.ms-btn'), panel = wrap.querySelector('.ms-panel'), list = wrap.querySelector('.ms-list'),
                       search = wrap.querySelector('.ms-search'), chips = wrap.querySelector('.ms-chips'), label = wrap.querySelector('.ms-label'), count = wrap.querySelector('.ms-count');
