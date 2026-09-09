@@ -2983,6 +2983,32 @@
         })();
     </script>
 <style id="fb-styles">
+        /* ═══════════ ACCESS CONTROL — role-based visibility ═══════════ */
+        body.no-write [onclick="csOpenForm()"],
+        body.no-write .sl-add-btn,
+        body.no-write .inc-add-comment-v2,
+        body.no-write #ivm-close-btn,
+        body.no-write .sl-resolve-actions,
+        body.no-write [onclick^="slSetResolutionBtn"],
+        body.no-write [onclick^="slConfirmClose"],
+        body.no-write [onclick^="slOpenClose"] { display:none !important; }
+        body.no-export .btn-export,
+        body.no-export #submissions-export-card,
+        body.no-export [onclick^="exportFiltered"],
+        body.no-export [onclick^="_exportRawCSV"],
+        body.no-export [onclick*="exportCSV"] { display:none !important; }
+        .ac-readonly-note { display:none; align-items:center; gap:8px; font-size:0.72rem; font-weight:700; color:var(--text-muted); background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; padding:6px 10px; }
+        body.no-write .ac-readonly-note { display:inline-flex; }
+        /* ═══════════ ACTIVITY (audit) ═══════════ */
+        .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
+        .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
+        .act-row .who { font-weight:700; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .act-row .who small { display:block; font-weight:600; color:var(--text-muted); font-size:0.68rem; }
+        .act-row .det { color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:monospace; font-size:0.7rem; }
+        .act-pill { font-size:0.62rem; font-weight:800; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.3px; display:inline-block; }
+        .act-pill.ok { background:rgba(5,150,105,.12); color:#059669; } .act-pill.denied { background:rgba(220,38,38,.12); color:#DC2626; }
+        .act-action { font-weight:700; color:var(--text-main); }
+        @media (max-width:900px){ .act-row { grid-template-columns:1fr 1fr; } .act-row.head { display:none; } }
         /* ═══════════ BRANCH COMPARISON v2 ═══════════ */
         .bc2 { display:flex; flex-direction:column; gap:14px; }
         .bc2-head { display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:center; background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:16px 20px; }
@@ -3252,6 +3278,7 @@
                 <span class="topnav-link" data-view="insights" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
+                <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
             </nav>
             <script>
                 // Fixes the active nav highlight BEFORE the browser paints —
@@ -4246,6 +4273,11 @@
                 <div id="fb-root"></div>
             </div>
 
+            <!-- ACTIVITY / AUDIT TRAIL (admin) -->
+            <div id="view-activity" class="view">
+                <div id="activity-root"></div>
+            </div>
+
             <!-- SOCIAL LISTENING -->
             <div id="view-social" class="view">
 
@@ -4775,7 +4807,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.5.3 · 9 Sep 2026 · data-api';
+        const BUILD_VERSION = 'v2.6.1 · 9 Sep 2026 · access-v2';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5017,7 +5049,7 @@
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -6130,6 +6162,7 @@
         // real browser download via a temporary Blob URL. No server round-trip —
         // everything's already in rawData/state client-side.
         function _exportCSV(filename, headers, rows) {
+            if(!requireCap('export', 'export')) return;
             const esc = v => {
                 const s = (v === null || v === undefined) ? '' : String(v);
                 return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
@@ -6150,6 +6183,7 @@
         }
 
         function exportFiltered() {
+            if(!requireCap('export', 'export')) return;
             const dataset  = document.getElementById('export-dataset-select')?.value || 'submissions';
             const branches = _subsBranches();
             const form     = document.getElementById('export-form-select')?.value || '';
@@ -6507,7 +6541,7 @@
                                 <div class="ia-label" style="margin-bottom:5px;">Email</div>
                                 <input id="uf-email" type="email" placeholder="name@crumble.com" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
                             </div>
-                            <div>
+                            <div style="display:none;">
                                 <div class="ia-label" style="margin-bottom:5px;">Password <span id="uf-pw-hint" style="text-transform:none;font-weight:500;color:var(--text-muted);"></span></div>
                                 <input id="uf-password" type="text" placeholder="Set a password" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
                             </div>
@@ -6515,9 +6549,12 @@
                                 <div>
                                     <div class="ia-label" style="margin-bottom:5px;">Role</div>
                                     <select id="uf-role" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);">
-                                        <option value="Admin">Admin</option>
-                                        <option value="Manager">Manager</option>
-                                        <option value="Viewer" selected>Viewer</option>
+                                        <option value="Owner">Owner — everything, incl. users &amp; backend</option>
+                                        <option value="Admin">Admin — view everything, no changes</option>
+                                        <option value="Report Analyst">Report Analyst — view, export, build forms</option>
+                                        <option value="Call Center">Call Center — view + handle submissions &amp; incidents</option>
+                                        <option value="Manager">Manager — one branch, view + export</option>
+                                        <option value="Viewer" selected>Viewer — read only</option>
                                     </select>
                                 </div>
                                 <div>
@@ -6526,9 +6563,14 @@
                                 </div>
                             </div>
                             <div>
-                                <div class="ia-label" style="margin-bottom:5px;">Branch</div>
+                                <div class="ia-label" style="margin-bottom:5px;">Branch <span id="uf-branch-hint" style="text-transform:none;font-weight:500;color:var(--text-muted);"></span></div>
                                 <select id="uf-branch" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);"></select>
                             </div>
+                            <div>
+                                <div class="ia-label" style="margin-bottom:5px;">Account status</div>
+                                <label class="fb-check" style="font-size:0.8rem;"><input type="checkbox" id="uf-disabled"> Disabled — keeps the record but blocks sign-in immediately</label>
+                            </div>
+                            <div id="uf-role-hint" style="font-size:0.72rem;color:var(--text-muted);background:var(--bg-light);border-radius:8px;padding:8px 10px;line-height:1.45;"></div>
                         </div>
                         <div id="user-form-error" style="font-size:0.78rem;color:#DC2626;font-weight:600;margin-bottom:6px;"></div>
                     </div>
@@ -7170,6 +7212,7 @@
         // Fire-and-forget — this is background tracking, not something the
         // agent explicitly triggered, so no error alert on failure.
         function saveIncidentReview(stableKey){
+            if(!can('write')) return;   // read-only users viewing an incident must not mark it reviewed
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -7234,6 +7277,7 @@
         }
 
         function saveIncidentResolution(stableKey, note, btnEl, validity, category){
+            if(!requireCap('write', 'resolving an incident')) return;
             if(!validity){ alert('Please mark this complaint as Valid, Fake, or Not Responding before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
@@ -7651,11 +7695,11 @@
                         const navEl = Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === savedView);
                         if(navEl) navEl.classList.add('active');
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -7966,13 +8010,13 @@
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -8066,6 +8110,7 @@
                 else if (state.currentView === 'incident-analytics') this.renderIncidentAnalytics();
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'form-builder') { FB.render(); return; }
+                else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
@@ -11674,6 +11719,7 @@ ${(() => {
         }
 
         function slSetResolution(id,stage,note,image){
+            if(!requireCap('write', 'updating a social mention')) return;
             const m=slMentions.find(x=>x.id===id); if(!m) return;
             const cur=m.resolutionStatus||'none'; if(cur==='closed') return;
             const ci=SL_RES_ORDER.indexOf(cur),ti=SL_RES_ORDER.indexOf(stage);
@@ -12032,6 +12078,7 @@ ${(() => {
         });
 
         function slAddMention(){
+            if(!requireCap('write', 'adding a social mention')) return;
             let platform    = document.getElementById('sl-m-platform').value;
             if(platform === 'Other'){
                 const custom = (document.getElementById('sl-m-platform-other')||{}).value.trim();
@@ -13723,6 +13770,7 @@ ${(() => {
         }
 
         function csOpenForm(){
+            if(!requireCap('write', 'logging a Call Center complaint')) return;
             csCurrentStep = 1;
             Object.keys(csData).forEach(k => delete csData[k]);
             csStartTime = Date.now();
@@ -14437,7 +14485,35 @@ ${(() => {
         }
 
         // Global permission state — set on login, used everywhere
-        const PERM = { role:'Admin', region:'All', branch:'All', name:'' };
+        const PERM = { role:'Admin', region:'All', branch:'All', name:'', can:null };
+        // Capability matrix -- mirrors AC_ROLES in Code.gs. The server is the
+        // lock; this only decides what the UI shows and which actions it allows
+        // to be attempted, so a read-only user gets a clear message instead of a
+        // server error.
+        const ROLE_CAPS = {
+            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true  },
+            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:true  },
+            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false },
+            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false },
+            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false }
+        };
+        const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
+        function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
+        function can(cap){
+            const c = PERM.can || ROLE_CAPS[roleKey(PERM.role)] || ROLE_CAPS.viewer;
+            return !!c[cap];
+        }
+        function requireCap(cap, what){
+            if(can(cap)) return true;
+            const msg = cap === 'users'  ? `Only the Owner can manage users.`
+                      : cap === 'forms'  ? `Form Builder is available to the Owner and Report Analysts.`
+                      : cap === 'audit'  ? `Activity is available to the Owner and Admins.`
+                      : cap === 'export' ? `Exporting is not available on your account.`
+                      : `Your account can't make changes — ${what} needs a Call Center or Owner account.`;
+            try { UI.toast(msg, 'warning'); } catch(e){ alert(msg); }
+            return false;
+        }
 
         function authGetSession(){
             try {
@@ -14529,6 +14605,10 @@ ${(() => {
         function authApplyPermissions(user){
             // Load into global PERM object
             PERM.role   = user.role   || 'Viewer';
+            PERM.can    = user.can || null;
+            document.body.dataset.role = roleKey(PERM.role);
+            document.body.classList.toggle('no-write', !can('write'));
+            document.body.classList.toggle('no-export', !can('export'));
             PERM.region = user.region || 'All';
             PERM.branch = user.branch || 'All';
             PERM.name   = user.name   || user.email || '';
@@ -14554,8 +14634,10 @@ ${(() => {
             // ── Hide nav items based on role ──
             const allNavLinks = document.querySelectorAll('.topnav-link');
             const fbNav = document.getElementById('nav-form-builder');
-            if(fbNav) fbNav.style.display = (PERM.role === 'Admin') ? '' : 'none';
-            if(PERM.role === 'Viewer'){
+            if(fbNav) fbNav.style.display = can('forms') ? '' : 'none';
+            const actNav = document.getElementById('nav-activity');
+            if(actNav) actNav.style.display = can('audit') ? '' : 'none';
+            if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
                     const txt = el.textContent.trim().toLowerCase();
@@ -14595,7 +14677,7 @@ ${(() => {
                                 <div style="width:34px;height:34px;border-radius:50%;background:${avatarColor.bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.78rem;flex-shrink:0;">${initials}</div>
                                 <div>
                                     <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${displayName}</div>
-                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">${PERM.role}${scope ? ' · ' + scope : ''}</div>
+                                    <div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;">${ROLE_LABEL[roleKey(PERM.role)] || PERM.role}${scope ? ' · ' + scope : ''}</div>
                                 </div>
                             </div>
                             <!-- Photo options -->
@@ -14614,7 +14696,7 @@ ${(() => {
                             <div style="padding:6px;border-top:1px solid var(--border-color);">
                                 ${_notifPermRowHTML()}
                             </div>
-                            ${PERM.role === 'Admin' ? `
+                            ${can('users') ? `
                             <!-- Admin: user management -->
                             <div style="padding:6px;border-top:1px solid var(--border-color);">
                                 <button onclick="openUsersModal()" style="display:flex;align-items:center;gap:10px;padding:9px 10px;width:100%;border:none;background:transparent;cursor:pointer;font-size:0.82rem;font-weight:600;color:var(--text-main);text-align:left;border-radius:8px;transition:.15s;font-family:'Inter',sans-serif;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
@@ -14868,18 +14950,23 @@ ${(() => {
                 wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">No users yet — add the first one.</div>`;
                 return;
             }
-            const roleColor = r => r === 'Admin' ? '#64D0FF' : r === 'Manager' ? '#34D399' : '#CBD5E1';
+            const roleColor = r => ({ owner:'#010197', admin:'#3B5BDB', reportanalyst:'#7C3AED', callcenter:'#D97706', manager:'#059669', viewer:'#64748B' })[roleKey(r)] || '#64748B';
+            const fmtLogin = v => { if(!v) return 'Never signed in'; const d = new Date(v); if(isNaN(d)) return 'Last seen ' + v; const m = Math.round((Date.now()-d)/60000); return 'Last seen ' + (m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m/60) + ' h ago' : d.toLocaleDateString()); };
             wrap.innerHTML = users.map(u => {
-                const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region : 'All access');
+                const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region + ' region' : 'All branches');
                 const isSelf = (u.email||'').trim().toLowerCase() === (PERM.email||'').trim().toLowerCase();
-                return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);">
+                const disabled = String(u.status||'active').toLowerCase() === 'disabled';
+                return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);${disabled?'opacity:.55;':''}">
                     <div style="width:34px;height:34px;border-radius:50%;background:${getAvatarColor(u.name||u.email).bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.72rem;flex-shrink:0;">${(u.name||u.email||'U').split(/\\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U'}</div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:0.84rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.name||'—'}${isSelf?' <span style="font-weight:600;color:var(--text-muted);">(you)</span>':''}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
                     </div>
-                    <span style="font-size:0.66rem;font-weight:800;padding:3px 8px;border-radius:20px;background:${roleColor(u.role)}26;color:${roleColor(u.role)};flex-shrink:0;">${u.role}</span>
-                    <span style="font-size:0.7rem;color:var(--text-muted);flex-shrink:0;min-width:80px;text-align:right;">${scope}</span>
+                    <div style="flex-shrink:0;text-align:right;">
+                        <span style="font-size:0.66rem;font-weight:800;padding:3px 8px;border-radius:20px;background:${roleColor(u.role)}1f;color:${roleColor(u.role)};">${ROLE_LABEL[roleKey(u.role)] || u.role}</span>
+                        ${disabled ? '<span style="font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:#DC2626;margin-left:4px;">DISABLED</span>' : ''}
+                        <div style="font-size:0.66rem;color:var(--text-muted);margin-top:3px;">${scope} · ${fmtLogin(u.lastLogin)}</div>
+                    </div>
                     <button onclick='openUserForm(${JSON.stringify(u).replace(/'/g,"&apos;")})' title="Edit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;flex-shrink:0;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"><i class="fas fa-pen" style="font-size:0.72rem;"></i></button>
                     <button onclick="deleteUserRow('${(u.email||'').replace(/'/g,"\\'")}')" title="${isSelf?'Cannot delete your own account':'Delete'}" ${isSelf?'disabled':''} style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:${isSelf?'var(--border-color)':'#DC2626'};cursor:${isSelf?'not-allowed':'pointer'};flex-shrink:0;" ${isSelf?'':`onmouseover="this.style.background='rgba(220,38,38,.08)'" onmouseout="this.style.background='transparent'"`}><i class="fas fa-trash-can" style="font-size:0.72rem;"></i></button>
                 </div>`;
@@ -14897,8 +14984,9 @@ ${(() => {
                 document.getElementById('uf-email').value = user.email || '';
                 document.getElementById('uf-password').value = '';
                 document.getElementById('uf-password').placeholder = 'Leave blank to keep current password';
-                document.getElementById('uf-pw-hint').textContent = '(optional — only to change it)';
+                document.getElementById('uf-pw-hint').textContent = '';
                 document.getElementById('uf-role').value = user.role || 'Viewer';
+                document.getElementById('uf-disabled').checked = String(user.status||'active').toLowerCase() === 'disabled';
             } else {
                 document.getElementById('user-form-title').textContent = 'Add User';
                 document.getElementById('uf-original-email').value = '';
@@ -14908,8 +14996,35 @@ ${(() => {
                 document.getElementById('uf-password').placeholder = 'Set a password';
                 document.getElementById('uf-pw-hint').textContent = '';
                 document.getElementById('uf-role').value = 'Viewer';
+                document.getElementById('uf-disabled').checked = false;
             }
+            _ufRoleChanged();
+            document.getElementById('uf-role').onchange = _ufRoleChanged;
             document.getElementById('user-form-modal').style.display = 'flex';
+        }
+        // Role drives the scope controls: Admin = everything (scope fields
+        // locked to All), Manager = exactly one branch (required), Viewer = optional scope.
+        function _ufRoleChanged(){
+            const role = document.getElementById('uf-role').value;
+            const region = document.getElementById('uf-region'), branch = document.getElementById('uf-branch');
+            const hint = document.getElementById('uf-role-hint'), bh = document.getElementById('uf-branch-hint');
+            const k = roleKey(role);
+            const HINTS = {
+                owner: 'The primary owner. Sees everything including Data & Logs and Activity, can change anything, manages users and forms. Assign sparingly.',
+                admin: 'Sees every dashboard and the Activity trail across all branches. Cannot change data, export, or manage users or forms.',
+                reportanalyst: 'Sees everything, can export reports and build/edit customer forms. Cannot handle incidents, log submissions or manage users.',
+                callcenter: 'Sees everything and does the day-to-day work: logs Call Center submissions, reviews and resolves incidents, handles social mentions. Cannot export, manage users or edit forms.',
+                manager: 'Sees exactly one branch — its submissions, incidents and reports — and can export them. Cannot change anything.',
+                viewer: 'Can only look. Leave scope as All for company-wide read access, or narrow it to a region or branch.'
+            };
+            hint.textContent = HINTS[k] || '';
+            if(k === 'manager'){
+                region.value = 'All'; region.disabled = true; branch.disabled = false; bh.textContent = '(required)';
+            } else if(k === 'viewer'){
+                region.disabled = false; branch.disabled = false; bh.textContent = '(optional)';
+            } else {
+                region.value = 'All'; branch.value = 'All'; region.disabled = true; branch.disabled = true; bh.textContent = '';
+            }
         }
         function closeUserForm(){
             document.getElementById('user-form-modal').style.display = 'none';
@@ -14929,7 +15044,8 @@ ${(() => {
 
             if(!name){ errEl.textContent = 'Name is required.'; return; }
             if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent = 'Enter a valid email.'; return; }
-            if(!isEdit && !password){ errEl.textContent = 'Set a password for the new user.'; return; }
+            if(roleKey(role) === 'manager' && (!branch || branch === 'All')){ errEl.textContent = 'A Manager must be assigned to one branch.'; return; }
+            const status = document.getElementById('uf-disabled').checked ? 'disabled' : 'active';
 
             const btn = document.getElementById('uf-save-btn');
             const prevLabel = btn.textContent;
@@ -14941,7 +15057,7 @@ ${(() => {
                 body: JSON.stringify({
                     action: 'save_user',
                     originalEmail: isEdit ? originalEmail : email,
-                    email, name, password, role, region, branch
+                    email, name, password, role, region, branch, status
                 })
             })
             .then(r => r.json())
@@ -14997,7 +15113,7 @@ ${(() => {
             document.body.classList.add('app-ready');
             authApplyPermissions(user);
             _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
-            if(PERM.role === 'Admin') setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);   // warm the Manage Users list
+            if(can('users')) setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);   // warm the Manage Users list
             app.init();
         }
 
@@ -15695,6 +15811,50 @@ ${(() => {
             return { attach, values, refresh, clear, enhance, enhanceAll, watch };
         })();
 
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ACTIVITY — audit trail (Admin). Reads the "Audit" tab through the
+        // feed; every write and every denied attempt lands here.
+        // ═══════════════════════════════════════════════════════════════════
+        const ACT = (function(){
+            const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const LABEL = { incident_resolution:'Resolved incident', incident_reviewed:'Reviewed incident', callcenter:'Logged complaint', sl_resolution:'Updated mention', social_mention:'Added mention',
+                            save_user:'Saved user', delete_user:'Deleted user', save_form:'Saved form', get_users:'Viewed users', save_profile_photo:'Changed photo' };
+            let filter = { q:'', action:'', result:'' };
+            function rows(){ const t = DataFeed.tabs.audit; return (t && t.objRows) ? t.objRows.slice().reverse() : []; }
+            function render(){
+                const host = document.getElementById('activity-root'); if(!host) return;
+                if(!can('audit')){ host.innerHTML = '<div class="fb-empty">Activity is available to the Owner and Admins.</div>'; return; }
+                const all = rows();
+                const actions = Array.from(new Set(all.map(r => r['Action']).filter(Boolean))).sort();
+                const list = all.filter(r => (!filter.action || r['Action'] === filter.action) && (!filter.result || (filter.result === 'denied' ? /denied/i.test(r['Result']) : !/denied/i.test(r['Result'])))
+                                          && (!filter.q || [r['Email'], r['Target'], r['Details'], r['Action']].join(' ').toLowerCase().includes(filter.q))).slice(0, 500);
+                host.innerHTML = `
+                    <div class="fb-toolbar">
+                        <div><div class="section-header" style="margin-bottom:0;"><h3>Activity</h3></div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Who did what, and what was refused. ${all.length.toLocaleString()} events recorded.</div></div>
+                        <div class="spacer"></div>
+                        <input class="fb-field" id="act-q" placeholder="Search email, target, details…" value="${esc(filter.q)}" style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:9px;font-family:'Inter',sans-serif;font-size:0.8rem;min-width:220px;" oninput="ACT.set('q', this.value.toLowerCase())">
+                        <select class="select-input" onchange="ACT.set('action', this.value)"><option value="">All actions</option>${actions.map(a => `<option value="${esc(a)}" ${a===filter.action?'selected':''}>${esc(LABEL[a]||a)}</option>`).join('')}</select>
+                        <select class="select-input" onchange="ACT.set('result', this.value)"><option value="">All results</option><option value="ok" ${filter.result==='ok'?'selected':''}>Allowed</option><option value="denied" ${filter.result==='denied'?'selected':''}>Denied</option></select>
+                    </div>
+                    <div class="fb-section" style="padding:0;overflow:hidden;">
+                        <div class="act-row head"><span>When</span><span>Who</span><span>Action</span><span>Target / details</span><span>Result</span></div>
+                        ${list.length ? list.map(r => {
+                            const denied = /denied/i.test(r['Result']);
+                            return `<div class="act-row">
+                                <span style="color:var(--text-muted);">${esc(r['Timestamp'])}</span>
+                                <span class="who">${esc(r['Email'])}<small>${esc(r['Role'])}</small></span>
+                                <span class="act-action">${esc(LABEL[r['Action']] || r['Action'])}</span>
+                                <span class="det" title="${esc(r['Details'])}">${esc(r['Target'])}${r['Details'] ? ' · ' + esc(r['Details']) : ''}</span>
+                                <span><span class="act-pill ${denied?'denied':'ok'}">${denied ? 'Denied' : 'OK'}</span></span>
+                            </div>`; }).join('')
+                        : '<div class="fb-empty">No activity recorded yet. Events appear here as soon as someone resolves an incident, logs a complaint, edits a form or manages a user.</div>'}
+                    </div>`;
+            }
+            function set(k, v){ filter[k] = v; const q = document.getElementById('act-q'); const pos = q ? q.selectionStart : null; render(); if(k === 'q'){ const q2 = document.getElementById('act-q'); if(q2){ q2.focus(); if(pos != null) q2.setSelectionRange(pos, pos); } } }
+            return { render, set };
+        })();
+
         const FB = (function(){
             const PUBLIC_FORM_ORIGIN = 'https://feedback.crumblesentinel.com';
             const TYPES = {
@@ -15733,7 +15893,7 @@ ${(() => {
             // ── entry point from app.renderCurrentView ─────────────────────
             async function render(){
                 const host = root(); if(!host) return;
-                if(PERM.role !== 'Admin'){ host.innerHTML = `<div class="fb-empty">Form Builder is available to Admins only.</div>`; return; }
+                if(!can('forms')){ host.innerHTML = `<div class="fb-empty">Form Builder is available to the Owner and Report Analysts.</div>`; return; }
                 if(editing){ renderEditor(); return; }
                 host.innerHTML = `<div class="fb-empty"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading forms…</div>`;
                 try { await load(); renderList(); }
