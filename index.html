@@ -3025,6 +3025,17 @@
         .ct-fam-trend { margin-top:6px; font-size:0.64rem; font-weight:700; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .ct-fam-trend.up { color:#DC2626; } .ct-fam-trend.down { color:#059669; }
         .ci-fam-tag { display:inline-block; font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--fc); background:color-mix(in srgb, var(--fc) 12%, transparent); border-radius:6px; padding:2px 7px; margin-right:8px; vertical-align:middle; }
+        /* ═══════════ SOCIAL ESCALATION ═══════════ */
+        .sl-esc-track { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:10px; }
+        .sl-esc-track.escalated { background:rgba(220,38,38,.06); border:1px solid rgba(220,38,38,.25); border-radius:10px; padding:8px 10px; }
+        .sl-esc-badge { display:inline-flex; align-items:center; gap:6px; font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:#fff; background:#DC2626; border-radius:20px; padding:4px 10px; }
+        .sl-esc-meta { font-size:0.72rem; color:var(--text-muted); flex:1; min-width:0; }
+        .sl-esc-meta b { color:var(--text-main); }
+        .sl-esc-undo { border:none; background:transparent; color:var(--text-muted); font-size:0.7rem; font-weight:700; cursor:pointer; text-decoration:underline; font-family:'Inter',sans-serif; }
+        .sl-esc-btn { display:inline-flex; align-items:center; gap:7px; border:1.5px dashed rgba(220,38,38,.45); background:transparent; color:#B91C1C; font-size:0.72rem; font-weight:700; border-radius:9px; padding:6px 11px; cursor:pointer; font-family:'Inter',sans-serif; transition:.15s; }
+        .sl-esc-btn:hover { background:rgba(220,38,38,.08); border-style:solid; }
+        body.no-escalate .sl-esc-btn, body.no-escalate .sl-esc-undo { display:none !important; }
+        .sl-mention-card.is-escalated { border-color:rgba(220,38,38,.45) !important; box-shadow:0 0 0 1px rgba(220,38,38,.15); }
         /* ═══════════ COMPLAINT LEDGER v2 ═══════════ */
         .ct-fam-tile { cursor:pointer; transition:transform .15s, box-shadow .15s; }
         .ct-fam-tile:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
@@ -4551,6 +4562,12 @@
                                 <option value="Query">🔵 Queries</option>
                                 <option value="Mention">⚪ Mentions</option>
                             </select>
+                            <!-- Escalation filter -->
+                            <select id="sl-filter-escalation" class="select-input" onchange="renderSocialListening()" style="font-size:0.8rem;padding:7px 28px 7px 11px;">
+                                <option value="all">Escalation: any</option>
+                                <option value="yes">Escalated only</option>
+                                <option value="no">Not escalated</option>
+                            </select>
 
                             <!-- Clear filters — only shown when something is active -->
                             <button id="sl-clear-filters" onclick="slClearAllFilters()" style="display:none;align-items:center;gap:6px;padding:7px 13px;border:1.5px solid var(--status-critical);border-radius:8px;background:var(--status-critical-bg);color:var(--status-critical);font-size:0.78rem;font-weight:700;cursor:pointer;">
@@ -5027,7 +5044,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.10.0 · 9 Sep 2026 · dine-in';
+        const BUILD_VERSION = 'v2.11.0 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5206,7 +5223,7 @@
             // thread (~hundreds of ms). Doing it on every changed poll caused a
             // visible hitch, so: at most once every 2 minutes, plus a flush when
             // the tab is hidden or closed so nothing is lost.
-            const SAVE_MIN_MS = 20 * 1000;
+            const SAVE_MIN_MS = 60 * 1000;
             let saveTimer = null, lastSave = 0, dirty = false;
             async function saveNow(){
                 if(!dirty) return; dirty = false; lastSave = Date.now();
@@ -5223,7 +5240,7 @@
                 dirty = true;
                 clearTimeout(saveTimer);
                 const wait = Math.max(1500, SAVE_MIN_MS - (Date.now() - lastSave));
-                saveTimer = setTimeout(saveNow, wait);
+                saveTimer = setTimeout(() => { (window.requestIdleCallback ? requestIdleCallback(saveNow, { timeout: 4000 }) : saveNow()); }, wait);
             }
             function _unusedLegacySave(){
                 saveTimer = setTimeout(async () => {
@@ -5253,7 +5270,7 @@
                 if(res.mode === 'full'){
                     t.headers = res.headers || [];
                     if(res.state) t.state = res.state;                      // first chunk carries the state to keep
-                    if(res.state){ t.rows = res.rows || []; }               // first chunk: replace
+                    if(res.state){ t.rows = res.rows || []; t.gen = (t.gen || 0) + 1; }   // first chunk: replace -> new generation
                     else { t.rows = (res.rows || []).concat(t.rows); }      // continuation: older rows go in front
                     t.objRows = toObjects(t.headers, t.rows);
                     t.changed = true;
@@ -5317,11 +5334,18 @@
             function has(url){ const k = urlKey(url); return !!(k && tabs[k] && !tabs[k].missing); }
             function changed(url){ const k = urlKey(url); return !(k && tabs[k]) || tabs[k].changed === true; }
             function anyDirty(){ return Object.keys(tabs).some(k => tabs[k].changed === true); }
-            function markConsumed(){ Object.keys(tabs).forEach(k => { tabs[k].changed = false; }); }
+            function markConsumed(){ Object.keys(tabs).forEach(k => { const t = tabs[k]; t.changed = false; t.consumedLen = t.objRows.length; t.consumedGen = t.gen || 0; }); }
+            // Rows added since the dashboard last mapped this tab, or null if the
+            // tab was replaced/rebuilt (then a full remap is required).
+            function newSince(url){
+                const k = urlKey(url); const t = k && tabs[k]; if(!t) return null; if(t.missing) return [];
+                if(t.consumedLen == null || (t.gen || 0) !== (t.consumedGen || 0) || t.objRows.length < t.consumedLen) return null;
+                return t.objRows.slice(t.consumedLen);
+            }
             function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
@@ -5438,7 +5462,22 @@
         // submissions + derived incidents. Columns are matched BY HEADER NAME,
         // so column order doesn't matter and PII columns can be safely deleted.
         // Map one form's rows, tagging each with its form/channel. Called once per source.
+        // Exact duplicate rows (a double-tapped Submit, a sync that ran twice)
+        // are collapsed on read so one complaint never shows as two incidents.
+        // The key set persists across incremental maps (out._keys), so a row
+        // arriving in a later delta that duplicates an earlier one is dropped too.
+        function _dedupeRows(rows, seen){
+            const outRows = [];
+            for(const r of rows){
+                const k = [ _rawFieldExact(r, 'Created At') || '', _find(r,'phone') || '', _find(r,'location') || '', _find(r,'rate','visit') || _find(r,'experience','today') || '', _find(r,'any other') || '' ].join('|');
+                if(seen.has(k)) continue; seen.add(k); outRows.push(r);
+            }
+            return outRows;
+        }
+        let _mappedRowKeys = new Set();
         function mapSource(rows, src, out){
+            if(!out._incremental) { if(!out._keysReset){ _mappedRowKeys = new Set(); out._keysReset = true; } }
+            rows = _dedupeRows(rows || [], _mappedRowKeys);
             let pushed = 0;
             // Tracks every row silently dropped and why — without this, a real
             // row sitting in the sheet with no obvious visual difference just
@@ -5692,6 +5731,36 @@
             const nothingMapped = !rawData.submissions.length && !rawData.incidents.length;
             const dataChanged = !wasLive || nothingMapped || (DataFeed.enabled && DataFeed.anyDirty()) || _fetch.anyChanged(sources.map(s => s.url).concat(sideUrls));
             window.__liveChanged = dataChanged;
+
+            // ── Incremental path: when every source only APPENDED rows since the
+            // last map, map just those rows and extend rawData -- instead of
+            // re-mapping all 35k rows on every new submission (the periodic lag).
+            if(dataChanged && wasLive && !nothingMapped && !opts.offline && !window.__forceFullNext && DataFeed.enabled && window.__feedOk !== false){
+                const deltas = sources.map(src => DataFeed.newSince(src.url));
+                const sideChanged = _fetch.anyChanged(sideUrls);
+                window.__incReason = { wasLive, nothingMapped, force: !!window.__forceFullNext, deltas: deltas.map(d => Array.isArray(d) ? d.length : null), sideChanged, sideUrls: sideUrls.map(u => DataFeed.urlKey(u) || 'csv:' + String(u).slice(0,30)) };
+                if(deltas.every(d => Array.isArray(d)) && !sideChanged){
+                    const total = deltas.reduce((n, d) => n + d.length, 0);
+                    const resChanged = !!(DataFeed.tabs.incident_resolution && DataFeed.tabs.incident_resolution.changed);
+                    if(total === 0 && !resChanged){ DataFeed.markConsumed(); return true; }   // nothing new for the dashboard
+                    const out = { subs: rawData.submissions.slice(), incs: rawData.incidents.slice(), _incremental: true };
+                    deltas.forEach((rows, idx) => { if(rows.length) mapSource(rows, sources[idx], out); });
+                    rawData.submissions.length = 0; rawData.incidents.length = 0;
+                    out.subs.forEach(x => rawData.submissions.push(x)); out.incs.forEach(x => rawData.incidents.push(x));
+                    _rawSubsGuard.confirmed = rawData.submissions; _rawIncsGuard.confirmed = rawData.incidents;
+                    if(LIVE.incidentResolutionUrl){ try { applyIncidentResolutions(await loadIncidentResolutionsFromSheet()); } catch(e){ console.warn('Incident resolution apply failed:', e); } }
+                    _applyIncidentResolutionProtection();
+                    DataFeed.markConsumed();
+                    window.__incrementalMaps = (window.__incrementalMaps || 0) + 1;
+                    if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }
+                    if(!window.__pollRepaintDeferred && typeof app !== 'undefined' && app.applyFilters){
+                        const _repaint = () => { app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); };
+                        try{ (typeof UI !== 'undefined') ? UI.silent(_repaint) : _repaint(); }catch(e){}
+                    }
+                    setLiveBadge(true);
+                    return true;
+                }
+            }
             // Fetch the AI Executive Summary + the four AI Insights feeds (independent of form data)
             try {
                 const [sr, ap, bx, rd, ci] = await Promise.all([
@@ -7598,44 +7667,36 @@
                 try { f && f.querySelectorAll('.inc-validity-btn').forEach(b => { b.style.transition='box-shadow .2s'; b.style.boxShadow='0 0 0 3px rgba(220,38,38,.25)'; setTimeout(()=>{ b.style.boxShadow=''; }, 900); }); } catch(e){}
                 return;
             }
-            if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
-            fetch(LIVE.slScriptUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'incident_resolution', id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '' })
-            })
-            .then(r => r.json())
-            .then(r => {
-                if(r.status !== 'success') throw new Error(r.message || 'save failed');
-                // Not Responding is its own outcome, not a stand-in for Valid —
-                // closing the case this way still stops the resolution-time
-                // clock (so agents aren't stuck holding a case open just
-                // because a customer didn't pick up), but it's deliberately
-                // NOT locked in the way Valid/Fake are: the determination form
-                // stays visible for a not_responding case so that if the
-                // customer is reached on a later attempt, the agent can come
-                // back and set the real Valid/Fake — which then overwrites
-                // this and updates resolvedAt to reflect the true final close.
-                const resolvedCaseStatus = validity === 'fake' ? 'fake' : validity === 'not_responding' ? 'not_responding' : 'verified';
-                const resolvedAt = new Date().toISOString();
-                _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt, category || '');
-                (rawData.incidents||[]).forEach(inc => {
-                    if(_incidentStableKey(inc) === stableKey){
-                        inc.resolved = true;
-                        inc.resolutionNote = note || '';
-                        inc.caseStatus = resolvedCaseStatus;
-                        inc.agentVerdict = true; // this came from a human, not the automated classifier
-                        inc.resolvedAt = resolvedAt;
-                        if(category) inc.agentCategory = category;
-                    }
-                });
-                // Full repaint, not just the incidents table — see
-                // _refreshAfterIncidentChange above.
-                _refreshAfterIncidentChange();
-            })
+            if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-check"></i> Saved'; }
+            // ── Optimistic: the portal reflects the resolution NOW; the sheet
+            // write happens in the background (with retries). Waiting 3-6s on
+            // Apps Script + its lock before updating the screen was the
+            // "resolving takes time" complaint. On failure the change is
+            // reverted and the agent is told to redo it.
+            const resolvedCaseStatus = validity === 'fake' ? 'fake' : validity === 'not_responding' ? 'not_responding' : 'verified';
+            const resolvedAt = new Date().toISOString();
+            const snapshot = [];
+            (rawData.incidents||[]).forEach(inc => {
+                if(_incidentStableKey(inc) === stableKey){
+                    snapshot.push([inc, { resolved: inc.resolved, resolutionNote: inc.resolutionNote, caseStatus: inc.caseStatus, agentVerdict: inc.agentVerdict, resolvedAt: inc.resolvedAt, agentCategory: inc.agentCategory }]);
+                    inc.resolved = true; inc.resolutionNote = note || ''; inc.caseStatus = resolvedCaseStatus;
+                    inc.agentVerdict = true; inc.resolvedAt = resolvedAt; if(category) inc.agentCategory = category;
+                }
+            });
+            _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt, category || '');
+            _refreshAfterIncidentChange();
+            try { UI.toast(validity === 'not_responding' ? 'Closed — customer not responding' : `Closed as ${validity === 'fake' ? 'Fake' : 'Valid'}`, 'success'); } catch(e){}
+            try { if(typeof app !== 'undefined' && app.closeIncidentDetailModal) setTimeout(() => app.closeIncidentDetailModal(), 350); } catch(e){}
+
+            const clientId = 'res_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+            apiCall('incident_resolution', { id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '', clientId })
+            .then(r => { if(!r || r.status !== 'success') throw new Error((r && r.message) || 'save failed'); })
             .catch(err => {
                 console.warn('Incident resolution save failed:', err);
-                alert('Could not save this: ' + (err && err.message ? err.message : err));
+                snapshot.forEach(([inc, prev]) => Object.assign(inc, prev));
+                delete _incidentResolutionProtected[stableKey];
+                _refreshAfterIncidentChange();
+                try { UI.toast('NOT saved: ' + (err && err.message ? err.message : err) + ' — please resolve it again.', 'error', 9000); } catch(e){ alert('NOT saved: ' + (err && err.message ? err.message : err)); }
                 if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Mark as Closed'; }
             });
         }
@@ -12000,6 +12061,46 @@ ${(() => {
         // ── Inline "what resolution was given?" box, shown only when closing a case ──
         let _slPendingCloseImage = {}; // id -> base64 data URI, local-only until the server confirms and returns the permanent Drive URL
 
+        // ── Escalation ────────────────────────────────────────────────────
+        function slEscalationHtml(m){
+            const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            if(m.escalated){
+                return `<div class="sl-esc-track escalated" id="sl-esc-track-${m.id}">
+                    <span class="sl-esc-badge"><i class="fas fa-flag"></i> Escalated</span>
+                    <span class="sl-esc-meta">by <b>${esc(m.escalatedBy||'—')}</b>${m.escalatedAt ? ' · ' + esc(slTimeAgo(m.escalatedAt)) : ''}${m.escalationNote ? ` · <i>“${esc(m.escalationNote)}”</i>` : ''}</span>
+                    <button class="sl-esc-undo" onclick="slSetEscalation('${m.id}', false)" title="Remove escalation">Undo</button>
+                </div>`;
+            }
+            return `<div class="sl-esc-track" id="sl-esc-track-${m.id}">
+                <button class="sl-esc-btn" onclick="slShowEscalateBox('${m.id}')"><i class="fas fa-flag"></i> Escalate to management</button>
+            </div>`;
+        }
+        function slShowEscalateBox(id){
+            if(!requireCap('escalate', 'escalating a complaint')) return;
+            const track = document.getElementById('sl-esc-track-'+id); if(!track) return;
+            track.innerHTML = `<div class="sl-close-note-box">
+                <input type="text" id="sl-esc-note-${id}" class="sl-close-note-input" placeholder="Why does management need to see this? (optional)" maxlength="200" onkeydown="if(event.key==='Enter') slSetEscalation('${id}', true)">
+                <button class="sl-close-note-confirm" style="background:#DC2626;" onclick="slSetEscalation('${id}', true)" title="Escalate"><i class="fas fa-flag"></i></button>
+                <button class="sl-close-note-cancel" onclick="renderSocialListening()" title="Cancel"><i class="fas fa-xmark"></i></button>
+            </div>`;
+            const el = document.getElementById('sl-esc-note-'+id); if(el) el.focus();
+        }
+        function slSetEscalation(id, on){
+            if(!requireCap('escalate', 'escalating a complaint')) return;
+            const m = slMentions.find(x => x.id === id); if(!m) return;
+            const note = on ? ((document.getElementById('sl-esc-note-'+id)||{}).value||'').trim() : '';
+            const prev = { escalated: m.escalated, escalatedAt: m.escalatedAt, escalatedBy: m.escalatedBy, escalationNote: m.escalationNote };
+            m.escalated = !!on; m.escalatedAt = on ? new Date().toISOString() : ''; m.escalatedBy = on ? (PERM.name || PERM.email) : ''; m.escalationNote = note;
+            slSaveData(); renderSocialListening();
+            apiCall('sl_escalate', { id, escalate: !!on, note, platform: m.platform, branch: m.branch, author: m.author, content: m.content, url: m.url })
+                .then(r => {
+                    if(!r || r.status !== 'success') throw new Error(r && r.message || 'save failed');
+                    if(r.escalatedAt) m.escalatedAt = r.escalatedAt; if(r.escalatedBy) m.escalatedBy = r.escalatedBy;
+                    slSaveData();
+                    UI.toast(on ? 'Escalated to management — email sent.' : 'Escalation removed.', on ? 'warning' : 'success');
+                })
+                .catch(err => { Object.assign(m, prev); slSaveData(); renderSocialListening(); UI.toast('Could not save escalation: ' + err.message, 'error'); });
+        }
         function slShowCloseNoteBox(id){
             const track = document.getElementById('sl-res-track-'+id);
             if(!track) return;
@@ -12502,6 +12603,8 @@ ${(() => {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
+                    action: 'social_mention',              // explicit: the Worker refuses bodies without an action
+                    clientId: newMention.id,               // server ignores a repeat of the same id (double-click safe)
                     platform, type, sentiment, branch, author, content,
                     likes, comments,
                     url,
@@ -12527,8 +12630,12 @@ ${(() => {
                 }, 1500);
             })
             .catch(err => {
-                console.warn('Sheet save failed (mention kept locally):', err);
-                alert('Could not save this mention to the sheet — it is only stored locally for now. Please try again.');
+                // Do NOT keep a phantom row: remove the optimistic entry so the
+                // count on screen is the truth, and say clearly it wasn't saved.
+                console.warn('Sheet save failed (mention removed):', err);
+                const i = slMentions.findIndex(m => m.id === newMention.id); if(i >= 0) slMentions.splice(i, 1);
+                try { renderSocialListening(); } catch(e){}
+                try { UI.toast('NOT saved: ' + (err && err.message ? err.message : err) + ' — please add it again.', 'error', 8000); } catch(e){ alert('NOT saved: ' + (err && err.message ? err.message : err)); }
             })
             .finally(() => {
                 if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent='Save Mention'; }
@@ -12583,11 +12690,18 @@ ${(() => {
                     const stKey   = keys.find(k => k.toLowerCase().trim() === 'status') || keys.find(k => k.toLowerCase().includes('status'));
                     const noteKey = keys.find(k => k.toLowerCase().trim() === 'note') || keys.find(k => k.toLowerCase().includes('note'));
                     const imgKey  = keys.find(k => k.toLowerCase().trim() === 'image url') || keys.find(k => k.toLowerCase().includes('image'));
+                    const resByKey = keys.find(k => k.toLowerCase().trim() === 'resolved by');
+                    const escKey  = keys.find(k => k.toLowerCase().trim() === 'escalated');
+                    const escAtKey= keys.find(k => k.toLowerCase().trim() === 'escalated at');
+                    const escByKey= keys.find(k => k.toLowerCase().trim() === 'escalated by');
+                    const escNoteKey = keys.find(k => k.toLowerCase().trim() === 'escalation note');
                     const id    = idKey   ? String(row[idKey]||'').trim()   : '';
                     const st    = stKey   ? String(row[stKey]||'').trim()   : '';
                     const note  = noteKey ? String(row[noteKey]||'').trim() : '';
                     const image = imgKey  ? String(row[imgKey]||'').trim()  : '';
-                    if(id && st) map[id] = { status: st, note: note, image: image };
+                    const escalated = escKey ? /^(yes|true|1)$/i.test(String(row[escKey]||'').trim()) : false;
+                    if(id && (st || escalated)) map[id] = { status: st, note: note, image: image, resolvedBy: resByKey ? String(row[resByKey]||'').trim() : '',
+                        escalated, escalatedAt: escAtKey ? String(row[escAtKey]||'').trim() : '', escalatedBy: escByKey ? String(row[escByKey]||'').trim() : '', escalationNote: escNoteKey ? String(row[escNoteKey]||'').trim() : '' };
                 });
                 return map;
             } catch(err){ console.warn('Resolution read-back failed:', err); return null; }
@@ -12596,7 +12710,9 @@ ${(() => {
             if(!map) return;
             slMentions.forEach(m => {
                 const entry = map[m.id];
-                if(entry){ m.resolutionStatus = entry.status; if(entry.note) m.resolutionNote = entry.note; if(entry.image) m.resolutionImageUrl = entry.image; }
+                if(entry){ if(entry.status) m.resolutionStatus = entry.status; if(entry.note) m.resolutionNote = entry.note; if(entry.image) m.resolutionImageUrl = entry.image;
+                    if(entry.resolvedBy) m.resolvedBy = entry.resolvedBy;
+                    m.escalated = !!entry.escalated; m.escalatedAt = entry.escalatedAt || ''; m.escalatedBy = entry.escalatedBy || ''; m.escalationNote = entry.escalationNote || ''; }
                 slApplyProtection(m);
             });
         }
@@ -12852,11 +12968,14 @@ ${(() => {
         function slApplyFilters(list, skip){
             skip = skip || {};
             const snFilter = (document.getElementById('sl-filter-sentiment')||{}).value||'all';
+            const escFilter = (document.getElementById('sl-filter-escalation')||{}).value||'all';
             const dateFrom = (document.getElementById('sl-date-from')||{}).value||'';
             const dateTo   = (document.getElementById('sl-date-to')||{}).value||'';
             const searchQ  = ((document.getElementById('sl-search')||{}).value||'').trim().toLowerCase();
             return list.filter(m => {
                 if(snFilter !== 'all' && m.sentiment !== snFilter) return false;
+                if(escFilter === 'yes' && !m.escalated) return false;
+                if(escFilter === 'no' && m.escalated) return false;
                 if(dateFrom && m.date && m.date < dateFrom) return false;
                 if(dateTo   && m.date && m.date > dateTo)   return false;
                 // Free-text search — author, content, branch, platform, tags
@@ -13082,7 +13201,7 @@ ${(() => {
                 const platIcon  = SL_PLATFORM_ICONS[m.platform]||'fa-globe';
                 const platClass = SL_PLATFORM_CLASS[m.platform]||'sl-platform-default';
                 const sentChip  = SL_SENTIMENT_CHIPS[m.sentiment]||SL_SENTIMENT_CHIPS['Mention'];
-                const cardClass = SL_SENTIMENT_CARD[m.sentiment]||'sentiment-mention';
+                const cardClass = (SL_SENTIMENT_CARD[m.sentiment]||'sentiment-mention') + (m.escalated ? ' is-escalated' : '');
                 const urgent    = slIsUrgent(m);
                 const branchTag = m.branch ? `<span class="sl-branch-tag"><i class="fas fa-store" style="font-size:0.58rem;"></i>${m.branch}</span>` : '';
                 const urgentTag = urgent ? `<span class="sl-urgency"><i class="fas fa-bolt" style="font-size:0.58rem;"></i> Urgent</span>` : '';
@@ -13226,6 +13345,7 @@ ${(() => {
                         <span class="sl-stat"><i class="fas fa-comment"></i> ${(m.comments||0).toLocaleString()}</span>
                         <span class="sl-stat"><i class="fas fa-share-nodes"></i> ${(m.shares||0).toLocaleString()}</span>
                     </div>
+                    ${m.sentiment==='Complaint' ? slEscalationHtml(m) : ''}
                     ${m.sentiment==='Complaint'?(()=>{
                         const rs=m.resolutionStatus||'none';
                         if(rs==='closed'){
@@ -14416,6 +14536,7 @@ ${(() => {
 
             const payload = {
                 action          : 'callcenter',
+                clientId        : 'cc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
                 createdAt       : new Date().toISOString(),
                 createdBy       : PERM.name || 'Call Center',
                 location        : csData.branch        || '',
@@ -14915,12 +15036,12 @@ ${(() => {
         // to be attempted, so a read-only user gets a clear message instead of a
         // server error.
         const ROLE_CAPS = {
-            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true  },
-            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false },
-            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false },
-            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false },
-            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false }
+            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true  },
+            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false },
+            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true  },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:true  },
+            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false },
+            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false }
         };
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
@@ -14930,7 +15051,8 @@ ${(() => {
         }
         function requireCap(cap, what){
             if(can(cap)) return true;
-            const msg = cap === 'users'  ? `Only the Owner can manage users.`
+            const msg = cap === 'escalate' ? `Escalating is available to the Owner, Report Analysts and Call Center.`
+                      : cap === 'users'  ? `Only the Owner can manage users.`
                       : cap === 'forms'  ? `Form Builder is available to the Owner and Report Analysts.`
                       : cap === 'audit'  ? `Activity is available to the Owner only.`
                       : cap === 'export' ? `Exporting is not available on your account.`
@@ -15033,6 +15155,7 @@ ${(() => {
             document.body.dataset.role = roleKey(PERM.role);
             document.body.classList.toggle('no-write', !can('write'));
             document.body.classList.toggle('no-export', !can('export'));
+            document.body.classList.toggle('no-escalate', !can('escalate'));
             PERM.region = user.region || 'All';
             PERM.branch = user.branch || 'All';
             PERM.name   = user.name   || user.email || '';
