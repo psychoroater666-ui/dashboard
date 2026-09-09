@@ -1817,34 +1817,41 @@
         /* fade nav right edge */
         .topnav-links { -webkit-mask-image: linear-gradient(to right, #000 94%, transparent); mask-image: linear-gradient(to right, #000 94%, transparent); }
 
+        /* ── Identity chip: glass pill, gradient-ringed avatar with a live
+           status dot, name over a muted role line, chevron that rotates. ── */
         .user-chip {
-            display: flex; align-items: center; gap: 9px;
-            padding: 4px 10px 4px 4px; border-radius: 30px;
-            background: rgba(255,255,255,0.07);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: background .2s, border-color .2s;
-            cursor: pointer;
+            display: flex; align-items: center; gap: 10px;
+            padding: 4px 12px 4px 5px; border-radius: 999px; min-height: 42px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.14);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 14px rgba(0,0,0,0.18);
+            transition: background .2s, border-color .2s, transform .15s;
+            cursor: pointer; user-select: none;
         }
-        .user-chip:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.16); }
+        .user-chip:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.24); }
+        .user-chip:active { transform: scale(.985); }
+        .user-avatar-wrap { position: relative; flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; padding: 2px;
+            background: linear-gradient(135deg, #64D0FF, #3B5BDB 55%, #010197); box-shadow: 0 2px 8px rgba(0,0,0,0.28); }
         .user-avatar {
-            width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%;
+            width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
             color: #fff; display: flex; align-items: center; justify-content: center;
             font-weight: 800; font-size: 0.72rem; letter-spacing: 0.5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            border: 2px solid #0a0a7a;
         }
-        /* Role, region, and branch scope already live one click away at the
-           top of the dropdown — repeating them in the header chip itself
-           was the extra layer of chrome (a colored pill on top of a colored
-           avatar) that made it feel busy rather than considered. Down to
-           the two things someone actually needs at a glance: who's signed
-           in, and that there's a menu here. */
-        .user-name { font-size: 0.8rem; font-weight: 700; color: #fff; white-space: nowrap; }
+        .user-status-dot { position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%;
+            background: #22C55E; border: 2px solid #0a0a7a; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: userDotPulse 2.4s ease-out infinite; }
+        body.feed-down .user-status-dot { background: #F59E0B; animation: none; }
+        @keyframes userDotPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); } 70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+        .user-chip-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+        .user-name { font-size: 0.8rem; font-weight: 800; color: #fff; white-space: nowrap; letter-spacing: .1px; }
+        .user-role { font-size: 0.62rem; font-weight: 700; color: rgba(255,255,255,0.62); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
         .user-chip-chevron {
-            font-size: 0.6rem;
-            color: rgba(255,255,255,0.45);
+            font-size: 0.6rem; margin-left: 2px;
+            color: rgba(255,255,255,0.5);
             transition: transform var(--t-base, .22s) var(--ease, ease), color var(--t-base, .22s) var(--ease, ease);
         }
-        .user-chip:hover .user-chip-chevron { color: rgba(255,255,255,0.75); }
+        .user-chip:hover .user-chip-chevron { color: rgba(255,255,255,0.85); }
         .user-chip-chevron.is-open { transform: rotate(180deg); }
         .user-role {
             font-size: 0.58rem; font-weight: 800; text-transform: uppercase;
@@ -3194,7 +3201,7 @@
             .topnav-links::-webkit-scrollbar { display: none; }
             .topnav-link { flex: 0 0 auto !important; white-space: nowrap !important; padding: 8px 11px !important; font-size: 0.78rem !important; scroll-snap-align: center; min-height: 36px; display: inline-flex; align-items: center; }
             .header-controls { flex-shrink: 0; gap: 6px !important; }
-            .header-divider, .user-name, .user-chip-chevron { display: none !important; }
+            .header-divider, .user-chip-text, .user-chip-chevron { display: none !important; }
             .user-chip { padding: 3px !important; }
 
             /* ── Global filter bar ──
@@ -4958,7 +4965,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.8.3 · 9 Sep 2026 · alerts';
+        const BUILD_VERSION = 'v2.8.4 · 9 Sep 2026 · alerts';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5561,6 +5568,7 @@
         // A failed live sync IS surfaced -- quietly, but it must be: it means the
         // page is on fallback data.
         function _feedErrorPill(){
+            document.body.classList.toggle('feed-down', window.__feedOk === false);
             let el = document.getElementById('feed-error-pill');
             if(window.__feedOk !== false){ if(el) el.remove(); return; }
             if(!el){
@@ -14947,8 +14955,14 @@ ${(() => {
                 nameEl.innerHTML = `
                     <div style="position:relative;">
                         <div class="user-chip" onclick="toggleDpMenu()" title="Account">
-                            <div class="user-avatar" id="user-avatar-el" style="${avatarStyle}">${avatarContent}</div>
-                            <span class="user-name">${displayName}</span>
+                            <div class="user-avatar-wrap">
+                                <div class="user-avatar" id="user-avatar-el" style="${avatarStyle}">${avatarContent}</div>
+                                <span class="user-status-dot" title="Live"></span>
+                            </div>
+                            <div class="user-chip-text">
+                                <span class="user-name">${displayName}</span>
+                                <span class="user-role">${(ROLE_LABEL[roleKey(PERM.role)] || PERM.role)}${scope ? ' · ' + scope : ''}</span>
+                            </div>
                             <i class="fas fa-chevron-down user-chip-chevron"></i>
                         </div>
                         <!-- DP dropdown menu -->
