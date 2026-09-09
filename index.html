@@ -2595,6 +2595,10 @@
            overlay and moved the dashboard underneath. */
         body.modal-open .content-scroll{ overflow: hidden !important; }
         body.modal-open{ overflow: hidden; }
+        /* Reserve the scrollbar's width permanently: when a modal locks scrolling,
+           or the skeleton is replaced by real content, the page no longer shifts
+           sideways by a scrollbar's width -- the one-time "flicker". */
+        .content-scroll, .main-content, body { scrollbar-gutter: stable; }
         .ia-overlay, .sl-modal-overlay, #cs-modal{ overscroll-behavior: contain; }
         .ia-body, .sl-modal-box, #cs-body{ overscroll-behavior: contain; }
 
@@ -4979,7 +4983,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.9.2 · 9 Sep 2026 · taxonomy';
+        const BUILD_VERSION = 'v2.9.3 · 9 Sep 2026 · taxonomy';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -16113,13 +16117,17 @@ ${(() => {
                 // The panel lives on <body> (position:fixed) so a parent card's
                 // overflow:hidden can never clip it; it's placed under the button on open.
                 document.body.appendChild(panel);
-                function place(){
+                // Decide above/below ONCE per open (inst._flip); scroll/resize only
+                // re-anchor to the button. Re-deciding on every scroll made the
+                // panel jump between the two placements when the button sat near
+                // the middle of the viewport.
+                function place(fresh){
                     const r = btn.getBoundingClientRect();
                     const w = Math.max(r.width, 280);
                     let left = r.left; if(left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w);
                     panel.style.left = left + 'px'; panel.style.width = w + 'px';
-                    const below = window.innerHeight - r.bottom;
-                    if(below < 320 && r.top > below){ panel.style.top = ''; panel.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
+                    if(fresh){ const below = window.innerHeight - r.bottom; inst._flip = (below < 320 && r.top > below); }
+                    if(inst._flip){ panel.style.top = ''; panel.style.bottom = (window.innerHeight - r.top + 6) + 'px'; }
                     else { panel.style.bottom = ''; panel.style.top = (r.bottom + 6) + 'px'; }
                 }
                 function setOpen(o){
@@ -16128,15 +16136,15 @@ ${(() => {
                         // Only one open at a time.
                         Object.values(instances).forEach(i => { if(i !== inst && i.open) i.close(); });
                         searchWrap.style.display = (options().length >= opts.searchFrom) ? '' : 'none';
-                        place(); search.value=''; renderList();
+                        place(true); search.value=''; renderList();
                     }
                     panel.classList.toggle('open', o);
                     if(o && searchWrap.style.display !== 'none') setTimeout(() => search.focus(), 30);
                     if(o){ const cur = list.querySelector('.ms-opt.on'); if(cur) cur.scrollIntoView && cur.scrollIntoView({ block:'nearest' }); }
                 }
                 inst.close = () => setOpen(false);
-                window.addEventListener('resize', () => { if(inst.open) place(); });
-                window.addEventListener('scroll', () => { if(inst.open) place(); }, true);
+                window.addEventListener('resize', () => { if(inst.open) place(true); });
+                window.addEventListener('scroll', e => { if(!inst.open) return; if(e.target && panel.contains(e.target)) return; place(false); }, true);
 
                 // pointerdown + preventDefault: opens even if something upstream swallows
                 // the click (focus traps, ripple layers), and stops the button stealing focus
