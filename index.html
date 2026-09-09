@@ -5044,7 +5044,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.3 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.5 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -13049,16 +13049,13 @@ ${(() => {
             // Primary key: date (day-level). Secondary key: sortTs (precise
             // timestamp) so same-day posts are still ordered by true recency
             // instead of falling back to whatever order they were merged in.
+            // Newest = most recently LOGGED (precise timestamp), so a mention
+            // added just now sits on top even if the post itself is dated earlier.
+            // Falls back to the post date when a timestamp is missing.
+            const _tsOf = m => (typeof m.sortTs === 'number' && m.sortTs > 1e12) ? m.sortTs : (Date.parse((m.date || '2000-01-01') + 'T12:00:00') || 0);
             filtered.sort((a, b) => {
-                const da = a.date || '2000-01-01', db = b.date || '2000-01-01';
-                if(da !== db){
-                    return slSortNewestFirst ? (db > da ? 1 : -1) : (da > db ? 1 : -1);
-                }
-                const ta = (typeof a.sortTs === 'number') ? a.sortTs : 0;
-                const tb = (typeof b.sortTs === 'number') ? b.sortTs : 0;
-                if(ta !== tb){
-                    return slSortNewestFirst ? (tb - ta) : (ta - tb);
-                }
+                const ta = _tsOf(a), tb = _tsOf(b);
+                if(ta !== tb) return slSortNewestFirst ? (tb - ta) : (ta - tb);
                 return 0;
             });
 
@@ -13339,7 +13336,7 @@ ${(() => {
                             ${sourceBtn}
                             ${evidenceBtn}
                             <span class="sl-time">
-                                <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}
+                                <i class="fas fa-clock" style="font-size:0.65rem;margin-right:3px;"></i>${slTimeAgo(m.date)}${(typeof m.sortTs === 'number' && m.sortTs > 1e12) ? ' · ' + new Date(m.sortTs).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : ''}
                             </span>
                         </div>
                     </div>
@@ -15736,6 +15733,11 @@ ${(() => {
             requestAnimationFrame(step);
         }
 
+        // Only these codes mean THIS PERSON is not allowed in. Anything else
+        // (Apps Script HTML page, Worker 502, quota, timeout) is a backend
+        // hiccup and must never log anyone out or show "can't sign you in".
+        const AUTH_DENY_CODES = ['not_provisioned', 'disabled', 'forbidden', 'unauthenticated', 'no_access_token'];
+        const _isRealDenial = data => !!(data && data.status !== 'success' && AUTH_DENY_CODES.indexOf(data.code) !== -1);
         document.addEventListener('DOMContentLoaded', async () => {
             const session = authGetSession();
             if(session && session.email){
@@ -15749,11 +15751,11 @@ ${(() => {
                             name: data.name, email: data.email, role: data.role,
                             region: data.region || 'All', branch: data.branch || 'All'
                         });
-                    } else {
+                    } else if (_isRealDenial(data)) {
                         authClearSession();
                         showAccessDenied(data.message);
-                    }
-                }).catch(() => { /* offline — leave the cached session as-is */ });
+                    }   // any other error: backend hiccup -- keep working on the cached session
+                }).catch(() => { /* offline: leave the cached session as-is */ });
                 return;
             }
 
@@ -15764,22 +15766,26 @@ ${(() => {
             if(ls) ls.classList.add('visible');
             document.body.classList.add('app-ready');
 
-            try {
-                const data = await apiCall('cf_session');
-                if (data.status === 'success') {
-                    const user = {
-                        name: data.name, email: data.email, role: data.role,
-                        region: data.region || 'All', branch: data.branch || 'All'
-                    };
+            // Fresh sign-in. A backend hiccup (HTML from Apps Script, 502, quota)
+            // is retried quietly with backoff for up to ~3 minutes, showing
+            // "Reconnecting" -- only a real denial shows the access screen.
+            const _sub = document.getElementById('login-status-sub');
+            for (let attempt = 1; ; attempt++) {
+                let data = null, err = null;
+                try { data = await apiCall('cf_session'); } catch (e) { err = e; }
+                if (data && data.status === 'success') {
+                    const user = { name: data.name, email: data.email, role: data.role, region: data.region || 'All', branch: data.branch || 'All' };
                     authSaveSession(user);
                     authShowApp(user);
-                } else {
-                    showAccessDenied(data.message);
+                    return;
                 }
-            } catch (err) {
-                if (err.message !== 'session_expired') {
-                    showAccessDenied('We could not reach the dashboard backend. Please try again shortly.');
-                }
+                if (_isRealDenial(data)) { showAccessDenied(data.message); return; }
+                if (err && String(err.message) === 'session_expired') return;   // reload already triggered
+                if (attempt >= 12) { showAccessDenied((data && data.message) || (err && err.message) || 'Backend unavailable.'); return; }
+                const wait = Math.min(20000, 3000 * attempt);
+                if (_sub) _sub.textContent = 'Backend is slow to respond — reconnecting (' + attempt + ')…';
+                loginSetStep(2);
+                await new Promise(r => setTimeout(r, wait));
             }
         });
 
