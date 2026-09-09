@@ -4953,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.7.4 · 9 Sep 2026 · mobile';
+        const BUILD_VERSION = 'v2.8.0 · 9 Sep 2026 · alerts';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6628,8 +6628,8 @@
                         </div>
                     </div>
                     <div class="ia-footer">
-                        <button class="ia-btn-close" onclick="closeIncidentAlert()">Close</button>
-                        <button class="ia-btn-view" onclick="viewIncidentFromAlert()">View Incident</button>
+                        <button class="ia-btn-close" onclick="closeIncidentAlert()" title="Quiet on this device for 5 minutes"><i class="fas fa-bell-slash"></i> Snooze 5 min</button>
+                        <button class="ia-btn-view" onclick="viewIncidentFromAlert()"><i class="fas fa-eye"></i> View &amp; acknowledge</button>
                     </div>
                 </div>
             </div>
@@ -6876,20 +6876,43 @@
             } catch(e){ console.warn('Could not play incident alert sound:', e); }
         }
 
-        // Plays once when the alert first appears — the popup (both the
-        // in-page modal and the desktop notification, via requireInteraction)
-        // is what stays on screen until someone actually clicks it; the sound
-        // itself is a one-time cue, not a repeating ring. _incidentSoundInterval
-        // stays as a variable name for stopRepeatingIncidentSound() below,
-        // which is now a harmless no-op (nothing left running to stop) but is
-        // kept so its existing call sites (dismissing an alert, syncing
-        // review state from another device) don't need touching.
+        // ── Alert sound: rings every ALERT_RING_MS until the incident is
+        // reviewed (by anyone, on any device) or snoozed on this device.
+        // Cross-device: viewing the incident writes "Reviewed At/By" to the
+        // sheet; every other device sees that on its next poll (~15s) and
+        // _syncIncidentAlertReviewState() silences it there.
+        const ALERT_RING_MS   = 8000;
+        const ALERT_SNOOZE_MS = 5 * 60 * 1000;
         let _incidentSoundInterval = null;
+        const _snoozeTimers = new Map();   // incident key -> timeout id
+        function _anyAlertVisible(){
+            const a = document.getElementById('incident-alert-modal'), b = document.getElementById('incident-alert-summary-modal');
+            return (a && a.style.display === 'flex') || (b && b.style.display === 'flex');
+        }
         function startRepeatingIncidentSound(){
             playIncidentAlertSound();
+            if(_incidentSoundInterval) return;
+            _incidentSoundInterval = setInterval(() => {
+                if(!_anyAlertVisible()){ stopRepeatingIncidentSound(); return; }
+                playIncidentAlertSound();
+            }, ALERT_RING_MS);
         }
         function stopRepeatingIncidentSound(){
             if(_incidentSoundInterval){ clearInterval(_incidentSoundInterval); _incidentSoundInterval = null; }
+        }
+        // Snooze: quiet on THIS device only. If nobody has reviewed the incident
+        // when the snooze ends, it comes back here.
+        function _snoozeIncident(inc){
+            const key = _incidentStableKey(inc);
+            if(_snoozeTimers.has(key)) clearTimeout(_snoozeTimers.get(key));
+            _snoozeTimers.set(key, setTimeout(() => {
+                _snoozeTimers.delete(key);
+                const latest = (rawData.incidents||[]).find(i => _incidentStableKey(i) === key);
+                if(latest && !latest.reviewedAt && !latest.resolved){
+                    _incidentAlertQueue.push(latest);
+                    if(!_incidentAlertShowing) showNextIncidentAlert();
+                }
+            }, ALERT_SNOOZE_MS));
         }
 
         let _seenIncidentKeys = null; // lazy-loaded from localStorage
@@ -6897,6 +6920,7 @@
         let _lastAlertedIncident = null;
         let _incidentAlertQueue = [];
         let _incidentAlertShowing = false;
+        let _summaryAlertKeys = [];
 
         function checkForNewIncidents(){
             if(_seenIncidentKeys === null){
@@ -6924,6 +6948,7 @@
             if(isFirstRun || !newOnes.length) return;
 
             if(newOnes.length > 3){
+                _summaryAlertKeys = newOnes.map(_incidentStableKey);
                 showIncidentAlertSummary(newOnes.length);
                 return;
             }
@@ -7017,6 +7042,9 @@
         function closeIncidentAlert(){
             stopRepeatingIncidentSound();
             document.getElementById('incident-alert-modal').style.display = 'none';
+            if(_lastAlertedIncident) _snoozeIncident(_lastAlertedIncident);
+            _incidentAlertShowing = false;
+            try { UI.toast('Snoozed on this device for 5 minutes. It keeps ringing elsewhere until someone views it.', 'info'); } catch(e){}
             showNextIncidentAlert();
         }
 
@@ -7026,6 +7054,12 @@
         // stop the sound and dismiss the popup here too instead of leaving it
         // ringing until this device's user separately acts on it.
         function _syncIncidentAlertReviewState(){
+            // Summary popup (>3 new at once): close it once every one of them is reviewed.
+            const sm = document.getElementById('incident-alert-summary-modal');
+            if(sm && sm.style.display === 'flex' && _summaryAlertKeys.length){
+                const allReviewed = _summaryAlertKeys.every(k => { const i = (rawData.incidents||[]).find(x => _incidentStableKey(x) === k); return i && (i.reviewedAt || i.resolved); });
+                if(allReviewed){ stopRepeatingIncidentSound(); sm.style.display = 'none'; _summaryAlertKeys = []; }
+            }
             if(_incidentAlertShowing && _lastAlertedIncidentKey){
                 const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _lastAlertedIncidentKey);
                 if(inc && inc.reviewedAt){
@@ -7050,6 +7084,11 @@
             document.getElementById('incident-alert-modal').style.display = 'none';
             _incidentAlertShowing = false;
             _incidentAlertQueue = [];
+            // Acknowledge for everyone: the detail modal stamps Reviewed At/By on
+            // open (write roles). Read-only roles can look but don't silence others.
+            if(_lastAlertedIncident && !can('write')){
+                try { UI.toast('Viewing only — the alert stays active for the Call Center until they review it.', 'info'); } catch(e){}
+            }
             if(typeof app !== 'undefined' && app.navigate) app.navigate('incidents');
             if(_lastAlertedIncident && typeof app !== 'undefined' && app.openIncidentDetailModalDirect){
                 setTimeout(() => app.openIncidentDetailModalDirect(_lastAlertedIncident), 50);
