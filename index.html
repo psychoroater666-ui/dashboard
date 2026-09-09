@@ -5044,7 +5044,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.1 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.2 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5731,6 +5731,20 @@
             const nothingMapped = !rawData.submissions.length && !rawData.incidents.length;
             const dataChanged = !wasLive || nothingMapped || (DataFeed.enabled && DataFeed.anyDirty()) || _fetch.anyChanged(sources.map(s => s.url).concat(sideUrls));
             window.__liveChanged = dataChanged;
+            // Social tab data changed on the server (a colleague added, resolved
+            // or escalated a mention): refresh it in place if the person is
+            // looking at it. Runs before any mapping path so it can't be skipped.
+            try {
+                const slDirty = DataFeed.enabled && ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
+                if(slDirty && !opts.offline && typeof state !== 'undefined' && state.currentView === 'social' && typeof loadSocialFromSheet === 'function' && window._slHasLoadedOnce){
+                    ['social','sl_resolution'].forEach(k => { if(DataFeed.tabs[k]) DataFeed.tabs[k].changed = false; });   // consumed here, not re-fired every poll
+                    loadSocialFromSheet().then(() => {
+                        const modal = document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open');
+                        if(modal) return;                       // never repaint under an open dialog
+                        const r = () => renderSocialListening(); (typeof UI !== 'undefined' && UI.silent) ? UI.silent(r) : r();
+                    }).catch(e => console.warn('social refresh failed:', e));
+                }
+            } catch(e){}
 
             // ── Incremental path: when every source only APPENDED rows since the
             // last map, map just those rows and extend rawData -- instead of
@@ -5742,7 +5756,8 @@
                 if(deltas.every(d => Array.isArray(d)) && !sideChanged){
                     const total = deltas.reduce((n, d) => n + d.length, 0);
                     const resChanged = !!(DataFeed.tabs.incident_resolution && DataFeed.tabs.incident_resolution.changed);
-                    if(total === 0 && !resChanged){ DataFeed.markConsumed(); return true; }   // nothing new for the dashboard
+                    const slOnly = ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
+                    if(total === 0 && !resChanged && !slOnly){ DataFeed.markConsumed(); return true; }   // nothing new for the dashboard
                     const out = { subs: rawData.submissions.slice(), incs: rawData.incidents.slice(), _incremental: true };
                     deltas.forEach((rows, idx) => { if(rows.length) mapSource(rows, sources[idx], out); });
                     rawData.submissions.length = 0; rawData.incidents.length = 0;
