@@ -3082,9 +3082,10 @@
 
         /* Submissions: long comments clip to one line inside the table (no
            horizontal scroll); click the cell to expand it in place. */
-        .subs-comment { max-width:360px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
-        .subs-comment.open { white-space:normal; overflow:visible; text-overflow:clip; max-width:520px; line-height:1.45; }
-        @media (max-width:820px){ .subs-comment { max-width:200px; } }
+        .subs-comment { cursor:pointer; }
+        .subs-comment-text { max-width:300px; width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .subs-comment.open .subs-comment-text { white-space:normal; overflow:visible; text-overflow:clip; width:auto; max-width:480px; line-height:1.45; }
+        @media (max-width:820px){ .subs-comment-text { width:180px; max-width:180px; } }
         /* ═══════════ ACTIVITY (audit) ═══════════ */
         .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
         .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
@@ -5049,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.6 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.7 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10253,7 +10254,7 @@ ${(() => {
                                     <td>${s.surveyForm||s.form||'—'}</td>
                                     <td>${orderSrc}</td>
                                     <td>${ratingDisp}</td>
-                                    <td class="subs-comment" title="Click to expand" onclick="this.classList.toggle('open')">${commentDisp}</td>
+                                    <td class="subs-comment" title="Click to expand" onclick="this.classList.toggle('open')"><div class="subs-comment-text">${commentDisp}</div></td>
                                 </tr>`;
                             }).join('') : `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:24px;">No submissions match${term?' your search':' the current filter'}</td></tr>`;
                             });
