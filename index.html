@@ -4953,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.8.0 · 9 Sep 2026 · alerts';
+        const BUILD_VERSION = 'v2.8.2 · 9 Sep 2026 · alerts';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7464,11 +7464,19 @@
             if(tableEl) tableEl.scrollIntoView({ behavior:'smooth', block:'start' });
         }
 
+        // One definition of "did this incident change in a way the open modal
+        // must show?" -- used both when the modal opens and on every poll. Presence
+        // of stamps, not their exact timestamps, so a server echo never counts.
+        function _incidentModalSig(inc){
+            return [inc.resolved, inc.caseStatus, inc.agentVerdict, inc.agentCategory, inc.resolutionNote,
+                    !!inc.reviewedAt, !!inc.resolvedAt, inc.category, inc.reviewedBy || '', inc.resolvedBy || ''].join('|');
+        }
         function selectIncidentValidity(btnEl, validity){
             const form = btnEl.closest('.inc-add-comment-v2');
             (form || document).querySelectorAll('.inc-validity-btn').forEach(b => b.classList.remove('inc-validity-selected'));
             btnEl.classList.add('inc-validity-selected');
             window._selectedIncidentValidity = validity;
+            window._selectedValidityFor = (form && form.dataset.key) || window._selectedValidityFor;
             const closeBtn = form ? form.querySelector('.inc-close-btn-v2') : document.getElementById('ivm-close-btn');
             if(closeBtn) closeBtn.disabled = false;
         }
@@ -7476,7 +7484,17 @@
         function saveIncidentResolution(stableKey, note, btnEl, validity, category){
             if(!requireCap('write', 'resolving an incident')) return;
             try { const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === stableKey); if(inc){ inc.resolvedBy = PERM.name || PERM.email; if(!inc.reviewedBy) inc.reviewedBy = PERM.name || PERM.email; } } catch(e){}
-            if(!validity){ alert('Please mark this complaint as Valid, Fake, or Not Responding before closing — the automated detection can be wrong, so this needs an actual human call.'); return; }
+            // Source of truth = the button that's actually highlighted (the variable
+            // can be reset by a quiet re-render while the highlight stays on screen).
+            try { const f = btnEl && btnEl.closest('.inc-add-comment-v2'); const sel = (f || document).querySelector('.inc-validity-btn.inc-validity-selected'); if(sel && sel.dataset.validity) validity = sel.dataset.validity; } catch(e){}
+            if(!validity){
+                const f = btnEl && btnEl.closest('.inc-add-comment-v2');
+                let msg = f ? f.querySelector('.inc-validity-msg') : null;
+                if(!msg && f){ msg = document.createElement('div'); msg.className = 'inc-validity-msg'; msg.style.cssText = 'margin:8px 0 0;padding:9px 12px;border-radius:9px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:0.78rem;font-weight:600;'; const row = f.querySelector('.inc-validity-row, .inc-validity-btn') ; (row && row.parentNode !== f ? row.parentNode : f).appendChild(msg); }
+                if(msg) msg.textContent = 'Choose Valid, Fake or Not Responding first — automated detection can be wrong, so this needs a human call.';
+                try { f && f.querySelectorAll('.inc-validity-btn').forEach(b => { b.style.transition='box-shadow .2s'; b.style.boxShadow='0 0 0 3px rgba(220,38,38,.25)'; setTimeout(()=>{ b.style.boxShadow=''; }, 900); }); } catch(e){}
+                return;
+            }
             if(btnEl){ btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
@@ -9247,9 +9265,7 @@
                         // someone was reading it.
                         // Presence, not exact timestamps: the server's stamp differs from
                         // the local one by milliseconds and must not count as a change.
-                        const sig = [match.resolved, match.caseStatus, match.agentVerdict,
-                                     match.agentCategory, match.resolutionNote, !!match.reviewedAt,
-                                     !!match.resolvedAt, match.category, match.reviewedBy || '', match.resolvedBy || ''].join('|');
+                        const sig = _incidentModalSig(match);
                         if(window._openIncidentModalSig !== sig){
                             window._openIncidentModalSig = sig;
                             this.openIncidentDetailModalDirect(match);
@@ -9288,11 +9304,10 @@
             },
 
             openIncidentDetailModalDirect(inc) {
+                window.__ivmRenders = (window._openIncidentModalKey === _incidentStableKey(inc)) ? (window.__ivmRenders||0) + 1 : 1;   // diagnostics: how often the open modal is rebuilt
                 window._openIncidentModalKey = _incidentStableKey(inc);
-                window._openIncidentModalSig = [inc.resolved, inc.caseStatus, inc.agentVerdict,
-                                                inc.agentCategory, inc.resolutionNote, inc.reviewedAt,
-                                                inc.resolvedAt, inc.category].join('|');
-                window._selectedIncidentValidity = null; // reset per-incident — don't carry over a selection from a previously-viewed incident
+                window._openIncidentModalSig = _incidentModalSig(inc);
+                if(window._selectedValidityFor !== _incidentStableKey(inc)){ window._selectedIncidentValidity = null; window._selectedValidityFor = _incidentStableKey(inc); } // reset only for a different incident — don't carry over a selection from a previously-viewed incident
                 if(!inc.reviewedAt && can('write')){
                     // Mark reviewed locally right now, so the server's echo a few
                     // seconds later matches and doesn't re-render the open modal.
@@ -9366,9 +9381,9 @@
                         <select id="ivm-category" class="select-input" style="width:100%; margin-top:2px;">${categoryOptions}</select>
                         <div class="inc-validity-label">Your determination — is this complaint valid?</div>
                         <div class="inc-validity-toggle">
-                            <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
-                            <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
-                            <button type="button" class="inc-validity-btn inc-validity-notresp" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
+                            <button type="button" class="inc-validity-btn inc-validity-valid" data-validity="valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
+                            <button type="button" class="inc-validity-btn inc-validity-fake" data-validity="fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
+                            <button type="button" class="inc-validity-btn inc-validity-notresp" data-validity="not_responding" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
                         </div>
                         <button class="inc-close-btn-v2" id="ivm-close-btn" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('ivm-remarks').value, this, window._selectedIncidentValidity, document.getElementById('ivm-category').value)"><i class="fas fa-check"></i> ${needsRealDetermination ? 'Save Determination' : 'Mark as Closed'}</button>
                     </div>` : '';
@@ -9586,9 +9601,9 @@ ${(() => {
                         <select id="inc-category-${idx}" class="select-input" style="width:100%; margin-top:2px;">${categoryOptions}</select>
                         <div class="inc-validity-label">Your determination — is this complaint valid?</div>
                         <div class="inc-validity-toggle">
-                            <button type="button" class="inc-validity-btn inc-validity-valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
-                            <button type="button" class="inc-validity-btn inc-validity-fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
-                            <button type="button" class="inc-validity-btn inc-validity-notresp" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
+                            <button type="button" class="inc-validity-btn inc-validity-valid" data-validity="valid" onclick="selectIncidentValidity(this,'valid')"><i class="fas fa-check"></i> Valid</button>
+                            <button type="button" class="inc-validity-btn inc-validity-fake" data-validity="fake" onclick="selectIncidentValidity(this,'fake')"><i class="fas fa-xmark"></i> Fake</button>
+                            <button type="button" class="inc-validity-btn inc-validity-notresp" data-validity="not_responding" onclick="selectIncidentValidity(this,'not_responding')"><i class="fas fa-phone-slash"></i> Not Responding</button>
                         </div>
                         <button class="inc-close-btn-v2" id="inc-close-btn-${idx}" disabled onclick="saveIncidentResolution('${escKey}', document.getElementById('inc-remarks-${idx}').value, this, window._selectedIncidentValidity, document.getElementById('inc-category-${idx}').value)"><i class="fas fa-check"></i> ${needsRealDetermination ? 'Save Determination' : 'Mark as Closed'}</button>
                     </div>` : '';
