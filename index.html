@@ -5044,7 +5044,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.0 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.1 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12064,42 +12064,34 @@ ${(() => {
         // ── Escalation ────────────────────────────────────────────────────
         function slEscalationHtml(m){
             const esc = s => String(s||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const canEsc = can('escalate');
             if(m.escalated){
                 return `<div class="sl-esc-track escalated" id="sl-esc-track-${m.id}">
-                    <span class="sl-esc-badge"><i class="fas fa-flag"></i> Escalated</span>
-                    <span class="sl-esc-meta">by <b>${esc(m.escalatedBy||'—')}</b>${m.escalatedAt ? ' · ' + esc(slTimeAgo(m.escalatedAt)) : ''}${m.escalationNote ? ` · <i>“${esc(m.escalationNote)}”</i>` : ''}</span>
-                    <button class="sl-esc-undo" onclick="slSetEscalation('${m.id}', false)" title="Remove escalation">Undo</button>
+                    <span class="sl-esc-badge"><i class="fas fa-flag"></i> Escalated to Ops</span>
+                    <span class="sl-esc-meta">by <b>${esc(m.escalatedBy||'')}</b>${m.escalatedAt ? ' · ' + esc(slTimeAgo(m.escalatedAt)) : ''}</span>
+                    ${canEsc ? `<button class="sl-esc-undo" onclick="slSetEscalation('${m.id}', false)" title="Remove escalation">Undo</button>` : ''}
                 </div>`;
             }
+            if(!canEsc) return '';   // only Report Analysts / Owner see the button; everyone sees the badge once set
             return `<div class="sl-esc-track" id="sl-esc-track-${m.id}">
-                <button class="sl-esc-btn" onclick="slShowEscalateBox('${m.id}')"><i class="fas fa-flag"></i> Escalate to management</button>
+                <button class="sl-esc-btn" onclick="slSetEscalation('${m.id}', true)"><i class="fas fa-flag"></i> Escalate to Ops</button>
             </div>`;
-        }
-        function slShowEscalateBox(id){
-            if(!requireCap('escalate', 'escalating a complaint')) return;
-            const track = document.getElementById('sl-esc-track-'+id); if(!track) return;
-            track.innerHTML = `<div class="sl-close-note-box">
-                <input type="text" id="sl-esc-note-${id}" class="sl-close-note-input" placeholder="Why does management need to see this? (optional)" maxlength="200" onkeydown="if(event.key==='Enter') slSetEscalation('${id}', true)">
-                <button class="sl-close-note-confirm" style="background:#DC2626;" onclick="slSetEscalation('${id}', true)" title="Escalate"><i class="fas fa-flag"></i></button>
-                <button class="sl-close-note-cancel" onclick="renderSocialListening()" title="Cancel"><i class="fas fa-xmark"></i></button>
-            </div>`;
-            const el = document.getElementById('sl-esc-note-'+id); if(el) el.focus();
         }
         function slSetEscalation(id, on){
             if(!requireCap('escalate', 'escalating a complaint')) return;
             const m = slMentions.find(x => x.id === id); if(!m) return;
-            const note = on ? ((document.getElementById('sl-esc-note-'+id)||{}).value||'').trim() : '';
             const prev = { escalated: m.escalated, escalatedAt: m.escalatedAt, escalatedBy: m.escalatedBy, escalationNote: m.escalationNote };
-            m.escalated = !!on; m.escalatedAt = on ? new Date().toISOString() : ''; m.escalatedBy = on ? (PERM.name || PERM.email) : ''; m.escalationNote = note;
+            m.escalated = !!on; m.escalatedAt = on ? new Date().toISOString() : ''; m.escalatedBy = on ? (PERM.name || PERM.email) : ''; m.escalationNote = '';
             slSaveData(); renderSocialListening();
-            apiCall('sl_escalate', { id, escalate: !!on, note, platform: m.platform, branch: m.branch, author: m.author, content: m.content, url: m.url })
+            const clientId = 'esc_' + id + '_' + (on ? 1 : 0) + '_' + Date.now().toString(36);
+            apiCall('sl_escalate', { id, escalate: !!on, clientId, platform: m.platform, branch: m.branch, author: m.author, content: m.content, url: m.url })
                 .then(r => {
                     if(!r || r.status !== 'success') throw new Error(r && r.message || 'save failed');
                     if(r.escalatedAt) m.escalatedAt = r.escalatedAt; if(r.escalatedBy) m.escalatedBy = r.escalatedBy;
-                    slSaveData();
-                    UI.toast(on ? 'Escalated to management — email sent.' : 'Escalation removed.', on ? 'warning' : 'success');
+                    slSaveData(); renderSocialListening();
+                    UI.toast(on ? 'Escalated to Ops — everyone sees it now.' : 'Escalation removed.', on ? 'warning' : 'success');
                 })
-                .catch(err => { Object.assign(m, prev); slSaveData(); renderSocialListening(); UI.toast('Could not save escalation: ' + err.message, 'error'); });
+                .catch(err => { Object.assign(m, prev); slSaveData(); renderSocialListening(); UI.toast('NOT saved: ' + err.message + ' — please try again.', 'error'); });
         }
         function slShowCloseNoteBox(id){
             const track = document.getElementById('sl-res-track-'+id);
@@ -15039,7 +15031,7 @@ ${(() => {
             owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true  },
             admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false },
             reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true  },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:true  },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false },
             manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false },
             viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false }
         };
@@ -15051,7 +15043,7 @@ ${(() => {
         }
         function requireCap(cap, what){
             if(can(cap)) return true;
-            const msg = cap === 'escalate' ? `Escalating is available to the Owner, Report Analysts and Call Center.`
+            const msg = cap === 'escalate' ? `Escalating is available to the Owner and Report Analysts.`
                       : cap === 'users'  ? `Only the Owner can manage users.`
                       : cap === 'forms'  ? `Form Builder is available to the Owner and Report Analysts.`
                       : cap === 'audit'  ? `Activity is available to the Owner only.`
@@ -15263,7 +15255,6 @@ ${(() => {
                                     <span class="support-icon"><i class="fas fa-comment-dots"></i></span>
                                     <span>Contact Support</span>
                                 </a>
-                                <div style="padding:4px 10px 2px;font-size:0.62rem;color:var(--text-muted);font-family:monospace;">build ${BUILD_VERSION}</div>
                             </div>
                             <!-- Sign out -->
                             <div style="padding:0 6px 6px;border-top:1px solid var(--border-color);margin-top:2px;padding-top:6px;">
@@ -15978,8 +15969,9 @@ ${(() => {
             const tone = {
                 success: { bg:'#059669', icon:'fa-circle-check' },
                 error:   { bg:'#DC2626', icon:'fa-circle-exclamation' },
-                info:    { bg:'#0F172A', icon:'fa-circle-info' }
-            }[kind || 'success'];
+                info:    { bg:'#0F172A', icon:'fa-circle-info' },
+                warning: { bg:'#D97706', icon:'fa-triangle-exclamation' }
+            }[kind || 'success'] || { bg:'#0F172A', icon:'fa-circle-info' };
             const el = document.createElement('div');
             el.className = 'crumble-toast';
             el.style.background = tone.bg;
