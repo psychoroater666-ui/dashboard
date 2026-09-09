@@ -4810,7 +4810,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.6.2 · 9 Sep 2026 · access-v2';
+        const BUILD_VERSION = 'v2.6.3 · 9 Sep 2026 · access-v2';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14506,7 +14506,7 @@ ${(() => {
         // server error.
         const ROLE_CAPS = {
             owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true  },
-            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:true  },
+            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false },
             reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false },
             callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false },
             manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false },
@@ -14522,7 +14522,7 @@ ${(() => {
             if(can(cap)) return true;
             const msg = cap === 'users'  ? `Only the Owner can manage users.`
                       : cap === 'forms'  ? `Form Builder is available to the Owner and Report Analysts.`
-                      : cap === 'audit'  ? `Activity is available to the Owner and Admins.`
+                      : cap === 'audit'  ? `Activity is available to the Owner only.`
                       : cap === 'export' ? `Exporting is not available on your account.`
                       : `Your account can't make changes — ${what} needs a Call Center or Owner account.`;
             try { UI.toast(msg, 'warning'); } catch(e){ alert(msg); }
@@ -15025,7 +15025,7 @@ ${(() => {
             const k = roleKey(role);
             const HINTS = {
                 owner: 'The primary owner. Sees everything including Data & Logs and Activity, can change anything, manages users and forms. Assign sparingly.',
-                admin: 'Sees every dashboard and the Activity trail across all branches. Cannot change data, export, or manage users or forms.',
+                admin: 'Sees every dashboard across all branches. Cannot change data, export, or manage users or forms.',
                 reportanalyst: 'Sees everything, can export reports and build/edit customer forms. Cannot handle incidents, log submissions or manage users.',
                 callcenter: 'Sees everything and does the day-to-day work: logs Call Center submissions, reviews and resolves incidents, handles social mentions. Cannot export, manage users or edit forms.',
                 manager: 'Sees exactly one branch — its submissions, incidents and reports — and can export them. Cannot change anything.',
@@ -15838,7 +15838,7 @@ ${(() => {
             function rows(){ const t = DataFeed.tabs.audit; return (t && t.objRows) ? t.objRows.slice().reverse() : []; }
             function render(){
                 const host = document.getElementById('activity-root'); if(!host) return;
-                if(!can('audit')){ host.innerHTML = '<div class="fb-empty">Activity is available to the Owner and Admins.</div>'; return; }
+                if(!can('audit')){ host.innerHTML = '<div class="fb-empty">Activity is available to the Owner only.</div>'; return; }
                 const all = rows();
                 const actions = Array.from(new Set(all.map(r => r['Action']).filter(Boolean))).sort();
                 const list = all.filter(r => (!filter.action || r['Action'] === filter.action) && (!filter.result || (filter.result === 'denied' ? /denied/i.test(r['Result']) : !/denied/i.test(r['Result'])))
