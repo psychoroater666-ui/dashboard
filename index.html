@@ -3009,6 +3009,18 @@
         .inc-tl-by { font-size:0.74rem; color:var(--text-muted); margin-top:3px; display:flex; align-items:center; gap:6px; }
         .inc-tl-by b { color:var(--text-main); font-weight:700; }
         .inc-tl-by i { font-size:0.66rem; color:#3B5BDB; }
+        /* ═══════════ COMPLAINT FAMILIES ═══════════ */
+        .ct-family-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:16px; }
+        .ct-fam-tile { background:var(--white); border:1px solid var(--border-color); border-left:4px solid var(--fc); border-radius:12px; padding:12px 14px; }
+        .ct-fam-head { display:flex; align-items:center; gap:7px; font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+        .ct-fam-head i { color:var(--fc); }
+        .ct-fam-num { font-size:1.35rem; font-weight:800; color:var(--text-main); margin:6px 0 4px; display:flex; align-items:baseline; gap:6px; }
+        .ct-fam-num small { font-size:0.68rem; font-weight:700; color:var(--text-muted); }
+        .ct-fam-bar { height:5px; border-radius:5px; background:var(--bg-light); overflow:hidden; }
+        .ct-fam-bar span { display:block; height:100%; background:var(--fc); border-radius:5px; }
+        .ct-fam-trend { margin-top:6px; font-size:0.64rem; font-weight:700; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .ct-fam-trend.up { color:#DC2626; } .ct-fam-trend.down { color:#059669; }
+        .ci-fam-tag { display:inline-block; font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--fc); background:color-mix(in srgb, var(--fc) 12%, transparent); border-radius:6px; padding:2px 7px; margin-right:8px; vertical-align:middle; }
         /* ═══════════ ACTIVITY (audit) ═══════════ */
         .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
         .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
@@ -3107,6 +3119,8 @@
         .ms-single .ms-opt.on { background:rgba(1,1,151,.06); color:#010197; }
         .ms-opt.dis { opacity:.45; pointer-events:none; }
         .ms-opt.hl { outline:2px solid rgba(59,91,219,.45); outline-offset:-2px; }
+        .ms-group { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); padding:10px 8px 4px; position:sticky; top:0; background:var(--white); }
+        .ms-group:first-child { padding-top:2px; }
         .ms-btn:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
         .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
@@ -4965,7 +4979,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.8.4 · 9 Sep 2026 · alerts';
+        const BUILD_VERSION = 'v2.9.0 · 9 Sep 2026 · taxonomy';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9405,9 +9419,7 @@
                 `;
 
                 const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
-                const categoryOptions = [...COMPLAINT_CATEGORIES, CI_HEALTH_HAZARD, CI_OTHER]
-                    .map(c => `<option value="${c.id}" ${c.id === currentCat.id ? 'selected' : ''}>${c.title}</option>`)
-                    .join('');
+                const categoryOptions = _categoryOptionsHtml(currentCat.id);
 
                 // Not Responding is deliberately not a final state — keep the
                 // determination form available for it even though the case
@@ -9630,9 +9642,7 @@ ${(() => {
                 // Valid/Fake call once the customer is actually reached —
                 // same behavior as the main incident modal.
                 const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
-                const categoryOptions = [...COMPLAINT_CATEGORIES, CI_HEALTH_HAZARD, CI_OTHER]
-                    .map(c => `<option value="${c.id}" ${c.id === currentCat.id ? 'selected' : ''}>${c.title}</option>`)
-                    .join('');
+                const categoryOptions = _categoryOptionsHtml(currentCat.id);
                 const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
@@ -13272,55 +13282,99 @@ ${(() => {
         // ══════════════════════════════════════════════════════════════════
         let CT_SCOPE = 'branch';
         let CT_RANGE = '7d';   // '7d' | '30d' | 'month'
-        const COMPLAINT_CATEGORIES = [
-            { id:'missing',    title:'Missing Item',       cause:'Packing accuracy failure',             op:'Packing / dispatch',     keywords:['missing','not received','didn\'t get','did not get','item missing','incomplete','forgot','left out','nahi mila','nai mila'] },
-            { id:'wrong',      title:'Wrong Order',        cause:'Order-handling error at counter',      op:'Front counter / system', keywords:['wrong order','wrong item','incorrect order','not what i ordered','different item','wrong flavour','wrong flavor','galat'] },
-            { id:'broken',     title:'Broken / Smashed',   cause:'Packing & handling / dispatch',        op:'Packing / rider',        keywords:['broken','smashed','crushed','melted','melt','damaged','spilled','fell apart','mashed','tuta'] },
-            { id:'cold',       title:'Cold / Stale',       cause:'Holding-window / kitchen timing',      op:'Kitchen ops',            keywords:['cold','stale','hard','dry','soggy','not fresh','raw egg','undercooked','baasi','thanda'] },
-            { id:'sweet',      title:'Too Sweet',          cause:'Recipe / sugar-portion inconsistency', op:'Kitchen & R&D',          keywords:['too sweet','so much sugar','very sweet','sweetness','extra sugar','meetha'] },
-            { id:'portion',    title:'Portion / Quantity', cause:'Portion control / SOP',                op:'Kitchen ops',            keywords:['small portion','less quantity','portion','quantity','too little','less shake','kam'] },
-            { id:'delayserve', title:'Delay Serving',      cause:'Kitchen throughput / dine-in timing',  op:'Kitchen ops',            keywords:['waited','waiting','slow service','took long','20 min','30 min','late serving','service slow','der'] },
-            { id:'delivery',   title:'Delivery Delay',     cause:'Rider management',                     op:'Rider ops',              keywords:['late delivery','delivery late','rider','took hours','delivery delay','delivery time','came late','arrived late'] },
-            { id:'staff',      title:'Staff Behaviour',    cause:'Service attitude / training gap',      op:'Branch staff',           keywords:['rude','behaviour','behavior','staff','attitude','misbehav','ignored','unprofessional','bad service'] },
-            { id:'taste',      title:'Taste',              cause:'Product inconsistency',                op:'Kitchen',                keywords:['taste','tasteless','flavour','flavor','bland','not good','disgusting','bad quality','quality'] },
+        // ═══════════════════════════════════════════════════════════════════
+        // COMPLAINT TAXONOMY v2 — 7 families, 36 reasons (the agents' label
+        // list). Each reason keeps: id (stored in the sheet as agentCategory),
+        // title, family, root cause + owning team (for the ledger), and the
+        // keywords the auto-classifier scores when no agent has labelled it.
+        // Old ids (cold, sweet, portion, delayserve …) are aliased below so
+        // every category saved before this change still resolves.
+        // ═══════════════════════════════════════════════════════════════════
+        const COMPLAINT_FAMILIES = [
+            { id:'cookie',   title:'Cookie Quality',     icon:'fa-cookie-bite',     color:'#F59E0B' },
+            { id:'shake',    title:'Shake & Ice Cream',  icon:'fa-blender',         color:'#8B5CF6' },
+            { id:'timing',   title:'Timing',             icon:'fa-stopwatch',       color:'#3B5BDB' },
+            { id:'order',    title:'Order & Packaging',  icon:'fa-box-open',        color:'#0EA5E9' },
+            { id:'staff',    title:'Staff & Service',    icon:'fa-user-tie',        color:'#10B981' },
+            { id:'hygiene',  title:'Hygiene & Safety',   icon:'fa-shield-virus',    color:'#DC2626' },
+            { id:'other',    title:'Other',              icon:'fa-ellipsis',        color:'#64748B' }
         ];
-        // Checked first and independently of everything else below — a real
+        const COMPLAINT_CATEGORIES = [
+            // ── Cookie Quality ──
+            { id:'food_quality',  family:'cookie', title:'Food Quality',            cause:'General product quality',              op:'Kitchen ops',          keywords:['food quality','quality of food','bad quality','poor quality','not good quality','quality issue'] },
+            { id:'sweet',         family:'cookie', title:'Too Sweet',               cause:'Recipe / sugar-portion inconsistency', op:'Kitchen & R&D',        keywords:['too sweet','so much sugar','very sweet','sweetness','sugary','overly sweet','too much sugar'] },
+            { id:'taste',         family:'cookie', title:'Taste',                   cause:'Product inconsistency',                op:'Kitchen',              keywords:['taste','tasteless','flavour','flavor','bland','no taste','weird taste','bad taste','not tasty','disgusting'] },
+            { id:'cold',          family:'cookie', title:'Cold / Stale Cookies',    cause:'Holding-window / kitchen timing',      op:'Kitchen ops',          keywords:['cold','stale','not fresh','dry','old cookie','day old','not warm','cold cookie'] },
+            { id:'hard',          family:'cookie', title:'Hard Cookies',            cause:'Over-bake / holding time',             op:'Kitchen ops',          keywords:['hard','rock hard','too hard','very hard','hard cookie','crunchy','crispy','tough'] },
+            { id:'soft',          family:'cookie', title:'Too Soft',                cause:'Under-bake / cooling time',            op:'Kitchen ops',          keywords:['too soft','very soft','mushy','not baked properly','doughy','gooey'] },
+            { id:'oily',          family:'cookie', title:'Oily',                    cause:'Butter ratio / recipe',                op:'Kitchen & R&D',        keywords:['oily','greasy','oil','too much butter','buttery'] },
+            { id:'undercooked',   family:'cookie', title:'Undercooked Cookies',     cause:'Bake time / oven calibration',         op:'Kitchen ops',          keywords:['undercooked','under cooked','raw','uncooked','not cooked','half cooked','not baked','underbaked','under baked'] },
+            { id:'burnt',         family:'cookie', title:'Burnt Cookies',           cause:'Bake time / oven calibration',         op:'Kitchen ops',          keywords:['burnt','burned','overcooked','over cooked','over baked','overbaked','charred','black'] },
+            { id:'broken',        family:'cookie', title:'Broken / Smashed Cookies',cause:'Packing & handling / dispatch',        op:'Packing / rider',      keywords:['broken','smashed','crushed','crumbled','in pieces','damaged','shattered','cracked'] },
+            { id:'smelly',        family:'cookie', title:'Smelly Cookies',          cause:'Storage / ingredient freshness',       op:'Kitchen & storage',    keywords:['smell','smelly','smelling','odour','odor','stink','stinks','weird smell','bad smell'] },
+            { id:'melting',       family:'cookie', title:'Melting Cookies',         cause:'Temperature / holding',                op:'Kitchen & dispatch',   keywords:['melting cookie','melted cookie','cookie melted','cookies melted','melt'] },
+            { id:'filling',       family:'cookie', title:'No or Less Filling',      cause:'Portion control / SOP',                op:'Kitchen ops',          keywords:['no filling','less filling','filling','no stuffing','less stuffing','empty inside','nothing inside','no chocolate inside','no nutella'] },
+            { id:'egg_taste',     family:'cookie', title:'Egg Taste',               cause:'Recipe / mixing',                      op:'Kitchen & R&D',        keywords:['egg taste','eggy','taste of egg','tastes like egg','egg smell','raw egg'] },
+            { id:'flat',          family:'cookie', title:'Flat Cookie',             cause:'Dough handling / bake',                op:'Kitchen ops',          keywords:['flat','flat cookie','thin','too thin','spread out'] },
+            { id:'soggy',         family:'cookie', title:'Soggy Cookie',            cause:'Packing steam / holding',              op:'Packing / kitchen',    keywords:['soggy','wet','moist','damp','sweaty','steamed'] },
+            // ── Shake & Ice Cream ──
+            { id:'shake_quality', family:'shake',  title:'Shake Quality',           cause:'Recipe / preparation',                 op:'Kitchen ops',          keywords:['shake quality','bad shake','shake taste','shake was bad','watery shake','shake not good','shake tasteless','thin shake'] },
+            { id:'shake_quantity',family:'shake',  title:'Shake Quantity',          cause:'Portion control / SOP',                op:'Kitchen ops',          keywords:['shake quantity','less shake','half shake','not full','quantity','portion','small portion','less quantity','half filled','half empty'] },
+            { id:'spillage',      family:'shake',  title:'Spillage',                cause:'Sealing / packing',                    op:'Packing / rider',      keywords:['spill','spilled','spillage','leaked','leaking','leak','spilt'] },
+            { id:'warm_shake',    family:'shake',  title:'Not Chilled / Warm Shake',cause:'Chilling / holding',                   op:'Kitchen ops',          keywords:['warm shake','not chilled','not cold','shake was warm','lukewarm','room temperature','not chilled'] },
+            { id:'melting_ice',   family:'shake',  title:'Melting / Running Ice Cream', cause:'Temperature / delivery time',      op:'Kitchen & rider ops',  keywords:['ice cream melted','melted ice cream','melting ice cream','ice cream melting','running ice cream','icecream melted'] },
+            // ── Timing ──
+            { id:'delayserve',    family:'timing', title:'Delay Serving',           cause:'Kitchen throughput / dine-in timing',  op:'Kitchen ops',          keywords:['waited','waiting','slow service','took long','took too long','long wait','delay serving','serving delay','slow','took forever'] },
+            { id:'takeaway_delay',family:'timing', title:'Take Away Delay',         cause:'Order prep / pickup handoff',          op:'Front counter',        keywords:['take away delay','takeaway delay','pickup delay','pick up late','takeaway late','waited for takeaway','order took long'] },
+            { id:'carhop',        family:'timing', title:'Car Hop Failure',         cause:'Car-hop process / staffing',           op:'Branch staff',         keywords:['car hop','carhop','car service','nobody came to car','in the car','drive'] },
+            { id:'delivery',      family:'timing', title:'Delivery Delay',          cause:'Rider management',                     op:'Rider ops',            keywords:['late delivery','delivery late','delivery delay','took hours','rider late','delivery took','late order','very late','delivered late'] },
+            // ── Order & Packaging ──
+            { id:'missing',       family:'order',  title:'Missing Item',            cause:'Packing accuracy failure',             op:'Packing / dispatch',   keywords:['missing','not received','didn\'t get','did not get','missing item','incomplete order','forgot','forgotten','not included','left out'] },
+            { id:'wrong',         family:'order',  title:'Wrong Order',             cause:'Order-handling error at counter',      op:'Front counter / system', keywords:['wrong order','wrong item','incorrect order','wrong','different item','not what i ordered','mixed up','someone else'] },
+            { id:'packaging',     family:'order',  title:'Packaging',               cause:'Packing material / method',            op:'Packing / dispatch',   keywords:['packaging','packing','box','bad packaging','poor packaging','package','packed badly','open box','box was open','torn'] },
+            { id:'missing_note',  family:'order',  title:'Missing Note',            cause:'Order instructions not followed',      op:'Packing / dispatch',   keywords:['missing note','no note','note missing','gift note','message card','card missing','no card'] },
+            { id:'missing_straw', family:'order',  title:'Missing Straw',           cause:'Packing checklist',                    op:'Packing / dispatch',   keywords:['straw','no straw','missing straw','without straw','no spoon','spoon'] },
+            // ── Staff & Service ──
+            { id:'unattentive',   family:'staff',  title:'Unattentive Staff',       cause:'Floor supervision / staffing',         op:'Branch staff',         keywords:['unattentive','inattentive','ignored','ignoring','no one attended','nobody attended','not attended','didn\'t attend','not attentive','busy on phone','on their phone'] },
+            { id:'staff',         family:'staff',  title:'Staff Behavior',          cause:'Service attitude / training gap',      op:'Branch staff',         keywords:['rude','behaviour','behavior','staff','attitude','misbehav','impolite','arrogant','unprofessional','shouted','disrespect'] },
+            { id:'rider',         family:'staff',  title:'Rider Behavior',          cause:'Rider conduct / training',             op:'Rider ops',            keywords:['rider rude','rider behaviour','rider behavior','rider attitude','rider misbehav','delivery boy','rider was','rider didn'] },
+            { id:'cash_only',     family:'staff',  title:'Cash Only Payment Issue', cause:'Payment terminal / policy',            op:'Branch ops / finance', keywords:['cash only','no card','card machine','card not accepted','payment issue','online payment','pos not working','card payment'] },
+            // ── Hygiene & Safety ──
+            { id:'foreign_object',family:'hygiene',title:'Foreign Object / Hair',   cause:'Food-handling hygiene breach',         op:'Immediate escalation — Quality & Safety', critical:true, keywords:['hair','foreign object','plastic in','insect','bug','fly in','something in','piece of','found a','nail','thread','wrapper inside'] },
+            { id:'hygiene',       family:'hygiene',title:'Hygiene',                 cause:'Cleanliness / handling standards',     op:'Branch ops',           keywords:['hygiene','unhygienic','dirty','unclean','not clean','filthy','gloves','sanitation','mess','messy','table dirty'] }
+        ];
+        // Checked first and independently of everything else — a real
         // food-safety issue must never be able to end up buried inside a
-        // generic bucket like "Taste" just because it scored fewer keyword
-        // hits than something else.
-        const CI_HEALTH_HAZARD = { id:'health_hazard', title:'Food Poisoning / Health Hazard', cause:'Food safety incident', op:'Immediate escalation — Quality & Safety', critical:true };
-        const HEALTH_HAZARD_RE = /\b(food\s*poisoning|poisoned|vomit(ing)?|diarrh(o|e)a|stomach\s*(ache|pain|upset)|allergic\s*reaction|hospitali[sz]ed|fell\s*(sick|ill)|got\s*sick|food\s*safety)\b/i;
-        const CI_OTHER = { id:'other', title:'Other / Unspecified', cause:'Uncategorised feedback', op:'Review manually' };
-        // Sheet / form labels folded onto the canonical category they mean.
-        //
-        // Without this, any sheet tag whose wording didn't EXACTLY equal a
-        // category title became its own synthetic "sheet_*" category and got
-        // its own row in the ledger. "Taste and Flavor" (the Foodpanda form's
-        // own wording) therefore appeared as a separate line item sitting
-        // right next to "Taste" — the same complaint type split across two
-        // rows, each with half the count, and both ranked as if they were
-        // independent problems. That is the single biggest reason the ledger's
-        // numbers looked wrong.
+        // generic bucket just because it scored fewer keyword hits.
+        const HEALTH_HAZARD_RE = /\b(food\s*poisoning|poisoned|poisoning|vomit(ing|ed)?|throw(ing)?\s*up|diarrh(o|e)a|stomach\s*(ache|pain|upset|bug)|upset\s*stomach|allergic\s*reaction|allergy|hospitali[sz]ed|hospital|fell\s*(sick|ill)|got\s*sick|felt\s*sick|food\s*safety|unsafe\s*to\s*eat|nausea|nauseous|infection|contaminat(ed|ion)|expired|mould|mold|fungus|rotten|spoiled)\b/i;
+        const CI_HEALTH_HAZARD = { id:'health_hazard', family:'hygiene', title:'Food Poisoning / Health Hazard', cause:'Food safety incident', op:'Immediate escalation — Quality & Safety', critical:true };
+        const CI_OTHER = { id:'other', family:'other', title:'Others', cause:'Uncategorised feedback', op:'Review manually' };
+        const COMPLAINT_FAMILY_OF = id => (COMPLAINT_FAMILIES.find(f => f.id === id) || COMPLAINT_FAMILIES[COMPLAINT_FAMILIES.length-1]);
+        // Sheet / form labels — and every OLD category id — folded onto the canonical reason.
         const COMPLAINT_CATEGORY_ALIASES = {
-            'taste and flavor':'taste', 'taste and flavour':'taste', 'taste & flavor':'taste',
-            'taste & flavour':'taste', 'flavor':'taste', 'flavour':'taste', 'product quality':'taste',
-            'quality':'taste', 'food quality':'taste',
-            'missing items':'missing', 'missing item':'missing', 'item missing':'missing',
-            'incomplete order':'missing',
+            // old ids
+            'portion':'shake_quantity', 'delayserve':'delayserve', 'health_hazard':'health_hazard',
+            // sheet / form wording
+            'taste and flavor':'taste', 'taste and flavour':'taste', 'taste & flavor':'taste', 'taste & flavour':'taste', 'flavor':'taste', 'flavour':'taste',
+            'product quality':'food_quality', 'quality':'food_quality', 'food quality':'food_quality',
+            'missing items':'missing', 'missing item':'missing', 'item missing':'missing', 'incomplete order':'missing',
             'wrong items':'wrong', 'wrong item':'wrong', 'incorrect order':'wrong', 'wrong order':'wrong',
-            'damaged':'broken', 'damaged item':'broken', 'broken':'broken', 'broken item':'broken',
-            'broken / smashed':'broken', 'smashed':'broken', 'melted':'broken',
-            'cold':'cold', 'cold food':'cold', 'stale':'cold', 'not fresh':'cold', 'cold / stale':'cold',
+            'damaged':'broken', 'damaged item':'broken', 'broken':'broken', 'broken item':'broken', 'broken / smashed':'broken', 'broken / smashed cookies':'broken', 'smashed':'broken',
+            'melted':'melting', 'melting':'melting', 'melting cookies':'melting', 'melting / running ice cream':'melting_ice',
+            'cold':'cold', 'cold food':'cold', 'stale':'cold', 'not fresh':'cold', 'cold / stale':'cold', 'cold / stale cookies':'cold',
             'too sweet':'sweet', 'sweetness':'sweet',
-            'portion size':'portion', 'quantity':'portion', 'portion / quantity':'portion',
-            'less quantity':'portion',
-            'delay in serving':'delayserve', 'delay serving':'delayserve', 'service delay':'delayserve',
-            'late service':'delayserve', 'slow service':'delayserve',
-            'late delivery':'delivery', 'delivery delay':'delivery', 'rider issue':'delivery',
-            'rider':'delivery', 'delivery issue':'delivery',
-            'staff behavior':'staff', 'staff behaviour':'staff', 'staff attitude':'staff',
-            'rude staff':'staff', 'misbehavior':'staff', 'misbehaviour':'staff',
-            'food poisoning':'health_hazard', 'health hazard':'health_hazard', 'food safety':'health_hazard'
+            'portion size':'shake_quantity', 'quantity':'shake_quantity', 'portion / quantity':'shake_quantity', 'less quantity':'shake_quantity', 'shake quantity':'shake_quantity',
+            'shake quality':'shake_quality', 'spillage':'spillage', 'not chilled / warm shake':'warm_shake', 'warm shake':'warm_shake',
+            'delay in serving':'delayserve', 'delay serving':'delayserve', 'service delay':'delayserve', 'late service':'delayserve', 'slow service':'delayserve',
+            'take away delay':'takeaway_delay', 'takeaway delay':'takeaway_delay', 'car hop failure':'carhop', 'car hop':'carhop',
+            'late delivery':'delivery', 'delivery delay':'delivery', 'rider issue':'delivery', 'delivery issue':'delivery', 'delivery speed':'delivery',
+            'staff behavior':'staff', 'staff behaviour':'staff', 'staff attitude':'staff', 'rude staff':'staff', 'misbehavior':'staff', 'misbehaviour':'staff',
+            'rider behavior':'rider', 'rider behaviour':'rider', 'rider':'rider', 'unattentive staff':'unattentive', 'inattentive staff':'unattentive',
+            'packaging':'packaging', 'missing note':'missing_note', 'missing straw':'missing_straw', 'cash only payment issue':'cash_only', 'cash only':'cash_only',
+            'foreign object / hair':'foreign_object', 'foreign object':'foreign_object', 'hair':'foreign_object', 'hygiene':'hygiene',
+            'hard cookies':'hard', 'too soft':'soft', 'oily':'oily', 'undercooked cookies':'undercooked', 'burnt cookies':'burnt', 'smelly cookies':'smelly',
+            'no or less filling':'filling', 'egg taste':'egg_taste', 'flat cookie':'flat', 'soggy cookie':'soggy', 'order accuracy':'wrong',
+            'food poisoning':'health_hazard', 'health hazard':'health_hazard', 'food safety':'health_hazard', 'others':'other', 'other / unspecified':'other'
         };
         function _resolveComplaintCategory(label){
             const raw = String(label || '').trim().toLowerCase();
@@ -13333,7 +13387,7 @@ ${(() => {
             // possibly phoned the customer, and deliberately concluded "this
             // doesn't fit any category" was being overruled by a keyword
             // match — the one verdict the classifier should never second-guess.
-            if(raw === CI_OTHER.id || raw === CI_OTHER.title.toLowerCase()) return CI_OTHER;
+            if(raw === CI_OTHER.id || raw === CI_OTHER.title.toLowerCase() || raw === 'other / unspecified' || COMPLAINT_CATEGORY_ALIASES[raw] === 'other') return CI_OTHER;
             const direct = COMPLAINT_CATEGORIES.find(c => c.id === raw || c.title.toLowerCase() === raw);
             if(direct) return direct;
             const aliased = COMPLAINT_CATEGORY_ALIASES[raw];
@@ -13346,6 +13400,16 @@ ${(() => {
         });
         const _MONTH_ABBR = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
+        // <optgroup> per family so the agent's dropdown reads as 7 short lists
+        // (with search) instead of 37 flat rows.
+        function _categoryOptionsHtml(selectedId){
+            const all = [...COMPLAINT_CATEGORIES, CI_HEALTH_HAZARD, CI_OTHER];
+            return COMPLAINT_FAMILIES.map(f => {
+                const items = all.filter(c => c.family === f.id);
+                if(!items.length) return '';
+                return `<optgroup label="${f.title}">` + items.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${c.title}</option>`).join('') + `</optgroup>`;
+            }).join('');
+        }
         function classifyComplaint(inc){
             // 1. Agent-confirmed category — set during resolution by someone
             // who actually read the note and, where needed, contacted the
@@ -13682,6 +13746,28 @@ ${(() => {
                 `${totalConfirmed} agent-confirmed (${confirmedPct}%) · ${totalAuto} auto-classified · ` +
                 `${totalOther} unclassified · trend vs ${monthLabels[1]}`;
 
+            // ── Family summary strip: the 7 families with count + trend, so the
+            // headline reads "Cookie Quality up 40%" before the 37-row detail. ──
+            (function(){
+                let strip = document.getElementById('ct-family-strip');
+                if(!strip){ strip = document.createElement('div'); strip.id = 'ct-family-strip'; strip.className = 'ct-family-strip'; ledgerEl.parentNode.insertBefore(strip, ledgerEl); }
+                const fam = {};
+                ledgerRows.forEach(r => { const f = COMPLAINT_FAMILY_OF(r.cat.family); const k = f.id; fam[k] = fam[k] || { f, m0:0, m1:0, top:null }; fam[k].m0 += r.months[0]; fam[k].m1 += r.months[1]; if(!fam[k].top || r.months[0] > fam[k].top.months[0]) fam[k].top = r; });
+                const tiles = COMPLAINT_FAMILIES.map(f => fam[f.id]).filter(Boolean).sort((a,b) => b.m0 - a.m0);
+                const peak = Math.max(1, ...tiles.map(t => t.m0));
+                strip.innerHTML = tiles.map(t => {
+                    const d = t.m0 - t.m1; const pct = t.m1 ? Math.round(d / t.m1 * 100) : (t.m0 ? null : 0);
+                    const dir = d > 0 ? 'up' : d < 0 ? 'down' : 'flat';
+                    const share = totalAll ? Math.round(t.m0 / totalAll * 100) : 0;
+                    return `<div class="ct-fam-tile" style="--fc:${t.f.color}">
+                        <div class="ct-fam-head"><i class="fas ${t.f.icon}"></i><span>${t.f.title}</span></div>
+                        <div class="ct-fam-num">${t.m0}<small>${share}%</small></div>
+                        <div class="ct-fam-bar"><span style="width:${Math.round(t.m0/peak*100)}%"></span></div>
+                        <div class="ct-fam-trend ${dir}">${pct === null ? 'NEW' : (dir==='flat' ? 'no change' : `${dir==='up'?'▲':'▼'} ${Math.abs(pct)}% vs ${monthLabels[1]}`)}${t.top && t.top.cat.id !== 'other' ? ` · top: ${t.top.cat.title}` : ''}</div>
+                    </div>`;
+                }).join('');
+            })();
+
             // Bars are scaled against the biggest category in the latest
             // window, so length is directly comparable across rows.
             const peakM0 = Math.max(1, ...ledgerRows.map(r => r.months[0]));
@@ -13712,7 +13798,7 @@ ${(() => {
                 return `<div class="ci-card ${sevHot}">
                     <div class="ci-rank">${rank}</div>
                     <div class="ci-main">
-                        <div class="ci-title">${r.cat.title}${(() => {
+                        <div class="ci-title"><span class="ci-fam-tag" style="--fc:${COMPLAINT_FAMILY_OF(r.cat.family).color}">${COMPLAINT_FAMILY_OF(r.cat.family).title}</span>${r.cat.title}${(() => {
                             const conf = r.confirmed || 0, au = r.auto || 0, tot = conf + au;
                             if(!tot) return '';
                             // Fully confirmed rows get a quiet green check;
@@ -15980,7 +16066,13 @@ ${(() => {
                     const opt = options().filter(o => !q || o.text.toLowerCase().includes(q));
                     if(!opt.length){ list.innerHTML = `<div class="ms-empty">No ${esc(opts.nounPlural)} match "${esc(search.value)}"</div>`; return; }
                     const all = options();
-                    list.innerHTML = opt.map(o => `<div class="ms-opt ${o.selected ? 'on' : ''} ${o.disabled ? 'dis' : ''}" data-i="${all.indexOf(o)}">${single ? '<span class="tick"><i class="fas fa-check"></i></span>' : '<span class="box"><i class="fas fa-check"></i></span>'}<span>${esc(o.text)}</span>${opts.meta ? `<span class="region">${esc(opts.meta(o.value) || '')}</span>` : ''}</div>`).join('');
+                    let lastGroup = null, html = '';
+                    opt.forEach(o => {
+                        const g = o.parentElement && o.parentElement.tagName === 'OPTGROUP' ? o.parentElement.label : null;
+                        if(g !== lastGroup){ if(g) html += `<div class="ms-group">${esc(g)}</div>`; lastGroup = g; }
+                        html += `<div class="ms-opt ${o.selected ? 'on' : ''} ${o.disabled ? 'dis' : ''}" data-i="${all.indexOf(o)}">${single ? '<span class="tick"><i class="fas fa-check"></i></span>' : '<span class="box"><i class="fas fa-check"></i></span>'}<span>${esc(o.text)}</span>${opts.meta ? `<span class="region">${esc(opts.meta(o.value) || '')}</span>` : ''}</div>`;
+                    });
+                    list.innerHTML = html;
                 }
                 function renderSummary(){
                     btn.disabled = sel.disabled;
