@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.11 · 10 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.12 · 10 Sep 2026 · dine-in';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -16476,7 +16476,10 @@ ${(() => {
             const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const slug = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
             const clone = o => JSON.parse(JSON.stringify(o));
-            const publicUrl = id => PUBLIC_FORM_ORIGIN + '/?f=' + encodeURIComponent(id);
+            // Forms served by their own page (branching logic the builder can't
+            // express) instead of the config-driven renderer.
+            const CUSTOM_PAGES = { dinein: { url: PUBLIC_FORM_ORIGIN + '/dinein/', note: 'Branching survey page (product / service paths). The sequence lives in the page itself and is not editable here. Add ?branch=<Branch> to the link to pre-fill the branch.' } };
+            const publicUrl = id => (CUSTOM_PAGES[id] ? CUSTOM_PAGES[id].url : PUBLIC_FORM_ORIGIN + '/?f=' + encodeURIComponent(id));
             const qrUrl = id => 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=' + encodeURIComponent(publicUrl(id));
             const root = () => document.getElementById('fb-root');
 
@@ -16504,15 +16507,17 @@ ${(() => {
             function renderList(){
                 const cards = forms.map(f => {
                     const cfg = f.config || {};
-                    const n = (cfg.questions||[]).length;
+                    const custom = CUSTOM_PAGES[f.id];
+                    const n = custom ? 18 : (cfg.questions||[]).length;
                     const upd = f.updatedAt ? new Date(f.updatedAt) : null;
                     return `<div class="fb-card">
-                        <div class="name">${esc(f.name || f.id)} <span class="fb-badge ${esc(f.status)}">${esc(f.status)}</span></div>
-                        <div class="fb-meta"><span>ID <b>${esc(f.id)}</b></span><span>Writes to <b>${esc(f.targetTab||'—')}</b></span><span><b>${n}</b> question${n===1?'':'s'}</span></div>
+                        <div class="name">${esc(f.name || f.id)} <span class="fb-badge ${custom ? 'live' : esc(f.status)}">${custom ? 'live' : esc(f.status)}</span>${custom ? ' <span class="fb-badge" style="background:rgba(124,58,237,.12);color:#7C3AED;">custom page</span>' : ''}</div>
+                        <div class="fb-meta"><span>ID <b>${esc(f.id)}</b></span><span>Writes to <b>${esc(f.targetTab||'—')}</b></span><span><b>${n}</b> step${n===1?'':'s'}</span></div>
+                        ${custom ? `<div class="fb-meta" style="color:var(--text-muted);">${esc(custom.note)}</div>` : ''}
                         <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(publicUrl(f.id))}</span><button class="ia-copy-btn" title="Copy link" onclick="FB.copy('${esc(publicUrl(f.id))}')"><i class="fas fa-copy"></i></button></div>
                         ${upd ? `<div class="fb-meta"><span>Updated <b>${upd.toLocaleString()}</b>${f.updatedBy ? ' by <b>'+esc(f.updatedBy)+'</b>' : ''}</span></div>` : ''}
                         <div class="fb-actions">
-                            <button class="fb-btn sm primary" onclick="FB.edit('${esc(f.id)}')"><i class="fas fa-pen"></i> Edit</button>
+                            ${custom ? '' : `<button class="fb-btn sm primary" onclick="FB.edit('${esc(f.id)}')"><i class="fas fa-pen"></i> Edit</button>`}
                             <button class="fb-btn sm" onclick="FB.showQr('${esc(f.id)}')"><i class="fas fa-qrcode"></i> QR</button>
                             <a class="fb-btn sm" href="${esc(publicUrl(f.id))}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Open</a>
                         </div>
