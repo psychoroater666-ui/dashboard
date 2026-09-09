@@ -5044,7 +5044,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.2 · 9 Sep 2026 · escalation';
+        const BUILD_VERSION = 'v2.11.3 · 9 Sep 2026 · escalation';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5349,7 +5349,7 @@
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
-        const BUILD = 'v1.67';
+        const BUILD = (typeof BUILD_VERSION === 'string' ? BUILD_VERSION.split(' ')[0] : 'v2.11.2');   // one version everywhere: the build tag
         // Single source of truth for the two Harley source taxonomies —
         // used by BOTH the Submissions source filters and the
         // Create-Submission form, so the two can never drift apart.
