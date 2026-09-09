@@ -5027,7 +5027,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.9.4 · 9 Sep 2026 · taxonomy';
+        const BUILD_VERSION = 'v2.10.0 · 9 Sep 2026 · dine-in';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -16303,6 +16303,7 @@ ${(() => {
         const FB = (function(){
             const PUBLIC_FORM_ORIGIN = 'https://feedback.crumblesentinel.com';
             const TYPES = {
+                name:   { label:'Name',           hint:'Collected on the welcome screen, above the phone number.' },
                 phone:  { label:'Phone number',   hint:'Collected on the welcome screen. Stored as +92XXXXXXXXXX.' },
                 rating: { label:'Rating 1–5',     hint:'Five emoji faces. Auto-advances on tap.' },
                 branch: { label:'Branch',         hint:'Auto-detected from GPS; falls back to a dropdown of the branches below.' },
@@ -16400,6 +16401,7 @@ ${(() => {
                     thankYou:{ title:'Thank you!', body:'Your response has been recorded. We appreciate you taking the time.' },
                     branches: clone((forms.find(f => f.id === 'delivery') || {config:{}}).config.branches || []),
                     questions:[
+                        { id:'name',   type:'name',   required:false, column:'Name', placeholder:'Your name' },
                         { id:'phone',  type:'phone',  required:true, column:'Phone Number', placeholder:'Phone Number' },
                         { id:'rating', type:'rating', required:true, eyebrow:'Rate 1 - 5', title:'How was your experience today?', column:'How was your experience today?' },
                         { id:'branch', type:'branch', required:true, eyebrow:'Feedback', column:'Location' },
@@ -16456,10 +16458,10 @@ ${(() => {
                           </div>
                         </div>
 
-                        <div class="fb-section"><h4>Questions <span style="font-weight:600;text-transform:none;letter-spacing:0;">${f.questions.length} total · phone always appears on the welcome screen</span></h4>
+                        <div class="fb-section"><h4>Questions <span style="font-weight:600;text-transform:none;letter-spacing:0;">${f.questions.length} total · name &amp; phone appear on the welcome screen</span></h4>
                           <div id="fb-qlist">${f.questions.map((q,i) => renderQ(q,i)).join('')}</div>
                           <div class="fb-addq"><span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Add:</span>
-                            ${Object.keys(TYPES).map(t => `<button class="fb-btn sm" onclick="FB.addQ('${t}')" ${(t==='phone'||t==='rating'||t==='branch') && f.questions.some(q=>q.type===t) ? 'disabled title="Only one allowed"' : ''}>${esc(TYPES[t].label)}</button>`).join('')}
+                            ${Object.keys(TYPES).map(t => `<button class="fb-btn sm" onclick="FB.addQ('${t}')" ${(t==='phone'||t==='rating'||t==='branch'||t==='name') && f.questions.some(q=>q.type===t) ? 'disabled title="Only one allowed"' : ''}>${esc(TYPES[t].label)}</button>`).join('')}
                           </div>
                         </div>
 
@@ -16480,15 +16482,15 @@ ${(() => {
             }
 
             function renderQ(q, i){
-                const isFixed = q.type === 'phone' || q.type === 'branch';
-                const title = q.type === 'phone' ? 'Phone number (welcome screen)' : q.type === 'branch' ? 'Branch (auto-detect)' : (q.title || '(untitled)');
+                const isFixed = q.type === 'phone' || q.type === 'branch' || q.type === 'name';
+                const title = q.type === 'phone' ? 'Phone number (welcome screen)' : q.type === 'name' ? 'Name (welcome screen)' : q.type === 'branch' ? 'Branch (auto-detect)' : (q.title || '(untitled)');
                 const body = `
                     <div class="fb-row three">
                       <div class="fb-field"><label>Question ID</label><input value="${esc(q.id)}" oninput="FB.setQ(${i},'id',FB.slug(this.value))"><div class="hint">Internal key. Letters/numbers/dashes.</div></div>
                       <div class="fb-field"><label>Sheet column</label><input value="${esc(q.column||'')}" list="fb-cols" oninput="FB.setQ(${i},'column',this.value)"><div class="hint">Exact header text in the target tab.</div></div>
                       <div class="fb-field" style="justify-content:flex-end;"><label class="fb-check" style="margin-top:20px;"><input type="checkbox" ${q.required?'checked':''} onchange="FB.setQ(${i},'required',this.checked)"> Required</label></div>
                     </div>
-                    ${q.type==='phone' ? `<div class="fb-field"><label>Placeholder</label><input value="${esc(q.placeholder||'')}" oninput="FB.setQ(${i},'placeholder',this.value)"></div>` : ''}
+                    ${(q.type==='phone' || q.type==='name') ? `<div class="fb-field"><label>Placeholder</label><input value="${esc(q.placeholder||'')}" oninput="FB.setQ(${i},'placeholder',this.value)"></div>` : ''}
                     ${q.type==='branch' ? `<div class="fb-field"><label>Eyebrow</label><input value="${esc(q.eyebrow||'')}" oninput="FB.setQ(${i},'eyebrow',this.value)"></div>` : ''}
                     ${!isFixed ? `<div class="fb-row">
                       <div class="fb-field"><label>Eyebrow (small text above)</label><input value="${esc(q.eyebrow||'')}" oninput="FB.setQ(${i},'eyebrow',this.value)"></div>
@@ -16543,6 +16545,7 @@ ${(() => {
                 const n = editing.questions.filter(q => q.type === type).length + 1;
                 const base = { id: slug(type + (n>1?'-'+n:'')), type, required: type !== 'text', eyebrow: 'Feedback', _open: true };
                 if(type==='phone')  Object.assign(base, { column:'Phone Number', placeholder:'Phone Number', eyebrow: undefined });
+                if(type==='name')   Object.assign(base, { column:'Name', placeholder:'Your name', eyebrow: undefined });
                 if(type==='rating') Object.assign(base, { eyebrow:'Rate 1 - 5', title:'How was your experience today?', column:'How was your experience today?' });
                 if(type==='branch') Object.assign(base, { column:'Location' });
                 if(type==='single') Object.assign(base, { title:'New question', options:['Option A','Option B'], column:'New question' });
@@ -16584,7 +16587,7 @@ ${(() => {
                     const n = `Question ${i+1}`;
                     if(!q.id) errs.push(`${n}: needs an ID.`); else if(ids.has(q.id)) errs.push(`${n}: duplicate ID "${q.id}".`); ids.add(q.id);
                     if(!q.column) errs.push(`${n}: needs a sheet column.`);
-                    if(!['phone','branch'].includes(q.type) && !q.title) errs.push(`${n}: needs a title.`);
+                    if(!['phone','branch','name'].includes(q.type) && !q.title) errs.push(`${n}: needs a title.`);
                     if((q.type==='single'||q.type==='multi') && (!q.options || q.options.length < 2)) errs.push(`${n}: needs at least 2 options.`);
                     if(q.type==='multi' && ((q.negativeTitle && !q.negativeColumn) || (!q.negativeTitle && q.negativeColumn))) errs.push(`${n}: fill both low-rating title and column, or neither.`);
                     if(q.type==='multi' && q.negativeColumn && !hasRating) errs.push(`${n}: a low-rating variant needs a Rating question in the form.`);
