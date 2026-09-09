@@ -4953,7 +4953,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.7.3 · 9 Sep 2026 · mobile';
+        const BUILD_VERSION = 'v2.7.4 · 9 Sep 2026 · mobile';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14307,28 +14307,46 @@ ${(() => {
             ].slice(0, 12); // limit to visible cards
             shimmerTargets.forEach(el => el.classList.add('kpi-refreshing'));
 
-            // ── Phase 2: Refresh data after 1s ──
-            setTimeout(() => {
-                // Silent = repaint in place. Pressing Refresh while reading
-                // the middle of a page should update the numbers, not throw
-                // you back to the top or re-run every entry animation.
-                try { UI.silent(() => app.refreshData()); } catch(e){}
+            // ── Phase 2: a REAL refresh -- full re-sync with the backend, then repaint.
+            // (Previously this only re-drew the numbers already in memory after a
+            // one-second wait, which is why it never seemed to do anything.)
+            (async () => {
+                const beforeSubs = (rawData.submissions||[]).length;
+                const beforeIncs = (rawData.incidents||[]).length;
+                let ok = false, err = null;
+                const t0 = Date.now();
+                try {
+                    window.__forceFullNext = true;                  // re-verify history too, not just append
+                    window.__pollRepaintDeferred = true;            // we repaint ourselves below, once
+                    try { ok = await loadLive(); } finally { window.__pollRepaintDeferred = false; }
+                    if(ok){
+                        applyGlobalFilters();
+                        try { UI.silent(() => app.refreshData()); } catch(e){ app.refreshData(); }
+                        if(typeof renderAlerts === 'function') renderAlerts();
+                        if(typeof checkForNewIncidents === 'function') checkForNewIncidents();
+                    }
+                } catch(e){ err = e; }
+                // keep the spinner visible at least 600ms so the click registers as "doing something"
+                await new Promise(r => setTimeout(r, Math.max(0, 600 - (Date.now() - t0))));
 
-                // Clear the shimmer from EVERY element it was applied to.
-                // Previously this only cleared '.kpi-card', so the '.card'
-                // elements in shimmerTargets kept their shimmer overlay
-                // running permanently after the first refresh — the drifting
-                // sheen people were seeing on panels long after it finished.
                 shimmerTargets.forEach(el => el.classList.remove('kpi-refreshing'));
 
-                // ── Phase 3: Success state — checkmark ──
+                // ── Phase 3: result state ──
                 icon.style.animation = 'none';
-                icon.className = 'fas fa-circle-check';
-                icon.style.color = '#000';
                 icon.style.transform = 'scale(1.2)';
                 icon.style.transition = 'transform .3s cubic-bezier(.16,1,.3,1), color .2s';
-                label.textContent = 'Updated';
-                btn.style.borderColor = '#000';
+                if(ok){
+                    const newSubs = (rawData.submissions||[]).length - beforeSubs;
+                    const newIncs = (rawData.incidents||[]).length - beforeIncs;
+                    icon.className = 'fas fa-circle-check'; icon.style.color = '#059669';
+                    label.textContent = newSubs > 0 ? `+${newSubs} new${newIncs > 0 ? ` · ${newIncs} incident${newIncs===1?'':'s'}` : ''}` : 'Up to date';
+                    btn.style.borderColor = '#059669';
+                } else {
+                    icon.className = 'fas fa-triangle-exclamation'; icon.style.color = '#DC2626';
+                    label.textContent = 'Refresh failed';
+                    btn.style.borderColor = '#DC2626';
+                    console.error('Manual refresh failed:', err || window.__feedErr);
+                }
                 btn.style.background  = 'var(--white)';
 
                 // ── Phase 4: Reset after 1.5s ──
@@ -14344,9 +14362,8 @@ ${(() => {
                         btn.style.cursor      = 'pointer';
                         btn.disabled          = false;
                     }, 300);
-                }, 1500);
-
-            }, 1000);
+                }, 1800);
+            })();
         }
 
         // ═══════════════════════════════════════════
