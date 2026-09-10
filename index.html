@@ -3885,6 +3885,10 @@
                             </div>
                             <div id="exec-repeat-risk"></div>
                         </div>
+<div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">VERIFIED VS FAKE TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execVerFakeChart"></canvas></div>
+                        </div>
                     </div>
 
                     <!-- Health trends — the ratios that actually say whether
@@ -3898,10 +3902,7 @@
                             <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RESOLUTION SPEED TREND</h3></div>
                             <div class="chart-container" style="height:180px;"><canvas id="execResSpeedChart"></canvas></div>
                         </div>
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">VERIFIED VS FAKE TREND</h3></div>
-                            <div class="chart-container" style="height:180px;"><canvas id="execVerFakeChart"></canvas></div>
-                        </div>
+                        <!-- moved beside Repeat Complainers -->
                         <!-- SOCIAL SENTIMENT SNAPSHOT removed -->
                     </div>
 
@@ -5132,7 +5133,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.20.0 · 10 Sep 2026 · same-day';
+        const BUILD_VERSION = 'v2.20.1 · 10 Sep 2026 · same-day';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
