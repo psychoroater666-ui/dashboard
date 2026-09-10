@@ -3114,29 +3114,31 @@
         /* breathing halo */
         .ai-bubble .orb-halo {
             inset:-10px; border-radius:50%;
-            background:radial-gradient(circle at 50% 50%, rgba(99,102,241,.55) 0%, rgba(217,70,239,.30) 42%, rgba(99,102,241,0) 72%);
-            filter:blur(10px); opacity:.8; animation:orbBreathe 6s ease-in-out infinite; transition:opacity .26s;
+            background:radial-gradient(circle at 50% 50%, rgba(165,180,252,.55) 0%, rgba(240,171,252,.32) 44%, rgba(165,180,252,0) 74%);
+            filter:blur(11px); opacity:.7; animation:orbBreathe 6s ease-in-out infinite; transition:opacity .26s;
         }
         /* glass shell */
         .ai-bubble .orb-body {
-            overflow:hidden; background:radial-gradient(circle at 32% 26%, #2A2F6B 0%, #10132E 55%, #070A1C 100%);
-            box-shadow:0 8px 22px rgba(8,10,32,.5), inset 0 0 0 1px rgba(255,255,255,.16);
+            overflow:hidden;
+            background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.55) 0%, rgba(255,255,255,.16) 34%, rgba(255,255,255,.06) 62%, rgba(255,255,255,.14) 100%);
+            backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+            box-shadow:0 10px 24px rgba(76,29,149,.28), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 -10px 18px rgba(124,58,237,.18);
         }
         .ai-bubble .orb-body > span { position:absolute; inset:-50%; border-radius:50%; will-change:transform; }
         /* iridescent core */
-        .ai-bubble .orb-i1 { background:conic-gradient(from 0deg, #6366F1, #22D3EE, #A855F7, #EC4899, #F59E0B, #6366F1); filter:blur(8px); opacity:.85; animation:orbSpin 14s linear infinite; }
-        .ai-bubble .orb-i2 { background:radial-gradient(circle at 34% 34%, #22D3EE 0%, rgba(34,211,238,0) 52%), radial-gradient(circle at 70% 66%, #D946EF 0%, rgba(217,70,239,0) 55%); filter:blur(9px); opacity:.75; animation:orbDrift 10s ease-in-out infinite alternate; }
+        .ai-bubble .orb-i1 { background:conic-gradient(from 0deg, #A5B4FC, #67E8F9, #F0ABFC, #FDA4AF, #FDE68A, #A5B4FC); filter:blur(7px); opacity:.7; animation:orbSpin 14s linear infinite; }
+        .ai-bubble .orb-i2 { background:radial-gradient(circle at 30% 70%, #67E8F9 0%, rgba(103,232,249,0) 48%), radial-gradient(circle at 74% 34%, #F0ABFC 0%, rgba(240,171,252,0) 50%); filter:blur(9px); opacity:.6; animation:orbDrift 10s ease-in-out infinite alternate; }
         /* sheen sweeping across the glass */
-        .ai-bubble .orb-i3 { inset:-50%; background:conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.55) 22deg, rgba(255,255,255,0) 56deg); filter:blur(2px); opacity:.5; animation:orbSpin 7s linear infinite reverse; }
+        .ai-bubble .orb-i3 { inset:-50%; background:conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.85) 18deg, rgba(255,255,255,0) 44deg); filter:blur(1.5px); opacity:.55; animation:orbSpin 8s linear infinite reverse; }
         /* specular glass */
         .ai-bubble .orb-glass {
-            background:radial-gradient(ellipse 60% 40% at 34% 20%, rgba(255,255,255,.85) 0%, rgba(255,255,255,0) 60%),
-                       linear-gradient(160deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 38%);
-            box-shadow:inset 0 -8px 16px rgba(0,0,0,.4), inset 0 0 0 1px rgba(255,255,255,.22);
+            background:radial-gradient(circle 6px at 33% 26%, rgba(255,255,255,.98) 0%, rgba(255,255,255,.55) 55%, rgba(255,255,255,0) 100%),
+                       radial-gradient(ellipse 55% 34% at 62% 78%, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 70%);
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
         }
         .ai-bubble .orb-text {
-            position:relative; inset:auto; font:800 12px/1 'Inter',sans-serif; letter-spacing:1px; color:#fff;
-            text-shadow:0 1px 4px rgba(3,7,30,.9), 0 0 12px rgba(3,7,30,.7); z-index:2;
+            position:relative; inset:auto; font:800 12px/1 'Inter',sans-serif; letter-spacing:1px; color:#2E1065;
+            text-shadow:0 1px 2px rgba(255,255,255,.85), 0 0 10px rgba(255,255,255,.7); z-index:2;
         }
         @keyframes orbSpin    { to { transform:rotate(360deg); } }
         @keyframes orbDrift   { from { transform:translate3d(-8%,-6%,0) scale(1.06); } to { transform:translate3d(8%,7%,0) scale(1.2); } }
@@ -3150,6 +3152,7 @@
         .ai-bubble.active .orb-halo { animation:none; opacity:.35; }
         .ai-bubble.has-new .orb-halo { animation:orbPulse 2.4s ease-out infinite; }
         @keyframes orbPulse { 0% { transform:scale(1); opacity:.85; } 65% { transform:scale(1.38); opacity:0; } 100% { transform:scale(1); opacity:0; } }
+        body.dark-theme .ai-bubble .orb-body { box-shadow:0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.5), inset 0 -10px 18px rgba(124,58,237,.22); }
         body:not(.dark-theme) .ai-bubble .orb-halo { inset:-7px; opacity:.45; filter:blur(8px); }
         body:not(.dark-theme) .ai-bubble:hover .orb-halo { opacity:.65; }
         @media (prefers-reduced-motion: reduce){
@@ -5154,7 +5157,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.16.0 · 10 Sep 2026 · assistant';
+        const BUILD_VERSION = 'v2.16.1 · 10 Sep 2026 · assistant';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
