@@ -3800,6 +3800,13 @@
                         </div>
 
                         <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:12px;">
+                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3>
+                                <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
+                            </div>
+                            <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+<div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom: 8px;">
                                 <h3 style="font-size:0.78rem;">SUBMISSIONS & INCIDENTS TREND</h3>
                                 <select class="select-input" style="padding: 5px 26px 5px 12px; font-size: 0.72rem; border-radius: 6px; box-shadow: none; border: 1px solid var(--border-color); background-color: var(--white); font-weight: 600; color: var(--text-main);">
@@ -3826,13 +3833,7 @@
                     <!-- Needs Attention Today + repeat-complainer risk — the
                          two "act on this now" signals, side by side. -->
                     <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;">
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:12px;">
-                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3>
-                                <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
-                            </div>
-                            <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
-                        </div>
+                        <!-- moved to top -->
                         <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:12px;">
                                 <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#B45309;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
@@ -3857,22 +3858,13 @@
                             <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">VERIFIED VS FAKE TREND</h3></div>
                             <div class="chart-container" style="height:180px;"><canvas id="execVerFakeChart"></canvas></div>
                         </div>
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SOCIAL SENTIMENT SNAPSHOT</h3></div>
-                            <div style="display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:center;">
-                                <div class="chart-container" style="height:130px;"><canvas id="execSocialSentimentChart"></canvas></div>
-                                <div id="exec-social-sentiment-legend" style="display:flex;flex-direction:column;gap:8px;"></div>
-                            </div>
-                        </div>
+                        <!-- SOCIAL SENTIMENT SNAPSHOT removed -->
                     </div>
 
                     <!-- Sentiment Trend — weekly average Smile Score, so a
                          slow drift in how customers feel shows up on its own
                          line instead of being buried inside daily noise. -->
-                    <div class="card" style="padding:20px;">
-                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SENTIMENT TREND</h3><span class="text-xs text-muted" style="font-weight:600;">Weekly average smile score — getting happier or unhappier?</span></div>
-                        <div class="chart-container" style="height:200px;"><canvas id="execSentimentTrendChart"></canvas></div>
-                    </div>
+                    <!-- SENTIMENT TREND removed -->
 
                     <!-- Staff & Location Rankings — BM/City/Region on one row,
                          OM/SOM/HOP (each an aggregate across the branches they
@@ -3899,23 +3891,7 @@
                     </div>
 
                     <!-- EXECUTIVE SUMMARY horizontal strip -->
-                    <div class="card ai-card" style="padding:16px 24px;">
-                        <div style="display:flex; align-items:flex-start; gap:16px;">
-                            <div style="flex-shrink:0; padding-top:2px;">
-                                <div style="width:30px; height:30px; border-radius:9px; background:linear-gradient(135deg,#7C3AED,#2563EB); display:flex; align-items:center; justify-content:center; color:#fff; font-size:0.75rem; box-shadow:0 3px 8px rgba(124,58,237,.35);">
-                                    <i class="fas fa-wand-magic-sparkles"></i>
-                                </div>
-                            </div>
-                            <div style="flex:1; min-width:0;">
-                                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                                    <span style="font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">Executive Summary</span>
-                                    <span id="exec-ai-badge" class="ai-badge" style="display:none;">AI</span>
-                                    <span id="exec-summary-stamp" class="ai-stamp" style="margin-top:0; font-size:0.65rem;"></span>
-                                </div>
-                                <div class="exec-text" id="exec-summary" style="font-size:0.88rem; line-height:1.6;">Loading...</div>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Executive Summary removed -->
 
                     <!-- FORM PERFORMANCE — 3 form cards: Delivery, Dine In, Call Center -->
                     <div class="card" data-hidden-section="form-performance" style="display:none;"" style="padding: 20px 24px;">
@@ -4062,52 +4038,7 @@
                     </div>
                     <!-- ══════════ END VOICE OF CUSTOMER ══════════ -->
 
-                    <!-- ══════════ AI INSIGHTS ══════════ -->
-                    <div class="card ai-card collapsible-card" id="ai-card" style="padding:0;overflow:hidden;">
-                        <!-- Header -->
-                        <div class="collapse-header" onclick="toggleSection('ai-card')" style="padding:18px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-                            <div style="display:flex;align-items:center;gap:12px;">
-                                <span class="ai-spark" style="background:linear-gradient(135deg,#010197,#64D0FF);width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(1,1,151,0.25);"><i class="fas fa-wand-magic-sparkles"></i></span>
-                                <div>
-                                    <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);letter-spacing:.3px;">AI INSIGHTS</div>
-                                </div>
-                            </div>
-                            <span class="collapse-chevron" id="ai-card-chevron" style="width:28px;height:28px;border-radius:8px;background:var(--bg-light);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;transition:transform .3s cubic-bezier(.16,1,.3,1),background .2s;flex-shrink:0;">
-                                <i class="fas fa-chevron-down"></i>
-                            </span>
-                        </div>
-                        <!-- Body -->
-                        <div class="collapse-body" id="ai-card-body" style="display:none;">
-                            <div style="padding:4px 24px 24px;">
-                        <div class="ai-suite-grid">
-                            <div class="ai-tile" id="ai-tile-actionplan">
-                                <div class="ai-tile-ico"><i class="fas fa-list-check"></i></div>
-                                <h4>Action Plan</h4>
-                                <p>Auto-drafted playbook: each branch mapped to its top issue, root cause, recommended action, responsible owner, and priority level — ready for your morning briefing.</p>
-                                <div class="ai-status">Connect your Gemini Apps Script to activate</div>
-                            </div>
-                            <div class="ai-tile" id="ai-tile-branchdx">
-                                <div class="ai-tile-ico"><i class="fas fa-store"></i></div>
-                                <h4>Per-Branch Diagnosis</h4>
-                                <p>Every branch gets its own briefing card: what's breaking, why it's happening, and a specific corrective action — no guesswork, all sourced from live feedback data.</p>
-                                <div class="ai-status">Connect your Gemini Apps Script to activate</div>
-                            </div>
-                            <div class="ai-tile" id="ai-tile-radar">
-                                <div class="ai-tile-ico"><i class="fas fa-satellite-dish"></i></div>
-                                <h4>Emerging-Issue Radar</h4>
-                                <p>Clusters and themes free-text customer comments automatically, surfacing new complaints before they become patterns — flags issues the rating alone would miss.</p>
-                                <div class="ai-status">Connect your Gemini Apps Script to activate</div>
-                            </div>
-                            <div class="ai-tile" id="ai-tile-channel">
-                                <div class="ai-tile-ico"><i class="fas fa-diagram-project"></i></div>
-                                <h4>Channel Insight</h4>
-                                <p>Compares Dine In, Delivery, and Call Center side by side — identifies which channel is driving the most friction, why, and where to focus operational attention first.</p>
-                                <div class="ai-status">Connect your Gemini Apps Script to activate</div>
-                            </div>
-                        </div>
-                            </div><!-- end padding wrapper -->
-                        </div><!-- end collapse-body -->
-                    </div>
+                    <!-- AI Insights removed from Overview -->
                     <!-- ══════════ END AI INSIGHTS ══════════ -->
 
                     <!-- BRANCH PERFORMANCE — cards only now (the table underneath
@@ -5157,7 +5088,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.16.2 · 10 Sep 2026 · assistant';
+        const BUILD_VERSION = 'v2.17.0 · 10 Sep 2026 · overview';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
