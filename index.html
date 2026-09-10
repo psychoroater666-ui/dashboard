@@ -5060,7 +5060,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.14.0 · 10 Sep 2026 · low-network';
+        const BUILD_VERSION = 'v2.14.1 · 10 Sep 2026 · low-network';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15820,7 +15820,8 @@ ${(() => {
             document.body.classList.add('app-ready');
             authApplyPermissions(user);
             _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
-            if(can('users')) setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);   // warm the Manage Users list
+            if(can('users')) setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);
+            if(can('forms')) setTimeout(() => { try { FB.warm(); } catch(e){} }, 3500);   // so Form Builder opens instantly later   // warm the Manage Users list
             app.init();
         }
 
@@ -16626,12 +16627,27 @@ ${(() => {
             const root = () => document.getElementById('fb-root');
 
             // ── data ────────────────────────────────────────────────────────
+            // Opening this tab used to wait 2-5s on a cold Apps Script call every
+            // time. The last payload is cached for the session, so the list paints
+            // instantly and the fresh copy swaps in behind.
+            const FB_CACHE_KEY = 'crumble_forms_cache';
+            function loadCached(){
+                if(loaded) return true;
+                try { const raw = sessionStorage.getItem(FB_CACHE_KEY); if(!raw) return false;
+                      const c = JSON.parse(raw); forms = c.forms || []; tabs = c.tabs || []; tabHeaders = c.tabHeaders || {}; return !!(forms && forms.length); } catch(e){ return false; }
+            }
+            let _fbInflight = null;
             async function load(force){
                 if(loaded && !force) return;
-                const res = await apiCall('get_forms');
-                if(!res || res.status !== 'success') throw new Error(res && res.message || 'Failed to load forms');
-                forms = res.forms || []; tabs = res.tabs || []; tabHeaders = res.tabHeaders || {};
-                loaded = true;
+                if(_fbInflight) return _fbInflight;
+                _fbInflight = (async () => {
+                    const res = await apiCall('get_forms');
+                    if(!res || res.status !== 'success') throw new Error(res && res.message || 'Failed to load forms');
+                    forms = res.forms || []; tabs = res.tabs || []; tabHeaders = res.tabHeaders || {};
+                    loaded = true;
+                    try { sessionStorage.setItem(FB_CACHE_KEY, JSON.stringify({ forms, tabs, tabHeaders })); } catch(e){}
+                })().finally(() => { _fbInflight = null; });
+                return _fbInflight;
             }
 
             // ── entry point from app.renderCurrentView ─────────────────────
@@ -16639,6 +16655,11 @@ ${(() => {
                 const host = root(); if(!host) return;
                 if(!can('forms')){ host.innerHTML = `<div class="fb-empty">Form Builder is available to the Owner and Report Analysts.</div>`; return; }
                 if(editing){ renderEditor(); return; }
+                if(loadCached()){
+                    renderList();                                   // instant from cache
+                    load(true).then(() => { if(state.currentView === 'form-builder' && !editing) renderList(); }).catch(()=>{});
+                    return;
+                }
                 host.innerHTML = `<div class="fb-empty"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading forms…</div>`;
                 try { await load(); renderList(); }
                 catch(e){ host.innerHTML = `<div class="fb-alert err"><i class="fas fa-triangle-exclamation"></i><div>${esc(e.message)}<br><button class="fb-btn sm" style="margin-top:8px" onclick="FB.reload()">Retry</button></div></div>`; }
@@ -16943,7 +16964,7 @@ ${(() => {
             }
             function closeModal(){ const m = document.getElementById('fb-modal'); if(m) m.style.display = 'none'; }
 
-            return { render, reload, edit, startNew, back, save, copy, showQr, set, setPath, onName, onTab, setQ, toggleQ, moveQ, delQ, addQ, onBranches, slug, closeModal, hasUnsaved: () => dirty };
+            return { warm: () => { try { load(true).catch(()=>{}); } catch(e){} }, render, reload, edit, startNew, back, save, copy, showQr, set, setPath, onName, onTab, setQ, toggleQ, moveQ, delQ, addQ, onBranches, slug, closeModal, hasUnsaved: () => dirty };
         })();
 
         </script>
