@@ -3013,6 +3013,16 @@
         .inc-tl-by { font-size:0.74rem; color:var(--text-muted); margin-top:3px; display:flex; align-items:center; gap:6px; }
         .inc-tl-by b { color:var(--text-main); font-weight:700; }
         .inc-tl-by i { font-size:0.66rem; color:#3B5BDB; }
+        /* Social Listening: calm by default. Cards and KPI tiles appear without
+           an entrance animation, and nothing loops forever -- the feed refreshes
+           on its own, so movement there reads as flicker rather than polish. */
+        #view-social .sl-mention-card,
+        #view-social .sl-kpi-card,
+        #view-social .sl-kpi,
+        #view-social .ct-fam-tile { animation: none !important; }
+        #view-social .sl-urgency { animation: none !important; }
+        #view-social .sl-keyword { transition: color .15s, border-color .15s !important; }
+        #view-social .sl-keyword:hover { transform: none !important; box-shadow: none !important; }
         /* ═══════════ COMPLAINT FAMILIES ═══════════ */
         .ct-family-strip { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:16px; }
         .ct-fam-tile { background:var(--white); border:1px solid var(--border-color); border-left:4px solid var(--fc); border-radius:12px; padding:12px 14px; }
@@ -5050,7 +5060,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.13.0 · 10 Sep 2026 · performance';
+        const BUILD_VERSION = 'v2.13.1 · 10 Sep 2026 · performance';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
