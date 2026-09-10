@@ -3096,6 +3096,8 @@
         #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
+        .sla-chip { display:inline-flex; align-items:center; gap:5px; font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
+        .sla-chip small { font-weight:600; opacity:.75; font-size:0.62rem; text-transform:uppercase; letter-spacing:.3px; }
         /* ═══════════ ASSISTANT ═══════════ */
         /* Liquid-glass orb: a dark glass shell with an iridescent core that
            drifts, a slow conic sheen sweeping the surface, and a breathing
@@ -3820,6 +3822,16 @@
                             </div>
                             <div class="chart-container" style="height: 230px;"><canvas id="execTrendChart"></canvas></div>
                         </div>
+                    </div>
+
+                    <!-- Live queue pressure: what is waiting right now -->
+                    <div class="card" id="sla-card" style="padding:16px 20px;display:flex;align-items:center;gap:18px;">
+                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;"><i class="fas fa-stopwatch"></i></div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px;">Queue right now</div>
+                            <div id="sla-tile"></div>
+                        </div>
+                        <div style="font-size:0.68rem;color:var(--text-muted);text-align:right;line-height:1.5;max-width:190px;">Review within <b style="color:var(--text-main);">3 min</b><br>Close within <b style="color:var(--text-main);">15 min</b><br><span style="opacity:.75;">timed from arrival in the portal</span></div>
                     </div>
 
                     <!-- What is actually breaking + regional rollup -->
@@ -5092,7 +5104,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.18.0 · 10 Sep 2026 · overview';
+        const BUILD_VERSION = 'v2.19.0 · 10 Sep 2026 · sla';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7011,6 +7023,96 @@
         // scratch every time. This composite key (form + branch + the real
         // precise timestamp) is what actually stays consistent for the same
         // real-world incident run to run.
+
+        // ═══════════════════════════════════════════════════════════════════
+        // SLA CLOCK
+        // Two timers per incident, both measured from when the row actually
+        // reached the portal (not the customer's submission time, which for
+        // Dine-In can be up to 10 minutes earlier while it still comes from
+        // Harlyy):
+        //   review    -- rings again if nobody has opened it within 3 minutes
+        //   resolution-- rings again if it isn't closed within 15 minutes of review
+        // Re-rings every 5 minutes until handled. Heard only by the people who
+        // work the queue: Call Center and Report Analyst.
+        // Reports still measure against the written standard (20s / 15min).
+        // ═══════════════════════════════════════════════════════════════════
+        const SLA = { REVIEW_RING_MS: 3*60*1000, RESOLVE_MS: 15*60*1000, RERING_MS: 5*60*1000,
+                      REVIEW_TARGET_MS: 20*1000 };
+        const _slaArrivalKey = 'crumble_sla_arrival';
+        let _slaArrival = (() => { try { return JSON.parse(localStorage.getItem(_slaArrivalKey) || '{}'); } catch(e){ return {}; } })();
+        let _slaLastRing = {};
+        function _slaHears(){ const r = roleKey(PERM.role); return r === 'callcenter' || r === 'reportanalyst' || r === 'owner'; }
+        /** First moment this portal saw the incident. Stored so the clock keeps
+         *  running across refreshes and is the same on every device within a poll. */
+        function slaArrival(inc){
+            const k = _incidentStableKey(inc);
+            if(!_slaArrival[k]){
+                _slaArrival[k] = Date.now();
+                try { const keys = Object.keys(_slaArrival); if(keys.length > 3000) keys.slice(0, keys.length - 3000).forEach(x => delete _slaArrival[x]);
+                      localStorage.setItem(_slaArrivalKey, JSON.stringify(_slaArrival)); } catch(e){}
+            }
+            return _slaArrival[k];
+        }
+        function slaState(inc){
+            const now = Date.now(), arrived = slaArrival(inc);
+            if(inc.resolved) return { stage: 'done' };
+            const reviewedAt = inc.reviewedAt ? Date.parse(inc.reviewedAt) : null;
+            if(!reviewedAt) return { stage: 'review', ms: now - arrived, limit: SLA.REVIEW_RING_MS, breached: (now - arrived) > SLA.REVIEW_RING_MS };
+            return { stage: 'resolve', ms: now - reviewedAt, limit: SLA.RESOLVE_MS, breached: (now - reviewedAt) > SLA.RESOLVE_MS };
+        }
+        function slaFmt(ms){ const t = Math.max(0, Math.round(ms/1000)), m = Math.floor(t/60), sec = t%60; return m ? m + 'm ' + (sec<10?'0':'') + sec + 's' : sec + 's'; }
+        function slaBadge(inc){
+            const st = slaState(inc); if(st.stage === 'done') return '';
+            const pct = Math.min(1, st.ms / st.limit);
+            const col = st.breached ? '#DC2626' : pct > 0.6 ? '#D97706' : '#64748B';
+            const label = st.stage === 'review' ? 'unreviewed' : 'open';
+            return `<span class="sla-chip" data-sla-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="color:${col};border-color:${col}33;background:${col}14;">
+                <i class="fas fa-stopwatch"></i> ${slaFmt(st.ms)} <small>${label}</small></span>`;
+        }
+        /** Re-ring anything that has gone past its limit, every RERING_MS. */
+        function slaCheck(){
+            if(!_slaHears() || document.hidden) return;
+            const due = (rawData.incidents || []).filter(i => !i.resolved && slaState(i).breached);
+            if(!due.length) return;
+            const now = Date.now();
+            const fresh = due.filter(i => { const k = _incidentStableKey(i); return !_slaLastRing[k] || (now - _slaLastRing[k]) > SLA.RERING_MS; });
+            if(!fresh.length) return;
+            fresh.forEach(i => { _slaLastRing[_incidentStableKey(i)] = now; });
+            try {
+                const worst = fresh.sort((a,b) => slaState(b).ms - slaState(a).ms)[0];
+                if(!_anyAlertVisible()){ _incidentAlertQueue.push(worst); if(!_incidentAlertShowing) showNextIncidentAlert(); }
+                else startRepeatingIncidentSound();
+                UI.toast(fresh.length === 1
+                    ? `Overdue: ${worst.branch} — ${slaState(worst).stage === 'review' ? 'not reviewed' : 'not closed'} for ${slaFmt(slaState(worst).ms)}`
+                    : `${fresh.length} incidents past their time limit`, 'warning', 8000);
+            } catch(e){ console.warn('sla ring failed', e); }
+        }
+        /** Tick the visible counters without re-rendering anything. */
+        function slaTick(){
+            document.querySelectorAll('.sla-chip[data-sla-key]').forEach(el => {
+                const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === el.dataset.slaKey);
+                if(!inc) return;
+                const st = slaState(inc);
+                if(st.stage === 'done'){ el.remove(); return; }
+                const col = st.breached ? '#DC2626' : (st.ms / st.limit) > 0.6 ? '#D97706' : '#64748B';
+                el.style.color = col; el.style.borderColor = col + '33'; el.style.background = col + '14';
+                el.innerHTML = `<i class="fas fa-stopwatch"></i> ${slaFmt(st.ms)} <small>${st.stage === 'review' ? 'unreviewed' : 'open'}</small>`;
+            });
+            const tile = document.getElementById('sla-tile');
+            if(tile){
+                const open = (rawData.incidents || []).filter(i => !i.resolved);
+                const breached = open.filter(i => slaState(i).breached);
+                const oldest = open.map(i => slaState(i)).sort((a,b) => b.ms - a.ms)[0];
+                tile.uiHTML = open.length
+                    ? `<div style="display:flex;align-items:baseline;gap:10px;"><span style="font-size:1.6rem;font-weight:800;color:${breached.length?'#DC2626':'var(--text-main)'};">${open.length}</span>
+                       <span style="font-size:0.72rem;color:var(--text-muted);">open${breached.length ? ' · <b style="color:#DC2626;">' + breached.length + ' past limit</b>' : ''}</span></div>
+                       <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">oldest waiting <b style="color:${oldest && oldest.breached ? '#DC2626' : 'var(--text-main)'};">${oldest ? slaFmt(oldest.ms) : '—'}</b></div>`
+                    : `<div style="font-size:1.6rem;font-weight:800;color:#059669;">0</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">nothing waiting</div>`;
+            }
+        }
+        setInterval(() => { try { slaTick(); } catch(e){} }, 1000);
+        setInterval(() => { try { slaCheck(); } catch(e){} }, 30000);
+
         function _incidentStableKey(inc){
             const ts = _rawFieldExact(inc._raw, 'Created At') || inc.date || '';
             return `${inc.surveyForm || inc.form || ''}|${inc.branch || ''}|${ts}`;
@@ -9611,7 +9713,7 @@
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr data-row-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="cursor:pointer;" onclick="app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
-                        <td>${tl}</td>
+                        <td>${tl}${inc.resolved ? '' : '<div style="margin-top:5px;">' + slaBadge(inc) + '</div>'}</td>
                         <td style="white-space:nowrap;">${dateStr}</td>
                         <td><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.8rem;">${score||'—'}</span></td>
                         <td style="font-size:0.82rem;">${inc.surveyForm||'—'}</td>
