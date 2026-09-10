@@ -5060,7 +5060,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.13.1 · 10 Sep 2026 · performance';
+        const BUILD_VERSION = 'v2.14.0 · 10 Sep 2026 · low-network';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5681,7 +5681,22 @@
         // History streaming is a background process; it is not surfaced in the
         // UI. The newest rows arrive first, so current-period numbers are right
         // from the first paint, and the page repaints once history completes.
-        function _historyPill(){ const el = document.getElementById('history-pill'); if(el) el.remove(); }
+        // While history is still downloading the totals on screen are lower than
+        // reality. Silence there is dangerous (someone reads 50 instead of 400),
+        // so a thin strip states it plainly until the data is complete.
+        function _historyPill(){
+            const incomplete = (typeof DataFeed !== 'undefined' && DataFeed.enabled && !DataFeed.isComplete());
+            let el = document.getElementById('partial-data-banner');
+            if(!incomplete){ if(el) el.remove(); document.body.classList.remove('data-partial'); return; }
+            document.body.classList.add('data-partial');
+            if(!el){
+                el = document.createElement('div'); el.id = 'partial-data-banner';
+                el.style.cssText = 'position:sticky;top:0;z-index:9998;background:#FEF3C7;border-bottom:1px solid #FCD34D;color:#92400E;font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
+                el.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:0.72rem;"></i> Still loading earlier data \u2014 totals shown below are incomplete.';
+                const host = document.querySelector('.content-scroll') || document.body;
+                host.insertBefore(el, host.firstChild);
+            }
+        }
         // A failed live sync IS surfaced -- quietly, but it must be: it means the
         // page is on fallback data.
         function _feedErrorPill(){
@@ -5991,6 +6006,21 @@
             Notification.requestPermission().then(() => _refreshNotifPermRow()).catch(()=>{});
         }
 
+        // Full-screen honest failure: no numbers at all rather than wrong ones.
+        function _showLoadFailure(){
+            document.body.classList.remove('app-loading');
+            let el = document.getElementById('load-failure');
+            if(!el){
+                el = document.createElement('div'); el.id = 'load-failure';
+                el.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:var(--bg-light,#F1F5F9);display:flex;align-items:center;justify-content:center;padding:24px;';
+                el.innerHTML = '<div style="max-width:420px;text-align:center;font-family:Inter,sans-serif;">'
+                    + '<div style="width:56px;height:56px;border-radius:16px;background:rgba(220,38,38,.1);color:#DC2626;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin:0 auto 16px;"><i class="fas fa-wifi"></i></div>'
+                    + '<div style="font-size:1.15rem;font-weight:800;color:var(--text-main,#0F172A);margin-bottom:8px;">Could not load your data</div>'
+                    + '<div style="font-size:0.86rem;color:var(--text-muted,#64748B);line-height:1.6;margin-bottom:18px;">The connection is too slow or the backend did not respond. No figures are shown, because showing partial numbers would be worse than showing none.</div>'
+                    + '<button onclick="location.reload()" style="padding:11px 22px;border:none;border-radius:10px;background:#010197;color:#fff;font-weight:700;font-size:0.86rem;cursor:pointer;font-family:Inter,sans-serif;">Try again</button></div>';
+                document.body.appendChild(el);
+            }
+        }
         function setLiveBadge(ok){
             let el = document.getElementById('liveBadge');
             // The "Live · synced" state is deliberately not shown any more —
@@ -8224,7 +8254,13 @@
                     window.__offlineLoad = false;
 
                     try { ok = await loadLive(); } catch(e){ ok = false; }   // try the Google Sheet first
-                    if (!ok && !painted) { generateData(); setLiveBadge(false); }   // fall back to sample data only if nothing real is on screen
+                    if (!ok && !painted) {
+                        // Never fabricate data: on a slow or failed connection the
+                        // dashboard used to fill itself with generated sample rows,
+                        // which look real. Show the truth and a retry instead.
+                        _showLoadFailure();
+                    }
+                    try { _historyPill(); } catch(e){}
                     initGlobalDates();   // always: the pre-paint may have used a partial dataset
                     _syncBranchOptions();
 
@@ -15118,10 +15154,16 @@ ${(() => {
             const body = JSON.stringify(Object.assign({ action }, payload || {}));
             let res, text;
             try {
-                res = await fetch(LIVE.slScriptUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body, redirect: 'follow' });
+                // Slow links (6-10 Mb office wifi) need a long fuse: give each
+                // attempt up to 45s before treating it as a failure.
+                const ctl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                const killer = ctl ? setTimeout(() => { try { ctl.abort(); } catch(e){} }, 45000) : null;
+                try {
+                    res = await fetch(LIVE.slScriptUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'same-origin', body, redirect: 'follow', signal: ctl ? ctl.signal : undefined });
+                } finally { if(killer) clearTimeout(killer); }
                 text = await res.text();
             } catch(netErr){
-                if(_attempt < 3){ await new Promise(r => setTimeout(r, 600 * _attempt)); return apiCall(action, payload, _attempt + 1); }
+                if(_attempt < 4){ await new Promise(r => setTimeout(r, 1200 * _attempt)); return apiCall(action, payload, _attempt + 1); }
                 throw netErr;
             }
             const t = text.trimStart();
