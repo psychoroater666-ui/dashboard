@@ -3807,6 +3807,10 @@
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
+                        </div>
+<div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom: 8px;">
                                 <h3 style="font-size:0.78rem;">SUBMISSIONS & INCIDENTS TREND</h3>
                                 <select class="select-input" style="padding: 5px 26px 5px 12px; font-size: 0.72rem; border-radius: 6px; box-shadow: none; border: 1px solid var(--border-color); background-color: var(--white); font-weight: 600; color: var(--text-main);">
@@ -3820,10 +3824,7 @@
 
                     <!-- Peak hours + regional rollup -->
                     <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
-                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
-                        </div>
+                        <!-- moved up beside Needs Attention -->
                         <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
                             <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
@@ -5088,7 +5089,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.17.0 · 10 Sep 2026 · overview';
+        const BUILD_VERSION = 'v2.17.1 · 10 Sep 2026 · overview';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7870,7 +7871,21 @@
         // Charts are expensive on low-end machines: skip entirely when the
         // canvas isn't on screen (hidden view / scrolled far away).
         function _chartVisible(canvasEl){
-            try { if(!canvasEl || !canvasEl.offsetParent) return false; const v = canvasEl.closest('.view'); if(v && !v.classList.contains('active')) return false; return true; } catch(e){ return true; }
+            try {
+                if(!canvasEl) return false;
+                const v = canvasEl.closest('.view');
+                if(v && !v.classList.contains('active')) return false;   // another tab -> defer
+                if(document.body.classList.contains('app-loading')) return true;  // booting: the view IS the one about to show
+                return true;
+            } catch(e){ return true; }
+        }
+        // Draw anything parked while it was hidden. Called after the first paint
+        // and whenever a view becomes active.
+        function _flushPendingCharts(){
+            try {
+                const pend = state._pendingCharts || {};
+                Object.keys(pend).forEach(id => { const el = document.getElementById(id); if(el && _chartVisible(el)){ const cfg = pend[id]; delete pend[id]; _renderOrUpdateChart(id, cfg); } });
+            } catch(e){}
         }
         function _renderOrUpdateChart(canvasId, chartConfig) {
             const canvasEl = document.getElementById(canvasId);
@@ -8275,6 +8290,7 @@
                                 window._isBackgroundRefresh = false;
                                 if(typeof renderAISuite === 'function') renderAISuite();
                                 _revealApp();
+                                setTimeout(_flushPendingCharts, 0);
                                 painted = true;
                             }
                         } catch(e){ console.warn('instant paint skipped:', e); }
@@ -8289,6 +8305,7 @@
                         _showLoadFailure();
                     }
                     try { _historyPill(); } catch(e){}
+                    setTimeout(_flushPendingCharts, 0);
                     initGlobalDates();   // always: the pre-paint may have used a partial dataset
                     _syncBranchOptions();
 
@@ -8583,7 +8600,7 @@
                             targetView.style.transform = 'translateY(6px)';
                             targetView.classList.add('active');
                             try { this.renderCurrentView(); } catch(e){ console.error(e); }
-                            try { const pend = state._pendingCharts || {}; Object.keys(pend).forEach(id => { const el = document.getElementById(id); if(el && _chartVisible(el)){ const cfg = pend[id]; delete pend[id]; _renderOrUpdateChart(id, cfg); } }); } catch(e){}
+                            _flushPendingCharts();
                             document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
                                 targetView.style.transition = 'opacity .26s var(--ease), transform .34s var(--ease-out)';
