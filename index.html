@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.13 · 10 Sep 2026 · dine-in';
+        const BUILD_VERSION = 'v2.11.14 · 10 Sep 2026 · dine-in';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7059,23 +7059,36 @@
                 // tell the user how to unmute instead of failing silently.
                 setTimeout(() => { if(ctx.state !== 'running' && _anyAlertVisible()) _showSoundBlockedPill(); }, 250);
 
-                const playTone = (freq, startTime, duration) => {
+                // Louder chime: a triangle wave (richer than a sine, so it carries
+                // over room noise) at a higher peak gain, with a soft limiter so
+                // it stays clean rather than distorting.
+                const master = ctx.createGain();
+                master.gain.value = 1.0;
+                try {
+                    const limiter = ctx.createDynamicsCompressor();
+                    limiter.threshold.value = -6; limiter.knee.value = 6; limiter.ratio.value = 12;
+                    limiter.attack.value = 0.003; limiter.release.value = 0.12;
+                    master.connect(limiter); limiter.connect(ctx.destination);
+                } catch(e){ master.connect(ctx.destination); }
+
+                const playTone = (freq, startTime, duration, peak) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.value = freq;
                     gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.015);
+                    gain.gain.linearRampToValueAtTime(peak || 0.85, startTime + 0.012);
                     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
                     osc.connect(gain);
-                    gain.connect(ctx.destination);
+                    gain.connect(master);
                     osc.start(startTime);
                     osc.stop(startTime + duration + 0.05);
                 };
 
                 const now = ctx.currentTime;
-                playTone(880,     now,        0.18); // A5
-                playTone(1174.66, now + 0.16, 0.28); // D6 — classic two-tone "ding-dong" notification chime
+                playTone(880,     now,        0.20, 0.9);   // A5
+                playTone(1174.66, now + 0.17, 0.30, 0.9);   // D6
+                playTone(1174.66, now + 0.52, 0.34, 0.8);   // repeated high note so it carries across a room
             } catch(e){ console.warn('Could not play incident alert sound:', e); }
         }
 
