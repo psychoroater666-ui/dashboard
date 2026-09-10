@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.13 · 10 Sep 2026 · dine-in';
+        const BUILD_VERSION = 'v2.12.0 · 10 Sep 2026 · ops-fixes';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5776,10 +5776,17 @@
                     DataFeed.markConsumed();
                     window.__incrementalMaps = (window.__incrementalMaps || 0) + 1;
                     if(typeof app !== 'undefined' && app.populateRegionChannelFilters){ try{ app.populateRegionChannelFilters(); }catch(e){} }
+                    // New rows can extend the data's date range: recompute the
+                    // presets so "Latest day" follows today instead of staying on
+                    // yesterday until the next full remap (5-7 min later).
+                    try { if(typeof initGlobalDates === 'function' && !window.__userTouchedDates) { initGlobalDates(); applyGlobalFilters(); } } catch(e){}
                     if(!window.__pollRepaintDeferred && typeof app !== 'undefined' && app.applyFilters){
                         const _repaint = () => { app.applyFilters(); if(typeof renderAlerts==='function') renderAlerts(); };
                         try{ (typeof UI !== 'undefined') ? UI.silent(_repaint) : _repaint(); }catch(e){}
                     }
+                    // Alert popup: the incremental path used to skip this entirely,
+                    // so incidents arriving through a delta never raised an alert.
+                    try { if(typeof checkForNewIncidents === 'function') checkForNewIncidents(); } catch(e){}
                     setLiveBadge(true);
                     return true;
                 }
@@ -6166,6 +6173,7 @@
         }
 
         function applyGlobalFilters() {
+            try { if(document.activeElement && /^filter-(start|end)-date$/.test(document.activeElement.id)) window.__userTouchedDates = true; } catch(e){}
             const start = new Date(document.getElementById('filter-start-date').value);
             const end = new Date(document.getElementById('filter-end-date').value);
             let region  = (document.getElementById('filter-region')||{}).value  || 'all';
@@ -7059,23 +7067,36 @@
                 // tell the user how to unmute instead of failing silently.
                 setTimeout(() => { if(ctx.state !== 'running' && _anyAlertVisible()) _showSoundBlockedPill(); }, 250);
 
-                const playTone = (freq, startTime, duration) => {
+                // Louder chime: a triangle wave (richer than a sine, so it carries
+                // over room noise) at a higher peak gain, with a soft limiter so
+                // it stays clean rather than distorting.
+                const master = ctx.createGain();
+                master.gain.value = 1.0;
+                try {
+                    const limiter = ctx.createDynamicsCompressor();
+                    limiter.threshold.value = -6; limiter.knee.value = 6; limiter.ratio.value = 12;
+                    limiter.attack.value = 0.003; limiter.release.value = 0.12;
+                    master.connect(limiter); limiter.connect(ctx.destination);
+                } catch(e){ master.connect(ctx.destination); }
+
+                const playTone = (freq, startTime, duration, peak) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.value = freq;
                     gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.015);
+                    gain.gain.linearRampToValueAtTime(peak || 0.85, startTime + 0.012);
                     gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
                     osc.connect(gain);
-                    gain.connect(ctx.destination);
+                    gain.connect(master);
                     osc.start(startTime);
                     osc.stop(startTime + duration + 0.05);
                 };
 
                 const now = ctx.currentTime;
-                playTone(880,     now,        0.18); // A5
-                playTone(1174.66, now + 0.16, 0.28); // D6 — classic two-tone "ding-dong" notification chime
+                playTone(880,     now,        0.20, 0.9);   // A5
+                playTone(1174.66, now + 0.17, 0.30, 0.9);   // D6
+                playTone(1174.66, now + 0.52, 0.34, 0.8);   // repeated high note so it carries across a room
             } catch(e){ console.warn('Could not play incident alert sound:', e); }
         }
 
@@ -7522,7 +7543,13 @@
                     if(entry.status) inc.resolved = (entry.status === 'closed');
                     if(entry.note) inc.resolutionNote = entry.note;
                     if(entry.validity){
-                        inc.caseStatus = (entry.validity === 'fake') ? 'fake' : 'verified';
+                        // Map every stored verdict, not just fake/valid: a
+                        // "not responding" close was being read back as
+                        // "Agent verified" because it fell into the else.
+                        const v = String(entry.validity).toLowerCase().replace(/[\s-]+/g, '_');
+                        inc.caseStatus = (v === 'fake') ? 'fake'
+                                       : (v === 'not_responding' || v === 'notresponding' || v === 'no_response') ? 'not_responding'
+                                       : (v === 'review') ? 'review' : 'verified';
                         inc.agentVerdict = true;
                     }
                     if(entry.reviewedAt) inc.reviewedAt = entry.reviewedAt;
@@ -9425,7 +9452,7 @@
                         ? { verified:['✓','#059669','Agent Confirmed'], fake:['✕','#DC2626','Agent: Fake'], not_responding:['⏱','#7C3AED','Not Responding'] }
                         : { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
-                    return `<tr data-row-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="cursor:pointer;" onclick="app.openIncidentDetailModal(${idx})">
+                    return `<tr data-row-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="cursor:pointer;" onclick="app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
                         <td>${tl}</td>
                         <td style="white-space:nowrap;">${dateStr}</td>
@@ -9434,7 +9461,7 @@
                         <td><span class="inc-label-chip" style="background:${lc}1a;color:${lc};">${cat.title}</span></td>
                         <td style="font-weight:600;">${inc.branch||'—'}</td>
                         <td style="font-family:monospace;font-size:0.78rem;white-space:nowrap;">${orderNo || '<span style="color:var(--text-muted);">—</span>'}</td>
-                        <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.openIncidentDetailModal(${idx})" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
+                        <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
                     </tr>`;
                 }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 });
@@ -9497,8 +9524,18 @@
                 });
             },
 
-            openIncidentDetailModal(idx) {
-                const inc = (this._incFiltered || [])[idx];
+            // Open by STABLE KEY, never by row position. The list re-sorts on
+            // every refresh, so a position captured when the row was drawn could
+            // point at a different incident by the time it was clicked -- that is
+            // why clicking one incident sometimes opened another.
+            openIncidentDetailModal(idxOrKey) {
+                let inc = null;
+                if(typeof idxOrKey === 'string'){
+                    inc = (this._incFiltered || []).find(i => _incidentStableKey(i) === idxOrKey)
+                       || (rawData.incidents || []).find(i => _incidentStableKey(i) === idxOrKey);
+                } else {
+                    inc = (this._incFiltered || [])[idxOrKey];
+                }
                 if(!inc) return;
                 this.openIncidentDetailModalDirect(inc);
             },
