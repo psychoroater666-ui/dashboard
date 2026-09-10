@@ -3096,6 +3096,14 @@
         #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
+        .wa-box { margin-top:14px; padding:13px 15px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-light); }
+        .wa-title { font-size:0.74rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+        .wa-title i { color:#25D366; font-size:0.95rem; }
+        .wa-sent { margin-left:auto; font-size:0.62rem; font-weight:700; color:var(--text-muted); background:var(--white); border:1px solid var(--border-color); border-radius:20px; padding:2px 8px; }
+        .wa-btns { display:flex; gap:7px; flex-wrap:wrap; }
+        .wa-btns button { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid var(--border-color); border-radius:9px; background:var(--white); color:var(--text-main); font:700 0.75rem 'Inter',sans-serif; cursor:pointer; }
+        .wa-btns button:hover { border-color:#25D366; color:#128C7E; }
+        .wa-hint { font-size:0.66rem; color:var(--text-muted); margin-top:8px; }
         .sdlw-card { padding:18px 22px; }
         .radar-card { padding:18px 22px; }
         .sla-card { display:flex; align-items:stretch; justify-content:space-between; gap:20px; padding:18px 22px; position:relative; overflow:hidden; }
@@ -5141,7 +5149,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.22.0 · 10 Sep 2026 · risk-hour';
+        const BUILD_VERSION = 'v2.23.0 · 10 Sep 2026 · recovery';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7158,6 +7166,68 @@
         }
         setInterval(() => { try { slaTick(); } catch(e){} }, 1000);
         setInterval(() => { try { slaCheck(); } catch(e){} }, 30000);
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // CUSTOMER RECOVERY — click-to-WhatsApp
+        // Closing a valid complaint is only half the job: the customer still
+        // hasn't heard from anyone. This opens WhatsApp with a message already
+        // written to that customer, for the agent to read and send. No API, no
+        // cost. Every send is recorded on the incident so we can later measure
+        // whether people who got a message came back.
+        // ═══════════════════════════════════════════════════════════════════
+        const WA_TEMPLATES = {
+            apology: {
+                label: 'Apology',
+                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We received your feedback about your order from our ${c.branch} branch${c.issue ? ' regarding ' + c.issue.toLowerCase() : ''}, and we're genuinely sorry.\n\nWe've looked into it with the branch team so it doesn't happen again. Thank you for telling us — it's the only way we improve.\n\nWe hope to serve you better next time.`
+            },
+            voucher: {
+                label: 'Apology + voucher',
+                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We're sorry about your recent experience at our ${c.branch} branch${c.issue ? ' (' + c.issue.toLowerCase() + ')' : ''}.\n\nWe've addressed it with the team. As an apology, please use code *${c.code}* on your next order — it's on us.\n\nThank you for giving us the chance to make it right.`
+            },
+            noreply: {
+                label: 'Could not reach',
+                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We tried to reach you about the feedback you shared for our ${c.branch} branch but couldn't get through.\n\nIf you'd still like us to look into it, simply reply to this message and we'll take it from there.\n\nThank you for your time.`
+            }
+        };
+        function _waPhone(inc){
+            let p = String(_rawFieldExact(inc._raw, 'Phone Number') || '').replace(/[^0-9]/g, '');
+            if(p.startsWith('92')) return p;
+            if(p.startsWith('0')) return '92' + p.slice(1);
+            if(p.length === 10) return '92' + p;
+            return p;
+        }
+        function _waCode(inc){ return 'CRB-' + String(Math.abs(_hashStr(_incidentStableKey(inc)))).slice(0, 4); }
+        function _hashStr(str){ let h = 0; for(let i = 0; i < String(str).length; i++){ h = ((h << 5) - h) + String(str).charCodeAt(i); h |= 0; } return h; }
+        function waOpen(stableKey, kind){
+            const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey); if(!inc) return;
+            const phone = _waPhone(inc);
+            if(!phone || phone.length < 11){ UI.toast('No usable phone number on this complaint.', 'warning'); return; }
+            let issue = '';
+            try { const r = inc.agentCategory && _resolveComplaintCategory(inc.agentCategory); issue = r ? r.title : (classifyComplaint(inc) || {}).title || ''; } catch(e){}
+            const ctx = { name: (_rawFieldExact(inc._raw, 'Name') || '').split(' ')[0] || '', branch: inc.branch || 'our', issue, code: _waCode(inc) };
+            const body = (WA_TEMPLATES[kind] || WA_TEMPLATES.apology).text(ctx);
+            window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(body), '_blank', 'noopener');
+            // record it against the incident so the return-rate question can be answered later
+            inc.recoverySent = new Date().toISOString(); inc.recoveryKind = kind;
+            try { apiCall('incident_resolution', { id: stableKey, status: 'closed', note: (inc.resolutionNote || '') + ' | recovery: ' + kind, validity: inc.caseStatus === 'fake' ? 'fake' : inc.caseStatus === 'not_responding' ? 'not_responding' : 'valid', category: inc.agentCategory || '', clientId: 'wa_' + Date.now().toString(36) }).catch(()=>{}); } catch(e){}
+            UI.toast('WhatsApp opened — read it, then press send.', 'success');
+        }
+        function waButtons(inc){
+            if(!can('write')) return '';
+            const phone = _waPhone(inc); if(!phone || phone.length < 11) return '';
+            const k = _incidentStableKey(inc).replace(/'/g, "\\'");
+            const sent = inc.recoverySent;
+            return `<div class="wa-box">
+                <div class="wa-title"><i class="fab fa-whatsapp"></i> Message the customer${sent ? '<span class="wa-sent">already opened</span>' : ''}</div>
+                <div class="wa-btns">
+                    <button onclick="waOpen('${k}','apology')"><i class="fab fa-whatsapp"></i> Apology</button>
+                    <button onclick="waOpen('${k}','voucher')"><i class="fas fa-ticket"></i> Apology + voucher</button>
+                    <button onclick="waOpen('${k}','noreply')"><i class="fas fa-phone-slash"></i> Couldn't reach</button>
+                </div>
+                <div class="wa-hint">Opens WhatsApp with the message written — read it before sending.</div>
+            </div>`;
+        }
 
         function _incidentStableKey(inc){
             const ts = _rawFieldExact(inc._raw, 'Created At') || inc.date || '';
@@ -10006,6 +10076,7 @@
                 // is "closed", so the real Valid/Fake call can still be made
                 // once the customer is actually reached.
                 const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                const waHtml = waButtons(inc);
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
@@ -10128,6 +10199,7 @@ ${(() => {
                         <div class="inc-main-col-v2">
                             ${timelineHtml}
                             ${addCommentHtml}
+                        ${waHtml}
                         </div>
                         <div class="inc-sidebar-v2">
                             ${sidebarHtml}
@@ -10224,6 +10296,7 @@ ${(() => {
                 const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
                 const categoryOptions = _categoryOptionsHtml(currentCat.id);
                 const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                const waHtml = waButtons(inc);
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
@@ -10323,6 +10396,7 @@ ${(() => {
                             <div class="inc-main-col-v2">
                                 ${timelineHtml}
                                 ${addCommentHtml}
+                        ${waHtml}
                             </div>
                             <div class="inc-sidebar-v2">
                                 ${sidebarHtml}
