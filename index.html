@@ -3829,8 +3829,9 @@
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">SUBMISSIONS BY HOUR OF DAY</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
-                            <div class="chart-container" style="height:200px;"><canvas id="execPeakHoursChart"></canvas></div>
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RISK BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execPeakHoursChart"></canvas></div>
+                            <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom: 8px;">
@@ -5140,7 +5141,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.21.1 · 10 Sep 2026 · radar';
+        const BUILD_VERSION = 'v2.22.0 · 10 Sep 2026 · risk-hour';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11053,17 +11054,42 @@ ${(() => {
                 const prevHourCounts = state.p2 ? hourCountsOf(state.p2.subs) : null;
                 const labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
 
+                // Volume is not the question -- failure rate is. Bars are the
+                // incident rate for that hour; hours with too little traffic are
+                // greyed out so 1-of-2 does not read as a 50% crisis.
+                const MIN_N = 5;
+                const rates = hourCounts.map((n, h) => n >= MIN_N ? (incidentHourCounts[h] / n) * 100 : null);
+                const totalSubs = hourCounts.reduce((a, b) => a + b, 0);
+                const totalIncs = incidentHourCounts.reduce((a, b) => a + b, 0);
+                const avgRate = totalSubs ? (totalIncs / totalSubs) * 100 : 0;
+                let worstH = -1, worstR = -1;
+                rates.forEach((r, h) => { if(r != null && r > worstR){ worstR = r; worstH = h; } });
+                const barColors = rates.map((r, h) => r == null ? (isDark ? '#1E293B' : '#EEF2F7') : h === worstH ? '#DC2626' : r > avgRate ? '#F59E0B' : '#3B5BDB');
                 const datasets = [
-                    { type:'bar', label:'Submissions', data: hourCounts, backgroundColor:'#3B5BDB', borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' }
+                    { type:'bar', label:'Incident rate', data: rates.map(r => r == null ? 0 : +r.toFixed(1)), backgroundColor: barColors, borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' },
+                    { type:'line', label:'Average', data: new Array(24).fill(+avgRate.toFixed(1)), borderColor: isDark ? '#94A3B8' : '#94A3B8', borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false, order:0, yAxisID:'y' }
                 ];
-                if(prevHourCounts && prevHourCounts.some(v=>v>0)){
+                (function(){
+                    const v = document.getElementById('exec-hour-verdict'); if(!v) return;
+                    const lbl = h => h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h - 12) + 'pm';
+                    if(worstH < 0 || !totalIncs){ v.uiHTML = '<div style="font-size:0.76rem;color:var(--text-muted);">Not enough traffic in any hour to judge risk reliably.</div>'; return; }
+                    const inHour = incidentHourCounts[worstH];
+                    const mult = avgRate ? (worstR / avgRate) : 0;
+                    v.uiHTML = `<div style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;background:${mult >= 1.6 ? 'rgba(220,38,38,.07)' : 'var(--bg-light)'};">
+                        <i class="fas fa-triangle-exclamation" style="color:${mult >= 1.6 ? '#DC2626' : 'var(--text-muted)'};font-size:0.8rem;margin-top:2px;"></i>
+                        <div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">
+                            Worst hour <b>${lbl(worstH)}–${lbl((worstH + 1) % 24)}</b> — <b style="color:${mult >= 1.6 ? '#DC2626' : 'var(--text-main)'};">${worstR.toFixed(1)}%</b> incident rate vs <b>${avgRate.toFixed(1)}%</b> average${mult >= 1.3 ? ' (<b>' + mult.toFixed(1) + '×</b>)' : ''}.
+                            <span style="color:var(--text-muted);">${inHour} of ${totalIncs} incident${totalIncs === 1 ? '' : 's'} landed in that hour.</span>
+                        </div></div>`;
+                })();
+                if(false && prevHourCounts && prevHourCounts.some(v=>v>0)){
                     datasets.push({
                         type:'line', label:'Previous period', data: prevHourCounts,
                         borderColor: isDark ? '#64748B' : '#B9C2D0', borderWidth:2, borderDash:[4,3],
                         pointRadius:0, tension:0.3, fill:false, order:1, yAxisID:'y'
                     });
                 }
-                datasets.push({
+                if(false) datasets.push({
                     type:'line', label:'Incidents', data: incidentHourCounts,
                     borderColor:'#DC2626', backgroundColor:'#DC2626', borderWidth:2,
                     pointRadius:2, pointHoverRadius:4, pointBackgroundColor:'#DC2626',
@@ -11081,8 +11107,7 @@ ${(() => {
                         },
                         scales: {
                             x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
-                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
-                            y1: { beginAtZero:true, position:'right', grid:{display:false}, ticks:{color:'#DC2626',font:{size:9},precision:0} }
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},callback:v => v + '%'} },
                         }
                     }
                 });
