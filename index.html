@@ -5140,7 +5140,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.21.0 · 10 Sep 2026 · radar';
+        const BUILD_VERSION = 'v2.21.1 · 10 Sep 2026 · radar';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11142,54 +11142,45 @@ ${(() => {
             renderExecRepeatRisk() {
                 const el = document.getElementById('exec-repeat-risk');
                 if(!el) return;
-                // Respects the header date filter (state.p1), unlike the
-                // Complaints tab's all-history view — an executive asking
-                // "is this getting worse?" needs a like-for-like period
-                // comparison, which only works on a bounded window.
-                const summarise = incs => {
-                    const hist = buildCustomerHistory(incs);
-                    const repeats = Object.values(hist).filter(c => c.count >= 2);
-                    const repeatComplaints = repeats.reduce((n,c) => n + c.count, 0);
-                    const identified = Object.values(hist).reduce((n,c) => n + c.count, 0);
-                    return {
-                        customers: repeats.length,
-                        complaints: repeatComplaints,
-                        // Share is of IDENTIFIABLE complaints only — including
-                        // rows with no phone number in the denominator would
-                        // understate the rate for a reason that has nothing to
-                        // do with customer behaviour.
-                        pct: identified ? (repeatComplaints / identified) * 100 : 0,
-                        identified
-                    };
-                };
-                const cur = summarise(state.p1.incs || []);
-                const prev = summarise(state.p2.incs || []);
-                const noPhone = (state.p1.incs || []).length - cur.identified;
-
-                const delta = cur.pct - prev.pct;
-                const dir = Math.abs(delta) < 0.5 ? 'flat' : (delta > 0 ? 'up' : 'down');
-                const dcol = dir === 'up' ? 'var(--status-critical)' : dir === 'down' ? 'var(--status-good)' : 'var(--text-muted)';
-                const dicon = dir === 'up' ? 'fa-arrow-up' : dir === 'down' ? 'fa-arrow-down' : 'fa-minus';
-
-                if(!cur.identified){
-                    el.uiHTML = `<div style="text-align:center;padding:18px 8px;color:var(--text-muted);font-size:0.8rem;">No phone numbers on complaints in this period — repeat customers can't be identified.</div>`;
+                // Names, not percentages: the point of this card is that someone
+                // picks up the phone. Respects the header date filter.
+                const hist = buildCustomerHistory(state.p1.incs || []);
+                const repeats = Object.values(hist).filter(c => c.incidents.length >= 2)
+                    .sort((a, b) => b.incidents.length - a.incidents.length || (b.incidents[b.incidents.length-1].date || '').localeCompare(a.incidents[a.incidents.length-1].date || ''));
+                const identified = Object.values(hist).reduce((n, c) => n + c.incidents.length, 0);
+                const repeatComplaints = repeats.reduce((n, c) => n + c.incidents.length, 0);
+                if(!identified){
+                    el.uiHTML = `<div style="text-align:center;padding:18px 8px;color:var(--text-muted);font-size:0.8rem;">No phone numbers on complaints in this period.</div>`;
                     return;
                 }
-
-                el.uiHTML = `
-                    <div style="display:flex;align-items:baseline;gap:8px;">
-                        <div style="font-size:2rem;font-weight:800;color:var(--text-main);line-height:1;font-variant-numeric:tabular-nums;">${cur.customers}</div>
-                        <div style="font-size:0.78rem;color:var(--text-muted);font-weight:600;">customer${cur.customers===1?'':'s'} · ${cur.complaints} complaint${cur.complaints===1?'':'s'}</div>
-                    </div>
-                    <div style="margin-top:10px;font-size:0.82rem;color:var(--text-main);font-weight:700;">
-                        ${cur.pct.toFixed(0)}% of identified complaints
-                    </div>
-                    <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">come from someone who has complained before</div>
-                    <div style="margin-top:10px;display:flex;align-items:center;gap:6px;font-size:0.74rem;font-weight:700;color:${dcol};">
-                        <i class="fas ${dicon}" style="font-size:0.66rem;"></i>
-                        ${dir === 'flat' ? 'Steady vs previous period' : `${Math.abs(delta).toFixed(1)} pts vs previous period`}
-                    </div>
-                `;
+                if(!repeats.length){
+                    el.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No customer has complained more than once in this period.</div>`;
+                    return;
+                }
+                const reasonOf = i => { try { const r2 = i.agentCategory && _resolveComplaintCategory(i.agentCategory); return r2 ? r2.title : (classifyComplaint(i) || {}).title || ''; } catch(e){ return ''; } };
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const rows = repeats.slice(0, 5).map(c => {
+                    const n = c.incidents.length;
+                    const last = c.incidents.slice().sort((a,b) => (a.date||'').localeCompare(b.date||''))[n-1];
+                    const branches = Object.keys(c.branches);
+                    const unresolved = c.incidents.filter(i => !i.resolved).length;
+                    const sev = n >= 4 ? '#DC2626' : n === 3 ? '#D97706' : '#64748B';
+                    const reasons = [...new Set(c.incidents.map(reasonOf).filter(Boolean))].slice(0, 2).join(', ');
+                    return `<div onclick="app.openIncidentFromStableKey('${_incidentStableKey(last).replace(/'/g,"\\'")}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;">
+                        <span style="width:30px;height:30px;border-radius:9px;background:${sev}14;color:${sev};display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;flex-shrink:0;">${n}×</span>
+                        <div style="min-width:0;">
+                            <div style="font-size:0.83rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc2(c.name || c.phone || 'Unknown')}${c.name && c.phone ? ' <span style="color:var(--text-muted);font-weight:600;font-size:0.74rem;">' + esc2(c.phone) + '</span>' : ''}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc2(branches.join(', '))}${reasons ? ' · ' + esc2(reasons) : ''}</div>
+                        </div>
+                        <div style="text-align:right;flex-shrink:0;">
+                            ${unresolved ? `<span style="font-size:0.62rem;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(220,38,38,.1);color:#DC2626;">${unresolved} open</span>` : `<span style="font-size:0.62rem;font-weight:700;color:#059669;">all closed</span>`}
+                            <div style="font-size:0.66rem;color:var(--text-muted);margin-top:3px;">last ${esc2(last.date || '')}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+                const share = identified ? Math.round(repeatComplaints / identified * 100) : 0;
+                el.uiHTML = rows + `<div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">
+                    <b style="color:var(--text-main);">${repeats.length}</b> repeat customer${repeats.length===1?'':'s'} accounting for <b style="color:var(--text-main);">${repeatComplaints}</b> complaints (${share}% of those with a phone number)${repeats.length > 5 ? ' · showing top 5' : ''}</div>`;
             },
 
             renderExecNeedsAttention() {
