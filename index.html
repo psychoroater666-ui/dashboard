@@ -3096,6 +3096,24 @@
         #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
+        .sla-card { display:flex; align-items:stretch; justify-content:space-between; gap:20px; padding:18px 22px; position:relative; overflow:hidden; }
+        .sla-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,#3B5BDB,#010197); }
+        .sla-left { display:flex; flex-direction:column; justify-content:center; gap:8px; min-width:0; }
+        .sla-eyebrow { display:inline-flex; align-items:center; gap:7px; font-size:0.64rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+        .sla-dot { width:7px; height:7px; border-radius:50%; background:#059669; box-shadow:0 0 0 3px rgba(5,150,105,.15); }
+        body.sla-breach .sla-dot { background:#DC2626; box-shadow:0 0 0 3px rgba(220,38,38,.15); }
+        .sla-nums { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+        .sla-big { font-size:1.9rem; font-weight:800; line-height:1; letter-spacing:-.5px; color:var(--text-main); }
+        .sla-lbl { font-size:0.76rem; color:var(--text-muted); font-weight:600; }
+        .sla-breach-pill { font-size:0.66rem; font-weight:800; padding:3px 9px; border-radius:20px; background:rgba(220,38,38,.1); color:#DC2626; }
+        .sla-oldest { font-size:0.74rem; color:var(--text-muted); font-weight:600; }
+        .sla-oldest b { font-variant-numeric:tabular-nums; }
+        .sla-rules { display:flex; flex-direction:column; justify-content:center; gap:5px; text-align:right; border-left:1px solid var(--border-color); padding-left:20px; flex-shrink:0; }
+        .sla-rules div { display:flex; align-items:baseline; justify-content:flex-end; gap:9px; font-size:0.72rem; }
+        .sla-rules span { color:var(--text-muted); font-weight:600; }
+        .sla-rules b { color:var(--text-main); font-weight:800; font-variant-numeric:tabular-nums; min-width:46px; }
+        .sla-rules small { font-size:0.62rem; color:var(--text-muted); opacity:.75; margin-top:3px; }
+        @media (max-width:820px){ .sla-card { flex-direction:column; gap:14px; } .sla-rules { border-left:none; border-top:1px solid var(--border-color); padding-left:0; padding-top:12px; text-align:left; } .sla-rules div { justify-content:flex-start; } }
         .sla-chip { display:inline-flex; align-items:center; gap:5px; font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
         .sla-chip small { font-weight:600; opacity:.75; font-size:0.62rem; text-transform:uppercase; letter-spacing:.3px; }
         /* ═══════════ ASSISTANT ═══════════ */
@@ -3825,13 +3843,16 @@
                     </div>
 
                     <!-- Live queue pressure: what is waiting right now -->
-                    <div class="card" id="sla-card" style="padding:16px 20px;display:flex;align-items:center;gap:18px;">
-                        <div style="width:40px;height:40px;border-radius:12px;background:rgba(220,38,38,.08);color:#DC2626;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;"><i class="fas fa-stopwatch"></i></div>
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:2px;">Queue right now</div>
+                    <div class="card sla-card" id="sla-card">
+                        <div class="sla-left">
+                            <span class="sla-eyebrow"><span class="sla-dot"></span> Live queue</span>
                             <div id="sla-tile"></div>
                         </div>
-                        <div style="font-size:0.68rem;color:var(--text-muted);text-align:right;line-height:1.5;max-width:190px;">Review within <b style="color:var(--text-main);">3 min</b><br>Close within <b style="color:var(--text-main);">15 min</b><br><span style="opacity:.75;">timed from arrival in the portal</span></div>
+                        <div class="sla-rules">
+                            <div><span>Review</span><b>3 min</b></div>
+                            <div><span>Close</span><b>15 min</b></div>
+                            <small>measured from arrival · last 24h</small>
+                        </div>
                     </div>
 
                     <!-- What is actually breaking + regional rollup -->
@@ -5104,7 +5125,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.19.0 · 10 Sep 2026 · sla';
+        const BUILD_VERSION = 'v2.19.2 · 10 Sep 2026 · sla';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7037,7 +7058,16 @@
         // Reports still measure against the written standard (20s / 15min).
         // ═══════════════════════════════════════════════════════════════════
         const SLA = { REVIEW_RING_MS: 3*60*1000, RESOLVE_MS: 15*60*1000, RERING_MS: 5*60*1000,
-                      REVIEW_TARGET_MS: 20*1000 };
+                      REVIEW_TARGET_MS: 20*1000,
+                      // Only today's queue is an SLA matter. Anything older is a
+                      // backlog to work through, not a live breach -- counting it
+                      // would mean a permanent alarm nobody can clear.
+                      SCOPE_MS: 24*60*60*1000 };
+        function slaInScope(inc){
+            if(inc.resolved) return false;
+            const t = Date.parse(inc._raw && (inc._raw['Created At'] || inc._raw['created at'])) || Date.parse(inc.date) || 0;
+            return t ? (Date.now() - t) < SLA.SCOPE_MS : true;
+        }
         const _slaArrivalKey = 'crumble_sla_arrival';
         let _slaArrival = (() => { try { return JSON.parse(localStorage.getItem(_slaArrivalKey) || '{}'); } catch(e){ return {}; } })();
         let _slaLastRing = {};
@@ -7072,7 +7102,7 @@
         /** Re-ring anything that has gone past its limit, every RERING_MS. */
         function slaCheck(){
             if(!_slaHears() || document.hidden) return;
-            const due = (rawData.incidents || []).filter(i => !i.resolved && slaState(i).breached);
+            const due = (rawData.incidents || []).filter(i => slaInScope(i) && slaState(i).breached);
             if(!due.length) return;
             const now = Date.now();
             const fresh = due.filter(i => { const k = _incidentStableKey(i); return !_slaLastRing[k] || (now - _slaLastRing[k]) > SLA.RERING_MS; });
@@ -7100,14 +7130,14 @@
             });
             const tile = document.getElementById('sla-tile');
             if(tile){
-                const open = (rawData.incidents || []).filter(i => !i.resolved);
+                const open = (rawData.incidents || []).filter(slaInScope);
                 const breached = open.filter(i => slaState(i).breached);
                 const oldest = open.map(i => slaState(i)).sort((a,b) => b.ms - a.ms)[0];
+                document.body.classList.toggle('sla-breach', breached.length > 0);
                 tile.uiHTML = open.length
-                    ? `<div style="display:flex;align-items:baseline;gap:10px;"><span style="font-size:1.6rem;font-weight:800;color:${breached.length?'#DC2626':'var(--text-main)'};">${open.length}</span>
-                       <span style="font-size:0.72rem;color:var(--text-muted);">open${breached.length ? ' · <b style="color:#DC2626;">' + breached.length + ' past limit</b>' : ''}</span></div>
-                       <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">oldest waiting <b style="color:${oldest && oldest.breached ? '#DC2626' : 'var(--text-main)'};">${oldest ? slaFmt(oldest.ms) : '—'}</b></div>`
-                    : `<div style="font-size:1.6rem;font-weight:800;color:#059669;">0</div><div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">nothing waiting</div>`;
+                    ? `<div class="sla-nums"><span class="sla-big" style="${breached.length?'color:#DC2626;':''}">${open.length}</span><span class="sla-lbl">awaiting action</span>${breached.length ? '<span class="sla-breach-pill">' + breached.length + ' over time</span>' : ''}</div>
+                       <div class="sla-oldest">oldest <b style="color:${oldest && oldest.breached ? '#DC2626' : 'var(--text-main)'};">${oldest ? slaFmt(oldest.ms) : '—'}</b></div>`
+                    : `<div class="sla-nums"><span class="sla-big" style="color:#059669;">0</span><span class="sla-lbl">queue clear</span></div><div class="sla-oldest">nothing waiting</div>`;
             }
         }
         setInterval(() => { try { slaTick(); } catch(e){} }, 1000);
@@ -9713,7 +9743,7 @@
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr data-row-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="cursor:pointer;" onclick="app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
-                        <td>${tl}${inc.resolved ? '' : '<div style="margin-top:5px;">' + slaBadge(inc) + '</div>'}</td>
+                        <td>${tl}${slaInScope(inc) ? '<div style="margin-top:5px;">' + slaBadge(inc) + '</div>' : ''}</td>
                         <td style="white-space:nowrap;">${dateStr}</td>
                         <td><span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:${ratingColor}18;color:${ratingColor};font-weight:800;font-size:0.8rem;">${score||'—'}</span></td>
                         <td style="font-size:0.82rem;">${inc.surveyForm||'—'}</td>
