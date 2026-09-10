@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.11.12 · 10 Sep 2026 · dine-in';
+        const BUILD_VERSION = 'v2.11.13 · 10 Sep 2026 · dine-in';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6657,8 +6657,15 @@
                 s.branch ? ['Location', s.branch] : null
             ].filter(Boolean);
 
+            // Integrity metadata ("Meta …" columns) is not part of the customer's
+            // answers: hidden for everyone except the Owner, who gets it as a
+            // separate block below the answers.
+            const isMeta = k => /^meta\s/i.test(String(k).trim());
+            const metaHtml = (typeof can === 'function' && can('users')) ? Object.entries(s._raw || {})
+                .filter(([k, v]) => isMeta(k) && v && String(v).trim())
+                .map(([k, v]) => `<div style="padding:7px 0;border-bottom:1px solid var(--border-color);"><div style="font-size:0.64rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);">${String(k).replace(/^meta\s+/i,'')}</div><div style="font-family:monospace;font-size:0.78rem;color:var(--text-main);">${String(v).replace(/</g,'&lt;')}</div></div>`).join('') : '';
             const qaHtml = Object.entries(s._raw || {})
-                .filter(([k, v]) => v && String(v).trim() && !_SUBMISSION_SKIP_KEYS.has(k.toLowerCase().trim()))
+                .filter(([k, v]) => v && String(v).trim() && !_SUBMISSION_SKIP_KEYS.has(k.toLowerCase().trim()) && !isMeta(k))
                 .map(([k, v]) => `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);"><div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:3px;">${k}</div><div style="font-size:0.85rem;color:var(--text-main);font-weight:600;">${String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`)
                 .join('');
 
@@ -6667,6 +6674,7 @@
                     ${keyFacts.map(([k,v]) => `<div style="background:var(--bg-light);border-radius:9px;padding:10px 12px;"><div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);margin-bottom:3px;">${k}</div><div style="font-size:0.88rem;color:var(--text-main);font-weight:700;">${v}</div></div>`).join('')}
                 </div>
                 <div>${qaHtml || '<div style="color:var(--text-muted);font-size:0.82rem;">No additional survey answers recorded.</div>'}</div>
+                ${metaHtml ? `<div style="margin-top:16px;padding-top:10px;border-top:2px dashed var(--border-color);"><div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#7C3AED;margin-bottom:4px;"><i class="fas fa-shield-halved"></i> Integrity data (Owner only)</div>${metaHtml}</div>` : ''}
             `;
 
             const isIncident = s.smileScore != null && s.smileScore <= INCIDENT_MAX_RATING;
