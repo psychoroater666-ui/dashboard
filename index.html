@@ -3097,6 +3097,7 @@
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
         .sdlw-card { padding:18px 22px; }
+        .radar-card { padding:18px 22px; }
         .sla-card { display:flex; align-items:stretch; justify-content:space-between; gap:20px; padding:18px 22px; position:relative; overflow:hidden; }
         .sla-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,#3B5BDB,#010197); }
         .sla-left { display:flex; flex-direction:column; justify-content:center; gap:8px; min-width:0; }
@@ -3854,6 +3855,12 @@
                             <div><span>Close</span><b>15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
+                    </div>
+
+                    <!-- Pattern detection: what is abnormal for THIS branch today -->
+                    <div class="card radar-card" id="radar-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-satellite-dish" style="color:#DC2626;margin-right:6px;"></i>EMERGING ISSUES</h3><span class="text-xs text-muted" id="radar-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="radar-body"></div>
                     </div>
 
                     <!-- Like-for-like: a Saturday only makes sense against a Saturday -->
@@ -5133,7 +5140,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.20.1 · 10 Sep 2026 · same-day';
+        const BUILD_VERSION = 'v2.21.0 · 10 Sep 2026 · radar';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8907,6 +8914,58 @@
             // Comparing a Saturday with the Friday before it flatters or damns a
             // branch for reasons nobody can act on. This compares the latest day
             // in view with the same weekday a week earlier.
+            // Spike detection. For every branch x complaint reason it learns that
+            // branch's own 14-day baseline and flags what is running far above it
+            // TODAY -- while it can still be fixed. A raw count cannot do this: a
+            // busy branch would always look worst and a quiet one never would.
+            renderEmergingIssues() {
+                const host = document.getElementById('radar-body'), sub = document.getElementById('radar-sub'); if(!host) return;
+                const end = (document.getElementById('filter-end-date') || {}).value; if(!end){ host.uiHTML = ''; return; }
+                const reasonOf = i => { try { const r = i.agentCategory && _resolveComplaintCategory(i.agentCategory); return r ? r.title : (classifyComplaint(i) || {}).title || 'Others'; } catch(e){ return 'Others'; } };
+                const all = rawData.incidents || [];
+                const today = all.filter(i => i.date === end);
+                // baseline: the 14 days before the day in view
+                const from = (() => { const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 14); return t.toISOString().split('T')[0]; })();
+                const base = all.filter(i => i.date >= from && i.date < end);
+                const BASE_DAYS = 14;
+                const key = i => i.branch + ' ‖ ' + reasonOf(i);
+                const nowMap = {}, baseMap = {};
+                today.forEach(i => { const k = key(i); (nowMap[k] = nowMap[k] || { n:0, items:[] }).n++; nowMap[k].items.push(i); });
+                base.forEach(i => { const k = key(i); baseMap[k] = (baseMap[k] || 0) + 1; });
+                const alerts = Object.keys(nowMap).map(k => {
+                    const [branch, reason] = k.split(' ‖ ');
+                    const n = nowMap[k].n, perDay = (baseMap[k] || 0) / BASE_DAYS;
+                    // "normal" floor: with no history, 3+ in a day is still notable
+                    const expected = Math.max(perDay, 0.15);
+                    const ratio = n / expected;
+                    const first = nowMap[k].items.map(i => _rawFieldExact(i._raw, 'Created At') || '').filter(Boolean).sort()[0] || '';
+                    return { branch, reason, n, perDay, ratio, first, novel: !baseMap[k] };
+                }).filter(a => (a.n >= 3 && a.ratio >= 3) || (a.novel && a.n >= 3) || (a.n >= 2 && a.ratio >= 8))
+                  .sort((a, b) => (b.n * Math.min(b.ratio, 20)) - (a.n * Math.min(a.ratio, 20))).slice(0, 5);
+                if(sub) sub.textContent = alerts.length ? alerts.length + ' above normal' : 'nothing unusual';
+                if(!alerts.length){
+                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;">
+                        <i class="fas fa-circle-check" style="color:#059669;"></i> No complaint type is running above its normal rate at any branch today.</div>`;
+                    return;
+                }
+                const timeOf = t => { const m = String(t).match(/(\d{1,2}):(\d{2})/); if(!m) return ''; let h = +m[1]; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + m[2] + ' ' + ap; };
+                host.uiHTML = alerts.map(a => {
+                    const sev = a.ratio >= 8 || a.n >= 6 ? '#DC2626' : '#D97706';
+                    const times = a.ratio >= 100 ? '' : '<b>' + (a.ratio >= 10 ? Math.round(a.ratio) : a.ratio.toFixed(1)) + '×</b> above normal';
+                    return `<div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${sev};flex-shrink:0;"></span>
+                        <div style="min-width:0;">
+                            <div style="font-size:0.83rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.reason} <span style="color:var(--text-muted);font-weight:600;">·</span> ${a.branch}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">
+                                ${a.novel ? 'not seen here in the last 14 days' : 'normally ' + a.perDay.toFixed(1) + '/day · ' + times}
+                                ${a.first ? ' · first at <b style="color:var(--text-main);">' + timeOf(a.first) + '</b>' : ''}
+                            </div>
+                        </div>
+                        <span style="font-size:1.05rem;font-weight:800;color:${sev};font-variant-numeric:tabular-nums;">${a.n}<span style="font-size:0.62rem;color:var(--text-muted);font-weight:600;"> today</span></span>
+                    </div>`;
+                }).join('');
+            },
+
             renderSameDayLastWeek() {
                 const host = document.getElementById('sdlw-body'), sub = document.getElementById('sdlw-sub'); if(!host) return;
                 const end = (document.getElementById('filter-end-date') || {}).value;
@@ -8971,6 +9030,7 @@
             renderExecutive() {
                 try { this.renderTopReasons(); } catch(e){ console.warn('top reasons:', e); }
                 try { this.renderSameDayLastWeek(); } catch(e){ console.warn('same day:', e); }
+                try { this.renderEmergingIssues(); } catch(e){ console.warn('emerging:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
                     const tSubs = _stabilizeCount(p1.subs.length, _subsStabilizer, !window._isBackgroundRefresh);
