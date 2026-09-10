@@ -3223,6 +3223,29 @@
         .ai-input input:focus { border-color:#3B5BDB; }
         .ai-input button { width:38px; border:none; border-radius:10px; background:#010197; color:#fff; cursor:pointer; }
         @media (max-width:820px){ .ai-panel { right:10px; left:10px; width:auto; bottom:calc(76px + env(safe-area-inset-bottom)); height:70vh; } .ai-bubble { right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); width:46px; height:46px; } .ai-bubble .orb-text { font-size:11px; } }
+        /* ═══════════ REWARDS ═══════════ */
+        .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
+        .rw-stat b { display:block; font-size:1.15rem; font-weight:800; color:var(--text-main); line-height:1; }
+        .rw-stat span { font-size:0.62rem; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); font-weight:700; }
+        .rw-search { position:relative; margin:14px 0; }
+        .rw-search i { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:var(--text-muted); }
+        .rw-search input { width:100%; box-sizing:border-box; padding:15px 44px; border:2px solid var(--border-color); border-radius:14px; font:800 1rem 'Inter',sans-serif; letter-spacing:1px; color:var(--text-main); background:var(--white); outline:none; text-transform:uppercase; }
+        .rw-search input:focus { border-color:#010197; }
+        .rw-search button { position:absolute; right:12px; top:50%; transform:translateY(-50%); border:none; background:none; color:var(--text-muted); cursor:pointer; font-size:0.9rem; }
+        .rw-none { display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:12px; background:rgba(220,38,38,.07); color:#B91C1C; font-size:0.85rem; margin-bottom:12px; }
+        .rw-row { display:grid; grid-template-columns:150px 1fr 150px auto; gap:14px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border-color); }
+        .rw-row:last-child { border-bottom:none; }
+        .rw-row.used { opacity:.62; }
+        .rw-code { font:800 0.92rem ui-monospace,monospace; letter-spacing:1px; color:var(--text-main); }
+        .rw-who b { display:block; font-size:0.85rem; color:var(--text-main); }
+        .rw-who span { font-size:0.72rem; color:var(--text-muted); }
+        .rw-when { font-size:0.72rem; color:var(--text-muted); }
+        .rw-act { display:flex; align-items:center; gap:9px; justify-content:flex-end; }
+        .rw-tag { font-size:0.66rem; font-weight:800; padding:4px 10px; border-radius:20px; white-space:nowrap; }
+        .rw-tag.ok { background:rgba(5,150,105,.12); color:#059669; }
+        .rw-tag.used { background:rgba(100,116,139,.12); color:#64748B; }
+        .rw-by { font-size:0.66rem; color:var(--text-muted); }
+        @media (max-width:820px){ .rw-row { grid-template-columns:1fr 1fr; } .rw-act { grid-column:1/-1; justify-content:flex-start; } .rw-stat { padding:0 8px; } }
         /* ═══════════ ACTIVITY (audit) ═══════════ */
         .act-row { display:grid; grid-template-columns:150px 1fr 110px 1fr 90px; gap:12px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border-color); font-size:0.78rem; }
         .act-row.head { font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); background:var(--bg-light); }
@@ -3651,6 +3674,7 @@
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
+                <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
             </nav>
             <script>
@@ -4609,6 +4633,9 @@
                 <div id="fb-root"></div>
             </div>
 
+            <!-- REWARDS -->
+            <div id="view-rewards" class="view"><div id="rewards-root"></div></div>
+
             <!-- ACTIVITY / AUDIT TRAIL (admin) -->
             <div id="view-activity" class="view">
                 <div id="activity-root"></div>
@@ -5149,7 +5176,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.23.0 · 10 Sep 2026 · recovery';
+        const BUILD_VERSION = 'v2.24.0 · 10 Sep 2026 · rewards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5391,7 +5418,7 @@
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -8467,11 +8494,11 @@
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -8792,13 +8819,13 @@
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -8899,6 +8926,7 @@
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'form-builder') { FB.render(); return; }
                 else if (state.currentView === 'activity') { ACT.render(); return; }
+                else if (state.currentView === 'rewards') { RW.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
@@ -15595,12 +15623,12 @@ ${(() => {
         // to be attempted, so a read-only user gets a clear message instead of a
         // server error.
         const ROLE_CAPS = {
-            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true },
-            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true },
-            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true  },
-            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false },
-            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false }
+            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true, reward:true },
+            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false },
+            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true, reward:true },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true, reward:true },
+            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false },
+            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false }
         };
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
@@ -15743,6 +15771,8 @@ ${(() => {
             if(fbNav) fbNav.style.display = can('forms') ? '' : 'none';
             const actNav = document.getElementById('nav-activity');
             if(actNav) actNav.style.display = can('audit') ? '' : 'none';
+            const rwNav = document.getElementById('nav-rewards');
+            if(rwNav) rwNav.style.display = can('reward') ? '' : 'none';
             if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
@@ -17136,6 +17166,78 @@ ${(() => {
                 document.body.appendChild(b);
             }
             return { mount, toggle, ask, clear, context };
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // REWARDS — the Call Center verifies a customer's code on the phone.
+        // Search first, one clear answer, one button. Marking it used is
+        // stamped with who and when on the server.
+        // ═══════════════════════════════════════════════════════════════════
+        const RW = (function(){
+            let q = '';
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const rows = () => { const t = DataFeed.tabs.stamps; return (t && t.objRows) ? t.objRows.filter(r => String(r['Reward Code'] || '').trim()) : []; };
+            function render(){
+                const host = document.getElementById('rewards-root'); if(!host) return;
+                if(!can('reward')){ host.innerHTML = '<div class="fb-empty">Rewards are handled by the Call Center.</div>'; return; }
+                const all = rows().slice().reverse();
+                const used = all.filter(r => String(r['Redeemed At'] || '').trim());
+                const term = q.trim().toUpperCase();
+                const list = term ? all.filter(r => [r['Reward Code'], r['Phone'], r['Name']].join(' ').toUpperCase().includes(term)) : all.slice(0, 40);
+                const rate = all.length ? Math.round(used.length / all.length * 100) : 0;
+                host.uiHTML = `
+                    <div class="fb-toolbar">
+                        <div><div class="section-header" style="margin-bottom:0;"><h3>Rewards</h3></div>
+                             <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Ask the customer for their code, type it below, then mark it used.</div></div>
+                        <div class="spacer"></div>
+                        <div class="rw-stat"><b>${all.length}</b><span>earned</span></div>
+                        <div class="rw-stat"><b>${used.length}</b><span>redeemed</span></div>
+                        <div class="rw-stat"><b>${rate}%</b><span>redemption</span></div>
+                    </div>
+                    <div class="rw-search"><i class="fas fa-magnifying-glass"></i>
+                        <input id="rw-q" placeholder="Type or paste the customer's code…" value="${esc(q)}" oninput="RW.set(this.value)" autocomplete="off">
+                        ${q ? `<button onclick="RW.set('')" title="Clear"><i class="fas fa-xmark"></i></button>` : ''}
+                    </div>
+                    ${term && !list.length ? `<div class="rw-none"><i class="fas fa-circle-xmark"></i> <b>No reward found with that code.</b> Ask the customer to check the code on their feedback screen.</div>` : ''}
+                    <div class="fb-section" style="padding:0;overflow:hidden;">
+                        ${list.map(r => {
+                            const code = String(r['Reward Code'] || '').trim();
+                            const redeemed = String(r['Redeemed At'] || '').trim();
+                            return `<div class="rw-row ${redeemed ? 'used' : 'ok'}">
+                                <div class="rw-code">${esc(code)}</div>
+                                <div class="rw-who"><b>${esc(r['Name'] || 'Customer')}</b><span>${esc(r['Phone'] || '')}</span></div>
+                                <div class="rw-when">earned ${esc(String(r['Reward Earned At'] || '').slice(0, 16))}</div>
+                                <div class="rw-act">${redeemed
+                                    ? `<span class="rw-tag used"><i class="fas fa-lock"></i> used</span><span class="rw-by">${esc(redeemed)}</span>${can('users') ? `<button class="fb-btn sm" onclick="RW.unredeem('${esc(code)}')">Undo</button>` : ''}`
+                                    : `<span class="rw-tag ok"><i class="fas fa-circle-check"></i> available</span><button class="fb-btn sm primary" onclick="RW.redeem('${esc(code)}')">Mark as used</button>`}</div>
+                            </div>`;
+                        }).join('') || (term ? '' : '<div class="fb-empty">No rewards earned yet.</div>')}
+                    </div>
+                    ${!term && all.length > 40 ? `<div style="font-size:0.7rem;color:var(--text-muted);padding:8px 2px;">Showing the 40 most recent — search to find any code.</div>` : ''}`;
+                if(q){ const el = document.getElementById('rw-q'); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+            }
+            function set(v){ q = v; render(); }
+            async function redeem(code){
+                try {
+                    const r = await apiCall('reward_redeem', { code, clientId: 'rw_' + code + '_' + Date.now().toString(36) });
+                    if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
+                    const row = rows().find(x => String(x['Reward Code']).trim().toUpperCase() === code.toUpperCase());
+                    if(row) row['Redeemed At'] = r.redeemedAt || 'just now';
+                    UI.toast('Marked as used — the customer can be given 10% off.', 'success'); render();
+                } catch(e){ UI.toast('Not marked: ' + (e.message || e), 'error', 7000); }
+            }
+            async function unredeem(code){
+                if(!confirm('Make ' + code + ' available again?')) return;
+                try {
+                    const r = await apiCall('reward_unredeem', { code });
+                    if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
+                    const row = rows().find(x => String(x['Reward Code']).trim().toUpperCase() === code.toUpperCase());
+                    if(row) row['Redeemed At'] = '';
+                    UI.toast('Reward is available again.', 'success'); render();
+                } catch(e){ UI.toast('Could not undo: ' + (e.message || e), 'error'); }
+            }
+            return { render, set, redeem, unredeem };
         })();
 
         const FB = (function(){
