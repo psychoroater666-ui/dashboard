@@ -5157,7 +5157,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.16.1 · 10 Sep 2026 · assistant';
+        const BUILD_VERSION = 'v2.16.2 · 10 Sep 2026 · assistant';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15291,7 +15291,7 @@ ${(() => {
             owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true },
             admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true },
             reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:false },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true  },
             manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false },
             viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false }
         };
