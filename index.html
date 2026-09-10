@@ -3096,6 +3096,7 @@
         #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
+        .sdlw-card { padding:18px 22px; }
         .sla-card { display:flex; align-items:stretch; justify-content:space-between; gap:20px; padding:18px 22px; position:relative; overflow:hidden; }
         .sla-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,#3B5BDB,#010197); }
         .sla-left { display:flex; flex-direction:column; justify-content:center; gap:8px; min-width:0; }
@@ -3853,6 +3854,12 @@
                             <div><span>Close</span><b>15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
+                    </div>
+
+                    <!-- Like-for-like: a Saturday only makes sense against a Saturday -->
+                    <div class="card sdlw-card" id="sdlw-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">SAME DAY LAST WEEK</h3><span class="text-xs text-muted" id="sdlw-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="sdlw-body"></div>
                     </div>
 
                     <!-- What is actually breaking + regional rollup -->
@@ -5125,7 +5132,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.19.2 · 10 Sep 2026 · sla';
+        const BUILD_VERSION = 'v2.20.0 · 10 Sep 2026 · same-day';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8896,6 +8903,41 @@
                 else this.renderUniversalAnalytics(state.currentView);
             },
 
+            // Comparing a Saturday with the Friday before it flatters or damns a
+            // branch for reasons nobody can act on. This compares the latest day
+            // in view with the same weekday a week earlier.
+            renderSameDayLastWeek() {
+                const host = document.getElementById('sdlw-body'), sub = document.getElementById('sdlw-sub'); if(!host) return;
+                const end = (document.getElementById('filter-end-date') || {}).value;
+                if(!end){ host.uiHTML = ''; return; }
+                const day = d => (rawData.submissions || []).filter(x => x.date === d);
+                const dayI = d => (rawData.incidents || []).filter(x => x.date === d);
+                const prev = (() => { const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 7); return t.toISOString().split('T')[0]; })();
+                const A = { s: day(end), i: dayI(end) }, B = { s: day(prev), i: dayI(prev) };
+                const wd = new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long' });
+                if(sub) sub.textContent = wd + ' vs ' + wd + ' ' + prev;
+                const rate = o => o.s.length ? (o.i.length / o.s.length * 100) : 0;
+                const avg = o => { const r = o.s.filter(x => x.smileScore); return r.length ? r.reduce((n, x) => n + x.smileScore, 0) / r.length : 0; };
+                const row = (label, now, was, fmt, higherIsBetter) => {
+                    const d = now - was;
+                    const good = higherIsBetter ? d > 0 : d < 0;
+                    const col = Math.abs(d) < 0.001 ? 'var(--text-muted)' : good ? '#059669' : '#DC2626';
+                    const arrow = Math.abs(d) < 0.001 ? '' : (d > 0 ? '▲' : '▼') + ' ';
+                    return `<div style="display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border-color);">
+                        <span style="font-size:0.78rem;color:var(--text-muted);font-weight:600;">${label}</span>
+                        <span style="font-size:1rem;font-weight:800;color:var(--text-main);font-variant-numeric:tabular-nums;">${fmt(now)}</span>
+                        <span style="font-size:0.7rem;font-weight:800;color:${col};min-width:74px;text-align:right;font-variant-numeric:tabular-nums;">${arrow}${fmt(Math.abs(d))}<span style="color:var(--text-muted);font-weight:600;"> vs ${fmt(was)}</span></span>
+                    </div>`;
+                };
+                if(!B.s.length && !A.s.length){ host.uiHTML = '<div style="padding:18px 0;color:var(--text-muted);font-size:0.8rem;">No data for either day.</div>'; return; }
+                host.uiHTML =
+                      row('Submissions', A.s.length, B.s.length, n => Math.round(n), true)
+                    + row('Incidents', A.i.length, B.i.length, n => Math.round(n), false)
+                    + row('Incident rate', rate(A), rate(B), n => n.toFixed(1) + '%', false)
+                    + row('Avg rating', avg(A), avg(B), n => n.toFixed(2), true)
+                    + (B.s.length ? '' : '<div style="font-size:0.7rem;color:var(--text-muted);padding-top:8px;">No submissions recorded that day last week — treat the comparison with care.</div>');
+            },
+
             renderTopReasons() {
                 const host = document.getElementById('exec-top-reasons'); if(!host) return;
                 const p1 = (state.p1 && state.p1.incs) || [], p2 = (state.p2 && state.p2.incs) || [];
@@ -8927,6 +8969,7 @@
 
             renderExecutive() {
                 try { this.renderTopReasons(); } catch(e){ console.warn('top reasons:', e); }
+                try { this.renderSameDayLastWeek(); } catch(e){ console.warn('same day:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
                     const tSubs = _stabilizeCount(p1.subs.length, _subsStabilizer, !window._isBackgroundRefresh);
