@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.12.2 · 10 Sep 2026 · ops-fixes';
+        const BUILD_VERSION = 'v2.13.0 · 10 Sep 2026 · performance';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7799,9 +7799,19 @@
         // Falls back to a real destroy+recreate only when there isn't an
         // existing chart yet, or its type/dataset count genuinely changed
         // (e.g. a category list that grew) — safe either way.
+        // Charts are expensive on low-end machines: skip entirely when the
+        // canvas isn't on screen (hidden view / scrolled far away).
+        function _chartVisible(canvasEl){
+            try { if(!canvasEl || !canvasEl.offsetParent) return false; const v = canvasEl.closest('.view'); if(v && !v.classList.contains('active')) return false; return true; } catch(e){ return true; }
+        }
         function _renderOrUpdateChart(canvasId, chartConfig) {
             const canvasEl = document.getElementById(canvasId);
             if(!canvasEl) return null;
+            // Hidden view: remember the config and draw it when the person
+            // actually opens that tab. Saves a full Chart.js pass per chart on
+            // every refresh -- the single biggest CPU cost on older laptops.
+            if(!_chartVisible(canvasEl)){ state._pendingCharts = state._pendingCharts || {}; state._pendingCharts[canvasId] = chartConfig; return state.charts[canvasId] || null; }
+            if(state._pendingCharts) delete state._pendingCharts[canvasId];
             const existing = state.charts[canvasId];
             const sameShape = existing
                 && existing.config.type === chartConfig.type
@@ -8287,6 +8297,7 @@
                             // below -- data still loads and alerts still
                             // fire, only the re-render waits. _needsRenderCatchup
                             // makes it repaint the moment the dialog closes.
+                            if(document.hidden && !window.__forceFullNext){ return; }   // background tab: skip the round entirely
                             const skipRender = document.hidden || _anyModalOpen();
                             if(!skipRender){ document.body.classList.add('bg-refresh'); void document.body.offsetHeight; }
                             try {
@@ -8498,6 +8509,7 @@
                             targetView.style.transform = 'translateY(6px)';
                             targetView.classList.add('active');
                             try { this.renderCurrentView(); } catch(e){ console.error(e); }
+                            try { const pend = state._pendingCharts || {}; Object.keys(pend).forEach(id => { const el = document.getElementById(id); if(el && _chartVisible(el)){ const cfg = pend[id]; delete pend[id]; _renderOrUpdateChart(id, cfg); } }); } catch(e){}
                             document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
                                 targetView.style.transition = 'opacity .26s var(--ease), transform .34s var(--ease-out)';
@@ -9436,7 +9448,13 @@
                     ? `${incs.length} incidents in selected period`
                     : `${filtered.length} of ${incs.length} shown`;
 
-                const rows = filtered.slice(0, 300);
+                // Windowed: an 8 GB laptop chokes on hundreds of heavy rows.
+                // Render a screenful; the rest on demand.
+                const INC_WINDOW = 60;
+                if(this._incWindowKey !== filtered.length + '|' + (state.currentView||'')) { this._incShown = INC_WINDOW; this._incWindowKey = filtered.length + '|' + (state.currentView||''); }
+                const shownCount = Math.min(this._incShown || INC_WINDOW, filtered.length);
+                const rows = filtered.slice(0, shownCount);
+                this._incAll = filtered;
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
                 UI.anchoredUpdate(document.querySelector('#inc-detail-table tbody'), () => {
                 document.querySelector('#inc-detail-table tbody').uiHTML = rows.map((inc, idx) => {
@@ -9478,7 +9496,9 @@
                         <td style="font-family:monospace;font-size:0.78rem;white-space:nowrap;">${orderNo || '<span style="color:var(--text-muted);">—</span>'}</td>
                         <td style="text-align:right;"><button class="inc-menu-btn" onclick="event.stopPropagation();app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')" data-tip="View details"><i class="fas fa-ellipsis"></i></button></td>
                     </tr>`;
-                }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
+                }).join('') + (filtered.length > rows.length
+                    ? `<tr><td colspan="9" style="text-align:center;padding:14px;"><button class="fb-btn sm" onclick="app.showMoreIncidents()"><i class="fas fa-chevron-down"></i> Show ${Math.min(60, filtered.length - rows.length)} more (${filtered.length - rows.length} remaining)</button></td></tr>`
+                    : '') || '<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px;">No incidents match your filters.</td></tr>';
                 });
                 this._incFiltered = rows;
                 // If the detail modal is currently open, refresh its content
@@ -9543,6 +9563,8 @@
             // every refresh, so a position captured when the row was drawn could
             // point at a different incident by the time it was clicked -- that is
             // why clicking one incident sometimes opened another.
+            showMoreIncidents() { this._incShown = (this._incShown || 60) + 60; this._incWindowKey = null; try { UI.silent(() => this.applyFilters()); } catch(e){ this.applyFilters(); } },
+
             openIncidentDetailModal(idxOrKey) {
                 let inc = null;
                 if(typeof idxOrKey === 'string'){
