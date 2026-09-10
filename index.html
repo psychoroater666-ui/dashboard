@@ -3100,6 +3100,9 @@
         .ai-bubble { position:fixed; right:22px; bottom:22px; z-index:99995; width:54px; height:54px; border:none; border-radius:50%;
             background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:1.15rem; cursor:pointer;
             box-shadow:0 10px 28px rgba(1,1,151,.35); transition:transform .18s, box-shadow .18s; }
+        .ai-bubble::after { content:''; position:absolute; inset:-4px; border-radius:50%; border:2px solid rgba(59,91,219,.35); opacity:0; transition:opacity .2s; }
+        .ai-bubble:hover::after { opacity:1; }
+        .ai-bubble { position:fixed; display:flex; align-items:center; justify-content:center; }
         .ai-bubble:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 14px 34px rgba(1,1,151,.45); }
         .ai-bubble.active { background:linear-gradient(135deg,#0F172A,#334155); }
         .ai-panel { position:fixed; right:22px; bottom:88px; z-index:99996; width:400px; max-width:calc(100vw - 32px); height:520px; max-height:calc(100vh - 130px);
@@ -5087,7 +5090,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.15.0 · 10 Sep 2026 · assistant';
+        const BUILD_VERSION = 'v2.15.1 · 10 Sep 2026 · assistant';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -16712,7 +16715,7 @@ ${(() => {
                 let panel = document.getElementById('ai-panel');
                 if(!panel){
                     panel = document.createElement('div'); panel.id = 'ai-panel'; panel.className = 'ai-panel';
-                    panel.innerHTML = `<div class="ai-head"><span><i class="fas fa-sparkles"></i> Assistant</span>
+                    panel.innerHTML = `<div class="ai-head"><span><i class="fas fa-robot"></i> Assistant</span>
                             <button class="ai-x" onclick="AI.clear()" title="Clear conversation"><i class="fas fa-eraser"></i></button>
                             <button class="ai-x" onclick="AI.toggle()" title="Close"><i class="fas fa-xmark"></i></button></div>
                         <div class="ai-log"></div>
@@ -16747,7 +16750,7 @@ ${(() => {
                 if(!can('ask') || document.getElementById('ai-bubble')) return;
                 const b = document.createElement('button');
                 b.id = 'ai-bubble'; b.className = 'ai-bubble'; b.title = 'Ask the assistant';
-                b.innerHTML = '<i class="fas fa-sparkles"></i>';
+                b.innerHTML = '<i class="fas fa-robot"></i>';
                 b.onclick = toggle;
                 document.body.appendChild(b);
             }
