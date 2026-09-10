@@ -5050,7 +5050,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.12.0 · 10 Sep 2026 · ops-fixes';
+        const BUILD_VERSION = 'v2.12.2 · 10 Sep 2026 · ops-fixes';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7568,8 +7568,14 @@
         // determination back to whatever the automated classifier says. This
         // holds the just-saved values as the source of truth for 90s,
         // overriding whatever the sheet read-back says during that window.
-        const INCIDENT_RESOLUTION_PROTECT_MS = 90 * 1000;
-        const _incidentResolutionProtected = {}; // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt }
+        const INCIDENT_RESOLUTION_PROTECT_MS = 30 * 60 * 1000;   // outlast a slow Apps Script round trip AND a refresh
+        // The agent's own verdict is kept on disk, so a refresh a second after
+        // closing a case still shows it closed instead of reverting to
+        // "unresolved" until the sheet round-trip completes.
+        const _IRP_KEY = 'crumble_incident_protect';
+        function _irpSave(){ try { localStorage.setItem(_IRP_KEY, JSON.stringify(_incidentResolutionProtected)); } catch(e){} }
+        function _irpLoad(){ try { const raw = localStorage.getItem(_IRP_KEY); if(!raw) return {}; const o = JSON.parse(raw); const now = Date.now(); Object.keys(o).forEach(k => { if(!o[k] || o[k].expiresAt < now) delete o[k]; }); return o; } catch(e){ return {}; } }
+        const _incidentResolutionProtected = _irpLoad(); // stableKey -> { resolved, caseStatus, resolutionNote, expiresAt } (restored from disk)
         // Last successfully-read resolution map, held so a failed or empty
         // read never causes resolved cases to appear unresolved. Survives for
         // the life of the page; a genuinely-deleted resolution row will clear
@@ -7612,6 +7618,7 @@
                 resolved, caseStatus, resolutionNote, resolvedAt, agentCategory,
                 expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
             });
+            _irpSave();
         }
 
         function _protectIncidentReview(stableKey, reviewedAt){
@@ -7620,6 +7627,7 @@
                 reviewedAt,
                 expiresAt: Date.now() + INCIDENT_RESOLUTION_PROTECT_MS
             });
+            _irpSave();
         }
 
         function _applyIncidentResolutionProtection(){
@@ -7630,6 +7638,10 @@
             (rawData.incidents||[]).forEach(inc => {
                 const p = _incidentResolutionProtected[_incidentStableKey(inc)];
                 if(p){
+                    // Sheet has caught up with this verdict -> stop overriding.
+                    if(p.caseStatus !== undefined && inc.agentVerdict && inc.caseStatus === p.caseStatus && inc.resolved === p.resolved){
+                        delete _incidentResolutionProtected[_incidentStableKey(inc)]; _irpSave(); return;
+                    }
                     if(p.resolved !== undefined) inc.resolved = p.resolved;
                     if(p.caseStatus !== undefined){ inc.caseStatus = p.caseStatus; inc.agentVerdict = true; }
                     if(p.resolutionNote) inc.resolutionNote = p.resolutionNote;
@@ -7746,9 +7758,12 @@
                 }
             });
             _protectIncidentResolution(stableKey, true, resolvedCaseStatus, note || '', resolvedAt, category || '');
+            // Close the modal FIRST, then repaint: _refreshAfterIncidentChange()
+            // defers while a dialog is open, which is why the row kept its old
+            // status until a later poll.
+            try { if(typeof app !== 'undefined' && app.closeIncidentDetailModal) app.closeIncidentDetailModal(); } catch(e){}
             _refreshAfterIncidentChange();
             try { UI.toast(validity === 'not_responding' ? 'Closed — customer not responding' : `Closed as ${validity === 'fake' ? 'Fake' : 'Valid'}`, 'success'); } catch(e){}
-            try { if(typeof app !== 'undefined' && app.closeIncidentDetailModal) setTimeout(() => app.closeIncidentDetailModal(), 350); } catch(e){}
 
             const clientId = 'res_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
             apiCall('incident_resolution', { id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '', clientId })
@@ -7756,7 +7771,7 @@
             .catch(err => {
                 console.warn('Incident resolution save failed:', err);
                 snapshot.forEach(([inc, prev]) => Object.assign(inc, prev));
-                delete _incidentResolutionProtected[stableKey];
+                delete _incidentResolutionProtected[stableKey]; _irpSave();
                 _refreshAfterIncidentChange();
                 try { UI.toast('NOT saved: ' + (err && err.message ? err.message : err) + ' — please resolve it again.', 'error', 9000); } catch(e){ alert('NOT saved: ' + (err && err.message ? err.message : err)); }
                 if(btnEl){ btnEl.disabled = false; btnEl.innerHTML = '<i class="fas fa-check"></i> Mark as Closed'; }
@@ -15932,7 +15947,15 @@ ${(() => {
                             clearTimeout(el._enterT);
                             el._enterT = setTimeout(() => el.classList.remove('entering'), 420);
                         }
-                        else if(!shouldBeOpen && isMarked) el.classList.remove('is-open', 'entering');
+                        else if(!shouldBeOpen && isMarked){
+                            el.classList.remove('is-open', 'entering');
+                            // A repaint queued while this dialog was open runs now,
+                            // not on the next poll.
+                            if(window.__needsRepaintAfterModal && !document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open')){
+                                window.__needsRepaintAfterModal = false;
+                                setTimeout(() => { try { const r = () => { if(app && app.applyFilters) app.applyFilters(); if(typeof renderAlerts === 'function') renderAlerts(); }; (typeof UI !== 'undefined' && UI.silent) ? UI.silent(r) : r(); } catch(e){} }, 60);
+                            }
+                        }
                     });
                 } finally { syncing = false; }
             }
