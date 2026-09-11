@@ -3211,6 +3211,8 @@
         .ai-greet { display:flex; flex-direction:column; gap:2px; margin-bottom:4px; }
         .ai-greet-mark { font-size:0.64rem; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; color:#3B5BDB; }
         .ai-greet b { font-size:1.05rem; color:var(--text-main); font-weight:800; }
+        .ai-msg.bot.streaming::after { content:''; display:inline-block; width:2px; height:0.95em; margin-left:2px; vertical-align:-2px; background:currentColor; opacity:.65; animation:aiCaret 1s steps(2) infinite; }
+        @keyframes aiCaret { 0%,49%{ opacity:.65; } 50%,100%{ opacity:0; } }
         .ai-msg.bot.typing { display:flex; gap:5px; align-items:center; padding:13px 14px; }
         .ai-msg.bot.typing i { width:6px; height:6px; border-radius:50%; background:var(--text-muted); opacity:.45; animation:aiType 1.2s ease-in-out infinite; }
         .ai-msg.bot.typing i:nth-child(2){ animation-delay:.18s; } .ai-msg.bot.typing i:nth-child(3){ animation-delay:.36s; }
@@ -3865,7 +3867,7 @@
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">COMPLAINTS BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;" id="exec-hour-title">SUBMISSIONS &amp; COMPLAINTS BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
                             <div class="chart-container" style="height:180px;"><canvas id="execPeakHoursChart"></canvas></div>
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
@@ -5180,7 +5182,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.25.0 · 10 Sep 2026 · hours';
+        const BUILD_VERSION = 'v2.26.0 · 10 Sep 2026 · assistant';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11155,10 +11157,26 @@ ${(() => {
                     return counts;
                 };
 
-                const hourCounts = hourCountsOf(state.p1.subs);
-                const incidentHourCounts = hourCountsOf(state.p1.incs);
-                const prevHourCounts = state.p2 ? hourCountsOf(state.p2.subs) : null;
-                const labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
+                // One day in view -> by hour. More than one -> by day, because an
+                // hourly average across a week hides the day that actually broke.
+                const sd = (document.getElementById('filter-start-date') || {}).value || '';
+                const ed = (document.getElementById('filter-end-date') || {}).value || '';
+                const spanDays = (sd && ed) ? Math.round((new Date(ed + 'T12:00:00') - new Date(sd + 'T12:00:00')) / 86400000) + 1 : 1;
+                const byDay = spanDays > 1;
+                const titleEl = document.getElementById('exec-hour-title');
+                if(titleEl) titleEl.textContent = byDay ? 'SUBMISSIONS & COMPLAINTS BY DAY' : 'SUBMISSIONS & COMPLAINTS BY HOUR';
+                let hourCounts, incidentHourCounts, labels;
+                if(byDay){
+                    const days = [];
+                    for(let d = new Date(sd + 'T12:00:00'); d <= new Date(ed + 'T12:00:00'); d.setDate(d.getDate() + 1)) days.push(d.toISOString().split('T')[0]);
+                    const cnt = list => days.map(day => (list || []).filter(x => x.date === day).length);
+                    hourCounts = cnt(state.p1.subs); incidentHourCounts = cnt(state.p1.incs);
+                    labels = days.map(d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { weekday:'short', day:'numeric' }));
+                } else {
+                    hourCounts = hourCountsOf(state.p1.subs);
+                    incidentHourCounts = hourCountsOf(state.p1.incs);
+                    labels = Array.from({length:24}, (_,h) => h===0?'12am':h<12?`${h}am`:h===12?'12pm':`${h-12}pm`);
+                }
 
                 // Volume is not the question -- failure rate is. Bars are the
                 // incident rate for that hour; hours with too little traffic are
@@ -11175,22 +11193,26 @@ ${(() => {
                 // RATE is called out separately underneath, since the two differ.
                 let peakH = -1, peakN = 0;
                 incidentHourCounts.forEach((n, h) => { if(n > peakN){ peakN = n; peakH = h; } });
-                const barColors = incidentHourCounts.map((n, h) => h === peakH && n ? '#DC2626' : n ? '#3B5BDB' : (isDark ? '#1E293B' : '#EEF2F7'));
+                // Submissions as the volume backdrop, complaints as a red line on
+                // their own axis -- both readable without one dwarfing the other.
                 const datasets = [
-                    { type:'bar', label:'Complaints', data: incidentHourCounts, backgroundColor: barColors, borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' }
+                    { type:'bar', label:'Submissions', data: hourCounts, backgroundColor: hourCounts.map((n, h) => h === peakH ? '#6B7FE8' : '#C7D0F5'), borderRadius:4, maxBarThickness:18, order:2, yAxisID:'y' },
+                    { type:'line', label:'Complaints', data: incidentHourCounts, borderColor:'#DC2626', backgroundColor:'#DC2626', borderWidth:2.4,
+                      pointRadius: incidentHourCounts.map((n, h) => h === peakH && n ? 4.5 : n ? 2.5 : 0), pointBackgroundColor:'#DC2626',
+                      tension:0.32, fill:false, order:0, yAxisID:'y1' }
                 ];
                 (function(){
                     const v = document.getElementById('exec-hour-verdict'); if(!v) return;
-                    const lbl = h => h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h - 12) + 'pm';
+                    const lbl = h => byDay ? (labels[h] || '') : (h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h - 12) + 'pm');
                     if(!totalIncs){ v.uiHTML = '<div style="font-size:0.76rem;color:var(--text-muted);">No complaints in this period.</div>'; return; }
                     const share = Math.round(peakN / totalIncs * 100);
                     const mult = (worstH >= 0 && avgRate) ? (worstR / avgRate) : 0;
                     v.uiHTML = `<div style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;background:var(--bg-light);">
                         <i class="fas fa-clock" style="color:#DC2626;font-size:0.8rem;margin-top:2px;"></i>
                         <div style="font-size:0.78rem;color:var(--text-main);line-height:1.55;">
-                            Most complaints arrive <b>${lbl(peakH)}–${lbl((peakH + 1) % 24)}</b> — <b>${peakN}</b> of ${totalIncs} (${share}%).
+                            Most complaints ${byDay ? 'on' : 'arrive'} <b>${byDay ? lbl(peakH) : lbl(peakH) + '–' + lbl((peakH + 1) % 24)}</b> — <b>${peakN}</b> of ${totalIncs} (${share}%).
                             ${worstH >= 0 && worstH !== peakH && mult >= 1.6
-                                ? `<br><span style="color:var(--text-muted);">Highest failure rate is <b style="color:#DC2626;">${lbl(worstH)}–${lbl((worstH + 1) % 24)}</b> at ${worstR.toFixed(1)}% of orders vs ${avgRate.toFixed(1)}% average — fewer orders, more going wrong.</span>`
+                                ? `<br><span style="color:var(--text-muted);">Highest failure rate ${byDay ? 'on' : 'is'} <b style="color:#DC2626;">${byDay ? lbl(worstH) : lbl(worstH) + '–' + lbl((worstH + 1) % 24)}</b> at ${worstR.toFixed(1)}% of orders vs ${avgRate.toFixed(1)}% average — fewer orders, more going wrong.</span>`
                                 : worstH >= 0 ? `<br><span style="color:var(--text-muted);">That hour also has the highest failure rate, ${worstR.toFixed(1)}% of orders vs ${avgRate.toFixed(1)}% average.</span>` : ''}
                         </div></div>`;
                 })();
@@ -11220,6 +11242,7 @@ ${(() => {
                         scales: {
                             x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
                             y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
+                            y1: { beginAtZero:true, position:'right', grid:{display:false}, ticks:{color:'#DC2626',font:{size:9},precision:0} },
                         }
                     }
                 });
@@ -17124,7 +17147,8 @@ ${(() => {
                 const panel = document.getElementById('ai-panel'); if(!panel) return;
                 panel.querySelector('.ai-log').innerHTML = history.length ? history.map(h => h.role === 'user'
                     ? `<div class="ai-msg user">${esc(h.text)}</div>`
-                    : (h.typing ? `<div class="ai-msg bot typing"><i></i><i></i><i></i></div>` : `<div class="ai-msg bot">${esc(h.text).replace(/\n/g, '<br>')}</div>`)).join('')
+                    : (h.typing ? `<div class="ai-msg bot typing"><i></i><i></i><i></i></div>`
+                       : `<div class="ai-msg bot${h.streaming ? ' streaming' : ''}">${esc(h.streaming ? h.shown : h.text).replace(/\n/g, '<br>')}</div>`)).join('')
                     : `<div class="ai-hint"><div class="ai-greet"><span class="ai-greet-mark">Sentinel</span><b>Hi ${esc((PERM.name || '').split(' ')[0] || 'there')}</b></div><div class="ai-eg">${['Which branch is worst this period and why?','What changed since the previous period?','What are customers complaining about most?','Summarise today for the ops call'].map(q => `<button onclick="AI.ask(this.textContent)">${q}</button>`).join('')}</div></div>`;
                 const log = panel.querySelector('.ai-log'); log.scrollTop = log.scrollHeight;
             }
@@ -17161,9 +17185,11 @@ ${(() => {
                 render(); busy = true;
                 try {
                     const res = await apiCall('ai_ask', { question: q, context: context(), history: history.slice(0, -2).slice(-6) });
-                    history[history.length - 1] = { role: 'bot', text: (res && res.status === 'success') ? res.answer : ('Sorry — ' + ((res && res.message) || 'no answer.')) };
+                    const answer = (res && res.status === 'success') ? res.answer : ('Sorry — ' + ((res && res.message) || 'no answer.'));
+                    await typeOut(answer);
                 } catch(e){
-                    history[history.length - 1] = { role: 'bot', text: 'Sorry — could not reach the assistant. ' + (e.message || '') };
+                    history[history.length - 1] = { role: 'bot', text: 'Sorry — could not reach the assistant. ' + (e.message || ''), typing: false };
+                    render();
                 } finally { busy = false; render(); }
             }
 
@@ -17277,6 +17303,29 @@ ${(() => {
                 if(q){ const el = document.getElementById('rw-q'); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
             }
             function set(v){ q = v; render(); }
+
+            // The answer is written out rather than appearing whole: arriving text
+            // reads as a reply, a block of text appearing from nowhere does not.
+            // Chunked by word, with a gentle ease so long answers don't crawl.
+            function typeOut(text){
+                return new Promise(resolve => {
+                    const msg = history[history.length - 1];
+                    msg.role = 'bot'; msg.typing = false; msg.streaming = true; msg.text = text; msg.shown = '';
+                    const words = String(text).split(/(\s+)/);
+                    let i = 0;
+                    const log = () => document.querySelector('#ai-panel .ai-log');
+                    const step = () => {
+                        if(!open){ msg.shown = text; msg.streaming = false; render(); return resolve(); }   // panel closed: finish instantly
+                        const burst = words.length > 90 ? 3 : words.length > 45 ? 2 : 1;
+                        for(let n = 0; n < burst && i < words.length; n++) msg.shown += words[i++];
+                        render();
+                        const l = log(); if(l) l.scrollTop = l.scrollHeight;
+                        if(i < words.length) setTimeout(step, 18 + Math.random() * 26);
+                        else { msg.streaming = false; msg.shown = text; render(); resolve(); }
+                    };
+                    step();
+                });
+            }
             async function redeem(code){
                 try {
                     const r = await apiCall('reward_redeem', { code, clientId: 'rw_' + code + '_' + Date.now().toString(36) });
