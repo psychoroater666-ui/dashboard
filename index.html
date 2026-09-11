@@ -3387,7 +3387,7 @@
         .note.danger { background:rgba(220,38,38,.07); border-color:rgba(220,38,38,.22); color:#B91C1C; }
         .note.ok     { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.22); color:#047857; }
         /* ═══════════ HELP ═══════════ */
-        .help-box { max-width:600px; width:100%; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; }
+        #help-modal .help-box { max-width:600px; width:100%; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; }
         .help-head { display:flex; align-items:flex-start; gap:12px; padding:20px 24px 16px; border-bottom:1px solid var(--border-color); }
         .help-head h3 { margin:2px 0 0; font-size:1.05rem; font-weight:800; color:var(--text-main); text-transform:capitalize; }
         .help-eyebrow { font-size:0.66rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text-muted); }
@@ -5770,7 +5770,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.38.1 · 11 Sep 2026 · help';
+        const BUILD_VERSION = 'v2.38.2 · 11 Sep 2026 · help';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18110,8 +18110,12 @@ ${(() => {
                 if(el) el.remove();
                 const role = roleKey(PERM.role);
                 el = document.createElement('div');
-                el.id = 'help-modal'; el.className = 'ia-overlay is-open entering';
-                el.innerHTML = `<div class="ia-modal help-box" role="dialog" aria-label="Help">
+                el.id = 'help-modal';
+                // Self-contained: relying on the shared .ia-overlay classes meant
+                // a styling change elsewhere could leave this in the DOM but
+                // invisible, which is exactly what happened.
+                el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+                el.innerHTML = `<div class="help-box" role="dialog" aria-label="Help" style="background:var(--white);border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.28);">
                     <div class="help-head">
                         <div>
                             <div class="help-eyebrow">Signed in as ${esc(PERM.name || PERM.email || '')}</div>
@@ -18135,10 +18139,10 @@ ${(() => {
                     </div>
                 </div>`;
                 document.body.appendChild(el);
-                setTimeout(() => el.classList.remove('entering'), 420);
+                document.body.style.overflow = 'hidden';
                 el.addEventListener('click', e => { if(e.target === el) close(); });
             }
-            function close(){ const el = document.getElementById('help-modal'); if(el) el.remove(); }
+            function close(){ document.querySelectorAll('#help-modal').forEach(n => n.remove()); document.body.style.overflow = ''; }
             return { open, close };
         })();
 
