@@ -3185,40 +3185,6 @@
             font-family: 'Inter', sans-serif; text-decoration: none; box-sizing: border-box;
         }
         .support-row:hover{ background: var(--bg-light); }
-        /* The Help row is a <button> carrying an inline font:inherit, which reset
-           its size and weight to the page default -- bigger, lighter, and wrapping
-           onto two lines. Pin it to the same type as every other menu row. */
-        #help-open-btn.support-row{ font-family:'Inter', sans-serif !important; font-size:0.8rem !important; font-weight:600 !important; line-height:1.3; white-space:nowrap; }
-
-        /* ── Profile menu: compact ──────────────────────────────────────────
-           Tighter rows, smaller icon tiles and a fixed width, so the menu ends
-           well above the floating AI orb on normal screens and the orb can stay
-           visible. The menu markup is written by script with inline styles,
-           hence the !important overrides. */
-        #dp-menu{ width: 256px !important; min-width: 0 !important; border-radius: 13px !important;
-                  max-height: calc(100vh - 76px); overflow-y: auto !important; overscroll-behavior: contain; }
-        #dp-menu > div{ padding-top: 4px !important; padding-bottom: 4px !important; margin-top: 0 !important; }
-        #dp-menu > div:first-child{ padding: 10px 14px 9px !important; gap: 9px !important; }
-        #dp-menu > div:first-child > div:first-child{ width: 30px !important; height: 30px !important; font-size: 0.7rem !important; }
-        #dp-menu > div:first-child > div:last-child > div:first-child{ font-size: 0.8rem !important; }
-        #dp-menu > div > label,
-        #dp-menu > div > button,
-        #dp-menu .support-row,
-        #dp-notif-row{ padding: 6px 8px !important; gap: 9px !important; font-size: 0.8rem !important; min-height: 34px; }
-        #dp-notif-row > div{ gap: 9px !important; }
-        #dp-notif-row span[style*="font-size:0.82rem"]{ font-size: 0.8rem !important; }
-        /* the "blocked — tap to fix" wording is long: let it wrap rather than widen the menu */
-        #dp-notif-row:has(span[style*="#DC2626"]) span[style*="nowrap"]{ white-space: normal !important; line-height: 1.25; }
-        #dp-menu span[style*="width:26px"],
-        #dp-menu .support-icon{ width: 24px !important; height: 24px !important; border-radius: 7px !important; font-size: 0.7rem !important; }
-        #dp-menu > div:last-child{ padding: 6px 14px 8px !important; }
-        /* Only when the window is too short for both (small laptop, zoomed in)
-           does the orb step aside while the menu is open. */
-        @media (max-height: 570px){
-            body:has(#dp-menu[style*="display: block"]) .ai-bubble,
-            body:has(#dp-menu[style*="display:block"]) .ai-bubble{ opacity:0 !important; pointer-events:none !important; transform:scale(.85) !important; }
-        }
-        .ai-bubble{ transition: transform .3s cubic-bezier(.16,1,.3,1), opacity .2s ease; }
         .support-icon{
             width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
             background: rgba(1,1,151,.07); color: #010197;
@@ -4272,6 +4238,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
+                <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
             </nav>
             <script>
@@ -5260,6 +5227,9 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <div id="fb-root"></div>
             </div>
 
+            <!-- FORM ANALYTICS (Owner only) -->
+            <div id="view-form-analytics" class="view"><div id="fa-root"></div></div>
+
             <!-- REWARDS -->
             <div id="view-rewards" class="view"><div id="rewards-root"></div></div>
 
@@ -5804,7 +5774,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.40.5 · 11 Sep 2026 · compact profile menu';
+        const BUILD_VERSION = 'v2.41.1 · 11 Sep 2026 · form analytics';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6046,7 +6016,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -9203,11 +9173,11 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -9528,13 +9498,13 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -9636,6 +9606,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 else if (state.currentView === 'form-builder') { FB.render(); return; }
                 else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'rewards') { RW.render(); return; }
+                else if (state.currentView === 'form-analytics') { FAT.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
@@ -16790,6 +16761,8 @@ ${(() => {
             if(actNav) actNav.style.display = can('audit') ? '' : 'none';
             const rwNav = document.getElementById('nav-rewards');
             if(rwNav) rwNav.style.display = can('reward') ? '' : 'none';
+            const faNav = document.getElementById('nav-form-analytics');
+            if(faNav) faNav.style.display = can('users') ? '' : 'none';   // Owner only
             if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
@@ -18093,6 +18066,122 @@ ${(() => {
         // HELP — what this person can do, and the questions the team actually
         // asks. Role-aware: nobody reads about buttons they cannot see.
         // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════════
+        // FORM ANALYTICS — Owner only. Everyone who completes a form is already
+        // visible; this is everyone who opened one and did not. Completion rate
+        // and drop-off are the two numbers that actually move submissions.
+        // ═══════════════════════════════════════════════════════════════════
+        const FAT = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const rows = () => { const t = DataFeed.tabs.form_analytics; return (t && t.objRows) ? t.objRows : []; };
+            function inRange(r){
+                const s = (document.getElementById('filter-start-date') || {}).value, e = (document.getElementById('filter-end-date') || {}).value;
+                const d = String(r['At'] || '').slice(0, 10).replace(/\//g, '-');
+                if(!s || !e || !d) return true;
+                const iso = d.length === 10 && d[4] === '-' ? d : (() => { const m = String(r['At']).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? m[3] + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0') : ''; })();
+                return iso >= s && iso <= e;
+            }
+            function render(){
+                const host = document.getElementById('fa-root'); if(!host) return;
+                if(!can('users')){ host.innerHTML = '<div class="fb-empty">Form Analytics is available to the Owner.</div>'; return; }
+                const all = rows().filter(inRange);
+                if(!all.length){ host.uiHTML = `<div class="fb-empty"><b>No form activity recorded yet for this period.</b><br><span style="font-size:0.8rem;">Once the updated forms are live, every open, step and drop-off is recorded here.</span></div>`; return; }
+                const sessions = {};
+                all.forEach(r => { const k = r['Session'] || Math.random(); const x = sessions[k] = sessions[k] || { branch:'', source:'', device:'', form:'', opened:false, submitted:false, steps:[], secs:0 };
+                    if(r['Branch']) x.branch = r['Branch'];
+                    if(r['Source']) x.source = r['Source'];
+                    if(r['Device']) x.device = r['Device'];
+                    if(r['Form'])   x.form = r['Form'];
+                    if(r['Event'] === 'open') x.opened = true;
+                    if(r['Event'] === 'submitted'){ x.submitted = true; x.secs = Number(r['Seconds']) || x.secs; }
+                    if(r['Event'] === 'step' && r['Step']){ x.steps.push(r['Step']); x.at = x.at || []; x.at.push({ step: r['Step'], t: Number(r['Seconds']) || 0 }); }
+                    if(r['Event'] === 'abandoned' && r['Step']) x.lastStep = r['Step'];
+                });
+                const S = Object.values(sessions);
+                const opens = S.length, subs = S.filter(x => x.submitted).length;
+                const rate = opens ? (subs / opens * 100) : 0;
+                const med = (() => { const v = S.filter(x => x.submitted && x.secs).map(x => x.secs).sort((a,b)=>a-b); return v.length ? v[Math.floor(v.length/2)] : 0; })();
+                const group = (key) => { const m = {}; S.forEach(x => { const k = x[key] || 'unknown'; const g = m[k] = m[k] || { o:0, s:0 }; g.o++; if(x.submitted) g.s++; }); return m; };
+                const byBranch = group('branch'), bySource = group('source'), byDevice = group('device');
+                // where people stop
+                const drop = {};
+                S.filter(x => !x.submitted).forEach(x => { const last = x.lastStep || x.steps[x.steps.length - 1] || 'opened, never started'; drop[last] = (drop[last] || 0) + 1; });
+                const dropList = Object.entries(drop).sort((a,b) => b[1]-a[1]).slice(0, 8);
+                // Time on each step: how long between arriving at one step and the
+                // next. Drop-off says where people leave; this says whether they
+                // were stuck (slow) or simply lost interest (fast).
+                const dwell = {};
+                S.forEach(x => {
+                    const a = (x.at || []).slice().sort((p, q) => p.t - q.t);
+                    for(let i = 0; i < a.length; i++){
+                        const next = a[i + 1] ? a[i + 1].t : (x.submitted && x.secs ? x.secs : null);
+                        if(next == null) continue;
+                        const d = next - a[i].t;
+                        if(d < 0 || d > 600) continue;                 // ignore a tab left open
+                        const e2 = dwell[a[i].step] = dwell[a[i].step] || { n:0, tot:0, vals:[] };
+                        e2.n++; e2.tot += d; e2.vals.push(d);
+                    }
+                });
+                const dwellList = Object.entries(dwell).map(([step, v]) => {
+                    const sorted = v.vals.slice().sort((p, q) => p - q);
+                    return { step, n: v.n, med: sorted[Math.floor(sorted.length / 2)] || 0, avg: v.tot / v.n };
+                }).sort((a, b) => b.med - a.med).slice(0, 10);
+                const dwellMed = dwellList.length ? dwellList.map(d => d.med).sort((a,b)=>a-b)[Math.floor(dwellList.length/2)] : 0;
+                const bar = (n, max, col) => `<div style="height:6px;border-radius:4px;background:var(--bg-light);overflow:hidden;margin-top:5px;"><span style="display:block;height:100%;width:${max ? Math.round(n/max*100) : 0}%;background:${col};border-radius:4px;"></span></div>`;
+                const table = (title, m, note) => {
+                    const list = Object.entries(m).sort((a,b) => b[1].o - a[1].o);
+                    const max = Math.max(...list.map(([,v]) => v.o), 1);
+                    return `<div class="card" style="padding:18px 22px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">${esc(title)}</h3><span class="text-xs text-muted" style="font-size:0.66rem;">${esc(note || '')}</span></div>
+                        ${list.map(([k, v]) => { const r2 = v.o ? v.s / v.o * 100 : 0;
+                            const col = r2 >= 50 ? '#059669' : r2 >= 25 ? '#010197' : '#DC2626';
+                            return `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                                    <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);">${esc(k)}</span>
+                                    <span style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap;"><b style="color:${col};">${r2.toFixed(0)}%</b> · ${v.s}/${v.o}</span>
+                                </div>${bar(v.o, max, col)}</div>`; }).join('')}
+                    </div>`;
+                };
+                host.uiHTML = `
+                    <div class="kpi-grid" style="margin-bottom:16px;">
+                        ${[['Forms opened', opens, ''], ['Completed', subs, ''], ['Completion rate', rate.toFixed(1) + '%', rate < 40 ? 'low' : ''], ['Median time', med ? med + 's' : '—', '']]
+                          .map(([l, v, flag]) => `<div class="kpi-card"><div class="kpi-label">${l}</div><div class="kpi-value" style="${flag === 'low' ? 'color:#DC2626;' : ''}">${v}</div></div>`).join('')}
+                    </div>
+                    <div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">WHERE PEOPLE STOP</h3><span class="text-xs text-muted" style="font-size:0.66rem;">${opens - subs} did not finish</span></div>
+                        ${dropList.length ? dropList.map(([step, n]) => {
+                            const share = opens - subs ? n / (opens - subs) * 100 : 0;
+                            return `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                                    <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);">${esc(step)}</span>
+                                    <span style="font-size:0.78rem;color:var(--text-muted);"><b style="color:#DC2626;">${n}</b> · ${share.toFixed(0)}%</span>
+                                </div>${bar(n, dropList[0][1], '#DC2626')}</div>`;
+                        }).join('') : '<div style="padding:12px 0;color:var(--text-muted);font-size:0.82rem;">Everyone who opened a form finished it.</div>'}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">The step named is the last one they reached before leaving. A step losing a large share is the one to simplify or remove.</div>
+                    </div>
+                    <div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">TIME SPENT ON EACH STEP</h3><span class="text-xs text-muted" style="font-size:0.66rem;">median seconds · slowest first</span></div>
+                        ${dwellList.length ? dwellList.map(d => {
+                            const slow = dwellMed && d.med > dwellMed * 2;
+                            const col = slow ? '#DC2626' : '#010197';
+                            const dropped = drop[d.step] || 0;
+                            return `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                                    <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);">${esc(d.step)}${slow ? ' <span style="font-size:0.64rem;font-weight:800;color:#DC2626;">SLOW</span>' : ''}</span>
+                                    <span style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap;"><b style="color:${col};">${d.med.toFixed(1)}s</b> · ${d.n} answered${dropped ? ' · <b style="color:#DC2626;">' + dropped + ' quit here</b>' : ''}</span>
+                                </div>${bar(d.med, dwellList[0].med, col)}</div>`;
+                        }).join('') : '<div style="padding:12px 0;color:var(--text-muted);font-size:0.82rem;">Not enough completed steps yet to measure timing.</div>'}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">A step that is both slow and loses people is confusing — reword or remove it. Slow but rarely abandoned usually means people are thinking, which is fine.</div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        ${table('COMPLETION BY BRANCH', byBranch, 'completed / opened')}
+                        ${table('BY SCAN SOURCE', bySource, 'which placement works')}
+                    </div>
+                    <div style="margin-top:16px;">${table('BY DEVICE', byDevice, 'a low rate on one device is a bug')}</div>`;
+            }
+            return { render };
+        })();
+
         window.HELP = (function(){
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const ROLE_SUMMARY = {
