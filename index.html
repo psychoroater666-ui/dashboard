@@ -5736,7 +5736,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.36.0 · 11 Sep 2026 · capacity';
+        const BUILD_VERSION = 'v2.36.1 · 11 Sep 2026 · capacity';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6362,9 +6362,15 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
         // so a thin strip states it plainly until the data is complete.
         function _historyPill(){
             const incomplete = (typeof DataFeed !== 'undefined' && DataFeed.enabled && !DataFeed.isComplete());
-            let el = document.getElementById('partial-data-banner');
-            if(!incomplete){ if(el) el.remove(); document.body.classList.remove('data-partial'); return; }
+            // Remove EVERY banner, not just the first: at boot the scroll
+            // container may not exist yet and one gets attached to <body>, so a
+            // second could be created later. getElementById only ever found one,
+            // which left the other on screen permanently after loading finished.
+            const all = document.querySelectorAll('#partial-data-banner');
+            if(!incomplete){ all.forEach(n => n.remove()); document.body.classList.remove('data-partial'); return; }
             document.body.classList.add('data-partial');
+            for(let i = 1; i < all.length; i++) all[i].remove();      // keep one
+            let el = all[0] || null;
             if(!el){
                 el = document.createElement('div'); el.id = 'partial-data-banner';
                 el.style.cssText = 'position:sticky;top:0;z-index:9998;background:rgba(1,1,151,.06);border-bottom:1px solid rgba(1,1,151,.16);color:var(--accent-blue);font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
@@ -6434,6 +6440,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 window.__forceFullNext = false;
             }
             _historyPill();
+            setTimeout(() => { try { _historyPill(); } catch(e){} }, 1500);   // catch a banner created mid-boot
             // Prefetch the two side sheets in the same round trip so the
             // change check below covers them too (a resolution saved on
             // another device changes Incident_Resolution, not the forms).
