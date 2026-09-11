@@ -1293,22 +1293,22 @@
         .sl-mention-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
         .sl-mention-card.sentiment-complaint { border-left: 4px solid var(--status-critical); }
         .sl-mention-card.sentiment-praise    { border-left: 4px solid var(--status-good); }
-        .sl-mention-card.sentiment-query     { border-left: 4px solid #3B82F6; }
+        .sl-mention-card.sentiment-query     { border-left: 4px solid var(--accent-blue); }
         .sl-mention-card.sentiment-mention   { border-left: 4px solid var(--text-muted); }
 
         .sl-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
-        .sl-platform-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
-        .sl-platform-instagram { background:#fce4ec; color:#C2185B; }
-        .sl-platform-facebook  { background:#E3F2FD; color:#1565C0; }
-        .sl-platform-twitterx  { background:#E8EAF6; color:#311B92; }
-        .sl-platform-google    { background:#FFF3E0; color:#E65100; }
-        .sl-platform-tiktok    { background:#F3E5F5; color:#6A1B9A; }
-        .sl-platform-linkedin  { background:#E1F0FA; color:#0A66C2; }
-        .sl-platform-reddit    { background:#FDEEE9; color:#FF4500; }
-        .sl-platform-playstore { background:#E6F6EE; color:#00875F; }
-        .sl-platform-blink     { background:#F3E8FF; color:#7C3AED; }
-        .sl-platform-foodpanda { background:#FCE4EE; color:#D6006C; }
-        .sl-platform-default   { background:var(--bg-light); color:var(--text-muted); }
+        .sl-platform-badge { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-instagram { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-facebook { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-twitterx { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-google { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-tiktok { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-linkedin { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-reddit { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-playstore { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-blink { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-foodpanda { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
+        .sl-platform-default { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
 
         .sl-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
         .sl-time { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
@@ -1316,7 +1316,7 @@
         .sl-sentiment-chip { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:0.72rem; font-weight:800; }
         .sl-chip-complaint { background:var(--status-critical-bg); color:var(--status-critical); }
         .sl-chip-praise    { background:var(--status-good-bg); color:var(--status-good); }
-        .sl-chip-query     { background:rgba(59,130,246,.1); color:#2563EB; }
+        .sl-chip-query     { background:rgba(1,1,151,.08); color:var(--accent-blue); }
         .sl-chip-mention   { background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
 
         .sl-branch-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(1,1,151,.08); color:#010197; border:1px solid rgba(1,1,151,.12); }
@@ -1379,10 +1379,19 @@
         }
         .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; transform:translateY(-2px); box-shadow:0 4px 12px rgba(1,1,151,.12); background:rgba(1,1,151,.04); }
         .sl-keyword:active { transform:scale(.95) !important; transition-duration:.08s !important; }
-        .sl-keyword.hot { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.4); color:#B45309; }
+        .sl-platform-badge::before { content:''; width:6px; height:6px; border-radius:50%; margin-right:6px; display:inline-block; vertical-align:1px; }
+        .sl-platform-facebook::before  { background:#1877F2; }
+        .sl-platform-instagram::before { background:#C2185B; }
+        .sl-platform-twitterx::before  { background:#0F172A; }
+        .sl-platform-google::before    { background:#EA4335; }
+        .sl-platform-tiktok::before    { background:#6A1B9A; }
+        .sl-platform-reddit::before    { background:#FF4500; }
+        .sl-platform-blink::before     { background:#7C3AED; }
+        .sl-platform-foodpanda::before { background:#D6006C; }
+        .sl-keyword.hot { background:rgba(1,1,151,.06); border-color:rgba(1,1,151,.28); color:var(--accent-blue); }
         .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#D97706; box-shadow:0 4px 12px rgba(217,119,6,.18); }
         .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
-        .sl-keyword.sl-kw-active.hot { background:rgba(245,158,11,.2) !important; border-color:#B45309 !important; color:#B45309 !important; box-shadow:0 0 0 2px rgba(217,119,6,.25) !important; }
+        .sl-keyword.sl-kw-active.hot { background:rgba(1,1,151,.14) !important; border-color:var(--accent-blue) !important; color:var(--accent-blue) !important; box-shadow:0 0 0 2px rgba(217,119,6,.25) !important; }
 
         /* Platform/branch bar */
         .sl-bar-row { display:flex; align-items:center; gap:10px; font-size:0.78rem; }
@@ -1404,8 +1413,8 @@
         .sl-res-label { font-size:0.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); margin-right:2px; }
         .sl-res-stage { display:inline-flex; align-items:center; gap:4px; padding:4px 11px; border-radius:20px; font-size:0.72rem; font-weight:700; border:1.5px solid; cursor:pointer; transition:all .15s; }
         .sl-res-stage.inactive { background:var(--bg-light); border-color:var(--border-color); color:var(--text-muted); }
-        .sl-res-stage.active-contacted { background:rgba(59,130,246,.1); border-color:#3B82F6; color:#2563EB; }
-        .sl-res-stage.active-progress  { background:rgba(245,158,11,.1); border-color:#F59E0B; color:#B45309; }
+        .sl-res-stage.active-contacted { background:rgba(1,1,151,.08); border-color:var(--accent-blue); color:var(--accent-blue); }
+        .sl-res-stage.active-progress  { background:rgba(1,1,151,.08); border-color:var(--accent-blue); color:var(--accent-blue); }
         .sl-res-stage.active-closed    { background:rgba(5,150,105,.1);  border-color:#059669; color:#059669; }
         .sl-res-stage:hover { opacity:.8; transform:scale(.97); }
         .sl-close-note-box { display:flex; align-items:center; gap:6px; flex:1; min-width:200px; }
@@ -1444,7 +1453,7 @@
         .ia-footer { padding:16px 22px 20px; display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; }
         .ia-btn-close { padding:9px 20px; border-radius:9px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); font-size:0.85rem; font-weight:700; cursor:pointer; }
         .ia-btn-view { padding:9px 20px; border-radius:9px; border:none; background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.85rem; font-weight:700; cursor:pointer; box-shadow:0 3px 10px rgba(1,1,151,.3); }
-        .sl-close-attach-btn:hover { border-color:#2563EB; color:#2563EB; background:rgba(37,99,235,.08); }
+        .sl-close-attach-btn:hover { border-color:var(--accent-blue); color:var(--accent-blue); background:rgba(37,99,235,.08); }
         .sl-close-preview { align-items:center; gap:8px; margin-top:8px; padding:6px 10px; border-radius:8px; background:var(--bg-light); border:1px dashed var(--border-color); }
         .sl-close-thumb { width:36px; height:36px; border-radius:6px; object-fit:cover; }
         .sl-close-thumb-name { font-size:0.75rem; font-weight:600; color:var(--text-muted); flex:1; }
@@ -5229,7 +5238,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.30.1 · 11 Sep 2026 · polish';
+        const BUILD_VERSION = 'v2.31.0 · 11 Sep 2026 · palette';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
