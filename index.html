@@ -4579,6 +4579,16 @@ body.pwa-can-install .pwa-install-wrap{ display:block; }
 body.dark-theme #pwa-ios li::before{ background:rgba(100,208,255,.14); color:#64D0FF; }
 body.dark-theme #pwa-ios li i{ color:#64D0FF; }
 @media (max-width:520px){ #pwa-ios{ align-items:flex-end; padding:0; } #pwa-ios .pwa-box{ max-width:none; border-radius:20px 20px 0 0; padding-bottom:calc(18px + env(safe-area-inset-bottom)); } }
+
+/* ── Phone alerts row in the profile menu ── */
+.push-row-wrap{ display:none; }
+body.push-available .push-row-wrap{ display:block; }
+#push-toggle-btn.support-row{ font-family:'Inter', sans-serif !important; font-size:0.8rem !important; font-weight:600 !important; line-height:1.3; }
+.push-state{ margin-left:auto; font-size:0.66rem; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--text-muted); background:var(--bg-light); border:1px solid var(--border-color); border-radius:20px; padding:3px 9px; white-space:nowrap; }
+body.push-on .push-state{ color:#047857; background:rgba(5,150,105,.1); border-color:rgba(5,150,105,.25); }
+body.push-blocked .push-state{ color:#B91C1C; background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.25); }
+body.dark-theme.push-on .push-state{ color:#34D399; }
+body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
         </style>
 </head>
 <body class="app-loading">
@@ -6230,7 +6240,7 @@ body.dark-theme #pwa-ios li i{ color:#64D0FF; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.48.1 · 11 Sep 2026 · phone: full-width header';
+        const BUILD_VERSION = 'v2.49.0 · 11 Sep 2026 · phone alerts';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17366,6 +17376,14 @@ ${(() => {
                                     <span>Help &amp; what I can do</span>
                                 </button>
                             </div>
+                            <!-- Phone alerts — shown only where push is supported -->
+                            <div class="push-row-wrap" style="padding:6px;border-top:1px solid var(--border-color);">
+                                <button class="support-row" id="push-toggle-btn" onclick="PUSH.toggle()" style="width:100%;border:none;background:transparent;font:inherit;cursor:pointer;text-align:left;">
+                                    <span class="support-icon"><i class="fas fa-bell-on"></i></span>
+                                    <span id="push-label">Phone alerts</span>
+                                    <span class="push-state" id="push-state">Off</span>
+                                </button>
+                            </div>
                             <!-- Install app — shown only when this device can install it -->
                             <div class="pwa-install-wrap" style="padding:6px;border-top:1px solid var(--border-color);">
                                 <button class="support-row" id="pwa-install-btn" onclick="PWA.install()" style="width:100%;border:none;background:transparent;font:inherit;cursor:pointer;text-align:left;">
@@ -19169,6 +19187,9 @@ ${(() => {
                     ["Why is there no alert sound?",
                      "Browsers block sound until you have clicked on the page. Click anywhere once after opening the dashboard and alerts will be audible.",
                      "alerts"],
+                    ["How do I get alerts on my phone when the dashboard is closed?",
+                     "Install the app first, then open your profile menu and tap Phone alerts. You will be asked to allow notifications once. After that you are told about new incidents, cases past the review or close limit, and new social mentions \u2014 for your branches only. Turn it off from the same place. On an iPhone this works only inside the installed app.",
+                     "all"],
                     ["Desktop alerts say \"blocked\" — how do I turn them on?",
                      "The browser was told not to show alerts from the dashboard, and it will not ask again by itself. Click the icon just left of the address bar (usually a lock), open Notifications, choose Allow, then reload the page. The Desktop alerts switch in your profile menu will then work.",
                      "alerts"],
@@ -20373,6 +20394,120 @@ ${(() => {
                 try { UI.toast('Use your browser menu and choose "Install app" or "Add to Home screen".', 'info', 7000); } catch(_){}
             }
             return { install, standalone };
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // PHONE ALERTS — registers this device for push, so a new incident,
+        // an overdue case or a new social mention reaches it even when the
+        // app is closed. Each person only ever receives alerts for the
+        // branches their account can already see; the backend decides that,
+        // not this file.
+        // ═══════════════════════════════════════════════════════════════════
+        window.PUSH = (function(){
+            var VAPID_PUBLIC_KEY = 'BLg-R8l6W318K9krySYGpsOkU4fivLD00MtvTLVIsG2xiUal0xEjnmUn_M3d8zZl7HTxUZH5vjDO_XB0i-fW3Fc';
+            var supported = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+            var busy = false;
+
+            function keyBytes(b64){
+                var pad = (b64 + '==='.slice((b64.length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+                var bin = atob(pad), out = new Uint8Array(bin.length);
+                for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+                return out;
+            }
+            function b64u(buf){
+                var b = new Uint8Array(buf), s = '';
+                for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+                return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+            }
+            function setState(on, blocked){
+                document.body.classList.toggle('push-on', !!on);
+                document.body.classList.toggle('push-blocked', !!blocked);
+                var el = document.getElementById('push-state');
+                if (el) el.textContent = blocked ? 'Blocked' : on ? 'On' : 'Off';
+                var lbl = document.getElementById('push-label');
+                if (lbl) lbl.textContent = blocked ? 'Phone alerts blocked \u2014 allow in settings' : 'Phone alerts';
+            }
+            async function current(){
+                if (!supported) return null;
+                var reg = await navigator.serviceWorker.ready;
+                return await reg.pushManager.getSubscription();
+            }
+            async function refresh(){
+                if (!supported) return;
+                document.body.classList.add('push-available');
+                try {
+                    var sub = await current();
+                    setState(!!sub, Notification.permission === 'denied');
+                } catch (e) { setState(false, false); }
+            }
+            async function toggle(){
+                if (busy || !supported) return;
+                busy = true; document.body.classList.add('push-busy');
+                try {
+                    var reg = await navigator.serviceWorker.ready;
+                    var sub = await reg.pushManager.getSubscription();
+                    if (sub) {
+                        var endpoint = sub.endpoint;
+                        await sub.unsubscribe();
+                        try { await apiCall('push_unsubscribe', { endpoint: endpoint }); } catch (e) {}
+                        setState(false, false);
+                        try { UI.toast('Phone alerts turned off for this device.', 'info'); } catch (e) {}
+                        return;
+                    }
+                    var perm = Notification.permission;
+                    if (perm === 'default') perm = await Notification.requestPermission();
+                    if (perm !== 'granted') {
+                        setState(false, perm === 'denied');
+                        try { UI.toast(perm === 'denied' ? 'Alerts are blocked for this site. Allow notifications in your browser settings, then try again.' : 'Alerts were not allowed.', 'warning', 7000); } catch (e) {}
+                        return;
+                    }
+                    var fresh = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) });
+                    var k = fresh.toJSON().keys || {};
+                    var res = await apiCall('push_subscribe', {
+                        endpoint: fresh.endpoint,
+                        p256dh: k.p256dh || b64u(fresh.getKey('p256dh')),
+                        auth:   k.auth   || b64u(fresh.getKey('auth')),
+                        device: navigator.userAgent.slice(0, 120)
+                    });
+                    if (!res || res.status !== 'success') {
+                        // The device is useless to us if the backend didn't record it —
+                        // don't leave it half-registered and silently quiet.
+                        try { await fresh.unsubscribe(); } catch (e) {}
+                        throw new Error((res && res.message) || 'Could not register this device.');
+                    }
+                    setState(true, false);
+                    try { UI.toast('Phone alerts are on for this device.', 'success'); } catch (e) {}
+                } catch (err) {
+                    setState(false, ('Notification' in window) && Notification.permission === 'denied');
+                    try { UI.toast('Could not turn on phone alerts: ' + String(err && err.message || err).slice(0, 90), 'error'); } catch (e) {}
+                } finally {
+                    busy = false; document.body.classList.remove('push-busy');
+                }
+            }
+
+            // Tapping a notification lands here: open the tab it refers to.
+            function openFromUrl(href){
+                try {
+                    var v = new URL(href, location.href).searchParams.get('open');
+                    if (!v) return;
+                    var link = document.querySelector('#topNav .topnav-link[data-view="' + v.replace(/[^a-z-]/g, '') + '"]');
+                    if (link) link.click();
+                    if (history.replaceState) history.replaceState(null, '', location.pathname);
+                } catch (e) {}
+            }
+            if (supported){
+                navigator.serviceWorker.addEventListener('message', function(e){
+                    if (e.data && e.data.type === 'sentinel-open') openFromUrl(e.data.url);
+                });
+            }
+            function start(){
+                refresh();
+                // A notification opened the app in a new window.
+                setTimeout(function(){ openFromUrl(location.href); }, 1500);
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+            return { toggle: toggle, refresh: refresh, supported: supported };
         })();
 
         </script>
