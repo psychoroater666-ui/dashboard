@@ -3185,6 +3185,40 @@
             font-family: 'Inter', sans-serif; text-decoration: none; box-sizing: border-box;
         }
         .support-row:hover{ background: var(--bg-light); }
+        /* The Help row is a <button> carrying an inline font:inherit, which reset
+           its size and weight to the page default -- bigger, lighter, and wrapping
+           onto two lines. Pin it to the same type as every other menu row. */
+        #help-open-btn.support-row{ font-family:'Inter', sans-serif !important; font-size:0.8rem !important; font-weight:600 !important; line-height:1.3; white-space:nowrap; }
+
+        /* ── Profile menu: compact ──────────────────────────────────────────
+           Tighter rows, smaller icon tiles and a fixed width, so the menu ends
+           well above the floating AI orb on normal screens and the orb can stay
+           visible. The menu markup is written by script with inline styles,
+           hence the !important overrides. */
+        #dp-menu{ width: 256px !important; min-width: 0 !important; border-radius: 13px !important;
+                  max-height: calc(100vh - 76px); overflow-y: auto !important; overscroll-behavior: contain; }
+        #dp-menu > div{ padding-top: 4px !important; padding-bottom: 4px !important; margin-top: 0 !important; }
+        #dp-menu > div:first-child{ padding: 10px 14px 9px !important; gap: 9px !important; }
+        #dp-menu > div:first-child > div:first-child{ width: 30px !important; height: 30px !important; font-size: 0.7rem !important; }
+        #dp-menu > div:first-child > div:last-child > div:first-child{ font-size: 0.8rem !important; }
+        #dp-menu > div > label,
+        #dp-menu > div > button,
+        #dp-menu .support-row,
+        #dp-notif-row{ padding: 6px 8px !important; gap: 9px !important; font-size: 0.8rem !important; min-height: 34px; }
+        #dp-notif-row > div{ gap: 9px !important; }
+        #dp-notif-row span[style*="font-size:0.82rem"]{ font-size: 0.8rem !important; }
+        /* the "blocked — tap to fix" wording is long: let it wrap rather than widen the menu */
+        #dp-notif-row:has(span[style*="#DC2626"]) span[style*="nowrap"]{ white-space: normal !important; line-height: 1.25; }
+        #dp-menu span[style*="width:26px"],
+        #dp-menu .support-icon{ width: 24px !important; height: 24px !important; border-radius: 7px !important; font-size: 0.7rem !important; }
+        #dp-menu > div:last-child{ padding: 6px 14px 8px !important; }
+        /* Only when the window is too short for both (small laptop, zoomed in)
+           does the orb step aside while the menu is open. */
+        @media (max-height: 570px){
+            body:has(#dp-menu[style*="display: block"]) .ai-bubble,
+            body:has(#dp-menu[style*="display:block"]) .ai-bubble{ opacity:0 !important; pointer-events:none !important; transform:scale(.85) !important; }
+        }
+        .ai-bubble{ transition: transform .3s cubic-bezier(.16,1,.3,1), opacity .2s ease; }
         .support-icon{
             width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
             background: rgba(1,1,151,.07); color: #010197;
@@ -5774,7 +5808,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.41.2 · 11 Sep 2026 · form analytics';
+        const BUILD_VERSION = 'v2.41.3 · 11 Sep 2026 · form analytics + compact profile menu';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
