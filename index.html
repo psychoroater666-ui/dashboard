@@ -5808,7 +5808,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.41.3 · 11 Sep 2026 · form analytics + compact profile menu';
+        const BUILD_VERSION = 'v2.42.0 · 11 Sep 2026 · funnel analytics';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18140,13 +18140,47 @@ ${(() => {
                     if(r['Branch']) x.branch = r['Branch'];
                     if(r['Source']) x.source = r['Source'];
                     if(r['Device']) x.device = r['Device'];
+                    if(r['OS']) x.os = r['OS'];
                     if(r['Form'])   x.form = r['Form'];
                     if(r['Event'] === 'open') x.opened = true;
                     if(r['Event'] === 'submitted'){ x.submitted = true; x.secs = Number(r['Seconds']) || x.secs; }
                     if(r['Event'] === 'step' && r['Step']){ x.steps.push(r['Step']); x.at = x.at || []; x.at.push({ step: r['Step'], t: Number(r['Seconds']) || 0 }); }
                     if(r['Event'] === 'abandoned' && r['Step']) x.lastStep = r['Step'];
                 });
+                // ── analyses added: funnel, bounces, recovery, lag, hour-of-day ──
                 const S = Object.values(sessions);
+                // 1. FUNNEL — the order steps were actually reached, and how many
+                //    survived each one. Drop-off says where; this says how much.
+                const order = [], seen = {};
+                S.forEach(x => (x.steps || []).forEach(st => { if(!seen[st]){ seen[st] = true; order.push(st); } }));
+                const reached = {}; order.forEach(st => reached[st] = S.filter(x => (x.steps || []).indexOf(st) !== -1).length);
+                const funnel = order.map((st, i) => {
+                    const n = reached[st], prev = i ? reached[order[i-1]] : (S.length || n);
+                    return { step: st, n, lost: Math.max(0, prev - n), pct: prev ? ((prev - n) / prev * 100) : 0 };
+                });
+                const submittedN = S.filter(x => x.submitted).length;
+                if(order.length) funnel.push({ step: 'submitted', n: submittedN, lost: Math.max(0, reached[order[order.length-1]] - submittedN),
+                                               pct: reached[order[order.length-1]] ? ((reached[order[order.length-1]] - submittedN) / reached[order[order.length-1]] * 100) : 0, final: true });
+                // 2. BOUNCES — opened, never started. A first-impression failure,
+                //    which is a different problem from abandoning mid-form.
+                const bounces = S.filter(x => !x.submitted && (!x.steps || x.steps.length <= 1)).length;
+                // 3. RECOVERY — same device came back in a later session and finished.
+                const byDev = {}; S.forEach(x => { const k = (x.device || '') + '|' + (x.os || '') + '|' + (x.branch || ''); (byDev[k] = byDev[k] || []).push(x); });
+                let returners = 0, recovered = 0;
+                Object.values(byDev).forEach(list => { if(list.length < 2) return; const gaveUp = list.filter(x => !x.submitted).length, won = list.filter(x => x.submitted).length;
+                    if(gaveUp && won){ returners++; recovered++; } else if(gaveUp > 1) returners++; });
+                // 4. LAG — how long from opening to finishing.
+                const lags = S.filter(x => x.submitted && x.secs).map(x => x.secs).sort((a,b) => a-b);
+                const lagMed = lags.length ? lags[Math.floor(lags.length/2)] : 0;
+                const lagFast = lags.filter(v => v <= 90).length, lagSlow = lags.filter(v => v > 300).length;
+                // 5. HOUR OF DAY — when people open versus when they finish.
+                const byHour = {};
+                all.forEach(r => { const t = String(r['At'] || '').match(/(\d{1,2}):(\d{2})/); if(!t) return;
+                    let h = +t[1]; if(/pm/i.test(String(r['At'])) && h < 12) h += 12;
+                    const e2 = byHour[h] = byHour[h] || { o:0, s:0 };
+                    if(r['Event'] === 'open') e2.o++; if(r['Event'] === 'submitted') e2.s++; });
+                const hourList = Object.entries(byHour).map(([h, v]) => ({ h: +h, o: v.o, s: v.s, r: v.o ? v.s/v.o*100 : 0 })).sort((a,b) => a.h - b.h);
+                const bestHour = hourList.filter(x => x.o >= 3).sort((a,b) => b.r - a.r)[0];
                 const opens = S.length, subs = S.filter(x => x.submitted).length;
                 const rate = opens ? (subs / opens * 100) : 0;
                 const med = (() => { const v = S.filter(x => x.submitted && x.secs).map(x => x.secs).sort((a,b)=>a-b); return v.length ? v[Math.floor(v.length/2)] : 0; })();
@@ -18198,6 +18232,57 @@ ${(() => {
                           .map(([l, v, flag]) => `<div class="kpi-card"><div class="kpi-label">${l}</div><div class="kpi-value" style="${flag === 'low' ? 'color:#DC2626;' : ''}">${v}</div></div>`).join('')}
                     </div>
                     <div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">THE FUNNEL</h3><span class="text-xs text-muted" style="font-size:0.66rem;">how many survive each step</span></div>
+                        ${funnel.length ? funnel.map(f => {
+                            const w = opens ? Math.round(f.n / opens * 100) : 0;
+                            const heavy = f.pct >= 25;
+                            return `<div style="padding:8px 0;">
+                                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px;">
+                                    <span style="font-size:0.82rem;font-weight:${f.final ? '800' : '700'};color:${f.final ? '#059669' : 'var(--text-main)'};">${esc(f.step)}</span>
+                                    <span style="font-size:0.76rem;color:var(--text-muted);white-space:nowrap;"><b style="color:var(--text-main);">${f.n}</b>${f.lost ? ' · <b style="color:' + (heavy ? '#DC2626' : 'var(--text-muted)') + ';">−' + f.lost + ' (' + f.pct.toFixed(0) + '%)</b>' : ''}</span>
+                                </div>
+                                <div style="height:10px;border-radius:5px;background:var(--bg-light);overflow:hidden;"><span style="display:block;height:100%;width:${w}%;background:${f.final ? '#059669' : heavy ? '#DC2626' : '#010197'};border-radius:5px;"></span></div>
+                            </div>`;
+                        }).join('') : '<div style="padding:12px 0;color:var(--text-muted);font-size:0.82rem;">Not enough step data yet.</div>'}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">The biggest single drop is where to focus. A step losing a quarter or more is marked red.</div>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px;">
+                        <div class="card" style="padding:16px 18px;">
+                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);">Left immediately</div>
+                            <div style="font-size:1.5rem;font-weight:800;color:${bounces && opens && bounces/opens > .3 ? '#DC2626' : 'var(--text-main)'};line-height:1.1;margin-top:4px;">${bounces}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">${opens ? (bounces/opens*100).toFixed(0) : 0}% opened the form and never started it</div>
+                        </div>
+                        <div class="card" style="padding:16px 18px;">
+                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);">Came back and finished</div>
+                            <div style="font-size:1.5rem;font-weight:800;color:${recovered ? '#059669' : 'var(--text-main)'};line-height:1.1;margin-top:4px;">${recovered}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">of ${returners} who returned after abandoning</div>
+                        </div>
+                        <div class="card" style="padding:16px 18px;">
+                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);">Time to finish</div>
+                            <div style="font-size:1.5rem;font-weight:800;color:var(--text-main);line-height:1.1;margin-top:4px;">${lagMed ? lagMed + 's' : '—'}</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px;">${lagFast} under 90s · ${lagSlow} over 5 min</div>
+                        </div>
+                    </div>
+
+                    ${hourList.length ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">WHEN PEOPLE ARE WILLING</h3><span class="text-xs text-muted" style="font-size:0.66rem;">${bestHour ? 'best hour ' + (bestHour.h % 12 || 12) + (bestHour.h < 12 ? 'am' : 'pm') + ' · ' + bestHour.r.toFixed(0) + '% finish' : 'opens vs completions by hour'}</span></div>
+                        ${hourList.map(x => {
+                            const maxO = Math.max(...hourList.map(y => y.o), 1);
+                            const lbl = (x.h % 12 || 12) + (x.h < 12 ? 'am' : 'pm');
+                            return `<div style="display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;padding:5px 0;">
+                                <span style="font-size:0.74rem;color:var(--text-muted);">${lbl}</span>
+                                <div style="height:8px;border-radius:4px;background:var(--bg-light);overflow:hidden;position:relative;">
+                                    <span style="display:block;height:100%;width:${Math.round(x.o/maxO*100)}%;background:rgba(1,1,151,.25);"></span>
+                                    <span style="position:absolute;left:0;top:0;height:100%;width:${Math.round(x.s/maxO*100)}%;background:#010197;"></span>
+                                </div>
+                                <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">${x.s}/${x.o}</span>
+                            </div>`;
+                        }).join('')}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">Light bar = opened, solid = finished. The hour with the best finish rate is when customers are most willing to be asked.</div>
+                    </div>` : ''}
+
+                    <div class="card" style="padding:18px 22px;margin-bottom:16px;">
                         <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">WHERE PEOPLE STOP</h3><span class="text-xs text-muted" style="font-size:0.66rem;">${opens - subs} did not finish</span></div>
                         ${dropList.length ? dropList.map(([step, n]) => {
                             const share = opens - subs ? n / (opens - subs) * 100 : 0;
@@ -18224,7 +18309,7 @@ ${(() => {
                         <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">A step that is both slow and loses people is confusing — reword or remove it. Slow but rarely abandoned usually means people are thinking, which is fine.</div>
                     </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                        ${table('COMPLETION BY BRANCH', byBranch, 'completed / opened')}
+                        ${table('COMPLETION BY BRANCH', byBranch, 'completed / opened — a low rate means the branch is not asking well')}
                         ${table('BY SCAN SOURCE', bySource, 'which placement works')}
                     </div>
                     <div style="margin-top:16px;">${table('BY DEVICE', byDevice, 'a low rate on one device is a bug')}</div>`;
