@@ -3433,45 +3433,129 @@
         .note.danger { background:rgba(220,38,38,.07); border-color:rgba(220,38,38,.22); color:#B91C1C; }
         .note.ok     { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.22); color:#047857; }
         /* ═══════════ HELP ═══════════ */
-        #help-modal .help-box { max-width:600px; width:100%; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; }
-        .help-head { display:flex; align-items:flex-start; gap:12px; padding:20px 24px 16px; border-bottom:1px solid var(--border-color); }
-        .help-head h3 { margin:2px 0 0; font-size:1.05rem; font-weight:800; color:var(--text-main); text-transform:capitalize; }
-        .help-eyebrow { font-size:0.66rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text-muted); }
-        .help-x { margin-left:auto; border:none; background:var(--bg-light); color:var(--text-muted); width:30px; height:30px; border-radius:9px; cursor:pointer; flex-shrink:0; }
-        .help-x:hover { background:var(--border-color); color:var(--text-main); }
-        .help-body { padding:18px 24px 24px; overflow-y:auto; }
-        .help-lead { margin:0 0 6px; font-size:0.88rem; line-height:1.6; color:var(--text-main); }
-        .help-section { font-size:0.66rem; font-weight:800; letter-spacing:.9px; text-transform:uppercase; color:var(--accent-blue); margin:22px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--border-color); }
-        .help-row { display:flex; gap:12px; padding:9px 0; }
-        .help-ic { width:30px; height:30px; border-radius:9px; background:rgba(1,1,151,.07); color:var(--accent-blue); display:flex; align-items:center; justify-content:center; font-size:0.8rem; flex-shrink:0; }
-        .help-row b { display:block; font-size:0.84rem; color:var(--text-main); margin-bottom:2px; }
-        .help-row span { font-size:0.78rem; color:var(--text-muted); line-height:1.55; }
-        .help-std { padding:9px 0; border-bottom:1px solid var(--border-color); }
-        .help-std div { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
-        .help-std b { font-size:0.84rem; color:var(--text-main); }
-        .help-std em { font-style:normal; font-size:0.76rem; font-weight:800; color:var(--accent-blue); }
-        .help-std span { display:block; font-size:0.75rem; color:var(--text-muted); margin-top:3px; line-height:1.55; }
-        .help-q { border-bottom:1px solid var(--border-color); }
-        .help-q summary { cursor:pointer; padding:11px 0; font-size:0.83rem; font-weight:700; color:var(--text-main); list-style:none; display:flex; align-items:center; gap:8px; }
-        .help-q summary::-webkit-details-marker { display:none; }
-        .help-q summary::before { content:"\f078"; font-family:"Font Awesome 6 Free"; font-weight:900; font-size:0.6rem; color:var(--text-muted); transition:transform .18s; }
-        .help-q[open] summary::before { transform:rotate(180deg); }
-        .help-q p { margin:0 0 12px 18px; font-size:0.79rem; color:var(--text-muted); line-height:1.65; }
-        /* grouped questions */
-        .help-faq-group { margin-top:14px; }
-        .help-faq-group + .help-faq-group { margin-top:20px; }
-        .help-faq-head { display:flex; align-items:center; gap:10px; padding:2px 0 4px; }
-        .help-faq-head .help-ic { width:26px; height:26px; border-radius:8px; font-size:0.72rem; }
-        .help-faq-head b { font-size:0.86rem; font-weight:800; color:var(--text-main); }
-        .help-faq-head em { font-style:normal; font-size:0.66rem; font-weight:700; color:var(--text-muted); background:var(--bg-light); border:1px solid var(--border-color); border-radius:20px; padding:1px 7px; line-height:1.4; }
-        .help-faq-group .help-q { margin-left:36px; }
-        .help-faq-group .help-q:last-child { border-bottom:none; }
-        body.dark-theme .help-section,
-        body.dark-theme .help-std em { color:#64D0FF; }
-        body.dark-theme .help-ic { background:rgba(100,208,255,.12); color:#64D0FF; }
-        @media (max-width:820px){ .help-faq-group .help-q { margin-left:0; } }
-        .help-foot { margin-top:20px; padding-top:14px; border-top:1px solid var(--border-color); font-size:0.74rem; color:var(--text-muted); }
-        @media (max-width:820px){ .help-box { max-height:92vh; } .help-body { padding:16px 16px 20px; } .help-head { padding:16px 16px 14px; } }
+        /* A small help centre: tabs for Questions / What you can do / Standards,
+           a search box, a category rail, and one answer open at a time. */
+        #help-modal .help-box{
+            width:100%; max-width:840px; height:min(690px, 88vh);
+            display:flex; flex-direction:column; overflow:hidden;
+            background:var(--white); border:1px solid var(--border-color); border-radius:18px;
+            box-shadow:0 30px 80px -20px rgba(15,23,42,.45);
+        }
+        body.dark-theme #help-modal .help-box{ box-shadow:0 30px 80px -20px rgba(0,0,0,.7); }
+        .hp-head{ display:flex; align-items:center; gap:12px; padding:18px 22px 14px; }
+        .hp-head-ic{ width:38px; height:38px; border-radius:11px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+                     background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:1rem; box-shadow:0 4px 12px rgba(1,1,151,.22); }
+        .hp-head-t h3{ margin:0; font-size:1.08rem; font-weight:800; letter-spacing:-.2px; color:var(--text-main); }
+        .hp-head-t div{ margin-top:2px; font-size:0.76rem; color:var(--text-muted); }
+        .hp-head-t b{ font-weight:700; color:var(--text-main); }
+        .help-x{ margin-left:auto; border:none; background:var(--bg-light); color:var(--text-muted); width:32px; height:32px; border-radius:9px; cursor:pointer; flex-shrink:0; }
+        .help-x:hover{ background:var(--border-color); color:var(--text-main); }
+
+        .hp-bar{ display:flex; align-items:center; gap:12px; padding:0 22px 12px; border-bottom:1px solid var(--border-color); }
+        .hp-tabs{ display:inline-flex; gap:2px; padding:3px; border-radius:11px; background:var(--bg-light); border:1px solid var(--border-color); flex-shrink:0; }
+        .hp-tab{ display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:none; border-radius:8px; background:transparent; cursor:pointer;
+                 font:600 0.78rem 'Inter',sans-serif; color:var(--text-muted); white-space:nowrap; }
+        .hp-tab em{ font-style:normal; font-size:0.66rem; font-weight:700; padding:1px 6px; border-radius:20px; background:var(--border-color); color:var(--text-muted); }
+        .hp-tab:hover{ color:var(--text-main); }
+        .hp-tab.on{ background:var(--white); color:var(--text-main); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+        .hp-tab.on em{ background:rgba(1,1,151,.1); color:#010197; }
+        .hp-search{ margin-left:auto; flex:1 1 200px; max-width:300px; height:36px; display:flex; align-items:center; gap:8px; padding:0 12px;
+                    border:1.5px solid var(--border-color); border-radius:10px; background:var(--white); color:var(--text-muted); font-size:0.78rem; }
+        .hp-search:focus-within{ border-color:#3B5BDB; box-shadow:0 0 0 3px rgba(59,91,219,.12); }
+        .hp-search input{ width:100%; height:auto !important; min-height:0 !important; margin:0 !important; padding:0 !important; border:none !important; outline:none; box-shadow:none !important; border-radius:0 !important; background:transparent !important; font:500 0.82rem 'Inter',sans-serif; color:var(--text-main); }
+        .hp-search input::-webkit-search-cancel-button{ cursor:pointer; }
+
+        .hp-pane{ flex:1; min-height:0; display:flex; overflow:hidden; }
+        .hp-scroll{ flex:1; min-width:0; overflow-y:auto; padding:18px 22px 22px; }
+
+        /* Questions: category rail + list */
+        .hp-faq{ display:flex; width:100%; min-height:0; }
+        .hp-rail{ width:214px; flex-shrink:0; display:flex; flex-direction:column; gap:2px; padding:12px 10px; overflow-y:auto;
+                  border-right:1px solid var(--border-color); background:var(--bg-light); }
+        .hp-cat{ display:flex; align-items:center; gap:9px; width:100%; padding:8px 10px; border:none; border-radius:9px; background:transparent;
+                 cursor:pointer; text-align:left; font:600 0.79rem 'Inter',sans-serif; color:var(--text-muted); }
+        .hp-cat i{ width:16px; text-align:center; font-size:0.78rem; flex-shrink:0; }
+        .hp-cat span{ flex:1; min-width:0; line-height:1.25; }
+        .hp-cat em{ font-style:normal; font-size:0.66rem; font-weight:700; color:var(--text-muted); }
+        .hp-cat:hover:not(:disabled){ background:var(--white); color:var(--text-main); }
+        .hp-cat.on{ background:var(--white); color:#010197; box-shadow:0 1px 3px rgba(15,23,42,.08), inset 3px 0 0 #010197; }
+        .hp-cat.on em{ color:#010197; }
+        .hp-cat:disabled{ opacity:.38; cursor:default; }
+        .hp-list{ flex:1; min-width:0; overflow-y:auto; padding:4px 22px 18px; }
+        .hp-group + .hp-group{ margin-top:8px; }
+        .hp-group h4{ position:sticky; top:0; z-index:1; margin:0; padding:12px 0 6px; background:var(--white);
+                      display:flex; align-items:center; gap:7px; font-size:0.66rem; font-weight:800; letter-spacing:.8px; text-transform:uppercase; color:var(--text-muted); }
+        .hp-group h4 i{ font-size:0.72rem; color:#3B5BDB; }
+        .help-q{ border-bottom:1px solid var(--border-color); transition:background .15s; }
+        .help-q summary{ cursor:pointer; padding:11px 0; font-size:0.84rem; font-weight:650; color:var(--text-main); list-style:none; display:flex; align-items:flex-start; gap:10px; line-height:1.4; }
+        .help-q summary::-webkit-details-marker{ display:none; }
+        .help-q summary::before{ content:"\f078"; font-family:"Font Awesome 6 Free"; font-weight:900; font-size:0.58rem; color:var(--text-muted); margin-top:5px; transition:transform .18s; }
+        .help-q summary:hover{ color:#010197; }
+        .help-q[open]{ margin:6px -12px; padding:0 12px; border-radius:11px; border-bottom-color:transparent; background:var(--bg-light); }
+        .help-q[open] summary{ color:#010197; }
+        .help-q[open] summary::before{ transform:rotate(180deg); }
+        .help-q p{ margin:0 0 13px 18px; font-size:0.8rem; color:var(--text-muted); line-height:1.65; }
+        .help-q mark{ background:rgba(100,208,255,.35) !important; color:inherit !important; border-radius:3px; padding:0 !important; margin:0 !important; box-shadow:none !important; }
+        .hp-empty{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:56px 20px; text-align:center; color:var(--text-muted); }
+        .hp-empty i{ font-size:1.4rem; opacity:.45; margin-bottom:4px; }
+        .hp-empty b{ font-size:0.9rem; color:var(--text-main); }
+        .hp-empty span{ font-size:0.8rem; }
+
+        /* What you can do */
+        .hp-role{ display:flex; gap:12px; align-items:flex-start; padding:14px 16px; margin-bottom:16px; border-radius:14px;
+                  background:linear-gradient(135deg, rgba(1,1,151,.06), rgba(59,91,219,.03)); border:1px solid rgba(59,91,219,.16); }
+        .hp-role b{ font-size:0.9rem; color:var(--text-main); }
+        .hp-role p{ margin:3px 0 0; font-size:0.82rem; line-height:1.55; color:var(--text-muted); }
+        .help-ic{ width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.8rem; background:rgba(1,1,151,.07); color:var(--accent-blue); }
+        .hp-cards{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+        .hp-card{ display:flex; gap:11px; padding:12px 14px; border:1px solid var(--border-color); border-radius:12px; background:var(--white); }
+        .hp-card > div > b{ display:block; margin-bottom:3px; font-size:0.82rem; color:var(--text-main); }
+        .hp-card span b{ font-weight:700; color:var(--text-main); }
+        .hp-card span{ font-size:0.76rem; line-height:1.5; color:var(--text-muted); }
+
+        /* Standards */
+        .hp-stds{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; }
+        .hp-std{ padding:14px 16px; border:1px solid var(--border-color); border-radius:12px; background:var(--white); }
+        .hp-std b{ display:block; font-size:0.66rem; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text-muted); }
+        .hp-std em{ display:block; margin:4px 0 6px; font-style:normal; font-size:0.95rem; font-weight:800; color:var(--text-main); line-height:1.3; }
+        .hp-std span{ font-size:0.76rem; line-height:1.5; color:var(--text-muted); }
+
+        .hp-foot{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 22px; border-top:1px solid var(--border-color); font-size:0.78rem; color:var(--text-muted); }
+        .hp-support{ display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:10px; border:1px solid var(--border-color);
+                     background:var(--white); color:var(--text-main); font-weight:700; font-size:0.78rem; text-decoration:none; }
+        .hp-support i{ color:#010197; }
+        .hp-support:hover{ background:var(--bg-light); }
+
+        body.dark-theme .hp-tab.on em, body.dark-theme .hp-cat.on em{ background:rgba(100,208,255,.14); color:#64D0FF; }
+        body.dark-theme .hp-cat.on em{ background:none; }
+        body.dark-theme .hp-cat.on{ color:#64D0FF; box-shadow:inset 3px 0 0 #64D0FF; }
+        body.dark-theme .hp-group h4 i, body.dark-theme .hp-support i{ color:#64D0FF; }
+        body.dark-theme .help-q summary:hover, body.dark-theme .help-q[open] summary{ color:#64D0FF; }
+        body.dark-theme .help-ic{ background:rgba(100,208,255,.12); color:#64D0FF; }
+        body.dark-theme .hp-role{ background:rgba(100,208,255,.06); border-color:rgba(100,208,255,.18); }
+        body.dark-theme .hp-head-ic{ box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.14); }
+
+        @media (max-width:820px){
+            #help-modal .help-box{ height:92vh; border-radius:16px; }
+            .hp-head{ padding:16px 16px 12px; }
+            .hp-bar{ flex-wrap:wrap; padding:0 16px 10px; }
+            .hp-tabs{ width:100%; overflow-x:auto; }
+            .hp-tab{ flex:1; justify-content:center; padding:7px 8px; }
+            .hp-search{ max-width:none; margin-left:0; flex:1 1 100%; }
+            .hp-faq{ flex-direction:column; }
+            .hp-rail{ width:auto; flex-direction:row; overflow-x:auto; padding:8px 12px; border-right:none; border-bottom:1px solid var(--border-color); }
+            .hp-cat{ width:auto; white-space:nowrap; }
+            .hp-cat span{ flex:none; }
+            .hp-cat.on{ box-shadow:0 1px 3px rgba(15,23,42,.08); }
+            .hp-list, .hp-scroll{ padding-left:16px; padding-right:16px; }
+            .hp-cards, .hp-stds{ grid-template-columns:1fr; }
+            .hp-foot{ padding:10px 16px; }
+            body.dark-theme .hp-cat.on{ box-shadow:inset 0 0 0 1px rgba(100,208,255,.35); }
+        }
+        @media (max-width:520px){
+            .hp-tab{ font-size:0.74rem; padding:7px 6px; }
+            .hp-tab em{ display:none; }
+        }
         /* ═══════════ ASSISTANT ═══════════ */
         /* Plasma orb: a deep indigo core inside a living rim of cyan, brand
            blue, violet and magenta light, with a bloom behind it and a glow
@@ -5844,7 +5928,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.46.4 · 11 Sep 2026 · help questions by role';
+        const BUILD_VERSION = 'v2.46.5 · 11 Sep 2026 · help centre redesign';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18715,7 +18799,7 @@ ${(() => {
                 const A = [];
                 A.push(['fa-chart-line', 'See the dashboards', 'Overview, Complaints, Incidents, Submissions, Branches and Social Listening' + (PERM.branch && PERM.branch !== 'All' ? ' for ' + esc(PERM.branch) + '.' : ' across every branch.')]);
                 if(can('write')) A.push(['fa-clipboard-check', 'Work the incident queue', 'Open an incident, mark it Valid, Fake or Customer Not Responding, add remarks and close it. Your name is recorded against the decision.']);
-                if(can('write')) A.push(['fa-headset', 'Log complaints', 'Add a complaint that arrived by phone or another channel, on the Submissions tab.']);
+                if(can('write')) A.push(['fa-headset', 'Log complaints', 'Add a complaint that arrived by phone or another channel with Create Submission, on the Incidents tab.']);
                 if(can('reward')) A.push(['fa-ticket', 'Handle rewards', 'Search a customer code on the Rewards tab, confirm it is unused, and mark it used. You can also search by phone number to tell a customer how many stamps they have.']);
                 if(can('action')) A.push(['fa-clipboard-list', 'Log what we did about a problem', 'On a flagged issue, press <b>Log an action</b>. The dashboard records the current rate, watches it, and later tells you whether the fix worked, came back, or changed nothing \u2014 on the <b>Actions</b> tab.']);
                 if(can('escalate')) A.push(['fa-flag', 'Escalate to Ops', 'Flag a social complaint for Ops. Everyone sees the badge and Ops receives an email.']);
@@ -18904,50 +18988,114 @@ ${(() => {
                 if(who === 'doer') return ['write', 'escalate', 'reward', 'action', 'forms', 'users'].some(c => can(c));
                 return can(who);
             }
-            function faqHTML(){
-                const qa = ([q, a]) => `<details class="help-q"><summary>${esc(q)}</summary><p>${a}</p></details>`;
-                return FAQ_GROUPS.map(g => [g, g.items.filter(it => faqSees(it[2]))]).filter(([, items]) => items.length).map(([g, items]) =>
-                    `<div class="help-faq-group"><div class="help-faq-head"><span class="help-ic"><i class="fas ${g.icon}"></i></span><b>${esc(g.title)}</b><em>${items.length}</em></div>${items.map(qa).join('')}</div>`
-                ).join('');
+            // ── The Help window ─────────────────────────────────────────────
+            // Tabs (Questions / What you can do / Standards), a search box that
+            // looks through every question and answer this person may see, a
+            // category rail, and one answer open at a time.
+            const hs = { tab: 'faq', cat: 'all', q: '' };
+            const plain = h => String(h == null ? '' : h).replace(/<[^>]*>/g, ' ');
+            function visibleGroups(){
+                return FAQ_GROUPS.map(g => ({ title: g.title, icon: g.icon, items: g.items.filter(it => faqSees(it[2])) })).filter(g => g.items.length);
+            }
+            function mark(text, q){
+                text = String(text == null ? '' : text); q = String(q || '').trim();
+                if(!q) return esc(text);
+                const lo = text.toLowerCase(), ql = q.toLowerCase(); let out = '', i = 0, k;
+                while((k = lo.indexOf(ql, i)) !== -1){ out += esc(text.slice(i, k)) + '<mark>' + esc(text.slice(k, k + q.length)) + '</mark>'; i = k + q.length; }
+                return out + esc(text.slice(i));
+            }
+            function faqPane(){
+                const words = hs.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+                const hit = it => !words.length || words.every(w => (it[0] + ' ' + plain(it[1])).toLowerCase().includes(w));
+                const groups = visibleGroups().map(g => Object.assign(g, { hits: g.items.filter(hit) }));
+                const total = groups.reduce((n, g) => n + g.hits.length, 0);
+                if(hs.cat !== 'all' && !groups.some(g => g.title === hs.cat && g.hits.length)) hs.cat = 'all';
+                const cats = [{ key: 'all', label: 'All questions', icon: 'fa-layer-group', n: total }]
+                    .concat(groups.map(g => ({ key: g.title, label: g.title, icon: g.icon, n: g.hits.length })));
+                const rail = cats.map(c => `<button type="button" class="hp-cat${hs.cat === c.key ? ' on' : ''}" data-cat="${esc(c.key)}"${c.n ? '' : ' disabled'}><i class="fas ${c.icon}"></i><span>${esc(c.label)}</span><em>${c.n}</em></button>`).join('');
+                const shown = groups.filter(g => (hs.cat === 'all' || g.title === hs.cat) && g.hits.length);
+                const qa = ([q, a]) => `<details class="help-q"><summary><span>${mark(q, hs.q)}</span></summary><p>${a}</p></details>`;
+                const list = shown.length
+                    ? shown.map(g => `<section class="hp-group">${hs.cat === 'all' ? `<h4><i class="fas ${g.icon}"></i>${esc(g.title)}</h4>` : ''}${g.hits.map(qa).join('')}</section>`).join('')
+                    : `<div class="hp-empty"><i class="fas fa-magnifying-glass"></i><b>Nothing matches \u201c${esc(hs.q.trim())}\u201d</b><span>Try another word, or ask Support.</span></div>`;
+                return `<div class="hp-faq"><nav class="hp-rail" aria-label="Question categories">${rail}</nav><div class="hp-list" id="hp-list">${list}</div></div>`;
+            }
+            function accessPane(){
+                const role = roleKey(PERM.role);
+                const where = PERM.branch && PERM.branch !== 'All' ? ' \u00b7 ' + esc(PERM.branch) : '';
+                return `<div class="hp-scroll">
+                    <div class="hp-role"><span class="help-ic"><i class="fas fa-id-badge"></i></span><div><b>${esc(PERM.role || 'Viewer')}${where}</b><p>${esc(ROLE_SUMMARY[role] || ROLE_SUMMARY.viewer)}</p></div></div>
+                    <div class="hp-cards">${abilities().map(([ic, t, d]) => `<div class="hp-card"><span class="help-ic"><i class="fas ${ic}"></i></span><div><b>${esc(t)}</b><span>${d}</span></div></div>`).join('')}</div>
+                </div>`;
+            }
+            function standardsPane(){
+                return `<div class="hp-scroll"><div class="hp-stds">${STANDARDS.map(([t, v, d]) => `<div class="hp-std"><b>${esc(t)}</b><em>${esc(v)}</em><span>${esc(d)}</span></div>`).join('')}</div></div>`;
+            }
+            function renderPane(){
+                const el = document.getElementById('help-modal'); if(!el) return;
+                el.querySelectorAll('.hp-tab').forEach(b => { const on = b.dataset.tab === hs.tab; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+                const pane = el.querySelector('#hp-pane');
+                pane.innerHTML = hs.tab === 'access' ? accessPane() : hs.tab === 'std' ? standardsPane() : faqPane();
+                if(hs.tab === 'faq' && hs.q.trim()){
+                    const found = pane.querySelectorAll('details.help-q');
+                    if(found.length === 1) found[0].open = true;
+                }
             }
             function open(){
-                let el = document.getElementById('help-modal');
-                if(el) el.remove();
-                const role = roleKey(PERM.role);
-                el = document.createElement('div');
+                close();
+                hs.tab = 'faq'; hs.cat = 'all'; hs.q = '';
+                const el = document.createElement('div');
                 el.id = 'help-modal';
                 // Self-contained: relying on the shared .ia-overlay classes meant
                 // a styling change elsewhere could leave this in the DOM but
                 // invisible, which is exactly what happened.
                 el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
-                el.innerHTML = `<div class="help-box" role="dialog" aria-label="Help" style="background:var(--white);border-radius:16px;box-shadow:0 24px 60px rgba(15,23,42,.28);">
-                    <div class="help-head">
-                        <div>
-                            <div class="help-eyebrow">Signed in as ${esc(PERM.name || PERM.email || '')}</div>
-                            <h3>${esc(PERM.role || 'Viewer')}${PERM.branch && PERM.branch !== 'All' ? ' · ' + esc(PERM.branch) : ''}</h3>
+                const nQ = visibleGroups().reduce((n, g) => n + g.items.length, 0);
+                const nA = abilities().length;
+                const where = PERM.branch && PERM.branch !== 'All' ? ' \u00b7 ' + esc(PERM.branch) : '';
+                const supportLink = (document.querySelector('a.support-row[href*="wa.me"]') || {}).href || '';
+                el.innerHTML = `<div class="help-box" role="dialog" aria-modal="true" aria-label="Help">
+                    <div class="hp-head">
+                        <span class="hp-head-ic"><i class="fas fa-circle-question"></i></span>
+                        <div class="hp-head-t"><h3>Help</h3><div>Signed in as <b>${esc(PERM.name || PERM.email || '')}</b> \u00b7 ${esc(PERM.role || 'Viewer')}${where}</div></div>
+                        <button type="button" class="help-x" onclick="HELP.close()" aria-label="Close"><i class="fas fa-xmark"></i></button>
+                    </div>
+                    <div class="hp-bar">
+                        <div class="hp-tabs" role="tablist">
+                            <button type="button" class="hp-tab on" role="tab" data-tab="faq">Questions <em>${nQ}</em></button>
+                            <button type="button" class="hp-tab" role="tab" data-tab="access">What you can do <em>${nA}</em></button>
+                            <button type="button" class="hp-tab" role="tab" data-tab="std">Standards <em>${STANDARDS.length}</em></button>
                         </div>
-                        <button class="help-x" onclick="HELP.close()" aria-label="Close"><i class="fas fa-xmark"></i></button>
+                        <label class="hp-search"><i class="fas fa-magnifying-glass"></i><input id="hp-q" type="search" placeholder="Search questions" autocomplete="off" aria-label="Search questions"></label>
                     </div>
-                    <div class="help-body">
-                        <p class="help-lead">${esc(ROLE_SUMMARY[role] || ROLE_SUMMARY.viewer)}</p>
-
-                        <div class="help-section">What you can do</div>
-                        ${abilities().map(([ic, t, d]) => `<div class="help-row"><span class="help-ic"><i class="fas ${ic}"></i></span><div><b>${esc(t)}</b><span>${d}</span></div></div>`).join('')}
-
-                        <div class="help-section">The standards we work to</div>
-                        ${STANDARDS.map(([t, v, d]) => `<div class="help-std"><div><b>${esc(t)}</b><em>${esc(v)}</em></div><span>${esc(d)}</span></div>`).join('')}
-
-                        <div class="help-section">Questions people ask</div>
-                        ${faqHTML()}
-
-                        <div class="help-foot">Anything not answered here \u2014 use Contact Support.</div>
-                    </div>
+                    <div class="hp-pane" id="hp-pane"></div>
+                    <div class="hp-foot"><span>Can\u2019t find what you need?</span>${supportLink ? `<a class="hp-support" href="${esc(supportLink)}" target="_blank" rel="noopener"><i class="fas fa-comment-dots"></i> Contact Support</a>` : '<span>Use Contact Support in your profile menu.</span>'}</div>
                 </div>`;
                 document.body.appendChild(el);
                 document.body.style.overflow = 'hidden';
-                el.addEventListener('click', e => { if(e.target === el) close(); });
+                renderPane();
+                el.addEventListener('click', e => {
+                    if(e.target === el){ close(); return; }
+                    const tab = e.target.closest('[data-tab]');
+                    if(tab){ hs.tab = tab.dataset.tab; renderPane(); return; }
+                    const cat = e.target.closest('[data-cat]');
+                    if(cat && !cat.disabled){ hs.cat = cat.dataset.cat; renderPane(); }
+                });
+                // one answer open at a time
+                el.addEventListener('toggle', e => {
+                    const d = e.target;
+                    if(d && d.tagName === 'DETAILS' && d.open) el.querySelectorAll('details.help-q[open]').forEach(o => { if(o !== d) o.open = false; });
+                }, true);
+                const input = el.querySelector('#hp-q');
+                input.addEventListener('input', () => { hs.q = input.value; hs.tab = 'faq'; renderPane(); });
+                el._onKey = e => { if(e.key === 'Escape') close(); };
+                document.addEventListener('keydown', el._onKey);
+                if(window.matchMedia && window.matchMedia('(pointer: fine)').matches) setTimeout(() => { try { input.focus(); } catch(_){} }, 60);
             }
-            function close(){ document.querySelectorAll('#help-modal').forEach(n => n.remove()); document.body.style.overflow = ''; }
+            function close(){
+                document.querySelectorAll('#help-modal').forEach(n => { if(n._onKey) document.removeEventListener('keydown', n._onKey); n.remove(); });
+                document.body.style.overflow = '';
+            }
             return { open, close };
         })();
 
