@@ -5216,7 +5216,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     </div>
                     <div style="padding:16px 24px;border-top:1px solid var(--border-color);display:flex;align-items:center;gap:8px;background:var(--bg-light);">
                         <i class="fas fa-circle-info" style="color:var(--text-muted);font-size:0.78rem;"></i>
-                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated Apps Script feed (incremental). Build <b id="build-version-tag">v2.4.2 · 9 Sep 2026 · csv · data-api</b></span>
+                        <span style="font-size:0.72rem;color:var(--text-muted);font-weight:500;">Data via authenticated backend feed (incremental). Build <b id="build-version-tag">v2.4.2 · 9 Sep 2026 · csv · data-api</b></span>
                     </div>
                 </div>
             </div>
@@ -5770,7 +5770,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.40.0 · 11 Sep 2026 · help';
+        const BUILD_VERSION = 'v2.40.2 · 11 Sep 2026 · help';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18119,8 +18119,8 @@ ${(() => {
                 ['What counts as an incident?',
                  'Any submission rated 3 or below. That is automatic — nobody creates incidents by hand. A 4 or 5 star submission is never an incident, even if the comment is negative.'],
 
-                ['Why does the dashboard show a different number than the Google Sheet?',
-                 'The dashboard applies a 9 AM business-day cutoff, removes exact duplicate rows, and excludes incomplete submissions. The sheet shows everything raw. The dashboard number is the one to use.'],
+                ['Why does the dashboard show a different number than the raw data?',
+                 'The dashboard applies a 9 AM business-day cutoff, removes exact duplicate rows, and excludes incomplete submissions. The raw records include everything, unfiltered. The dashboard number is the one to use.'],
 
                 ['What does the date filter actually control?',
                  'The analysis cards — totals, comparisons, complaint reasons, branch performance. It does not control the live queue (Needs Attention Today) or the alert sound, which are always about right now.'],
@@ -18132,7 +18132,7 @@ ${(() => {
                  'Seeing it is not the same as reviewing it. The alert repeats every five minutes until someone opens the case, and again if it is not closed within fifteen minutes of being reviewed. Use "View and acknowledge" rather than Snooze — that silences it for everyone.'],
 
                 ['I closed a case by mistake — can I undo it?',
-                 'Not from the dashboard. Tell Farooq with the branch and time; it is corrected in the sheet so there is a record of the change. Reward codes are the same: marking one used cannot be undone.'],
+                 'Not from the dashboard. Tell Farooq with the branch and time; it is corrected on the backend so there is a record of the change. Reward codes are the same: marking one used cannot be undone.'],
 
                 ['A customer says they have stamps but nothing shows — what do I do?',
                  'Search their phone number on the Rewards tab rather than a code. It will show how many stamps they have, or say nothing was found. Stamps only count once per day, so several submissions in one day still earn one.'],
@@ -18144,7 +18144,7 @@ ${(() => {
                  'Yes — all the main tabs work on mobile. Resolving incidents and handling rewards are easier on a laptop, but nothing is blocked.'],
 
                 ['Why does the dashboard look slow on my machine?',
-                 'Close other Chrome tabs (especially open Google Sheets), keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, tell Farooq which tab and what you were doing.'],
+                 'Close other browser tabs you are not using, keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, tell Farooq which tab and what you were doing.'],
 
                 ['What happens to what I do here — is it recorded?',
                  'Yes. Every resolution, complaint logged, escalation and reward redemption is recorded with your name and the time. That is for accuracy and accountability, not monitoring — it is how we can tell what happened when a number looks wrong.']
