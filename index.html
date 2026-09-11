@@ -3585,6 +3585,13 @@
         .ai-input input:focus { border-color:#3B5BDB; }
         .ai-input button { width:38px; border:none; border-radius:10px; background:#010197; color:#fff; cursor:pointer; }
         @media (max-width:820px){ .ai-panel { right:10px; left:10px; width:auto; bottom:calc(76px + env(safe-area-inset-bottom)); height:70vh; } .ai-bubble { right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); width:46px; height:46px; } .ai-bubble .orb-text { font-size:11px; } }
+        /* ═══════════ ACTION REGISTER ═══════════ */
+        .act-row { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:flex-start; padding:14px 16px; border:1px solid var(--border-color); border-radius:12px; margin-bottom:10px; background:var(--white); }
+        .act-tag { display:inline-flex; align-items:center; gap:6px; font-size:0.68rem; font-weight:800; padding:5px 11px; border-radius:20px; white-space:nowrap; }
+        .act-head { font-size:0.86rem; color:var(--text-main); margin-bottom:3px; }
+        .act-what { font-size:0.82rem; color:var(--text-main); line-height:1.5; margin-bottom:4px; }
+        .act-meta { font-size:0.72rem; color:var(--text-muted); line-height:1.5; }
+        @media (max-width:820px){ .act-row { grid-template-columns:1fr; } }
         /* ═══════════ REWARDS ═══════════ */
         .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
         .rw-stat b { display:block; font-size:1.15rem; font-weight:800; color:var(--text-main); line-height:1; }
@@ -4284,6 +4291,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
+                <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
             </nav>
@@ -5273,6 +5281,9 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <div id="fb-root"></div>
             </div>
 
+            <!-- ACTION REGISTER -->
+            <div id="view-actions" class="view"><div id="acts-root"></div></div>
+
             <!-- FORM ANALYTICS (Owner only) -->
             <div id="view-form-analytics" class="view"><div id="fa-root"></div></div>
 
@@ -5820,7 +5831,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.45.0 · 11 Sep 2026 · behaviour signals';
+        const BUILD_VERSION = 'v2.46.1 · 11 Sep 2026 · action register';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6062,7 +6073,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -9241,11 +9252,11 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -9566,13 +9577,13 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -9675,6 +9686,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'rewards') { RW.render(); return; }
                 else if (state.currentView === 'form-analytics') { FAT.render(); return; }
+                else if (state.currentView === 'actions') { ACTS.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
@@ -10071,7 +10083,10 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                                 ${a.first ? ' · first at <b style="color:var(--text-main);">' + timeOf(a.first) + '</b>' : ''}
                             </div>
                         </div>
-                        <span style="font-size:1.05rem;font-weight:800;color:${sev};font-variant-numeric:tabular-nums;">${a.n}<span style="font-size:0.62rem;color:var(--text-muted);font-weight:600;"> today</span></span>
+                        <div style="text-align:right;">
+                            <span style="font-size:1.05rem;font-weight:800;color:${sev};font-variant-numeric:tabular-nums;">${a.n}<span style="font-size:0.62rem;color:var(--text-muted);font-weight:600;"> today</span></span>
+                            ${(typeof can === 'function' && can('action')) ? `<div><button class="fb-btn sm" style="margin-top:5px;font-size:0.68rem;padding:4px 9px;" onclick="ACTS.log('${String(a.branch).replace(/'/g,"\\'")}','${String(a.reason).replace(/'/g,"\\'")}')">Log an action</button></div>` : ''}
+                        </div>
                     </div>`;
                 }).join('');
             },
@@ -16713,12 +16728,12 @@ ${(() => {
         // to be attempted, so a read-only user gets a clear message instead of a
         // server error.
         const ROLE_CAPS = {
-            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true, reward:true },
-            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false },
-            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true, reward:true },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true, reward:true },
-            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false },
-            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false }
+            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true, reward:true, action:true },
+            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false, action:false },
+            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true, reward:true, action:true },
+            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true, reward:true, action:false },
+            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false, action:false },
+            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false, action:false }
         };
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
@@ -16870,6 +16885,8 @@ ${(() => {
             if(rwNav) rwNav.style.display = can('reward') ? '' : 'none';
             const faNav = document.getElementById('nav-form-analytics');
             if(faNav) faNav.style.display = can('users') ? '' : 'none';   // Owner only
+            const acNav = document.getElementById('nav-actions');
+            if(acNav) acNav.style.display = can('action') ? '' : 'none';
             if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
@@ -18528,6 +18545,147 @@ ${(() => {
                     </div>`;
             }
             return { render };
+        })();
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ACTION REGISTER — what we did about a problem, and whether it worked.
+        // Every other view measures customers; this one measures our own fixes.
+        // The verdict is computed from the incidents themselves, so it is always
+        // current and nobody has to mark their own homework.
+        // ═══════════════════════════════════════════════════════════════════
+        const ACTS = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            const rows = () => { const t = DataFeed.tabs.actions; return (t && t.objRows) ? t.objRows.filter(r => String(r['ID'] || '').trim()) : []; };
+            const reasonOf = i => { try { const r = i.agentCategory && _resolveComplaintCategory(i.agentCategory); return r ? r.title : (classifyComplaint(i) || {}).title || 'Others'; } catch(e){ return 'Others'; } };
+            /** Complaints per week for a branch+reason between two dates. */
+            function ratePerWeek(branch, reason, fromISO, toISO){
+                const list = (rawData.incidents || []).filter(i =>
+                    i.caseStatus !== 'fake' && i.branch === branch && i.date >= fromISO && i.date <= toISO && (!reason || reasonOf(i) === reason));
+                const days = Math.max(1, (Date.parse(toISO + 'T12:00:00') - Date.parse(fromISO + 'T12:00:00')) / 86400000 + 1);
+                return list.length / days * 7;
+            }
+            const addDays = (iso, n) => { const d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; };
+            /** Judge one action. Returns the verdict and the numbers behind it. */
+            function judge(a){
+                const opened = String(a['Opened At'] || '').slice(0, 10);
+                if(!opened) return { key: 'unknown', label: 'No date recorded' };
+                const today = new Date().toISOString().split('T')[0];
+                const elapsed = Math.floor((Date.parse(today + 'T12:00:00') - Date.parse(opened + 'T12:00:00')) / 86400000);
+                const window_ = Number(a['Review Days']) || 14;
+                const branch = a['Branch'], reason = a['Reason'];
+                const before = Number(a['Baseline Per Week']);
+                const baseline = isFinite(before) && before > 0 ? before : ratePerWeek(branch, reason, addDays(opened, -14), addDays(opened, -1));
+                const since = ratePerWeek(branch, reason, opened, today);
+                const n = (rawData.incidents || []).filter(i => i.caseStatus !== 'fake' && i.branch === branch && i.date >= addDays(opened, -14) && i.date <= today && (!reason || reasonOf(i) === reason)).length;
+                if(elapsed < 3) return { key: 'early', label: 'Too early to judge', baseline, since, elapsed, window_ };
+                if(n < 4) return { key: 'thin', label: 'Too few cases to judge', baseline, since, elapsed, window_ };
+                // did it come back? compare the first half of the window with the second
+                const mid = addDays(opened, Math.max(2, Math.floor(elapsed / 2)));
+                const firstHalf = ratePerWeek(branch, reason, opened, mid);
+                const secondHalf = ratePerWeek(branch, reason, mid, today);
+                const drop = baseline > 0 ? (baseline - since) / baseline : 0;
+                const provisional = elapsed < window_;
+                // A relapse is judged on the SHAPE, not the average: it improved
+                // in the first half and then returned. Requiring an overall drop
+                // as well could never fire, because the relapse drags the average
+                // back up — which is exactly the case we most need to catch.
+                const firstDrop = baseline > 0 ? (baseline - firstHalf) / baseline : 0;
+                if(firstDrop >= 0.4 && secondHalf > firstHalf * 1.8 && secondHalf >= baseline * 0.6)
+                    return { key: 'returned', label: 'Came back', baseline, since, firstHalf, secondHalf, elapsed, window_, provisional };
+                if(drop >= 0.5) return { key: 'worked', label: 'Worked', baseline, since, elapsed, window_, provisional, drop };
+                if(drop <= 0.15) return { key: 'nochange', label: 'No change', baseline, since, elapsed, window_, provisional, drop };
+                return { key: 'partial', label: 'Some improvement', baseline, since, elapsed, window_, provisional, drop };
+            }
+            const STYLE = { worked:['#059669','fa-circle-check'], returned:['#D97706','fa-rotate-left'], nochange:['#DC2626','fa-circle-xmark'],
+                            partial:['#010197','fa-arrow-trend-down'], early:['#64748B','fa-hourglass-half'], thin:['#64748B','fa-circle-question'], unknown:['#64748B','fa-circle-question'] };
+            function render(){
+                const host = document.getElementById('acts-root'); if(!host) return;
+                if(!can('action')){ host.innerHTML = '<div class="fb-empty">The action register is available to the Owner and Report Analysts.</div>'; return; }
+                const all = rows().slice().reverse();
+                const open_ = all.filter(a => String(a['Status'] || 'open') !== 'closed');
+                const judged = open_.map(a => ({ a, v: judge(a) }));
+                const tally = { worked:0, returned:0, nochange:0, partial:0 };
+                judged.forEach(j => { if(tally[j.v.key] != null) tally[j.v.key]++; });
+                const decided = tally.worked + tally.returned + tally.nochange + tally.partial;
+                host.uiHTML = `
+                    <div class="fb-toolbar">
+                        <div><div class="section-header" style="margin-bottom:0;"><h3>Action register</h3></div>
+                             <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">What we did about a problem, and whether it worked. Judged from the complaints themselves.</div></div>
+                        <div class="spacer"></div>
+                        <div class="rw-stat"><b style="color:#059669;">${tally.worked}</b><span>worked</span></div>
+                        <div class="rw-stat"><b style="color:#D97706;">${tally.returned}</b><span>came back</span></div>
+                        <div class="rw-stat"><b style="color:#DC2626;">${tally.nochange}</b><span>no change</span></div>
+                        <div class="rw-stat"><b>${decided ? Math.round(tally.worked / decided * 100) : 0}%</b><span>fix rate</span></div>
+                    </div>
+                    ${!all.length ? `<div class="fb-empty"><b>No actions logged yet.</b><br><span style="font-size:0.8rem;">Use <b>Log an action</b> on any flagged issue. The dashboard then watches that branch and reason and tells you whether it improved.</span></div>` : ''}
+                    ${judged.map(({ a, v }) => {
+                        const [col, ic] = STYLE[v.key] || STYLE.unknown;
+                        const nums = (v.baseline != null && v.since != null && ['worked','returned','nochange','partial'].indexOf(v.key) !== -1)
+                            ? `was <b>${v.baseline.toFixed(1)}</b>/week, now <b style="color:${col};">${v.since.toFixed(1)}</b>/week over ${v.elapsed} day${v.elapsed === 1 ? '' : 's'}`
+                            : `${v.elapsed || 0} day${v.elapsed === 1 ? '' : 's'} since the action`;
+                        const extra = v.key === 'returned' ? ` Dropped at first, then returned to <b>${v.secondHalf.toFixed(1)}</b>/week — the fix did not hold.` : '';
+                        return `<div class="act-row">
+                            <span class="act-tag" style="background:${col}14;color:${col};"><i class="fas ${ic}"></i> ${esc(v.label)}${v.provisional ? ' · provisional' : ''}</span>
+                            <div class="act-body">
+                                <div class="act-head"><b>${esc(a['Reason'] || 'Issue')}</b> · ${esc(a['Branch'] || 'all branches')}</div>
+                                <div class="act-what">${esc(a['What We Did'] || '')}</div>
+                                <div class="act-meta">${nums}${extra}</div>
+                                <div class="act-meta" style="opacity:.8;">Logged ${esc(String(a['Opened At'] || '').slice(0, 16))} by ${esc(a['Logged By'] || '')}${a['Owner'] ? ' · owner ' + esc(a['Owner']) : ''}${a['Expected'] ? ' · expected: ' + esc(a['Expected']) : ''}</div>
+                            </div>
+                            <button class="fb-btn sm" onclick="ACTS.close('${esc(a['ID'])}')">Close</button>
+                        </div>`;
+                    }).join('')}
+                    ${all.length > open_.length ? `<div style="font-size:0.7rem;color:var(--text-muted);padding:10px 2px;">${all.length - open_.length} closed action${all.length - open_.length === 1 ? '' : 's'} hidden.</div>` : ''}`;
+            }
+            /** Open the log dialog, pre-filled from a flagged issue. */
+            function log(branch, reason){
+                if(!requireCap('action', 'logging an action')) return;
+                const today = new Date().toISOString().split('T')[0];
+                const from = (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().split('T')[0]; })();
+                const baseline = ratePerWeek(branch, reason, from, today);
+                let el = document.getElementById('act-modal'); if(el) el.remove();
+                el = document.createElement('div'); el.id = 'act-modal';
+                el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.5);display:flex;align-items:center;justify-content:center;padding:20px;';
+                el.innerHTML = `<div style="background:var(--white);border-radius:16px;max-width:460px;width:100%;box-shadow:0 24px 60px rgba(15,23,42,.28);overflow:hidden;">
+                    <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border-color);">
+                        <div style="font-size:0.66rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--text-muted);">Log an action</div>
+                        <div style="font-size:1rem;font-weight:800;color:var(--text-main);margin-top:2px;">${esc(reason || 'Issue')} · ${esc(branch || 'all branches')}</div>
+                        <div style="font-size:0.74rem;color:var(--text-muted);margin-top:4px;">Currently <b style="color:var(--text-main);">${baseline.toFixed(1)}</b> per week. We will watch this and tell you whether it improves.</div>
+                    </div>
+                    <div style="padding:16px 22px 20px;display:flex;flex-direction:column;gap:12px;">
+                        <label style="font-size:0.74rem;font-weight:700;color:var(--text-main);">What was done
+                            <textarea id="act-what" rows="2" placeholder="e.g. Spoke to the branch manager, rider briefing scheduled" style="width:100%;box-sizing:border-box;margin-top:5px;border:1.5px solid var(--border-color);border-radius:10px;padding:9px 11px;font:inherit;font-size:0.82rem;resize:vertical;outline:none;"></textarea></label>
+                        <label style="font-size:0.74rem;font-weight:700;color:var(--text-main);">Who owns it <span style="font-weight:500;color:var(--text-muted);">(optional)</span>
+                            <input id="act-owner" placeholder="e.g. Branch manager" style="width:100%;box-sizing:border-box;margin-top:5px;border:1.5px solid var(--border-color);border-radius:10px;padding:9px 11px;font:inherit;font-size:0.82rem;outline:none;"></label>
+                        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+                            <button class="fb-btn sm" onclick="ACTS.dismiss()">Cancel</button>
+                            <button class="fb-btn sm primary" onclick="ACTS.save('${esc(branch)}','${esc(reason)}',${baseline.toFixed(2)})">Log it</button>
+                        </div>
+                    </div></div>`;
+                document.body.appendChild(el);
+                el.addEventListener('click', e => { if(e.target === el) dismiss(); });
+                setTimeout(() => document.getElementById('act-what')?.focus(), 60);
+            }
+            function dismiss(){ const el = document.getElementById('act-modal'); if(el) el.remove(); }
+            async function save(branch, reason, baseline){
+                const what = (document.getElementById('act-what') || {}).value || '';
+                if(!what.trim()){ UI.toast('Describe what was done.', 'warning'); return; }
+                const owner = (document.getElementById('act-owner') || {}).value || '';
+                try {
+                    const r = await apiCall('action_save', { branch, reason, what, owner, baseline, reviewDays: 14, clientId: 'act_' + Date.now().toString(36) });
+                    if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
+                    dismiss();
+                    UI.toast('Action logged — the dashboard will tell you whether it works.', 'success', 6000);
+                } catch(e){ UI.toast('Not saved: ' + (e.message || e), 'error', 7000); }
+            }
+            async function close(id){
+                if(!confirm('Close this action? It will no longer be tracked.')) return;
+                try { const r = await apiCall('action_close', { id }); if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
+                      const row = rows().find(x => x['ID'] === id); if(row) row['Status'] = 'closed';
+                      UI.toast('Action closed.', 'success'); render(); }
+                catch(e){ UI.toast('Could not close: ' + (e.message || e), 'error'); }
+            }
+            return { render, log, save, close, dismiss, judge };
         })();
 
         window.HELP = (function(){
