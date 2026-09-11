@@ -5215,7 +5215,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.28.1 · 10 Sep 2026 · verdict';
+        const BUILD_VERSION = 'v2.28.2 · 10 Sep 2026 · verdict';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17360,6 +17360,29 @@ ${(() => {
                 b.onclick = toggle;
                 document.body.appendChild(b);
             }
+            // The answer is written out rather than appearing whole: arriving text
+            // reads as a reply, a block of text appearing from nowhere does not.
+            // Chunked by word, with a gentle ease so long answers don't crawl.
+            function typeOut(text){
+                return new Promise(resolve => {
+                    const msg = history[history.length - 1];
+                    msg.role = 'bot'; msg.typing = false; msg.streaming = true; msg.text = text; msg.shown = '';
+                    const words = String(text).split(/(\s+)/);
+                    let i = 0;
+                    const log = () => document.querySelector('#ai-panel .ai-log');
+                    const step = () => {
+                        if(!open){ msg.shown = text; msg.streaming = false; render(); return resolve(); }   // panel closed: finish instantly
+                        const burst = words.length > 90 ? 3 : words.length > 45 ? 2 : 1;
+                        for(let n = 0; n < burst && i < words.length; n++) msg.shown += words[i++];
+                        render();
+                        const l = log(); if(l) l.scrollTop = l.scrollHeight;
+                        if(i < words.length) setTimeout(step, 18 + Math.random() * 26);
+                        else { msg.streaming = false; msg.shown = text; render(); resolve(); }
+                    };
+                    step();
+                });
+            }
+
             return { mount, toggle, ask, clear, context };
         })();
 
@@ -17458,28 +17481,7 @@ ${(() => {
             }
             function set(v){ q = v; render(); }
 
-            // The answer is written out rather than appearing whole: arriving text
-            // reads as a reply, a block of text appearing from nowhere does not.
-            // Chunked by word, with a gentle ease so long answers don't crawl.
-            function typeOut(text){
-                return new Promise(resolve => {
-                    const msg = history[history.length - 1];
-                    msg.role = 'bot'; msg.typing = false; msg.streaming = true; msg.text = text; msg.shown = '';
-                    const words = String(text).split(/(\s+)/);
-                    let i = 0;
-                    const log = () => document.querySelector('#ai-panel .ai-log');
-                    const step = () => {
-                        if(!open){ msg.shown = text; msg.streaming = false; render(); return resolve(); }   // panel closed: finish instantly
-                        const burst = words.length > 90 ? 3 : words.length > 45 ? 2 : 1;
-                        for(let n = 0; n < burst && i < words.length; n++) msg.shown += words[i++];
-                        render();
-                        const l = log(); if(l) l.scrollTop = l.scrollHeight;
-                        if(i < words.length) setTimeout(step, 18 + Math.random() * 26);
-                        else { msg.streaming = false; msg.shown = text; render(); resolve(); }
-                    };
-                    step();
-                });
-            }
+
             async function redeem(code){
                 try {
                     const r = await apiCall('reward_redeem', { code, clientId: 'rw_' + code + '_' + Date.now().toString(36) });
