@@ -1198,7 +1198,7 @@
         .ai-tile:hover         { transform:translateY(-5px) scale(1.005) !important; }
         .card:hover            { transform:translateY(-2px) !important; }
         .sl-mention-card:hover { transform:translateY(-4px) !important; }
-        .sl-kpi:hover          { transform:translateY(-3px) !important; }
+        .sl-kpi:hover          { transform:translateY(-2px) !important; }
         .bd-item:hover         { transform:translateY(-3px) !important; }
         .form-card:hover       { transform:translateY(-3px) !important; }
         .insight-block:hover   { transform:translateY(-2px) !important; }
@@ -1350,13 +1350,17 @@
                         box-shadow .28s cubic-bezier(.4,0,.2,1),
                         border-color .22s cubic-bezier(.4,0,.2,1);
         }
+        /* Hovering used to wash the tile with 60% white, which changed its
+           colour and read as a bug. A tile is a button: it should lift and
+           sharpen its edge, not repaint itself. */
         .sl-kpi::before {
             content:''; position:absolute; inset:0; border-radius:inherit;
-            background:rgba(255,255,255,0.6); opacity:0;
+            background:transparent; opacity:0;
             transition:opacity .2s ease; pointer-events:none;
         }
-        .sl-kpi:hover { transform:translateY(-3px); box-shadow:0 10px 28px -6px rgba(0,0,0,.1); }
-        .sl-kpi:hover::before { opacity:1; }
+        .sl-kpi { transition:transform .2s var(--ease-out), box-shadow .2s, border-color .2s; }
+        .sl-kpi:hover { transform:translateY(-2px); box-shadow:0 8px 22px -8px rgba(15,23,42,.16); border-color:rgba(1,1,151,.28); }
+        .sl-kpi:hover::before { opacity:0; }
         .sl-kpi:active { transform:translateY(-1px) scale(.98) !important; transition-duration:.1s !important; }
         .sl-kpi.sl-kpi-active {
             border-color:var(--sl-kpi-active-color, #D97706) !important;
@@ -3905,7 +3909,7 @@
                         </div>
 <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;" id="exec-hour-title">SUBMISSIONS &amp; COMPLAINTS BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
-                            <div class="chart-container" style="height:180px;"><canvas id="execPeakHoursChart"></canvas></div>
+                            <div class="chart-container" style="height:190px;margin-top:14px;padding-top:4px;"><canvas id="execPeakHoursChart"></canvas></div>
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
@@ -5225,7 +5229,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.30.0 · 11 Sep 2026 · rewards';
+        const BUILD_VERSION = 'v2.30.1 · 11 Sep 2026 · polish';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
