@@ -3272,6 +3272,7 @@
         .rw-prog-stamps span { width:18px; height:18px; border-radius:50%; border:2px dashed #CBD5E1; }
         .rw-prog-stamps span.on { border:2px solid #010197; background:#010197; }
         .rw-none { display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:12px; background:rgba(220,38,38,.07); color:#B91C1C; font-size:0.85rem; margin-bottom:12px; }
+        .fb-btn.sm.is-busy { opacity:.65; pointer-events:none; }
         .rw-row { display:grid; grid-template-columns:150px 1fr 150px auto; gap:14px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border-color); }
         .rw-row:last-child { border-bottom:none; }
         .rw-row.used { opacity:.62; }
@@ -5224,7 +5225,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.29.1 · 11 Sep 2026 · like-for-like';
+        const BUILD_VERSION = 'v2.30.0 · 11 Sep 2026 · rewards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17507,8 +17508,8 @@ ${(() => {
                                 <div class="rw-who"><b>${esc(nameFor(r['Phone'], r['Name']) || 'Customer')}</b><span>${esc(r['Phone'] || '')}</span></div>
                                 <div class="rw-when">earned ${esc(String(r['Reward Earned At'] || '').slice(0, 16))}</div>
                                 <div class="rw-act">${redeemed
-                                    ? `<span class="rw-tag used"><i class="fas fa-lock"></i> used</span><span class="rw-by">${esc(redeemed)}</span>${can('users') ? `<button class="fb-btn sm" onclick="RW.unredeem('${esc(code)}')">Undo</button>` : ''}`
-                                    : `<span class="rw-tag ok"><i class="fas fa-circle-check"></i> available</span><button class="fb-btn sm primary" onclick="RW.redeem('${esc(code)}')">Mark as used</button>`}</div>
+                                    ? `<span class="rw-tag used"><i class="fas fa-lock"></i> used</span><span class="rw-by">${esc(redeemed)}</span>`
+                                    : `<span class="rw-tag ok"><i class="fas fa-circle-check"></i> available</span><button class="fb-btn sm primary${_busy[code] ? ' is-busy' : ''}" ${_busy[code] ? 'disabled' : ''} onclick="RW.redeem('${esc(code)}')">${_busy[code] ? 'Saving…' : 'Mark as used'}</button>`}</div>
                             </div>`;
                         }).join('') || (term ? '' : '<div class="fb-empty">No rewards earned yet.</div>')}
                     </div>
@@ -17518,26 +17519,28 @@ ${(() => {
             function set(v){ q = v; render(); }
 
 
+            let _busy = {};
             async function redeem(code){
+                if(_busy[code]) return;                       // one click, one write
+                const row = rows().find(x => String(x['Reward Code']).trim().toUpperCase() === code.toUpperCase());
+                if(!row) return;
+                // Apply immediately — the agent is on a call and cannot wait for a
+                // round trip. Reverted with a clear message if the save fails.
+                _busy[code] = true;
+                const before = row['Redeemed At'];
+                row['Redeemed At'] = (PERM.name || PERM.email) + ' · just now';
+                render();
                 try {
                     const r = await apiCall('reward_redeem', { code, clientId: 'rw_' + code + '_' + Date.now().toString(36) });
                     if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
-                    const row = rows().find(x => String(x['Reward Code']).trim().toUpperCase() === code.toUpperCase());
-                    if(row) row['Redeemed At'] = r.redeemedAt || 'just now';
-                    UI.toast('Marked as used — the customer can be given 10% off.', 'success'); render();
-                } catch(e){ UI.toast('Not marked: ' + (e.message || e), 'error', 7000); }
+                    row['Redeemed At'] = r.redeemedAt || row['Redeemed At'];
+                    UI.toast('Marked as used — give the customer 10% off.', 'success');
+                } catch(e){
+                    row['Redeemed At'] = before;
+                    UI.toast('NOT marked: ' + (e.message || e) + ' — please try again.', 'error', 8000);
+                } finally { delete _busy[code]; render(); }
             }
-            async function unredeem(code){
-                if(!confirm('Make ' + code + ' available again?')) return;
-                try {
-                    const r = await apiCall('reward_unredeem', { code });
-                    if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
-                    const row = rows().find(x => String(x['Reward Code']).trim().toUpperCase() === code.toUpperCase());
-                    if(row) row['Redeemed At'] = '';
-                    UI.toast('Reward is available again.', 'success'); render();
-                } catch(e){ UI.toast('Could not undo: ' + (e.message || e), 'error'); }
-            }
-            return { render, set, redeem, unredeem };
+            return { render, set, redeem };
         })();
 
         const FB = (function(){
