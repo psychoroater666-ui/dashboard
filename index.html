@@ -3355,6 +3355,18 @@
         #submissions-detail-tbody td.subs-comment { width:100% !important; max-width:0 !important; overflow:hidden !important; cursor:pointer; }
         #submissions-detail-tbody td.subs-comment .subs-comment-text { display:block !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; min-width:120px; }
         #submissions-detail-tbody td.subs-comment.open .subs-comment-text { white-space:normal !important; overflow:visible !important; text-overflow:clip !important; line-height:1.45; }
+        .fu-box { margin-top:14px; padding:13px 15px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-light); }
+        .fu-title { font-size:0.74rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+        .fu-title i { color:var(--accent-blue); }
+        .fu-count { margin-left:auto; font-size:0.64rem; font-weight:800; background:rgba(1,1,151,.1); color:var(--accent-blue); border-radius:20px; padding:2px 8px; }
+        .fu-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+        .fu-item { padding:9px 11px; background:var(--white); border:1px solid var(--border-color); border-radius:9px; }
+        .fu-meta { font-size:0.66rem; color:var(--text-muted); margin-bottom:3px; }
+        .fu-meta b { color:var(--text-main); }
+        .fu-text { font-size:0.8rem; color:var(--text-main); line-height:1.5; white-space:pre-wrap; }
+        .fu-add { display:flex; gap:8px; align-items:flex-end; }
+        .fu-add textarea { flex:1; border:1.5px solid var(--border-color); border-radius:10px; padding:9px 11px; font:inherit; font-size:0.8rem; color:var(--text-main); background:var(--white); resize:vertical; outline:none; }
+        .fu-add textarea:focus { border-color:var(--accent-blue); }
         .wa-box { margin-top:14px; padding:13px 15px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-light); }
         .wa-title { font-size:0.74rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; margin-bottom:9px; }
         .wa-title i { color:#25D366; font-size:0.95rem; }
@@ -5808,7 +5820,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.42.0 · 11 Sep 2026 · funnel analytics';
+        const BUILD_VERSION = 'v2.43.0 · 11 Sep 2026 · follow-ups';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7914,6 +7926,27 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
         }
         function _waCode(inc){ return 'CRB-' + String(Math.abs(_hashStr(_incidentStableKey(inc)))).slice(0, 4); }
         function _hashStr(str){ let h = 0; for(let i = 0; i < String(str).length; i++){ h = ((h << 5) - h) + String(str).charCodeAt(i); h |= 0; } return h; }
+        async function addIncidentFollowUp(stableKey){
+            if(!requireCap('write', 'adding a follow-up note')) return;
+            const box = document.getElementById('fu-input'); if(!box) return;
+            const note = box.value.trim();
+            if(!note){ UI.toast('Write something first.', 'warning'); return; }
+            const btn = box.parentElement.querySelector('button');
+            if(btn){ btn.disabled = true; btn.textContent = 'Saving\u2026'; }
+            try {
+                const r = await apiCall('incident_followup', { id: stableKey, note, clientId: 'fu_' + Date.now().toString(36) });
+                if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
+                const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey);
+                if(inc) inc.followUps = (inc.followUps ? inc.followUps + '\n' : '') + (r.entry || note);
+                box.value = '';
+                UI.toast('Note added.', 'success');
+                try { if(inc && app && app.openIncidentDetailModalDirect) app.openIncidentDetailModalDirect(inc); } catch(e){}
+            } catch(e){
+                UI.toast('Not saved: ' + (e.message || e) + ' \u2014 please try again.', 'error', 7000);
+            } finally { if(btn){ btn.disabled = false; btn.textContent = 'Add note'; } }
+        }
+        window.addIncidentFollowUp = addIncidentFollowUp;
+
         function waOpen(stableKey, kind){
             const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey); if(!inc) return;
             const phone = _waPhone(inc);
@@ -8582,6 +8615,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     if(entry.category) inc.agentCategory = entry.category;
                     if(entry.reviewedBy) inc.reviewedBy = entry.reviewedBy;
                     if(entry.resolvedBy) inc.resolvedBy = entry.resolvedBy;
+                    if(entry.followUps) inc.followUps = entry.followUps;
                 }
             });
         }
@@ -10900,7 +10934,11 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 if(this._incWindowKey !== filtered.length + '|' + (state.currentView||'')) { this._incShown = INC_WINDOW; this._incWindowKey = filtered.length + '|' + (state.currentView||''); }
                 const shownCount = Math.min(this._incShown || INC_WINDOW, filtered.length);
                 const rows = filtered.slice(0, shownCount);
-                this._incAll = filtered;
+                // _incAll is the unfiltered set the toolbar filters against.
+                // Overwriting it with the filtered list meant clearing a filter
+                // could only restore what was left, so the view stayed stuck on
+                // the narrowed result until a full refresh.
+                this._incVisible = filtered;
                 const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#010197', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
                 UI.anchoredUpdate(document.querySelector('#inc-detail-table tbody'), () => {
                 document.querySelector('#inc-detail-table tbody').uiHTML = rows.map((inc, idx) => {
@@ -11091,6 +11129,22 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 // is "closed", so the real Valid/Fake call can still be made
                 // once the customer is actually reached.
                 const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                // Follow-ups: a case often develops after it is closed. Notes are
+                // added, never overwritten, and the case stays closed.
+                const fuList = String(inc.followUps || '').split('\n').filter(Boolean);
+                const fuHtml = (isClosed && (can('write') || fuList.length)) ? `
+                    <div class="fu-box">
+                        <div class="fu-title"><i class="fas fa-comment-medical"></i> Follow-up notes${fuList.length ? '<span class="fu-count">' + fuList.length + '</span>' : ''}</div>
+                        ${fuList.length ? '<div class="fu-list">' + fuList.map(l => {
+                            const m = l.match(/^(\S+ \S+)\s\u00b7\s([^:]+):\s([\s\S]*)$/);
+                            return m ? `<div class="fu-item"><div class="fu-meta"><b>${String(m[2]).replace(/</g,'&lt;')}</b> \u00b7 ${String(m[1]).replace(/</g,'&lt;')}</div><div class="fu-text">${String(m[3]).replace(/</g,'&lt;')}</div></div>`
+                                     : `<div class="fu-item"><div class="fu-text">${String(l).replace(/</g,'&lt;')}</div></div>`;
+                        }).join('') + '</div>' : ''}
+                        ${can('write') ? `<div class="fu-add">
+                            <textarea id="fu-input" rows="2" placeholder="Add an update \u2014 what changed since this was closed?" maxlength="1000"></textarea>
+                            <button class="fb-btn sm primary" onclick="addIncidentFollowUp('${_incidentStableKey(inc).replace(/'/g, "\\'")}')">Add note</button>
+                        </div>` : ''}
+                    </div>` : '';
                 const waHtml = waButtons(inc);
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
@@ -11214,6 +11268,7 @@ ${(() => {
                         <div class="inc-main-col-v2">
                             ${timelineHtml}
                             ${addCommentHtml}
+                        ${fuHtml}
                         ${waHtml}
                         </div>
                         <div class="inc-sidebar-v2">
@@ -11311,6 +11366,22 @@ ${(() => {
                 const currentCat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : CI_OTHER;
                 const categoryOptions = _categoryOptionsHtml(currentCat.id);
                 const needsRealDetermination = isClosed && inc.caseStatus === 'not_responding';
+                // Follow-ups: a case often develops after it is closed. Notes are
+                // added, never overwritten, and the case stays closed.
+                const fuList = String(inc.followUps || '').split('\n').filter(Boolean);
+                const fuHtml = (isClosed && (can('write') || fuList.length)) ? `
+                    <div class="fu-box">
+                        <div class="fu-title"><i class="fas fa-comment-medical"></i> Follow-up notes${fuList.length ? '<span class="fu-count">' + fuList.length + '</span>' : ''}</div>
+                        ${fuList.length ? '<div class="fu-list">' + fuList.map(l => {
+                            const m = l.match(/^(\S+ \S+)\s\u00b7\s([^:]+):\s([\s\S]*)$/);
+                            return m ? `<div class="fu-item"><div class="fu-meta"><b>${String(m[2]).replace(/</g,'&lt;')}</b> \u00b7 ${String(m[1]).replace(/</g,'&lt;')}</div><div class="fu-text">${String(m[3]).replace(/</g,'&lt;')}</div></div>`
+                                     : `<div class="fu-item"><div class="fu-text">${String(l).replace(/</g,'&lt;')}</div></div>`;
+                        }).join('') + '</div>' : ''}
+                        ${can('write') ? `<div class="fu-add">
+                            <textarea id="fu-input" rows="2" placeholder="Add an update \u2014 what changed since this was closed?" maxlength="1000"></textarea>
+                            <button class="fb-btn sm primary" onclick="addIncidentFollowUp('${_incidentStableKey(inc).replace(/'/g, "\\'")}')">Add note</button>
+                        </div>` : ''}
+                    </div>` : '';
                 const waHtml = waButtons(inc);
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
@@ -11411,6 +11482,7 @@ ${(() => {
                             <div class="inc-main-col-v2">
                                 ${timelineHtml}
                                 ${addCommentHtml}
+                        ${fuHtml}
                         ${waHtml}
                             </div>
                             <div class="inc-sidebar-v2">
@@ -11424,7 +11496,8 @@ ${(() => {
 
 
             exportIncidents() {
-                const incs = this._incAll || [];
+                // export what is on screen, which is what the person expects
+                const incs = this._incVisible || this._incAll || [];
                 const headers = ['Date','Branch','Product','Complaint','Comment','Channel','Survey','Rating','OrderID'];
                 const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
                 const lines = [headers.join(',')].concat(incs.map(i => [
