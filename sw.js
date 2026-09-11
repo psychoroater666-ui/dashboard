@@ -43,10 +43,19 @@ self.addEventListener('push', event => {
   event.waitUntil(self.registration.showNotification(title, {
     body: d.body || '',
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
+    // The badge is the small mark in the status bar. It has to be a white
+    // silhouette on transparency -- handing Android the full-colour icon is
+    // what turned it into a pale blob.
+    badge: '/icons/badge-96.png',
+    // The incident's own time, so an alert that arrives late doesn't say "now".
+    timestamp: d.ts || Date.now(),
+    // One line per branch: ten complaints from one branch replace each other
+    // instead of filling the shade with ten rows.
     tag: d.tag || 'sentinel',
     renotify: true,
-    requireInteraction: !!d.requireInteraction,
+    // Overdue cases stay on the lock screen until somebody deals with them.
+    requireInteraction: !!d.critical,
+    vibrate: d.critical ? [200, 80, 200, 80, 200] : [150],
     data: { url: d.url || '/' }
   }));
 });
