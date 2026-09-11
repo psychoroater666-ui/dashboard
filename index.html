@@ -5770,7 +5770,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.40.2 · 11 Sep 2026 · help';
+        const BUILD_VERSION = 'v2.40.3 · 11 Sep 2026 · help';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18092,11 +18092,11 @@ ${(() => {
             ];
             const FAQ = [
                 ['Why does a status take a moment to appear on someone else\'s screen?',
-                 'Your own screen updates instantly. Other people see it on their next refresh, which is at most 15 seconds. If it takes longer than that, tell Farooq.'],
+                 'Your own screen updates instantly. Other people see it on their next refresh, which is at most 15 seconds. If it takes longer than that, report it.'],
                 ['What does the red "Live feed unavailable" message mean?',
-                 'The dashboard could not reach the server for a moment, so it is showing the last figures it had rather than wrong ones. It clears itself. Nothing is lost, and anything you saved was still saved.'],
+                 'The connection to our backend was briefly interrupted, so the dashboard is holding the last confirmed figures rather than showing incomplete ones. It restores itself automatically. Nothing is lost, and anything you saved was saved.'],
                 ['What does "Still loading earlier data" mean?',
-                 'Your older history is still downloading, so the totals on screen are lower than reality. Wait for it to disappear before trusting the numbers. It usually takes a few seconds.'],
+                 'Historical records are still being retrieved from the backend, so the totals on screen are not yet complete. Wait for the message to clear before relying on the numbers \u2014 it usually takes a few seconds.'],
                 ['Why does "Needs Attention Today" not change with the date filter?',
                  'It is deliberately a live view of what is unresolved right now. The date filter controls the analysis cards, not the live queue.'],
                 ['Why is there no alert sound?',
@@ -18119,9 +18119,6 @@ ${(() => {
                 ['What counts as an incident?',
                  'Any submission rated 3 or below. That is automatic — nobody creates incidents by hand. A 4 or 5 star submission is never an incident, even if the comment is negative.'],
 
-                ['Why does the dashboard show a different number than the raw data?',
-                 'The dashboard applies a 9 AM business-day cutoff, removes exact duplicate rows, and excludes incomplete submissions. The raw records include everything, unfiltered. The dashboard number is the one to use.'],
-
                 ['What does the date filter actually control?',
                  'The analysis cards — totals, comparisons, complaint reasons, branch performance. It does not control the live queue (Needs Attention Today) or the alert sound, which are always about right now.'],
 
@@ -18132,7 +18129,7 @@ ${(() => {
                  'Seeing it is not the same as reviewing it. The alert repeats every five minutes until someone opens the case, and again if it is not closed within fifteen minutes of being reviewed. Use "View and acknowledge" rather than Snooze — that silences it for everyone.'],
 
                 ['I closed a case by mistake — can I undo it?',
-                 'Not from the dashboard. Tell Farooq with the branch and time; it is corrected on the backend so there is a record of the change. Reward codes are the same: marking one used cannot be undone.'],
+                 'Not from the dashboard. Raise it with your CX lead, with the branch and time. It is corrected on the backend so the change itself is recorded. Reward codes are the same: marking one used cannot be undone.'],
 
                 ['A customer says they have stamps but nothing shows — what do I do?',
                  'Search their phone number on the Rewards tab rather than a code. It will show how many stamps they have, or say nothing was found. Stamps only count once per day, so several submissions in one day still earn one.'],
@@ -18144,7 +18141,7 @@ ${(() => {
                  'Yes — all the main tabs work on mobile. Resolving incidents and handling rewards are easier on a laptop, but nothing is blocked.'],
 
                 ['Why does the dashboard look slow on my machine?',
-                 'Close other browser tabs you are not using, keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, tell Farooq which tab and what you were doing.'],
+                 'Close other browser tabs you are not using, keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, report which tab you were on and what you were doing.'],
 
                 ['What happens to what I do here — is it recorded?',
                  'Yes. Every resolution, complaint logged, escalation and reward redemption is recorded with your name and the time. That is for accuracy and accountability, not monitoring — it is how we can tell what happened when a number looks wrong.']
@@ -18179,7 +18176,7 @@ ${(() => {
                         <div class="help-section">Questions people ask</div>
                         ${FAQ.map(([q, a], i) => `<details class="help-q"><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}
 
-                        <div class="help-foot">Anything not answered here — message Farooq on WhatsApp from Contact Support.</div>
+                        <div class="help-foot">Anything not answered here \u2014 use Contact Support.</div>
                     </div>
                 </div>`;
                 document.body.appendChild(el);
