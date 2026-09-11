@@ -3332,6 +3332,7 @@
         .sdlw-card { padding:18px 22px; }
         .radar-card { padding:18px 22px; }
         .churn-card { padding:18px 22px; }
+        .bp-card { padding:18px 22px; }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
            barely-there tint that fades out to the right, and a status dot instead
@@ -4434,6 +4435,12 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                             <div><span>Close</span><b>15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
+                    </div>
+
+                    <!-- Capacity: the volume at which each branch starts failing -->
+                    <div class="card bp-card" id="bp-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-gauge-high" style="color:#010197;margin-right:6px;"></i>BRANCH BREAKING POINT</h3><span class="text-xs text-muted" id="bp-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="bp-body"></div>
                     </div>
 
                     <!-- Silent churn: regulars who stopped coming and never said why -->
@@ -5729,7 +5736,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.35.3 · 11 Sep 2026 · QA fixes';
+        const BUILD_VERSION = 'v2.36.0 · 11 Sep 2026 · capacity';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9725,6 +9732,66 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 el.uiHTML = `<i class="fas ${icon}"></i><div><b class="v-head">${head}</b> ${parts.join(' · ')}.${cause}${sla}</div>`;
             },
 
+            // Capacity analysis. For each branch, group its history into
+            // hour-buckets by throughput and find the volume above which the
+            // incident rate jumps. That turns "incidents are up" into "add a
+            // person when you pass N orders an hour", which is a decision.
+            // Uses verified + unreviewed only — fakes would flatter capacity.
+            renderBreakingPoint() {
+                const host = document.getElementById('bp-body'), sub = document.getElementById('bp-sub'); if(!host) return;
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const hourKey = x => { const t = String(_rawFieldExact(x._raw, 'Created At') || ''); const m = t.match(/(\d{1,2}):(\d{2})/);
+                    if(!m || !x.date) return null; let h = +m[1]; if(/pm/i.test(t) && h < 12) h += 12; if(/am/i.test(t) && h === 12) h = 0; return x.date + 'T' + h; };
+                // build per-branch hour buckets over ALL history
+                const B = {};
+                (rawData.submissions || []).forEach(x => { const k = hourKey(x); if(!k || !x.branch) return;
+                    const b = B[x.branch] || (B[x.branch] = {}); (b[k] = b[k] || { s:0, i:0 }).s++; });
+                (rawData.incidents || []).forEach(x => { if(x.caseStatus === 'fake') return; const k = hourKey(x); if(!k || !x.branch) return;
+                    const b = B[x.branch] || (B[x.branch] = {}); (b[k] = b[k] || { s:0, i:0 }).i++; });
+                const out = [];
+                Object.keys(B).forEach(branch => {
+                    const hours = Object.values(B[branch]).filter(h => h.s >= 3);
+                    if(hours.length < 40) return;                       // too little history to judge
+                    hours.sort((a, b2) => a.s - b2.s);
+                    const peak = hours[hours.length - 1].s;
+                    // try each candidate threshold; keep the one with the biggest
+                    // rate jump that still has enough hours on both sides
+                    let best = null;
+                    for(let t = 5; t <= peak - 2; t++){
+                        const lo = hours.filter(h => h.s <= t), hi = hours.filter(h => h.s > t);
+                        if(lo.length < 12 || hi.length < 8) continue;
+                        const loS = lo.reduce((n, h) => n + h.s, 0), loI = lo.reduce((n, h) => n + h.i, 0);
+                        const hiS = hi.reduce((n, h) => n + h.s, 0), hiI = hi.reduce((n, h) => n + h.i, 0);
+                        if(!loS || !hiS) continue;
+                        const loR = loI / loS * 100, hiR = hiI / hiS * 100;
+                        if(hiR <= loR) continue;
+                        const lift = loR > 0.2 ? hiR / loR : (hiR > 1 ? 99 : 0);
+                        if(!best || lift > best.lift) best = { t, loR, hiR, lift, hiHours: hi.length };
+                    }
+                    const totalS = hours.reduce((n, h) => n + h.s, 0), totalI = hours.reduce((n, h) => n + h.i, 0);
+                    out.push({ branch, peak, hours: hours.length, rate: totalS ? totalI / totalS * 100 : 0,
+                               bp: (best && best.lift >= 1.8 && best.hiR - best.loR >= 1.5) ? best : null });
+                });
+                if(!out.length){ host.uiHTML = '<div style="padding:16px 0;color:var(--text-muted);font-size:0.82rem;">Not enough hourly history yet — this needs a few weeks of data per branch.</div>'; return; }
+                const found = out.filter(o => o.bp).sort((a, b2) => b2.bp.lift - a.bp.lift);
+                const solid = out.filter(o => !o.bp);
+                if(sub) sub.textContent = found.length ? found.length + ' branch' + (found.length === 1 ? '' : 'es') + ' with a limit' : 'no limits found';
+                host.uiHTML = (found.slice(0, 4).map(o => `
+                    <div style="display:grid;grid-template-columns:1fr auto;gap:10px 14px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border-color);">
+                        <div style="min-width:0;">
+                            <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);">${esc2(o.branch)}</div>
+                            <div style="font-size:0.74rem;color:var(--text-main);margin-top:3px;line-height:1.5;">
+                                Holds up to <b>${o.bp.t}</b> submissions/hour at <b>${o.bp.loR.toFixed(1)}%</b>.
+                                Above that the rate rises to <b style="color:#DC2626;">${o.bp.hiR.toFixed(1)}%</b>.
+                            </div>
+                            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Crossed it in ${o.bp.hiHours} hour${o.bp.hiHours === 1 ? '' : 's'} of ${o.hours} measured · busiest hour seen ${o.peak}</div>
+                        </div>
+                        <span style="font-size:0.95rem;font-weight:800;color:#DC2626;white-space:nowrap;">${o.bp.lift >= 99 ? 'new' : o.bp.lift.toFixed(1) + '\u00d7'}</span>
+                    </div>`).join('')
+                 || '<div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No branch shows a volume at which quality drops — every branch handles its current peak.</div>')
+                 + (solid.length ? `<div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;"><b style="color:#059669;">${solid.length}</b> branch${solid.length === 1 ? '' : 'es'} hold quality at their peak: ${esc2(solid.slice(0, 5).map(o => o.branch + ' (' + o.peak + '/hr)').join(', '))}${solid.length > 5 ? '…' : ''}</div>` : '');
+            },
+
             renderChurnRisk() {
                 const host = document.getElementById('churn-body'), sub = document.getElementById('churn-sub'); if(!host) return;
                 const today = DATA_MAX_DATE ? new Date(DATA_MAX_DATE + 'T12:00:00') : new Date();
@@ -9904,6 +9971,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 try { this.renderSameDayLastWeek(); } catch(e){ console.warn('same day:', e); }
                 try { this.renderEmergingIssues(); } catch(e){ console.warn('emerging:', e); }
                 try { this.renderChurnRisk(); } catch(e){ console.warn('churn:', e); }
+                try { this.renderBreakingPoint(); } catch(e){ console.warn('breaking point:', e); }
                 try { this.renderVerdict(); } catch(e){ console.warn('verdict:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
