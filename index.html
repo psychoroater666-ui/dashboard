@@ -5729,7 +5729,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.9 · 11 Sep 2026 · sign out';
+        const BUILD_VERSION = 'v2.34.0 · 11 Sep 2026 · feed recovery';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6407,8 +6407,22 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     try { await DataFeed.sync({ full: !!window.__forceFullNext }); synced = true; }
                     catch(e){ lastErr = e; if(attempt < 2) await new Promise(r => setTimeout(r, 1200)); }
                 }
-                if(synced){ window.__feedOk = true; window.__feedErr = null; }
-                else { window.__feedOk = false; window.__feedErr = String(lastErr && lastErr.message || lastErr); window.__feedFailures = (window.__feedFailures||0) + 1; console.error('[DataFeed] sync failed twice - falling back to CSV this round:', lastErr); }
+                if(synced){ window.__feedOk = true; window.__feedErr = null; window.__feedFailures = 0; }
+                else {
+                    window.__feedOk = false; window.__feedErr = String(lastErr && lastErr.message || lastErr);
+                    window.__feedFailures = (window.__feedFailures || 0) + 1;
+                    console.error('[DataFeed] sync failed twice this round:', lastErr);
+                    // A failed round can leave the per-tab state tokens stale, and
+                    // every later poll then sends the same bad state and fails the
+                    // same way -- which is why only a manual reload cleared it.
+                    // After two bad rounds, drop the state and ask for everything
+                    // fresh on the next poll so it recovers by itself.
+                    if(window.__feedFailures >= 2){
+                        try { Object.keys(DataFeed.tabs || {}).forEach(k => { if(DataFeed.tabs[k]) DataFeed.tabs[k].state = null; }); } catch(e){}
+                        window.__forceFullNext = true;
+                        console.warn('[DataFeed] clearing state and forcing a full resync on the next poll');
+                    }
+                }
                 _feedErrorPill();
                 window.__forceFullNext = false;
             }
