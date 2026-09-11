@@ -3232,6 +3232,10 @@
         .rw-search input { width:100%; box-sizing:border-box; padding:15px 44px; border:2px solid var(--border-color); border-radius:14px; font:800 1rem 'Inter',sans-serif; letter-spacing:1px; color:var(--text-main); background:var(--white); outline:none; text-transform:uppercase; }
         .rw-search input:focus { border-color:#010197; }
         .rw-search button { position:absolute; right:12px; top:50%; transform:translateY(-50%); border:none; background:none; color:var(--text-muted); cursor:pointer; font-size:0.9rem; }
+        .rw-progress { display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--border-color); border-left:3px solid #3B5BDB; border-radius:12px; background:var(--white); margin-bottom:10px; }
+        .rw-prog-stamps { display:flex; gap:6px; flex-shrink:0; }
+        .rw-prog-stamps span { width:18px; height:18px; border-radius:50%; border:2px dashed #CBD5E1; }
+        .rw-prog-stamps span.on { border:2px solid #010197; background:#010197; }
         .rw-none { display:flex; align-items:center; gap:10px; padding:14px 16px; border-radius:12px; background:rgba(220,38,38,.07); color:#B91C1C; font-size:0.85rem; margin-bottom:12px; }
         .rw-row { display:grid; grid-template-columns:150px 1fr 150px auto; gap:14px; align-items:center; padding:13px 16px; border-bottom:1px solid var(--border-color); }
         .rw-row:last-child { border-bottom:none; }
@@ -5176,7 +5180,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.24.0 · 10 Sep 2026 · rewards';
+        const BUILD_VERSION = 'v2.24.2 · 10 Sep 2026 · rewards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15633,8 +15637,13 @@ ${(() => {
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
         function can(cap){
-            const c = PERM.can || ROLE_CAPS[roleKey(PERM.role)] || ROLE_CAPS.viewer;
-            return !!c[cap];
+            // Merge, don't replace: an older backend sends a capability list from
+            // before a feature existed, and trusting it blindly would hide that
+            // feature until the backend is redeployed. The server still enforces
+            // the real answer on every write, so a permissive client is safe.
+            const local = ROLE_CAPS[roleKey(PERM.role)] || ROLE_CAPS.viewer;
+            const server = PERM.can || {};
+            return (cap in server) ? !!server[cap] : !!local[cap];
         }
         function requireCap(cap, what){
             if(can(cap)) return true;
@@ -17177,14 +17186,22 @@ ${(() => {
         const RW = (function(){
             let q = '';
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            const rows = () => { const t = DataFeed.tabs.stamps; return (t && t.objRows) ? t.objRows.filter(r => String(r['Reward Code'] || '').trim()) : []; };
+            const all_ = () => { const t = DataFeed.tabs.stamps; return (t && t.objRows) ? t.objRows : []; };
+            const rows = () => all_().filter(r => String(r['Reward Code'] || '').trim());
             function render(){
                 const host = document.getElementById('rewards-root'); if(!host) return;
                 if(!can('reward')){ host.innerHTML = '<div class="fb-empty">Rewards are handled by the Call Center.</div>'; return; }
                 const all = rows().slice().reverse();
                 const used = all.filter(r => String(r['Redeemed At'] || '').trim());
                 const term = q.trim().toUpperCase();
-                const list = term ? all.filter(r => [r['Reward Code'], r['Phone'], r['Name']].join(' ').toUpperCase().includes(term)) : all.slice(0, 40);
+                // Search covers everyone, including customers still collecting, so
+                // an agent can answer "how many do I have?" from a phone number.
+                const everyone = all_().slice().reverse();
+                const matches = term ? everyone.filter(r => [r['Reward Code'], r['Phone'], r['Name']].join(' ').toUpperCase().includes(term)) : [];
+                const list = term ? matches.filter(r => String(r['Reward Code'] || '').trim()) : all.slice(0, 40);
+                const inProgress = term ? matches.filter(r => !String(r['Reward Code'] || '').trim() || (Number(r['Stamps']) || 0) > 0) : [];
+                const collecting = all_().filter(r => (Number(r['Stamps']) || 0) > 0);
+                const nearly = collecting.filter(r => (Number(r['Stamps']) || 0) >= 1);
                 const rate = all.length ? Math.round(used.length / all.length * 100) : 0;
                 host.uiHTML = `
                     <div class="fb-toolbar">
@@ -17194,12 +17211,30 @@ ${(() => {
                         <div class="rw-stat"><b>${all.length}</b><span>earned</span></div>
                         <div class="rw-stat"><b>${used.length}</b><span>redeemed</span></div>
                         <div class="rw-stat"><b>${rate}%</b><span>redemption</span></div>
+                        <div class="rw-stat"><b>${collecting.length}</b><span>collecting</span></div>
                     </div>
                     <div class="rw-search"><i class="fas fa-magnifying-glass"></i>
                         <input id="rw-q" placeholder="Type or paste the customer's code…" value="${esc(q)}" oninput="RW.set(this.value)" autocomplete="off">
                         ${q ? `<button onclick="RW.set('')" title="Clear"><i class="fas fa-xmark"></i></button>` : ''}
                     </div>
-                    ${term && !list.length ? `<div class="rw-none"><i class="fas fa-circle-xmark"></i> <b>No reward found with that code.</b> Ask the customer to check the code on their feedback screen.</div>` : ''}
+                    ${inProgress.length ? inProgress.map(r => {
+                        const st = Number(r['Stamps']) || 0, tgt = 2, left = Math.max(0, tgt - st);
+                        const done = Number(r['Cards Completed']) || 0;
+                        return `<div class="rw-progress">
+                            <div class="rw-prog-stamps">${Array.from({length: tgt}, (_, i) => `<span class="${i < st ? 'on' : ''}"></span>`).join('')}</div>
+                            <div>
+                                <div style="font-size:0.86rem;font-weight:800;color:var(--text-main);">${esc(r['Name'] || 'Customer')} <span style="color:var(--text-muted);font-weight:600;font-size:0.76rem;">${esc(r['Phone'] || '')}</span></div>
+                                <div style="font-size:0.78rem;color:var(--text-main);margin-top:3px;">
+                                    ${left === 0
+                                        ? 'Has <b>' + st + '</b> of ' + tgt + ' stamps — reward not issued yet.'
+                                        : 'Has <b>' + st + '</b> of ' + tgt + ' stamps — <b>' + left + ' more</b> to earn 10% off.'}
+                                    ${done ? '<span style="color:var(--text-muted);"> · ' + done + ' reward' + (done === 1 ? '' : 's') + ' earned before</span>' : ''}
+                                </div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px;">Last stamp ${esc(String(r['Last Stamp'] || '').slice(0, 10)) || '—'} · one stamp per day when they share feedback</div>
+                            </div>
+                        </div>`;
+                    }).join('') : ''}
+                    ${term && !list.length && !inProgress.length ? `<div class="rw-none"><i class="fas fa-circle-xmark"></i> <b>Nothing found.</b> Check the code, or search by the customer's phone number.</div>` : ''}
                     <div class="fb-section" style="padding:0;overflow:hidden;">
                         ${list.map(r => {
                             const code = String(r['Reward Code'] || '').trim();
