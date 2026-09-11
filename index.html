@@ -3106,6 +3106,7 @@
         .wa-hint { font-size:0.66rem; color:var(--text-muted); margin-top:8px; }
         .sdlw-card { padding:18px 22px; }
         .radar-card { padding:18px 22px; }
+        .churn-card { padding:18px 22px; }
         .sla-card { display:flex; align-items:stretch; justify-content:space-between; gap:20px; padding:18px 22px; position:relative; overflow:hidden; }
         .sla-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,#3B5BDB,#010197); }
         .sla-left { display:flex; flex-direction:column; justify-content:center; gap:8px; min-width:0; }
@@ -3904,6 +3905,12 @@
                             <div><span>Close</span><b>15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
+                    </div>
+
+                    <!-- Silent churn: regulars who stopped coming and never said why -->
+                    <div class="card churn-card" id="churn-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#B45309;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="churn-body"></div>
                     </div>
 
                     <!-- Pattern detection: what is abnormal for THIS branch today -->
@@ -5192,7 +5199,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.26.1 · 10 Sep 2026 · palette';
+        const BUILD_VERSION = 'v2.27.0 · 10 Sep 2026 · churn';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9033,6 +9040,70 @@
             // branch's own 14-day baseline and flags what is running far above it
             // TODAY -- while it can still be fixed. A raw count cannot do this: a
             // busy branch would always look worst and a quiet one never would.
+            // Silent churn. Every other card measures what happened; this one
+            // measures what STOPPED happening — regulars who used to appear on a
+            // rhythm and have now gone quiet. Uses all history, not the filtered
+            // period, because absence is only visible against a long baseline.
+            renderChurnRisk() {
+                const host = document.getElementById('churn-body'), sub = document.getElementById('churn-sub'); if(!host) return;
+                const today = DATA_MAX_DATE ? new Date(DATA_MAX_DATE + 'T12:00:00') : new Date();
+                const dayOf = d => { const t = Date.parse(d + 'T12:00:00'); return isNaN(t) ? null : t; };
+                const byPhone = {};
+                (rawData.submissions || []).forEach(x => {
+                    const ph = String(_rawFieldExact(x._raw, 'Phone Number') || '').replace(/[^0-9]/g, '').slice(-10);
+                    if(!ph || ph.length < 10 || !x.date) return;
+                    const c = byPhone[ph] || (byPhone[ph] = { ph, name: '', visits: [], branches: {}, lastRating: null, lastComment: '', complained: false });
+                    const nm = String(_rawFieldExact(x._raw, 'Name') || '').trim(); if(nm && !c.name) c.name = nm;
+                    c.visits.push(x.date);
+                    if(x.branch) c.branches[x.branch] = (c.branches[x.branch] || 0) + 1;
+                });
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+                const risks = [];
+                Object.values(byPhone).forEach(c => {
+                    const days = [...new Set(c.visits)].sort();
+                    if(days.length < 3) return;                                   // not a regular yet
+                    const first = dayOf(days[0]), last = dayOf(days[days.length - 1]);
+                    if(!first || !last) return;
+                    const span = (last - first) / 86400000;
+                    const cadence = span / (days.length - 1);                     // typical days between visits
+                    const silent = (today - last) / 86400000;
+                    if(cadence <= 0 || silent < 14) return;
+                    const overdue = silent / cadence;
+                    if(overdue < 2.5) return;                                     // not yet unusual for them
+                    const lastSub = (rawData.submissions || []).filter(x => {
+                        const ph = String(_rawFieldExact(x._raw, 'Phone Number') || '').replace(/[^0-9]/g, '').slice(-10);
+                        return ph === c.ph && x.date === days[days.length - 1];
+                    })[0];
+                    const rating = lastSub ? lastSub.smileScore : null;
+                    const everComplained = (rawData.incidents || []).some(i => String(_rawFieldExact(i._raw, 'Phone Number') || '').replace(/[^0-9]/g, '').slice(-10) === c.ph);
+                    risks.push({ ...c, visits: days.length, silent: Math.round(silent), cadence: Math.round(cadence), overdue,
+                                 rating, everComplained, branch: Object.entries(c.branches).sort((a, b) => b[1] - a[1])[0]?.[0] || '',
+                                 lastDate: days[days.length - 1] });
+                });
+                risks.sort((a, b) => (b.visits * b.overdue) - (a.visits * a.overdue));
+                const silentOnes = risks.filter(r => !r.everComplained);
+                if(sub) sub.textContent = risks.length ? risks.length + ' regulars gone quiet' : 'none';
+                if(!risks.length){
+                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No regular customer has stopped coming unexpectedly.</div>`;
+                    return;
+                }
+                host.uiHTML = risks.slice(0, 5).map(r => {
+                    const sev = r.overdue >= 5 ? '#DC2626' : '#D97706';
+                    const why = r.everComplained
+                        ? (r.rating && r.rating <= 3 ? 'last visit was a ' + r.rating + '★ complaint' : 'has complained before')
+                        : '<b>never complained</b> — you would not otherwise know';
+                    return `<div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                        <span style="width:34px;height:34px;border-radius:10px;background:${sev}14;color:${sev};display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;flex-shrink:0;">${r.visits}×</span>
+                        <div style="min-width:0;">
+                            <div style="font-size:0.83rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc2(r.name || r.ph)} <span style="color:var(--text-muted);font-weight:600;font-size:0.74rem;">${esc2(r.branch)}</span></div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">visited every ~${r.cadence}d · silent <b style="color:${sev};">${r.silent} days</b> · ${why}</div>
+                        </div>
+                        <span style="font-size:0.66rem;font-weight:800;color:${sev};white-space:nowrap;">${r.overdue.toFixed(1)}× overdue</span>
+                    </div>`;
+                }).join('') + `<div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">
+                    <b style="color:var(--text-main);">${silentOnes.length}</b> of these never complained — the ones you would never hear from.${risks.length > 5 ? ' Showing top 5 of ' + risks.length + '.' : ''}</div>`;
+            },
+
             renderEmergingIssues() {
                 const host = document.getElementById('radar-body'), sub = document.getElementById('radar-sub'); if(!host) return;
                 const end = (document.getElementById('filter-end-date') || {}).value; if(!end){ host.uiHTML = ''; return; }
@@ -9146,6 +9217,7 @@
                 try { this.renderTopReasons(); } catch(e){ console.warn('top reasons:', e); }
                 try { this.renderSameDayLastWeek(); } catch(e){ console.warn('same day:', e); }
                 try { this.renderEmergingIssues(); } catch(e){ console.warn('emerging:', e); }
+                try { this.renderChurnRisk(); } catch(e){ console.warn('churn:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
                     const tSubs = _stabilizeCount(p1.subs.length, _subsStabilizer, !window._isBackgroundRefresh);
