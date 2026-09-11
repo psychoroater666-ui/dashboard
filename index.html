@@ -1320,7 +1320,7 @@
         .sl-chip-mention   { background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
 
         .sl-branch-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:rgba(1,1,151,.08); color:#010197; border:1px solid rgba(1,1,151,.12); }
-        .sl-urgency { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#FEF2F2; color:#DC2626; border:1px solid rgba(220,38,38,.2); animation: pulse 2s infinite; }
+        .sl-urgency { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:rgba(220,38,38,.07); color:#DC2626; border:1px solid rgba(220,38,38,.2); animation: pulse 2s infinite; }
         .sl-dup-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:800; background:#F3E8FF; color:#7C3AED; border:1px solid rgba(124,58,237,.25); }
 
         .sl-content { font-size:0.85rem; line-height:1.65; color:var(--text-main); margin:10px 0 12px; font-weight:500; }
@@ -3126,6 +3126,16 @@
         @media (max-width:820px){ .sla-card { flex-direction:column; gap:14px; } .sla-rules { border-left:none; border-top:1px solid var(--border-color); padding-left:0; padding-top:12px; text-align:left; } .sla-rules div { justify-content:flex-start; } }
         .sla-chip { display:inline-flex; align-items:center; gap:5px; font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:20px; border:1px solid; white-space:nowrap; }
         .sla-chip small { font-weight:600; opacity:.75; font-size:0.62rem; text-transform:uppercase; letter-spacing:.3px; }
+        /* ═══════════ INLINE NOTICES ═══════════ */
+        /* One look for every in-app message — instruction, warning or blocked
+           action — built from the brand palette instead of ad-hoc yellows. */
+        .note { display:flex; align-items:flex-start; gap:9px; padding:10px 13px; border-radius:11px;
+                font-size:0.78rem; line-height:1.55; border:1px solid; }
+        .note i { margin-top:2px; font-size:0.78rem; flex-shrink:0; }
+        .note.info   { background:rgba(1,1,151,.06);   border-color:rgba(1,1,151,.16);   color:var(--accent-blue); }
+        .note.warn   { background:rgba(1,1,151,.05);   border-color:rgba(1,1,151,.22);   color:var(--accent-blue); }
+        .note.danger { background:rgba(220,38,38,.07); border-color:rgba(220,38,38,.22); color:#B91C1C; }
+        .note.ok     { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.22); color:#047857; }
         /* ═══════════ ASSISTANT ═══════════ */
         /* Liquid-glass orb: a dark glass shell with an iridescent core that
            drifts, a slow conic sheen sweeping the surface, and a breathing
@@ -5182,7 +5192,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.26.0 · 10 Sep 2026 · assistant';
+        const BUILD_VERSION = 'v2.26.1 · 10 Sep 2026 · palette';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5813,7 +5823,7 @@
             document.body.classList.add('data-partial');
             if(!el){
                 el = document.createElement('div'); el.id = 'partial-data-banner';
-                el.style.cssText = 'position:sticky;top:0;z-index:9998;background:#FEF3C7;border-bottom:1px solid #FCD34D;color:#92400E;font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
+                el.style.cssText = 'position:sticky;top:0;z-index:9998;background:rgba(1,1,151,.06);border-bottom:1px solid rgba(1,1,151,.16);color:var(--accent-blue);font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
                 el.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:0.72rem;"></i> Still loading earlier data \u2014 totals shown below are incomplete.';
                 const host = document.querySelector('.content-scroll') || document.body;
                 host.insertBefore(el, host.firstChild);
@@ -5827,7 +5837,7 @@
             if(window.__feedOk !== false){ if(el) el.remove(); return; }
             if(!el){
                 el = document.createElement('div'); el.id = 'feed-error-pill';
-                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:#FEF2F2;border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
+                el.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:99990;background:rgba(220,38,38,.07);border:1px solid #FECACA;border-radius:999px;padding:8px 14px;font-size:0.74rem;font-weight:700;color:#B91C1C;box-shadow:0 6px 20px rgba(0,0,0,.12);display:flex;align-items:center;gap:8px;max-width:70vw;';
                 document.body.appendChild(el);
             }
             el.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Live feed unavailable — showing last known data. <span style="font-weight:500;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + String(window.__feedErr || '').replace(/</g,'&lt;').slice(0,120) + '</span>';
@@ -8059,7 +8069,7 @@
             if(!validity){
                 const f = btnEl && btnEl.closest('.inc-add-comment-v2');
                 let msg = f ? f.querySelector('.inc-validity-msg') : null;
-                if(!msg && f){ msg = document.createElement('div'); msg.className = 'inc-validity-msg'; msg.style.cssText = 'margin:8px 0 0;padding:9px 12px;border-radius:9px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:0.78rem;font-weight:600;'; const row = f.querySelector('.inc-validity-row, .inc-validity-btn') ; (row && row.parentNode !== f ? row.parentNode : f).appendChild(msg); }
+                if(!msg && f){ msg = document.createElement('div'); msg.className = 'inc-validity-msg'; msg.style.cssText = 'margin:8px 0 0;padding:9px 12px;border-radius:9px;border:1px solid rgba(1,1,151,.2);background:rgba(220,38,38,.07);border:1px solid #FECACA;color:#B91C1C;font-size:0.78rem;font-weight:600;'; const row = f.querySelector('.inc-validity-row, .inc-validity-btn') ; (row && row.parentNode !== f ? row.parentNode : f).appendChild(msg); }
                 if(msg) msg.textContent = 'Choose Valid, Fake or Not Responding first — automated detection can be wrong, so this needs a human call.';
                 try { f && f.querySelectorAll('.inc-validity-btn').forEach(b => { b.style.transition='box-shadow .2s'; b.style.boxShadow='0 0 0 3px rgba(220,38,38,.25)'; setTimeout(()=>{ b.style.boxShadow=''; }, 900); }); } catch(e){}
                 return;
