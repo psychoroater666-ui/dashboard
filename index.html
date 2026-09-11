@@ -162,9 +162,6 @@
         body.dark-theme .collapse-header { border-color: var(--border-color) !important; }
         body.dark-theme .collapse-chevron { background: #21262D !important; }
 
-        body.dark-theme .sl-platform-badge.sl-platform-instagram { background:#3d1a23 !important; }
-        body.dark-theme .sl-platform-badge.sl-platform-facebook  { background:#0d2340 !important; }
-        body.dark-theme .sl-platform-badge.sl-platform-twitterx  { background:#1c1c1c !important; }
 
         body.dark-theme .login-card { background: #161B22 !important; }
         body.dark-theme .login-input { background: #21262D !important; border-color: var(--border-color) !important; color: var(--text-main) !important; }
@@ -1304,18 +1301,6 @@
         .sl-mention-card.sentiment-mention   { border-left: 4px solid var(--text-muted); }
 
         .sl-card-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
-        .sl-platform-badge { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-instagram { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-facebook { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-twitterx { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-google { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-tiktok { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-linkedin { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-reddit { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-playstore { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-blink { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-foodpanda { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
-        .sl-platform-default { background:var(--bg-light); color:var(--text-main); border:1px solid var(--border-color); }
 
         .sl-type-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:0.68rem; font-weight:700; background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color); }
         .sl-time { font-size:0.72rem; color:var(--text-muted); font-weight:600; }
@@ -1386,19 +1371,60 @@
         }
         .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; transform:translateY(-2px); box-shadow:0 4px 12px rgba(1,1,151,.12); background:rgba(1,1,151,.04); }
         .sl-keyword:active { transform:scale(.95) !important; transition-duration:.08s !important; }
-        /* The badge already carries the platform's icon — the identity colour
-           belongs on that icon, not on an extra dot beside it. */
-        .sl-platform-badge { display:inline-flex; align-items:center; gap:6px; line-height:1; white-space:nowrap; }
-        .sl-platform-badge i { font-size:0.82em; flex-shrink:0; }
-        .sl-platform-facebook  i { color:#1877F2; }
-        .sl-platform-instagram i { color:#C2185B; }
-        .sl-platform-twitterx  i { color:#0F172A; }
-        .sl-platform-google    i { color:#EA4335; }
-        .sl-platform-tiktok    i { color:#6A1B9A; }
-        .sl-platform-reddit    i { color:#FF4500; }
-        .sl-platform-blink     i { color:#7C3AED; }
-        .sl-platform-foodpanda i { color:#D6006C; }
-        body.dark-theme .sl-platform-twitterx i { color:#E2E8F0; }
+        /* ── Social Listening · platform identity ──────────────────────────
+           Was plain text in a square 1px box with a small tinted glyph. Now a
+           rounded app-icon tile in the platform's own colours beside the name,
+           the way the platforms present themselves. Platform brand colours are
+           the agreed palette exception. CSS only — the markup is unchanged. */
+        .sl-platform-badge {
+            display:inline-flex; align-items:center; gap:8px; padding:0; margin-right:4px;
+            background:none; border:none; border-radius:0;
+            color:var(--text-main); font-size:0.84rem; font-weight:800; letter-spacing:-.1px;
+            line-height:1; white-space:nowrap;
+        }
+        .sl-platform-badge i {
+            width:24px; height:24px; border-radius:7px; flex-shrink:0;
+            display:inline-flex; align-items:center; justify-content:center;
+            font-size:13px; line-height:1; color:#fff; background:#64748B;
+            box-shadow:inset 0 0 0 1px rgba(255,255,255,.10), 0 1px 2px rgba(15,23,42,.16);
+        }
+        .sl-platform-facebook  i { background:#1877F2; }
+        .sl-platform-instagram i { background:radial-gradient(circle at 30% 107%, #FDF497 0%, #FDF497 5%, #FD5949 45%, #D6249F 60%, #285AEB 90%); font-size:14px; }
+        .sl-platform-twitterx  i { background:#0F1419; font-size:12px; }
+        .sl-platform-tiktok    i { background:#010101; font-size:12px; text-shadow:-1px -1px 0 #25F4EE, 1px 1px 0 #FE2C55; }
+        .sl-platform-linkedin  i { background:#0A66C2; }
+        .sl-platform-reddit    i { background:#FF4500; font-size:14px; }
+        /* Foodpanda: the panda mark from the icon supplied on 11 Sep, as a small
+           embedded image (the star glyph underneath is hidden) */
+        .sl-platform-foodpanda i { background:#D70F64 url("data:image/png;base64,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") center / 100% 100% no-repeat; font-size:0; }
+        .sl-platform-foodpanda i::before { content:none; }
+        /* Blink: the butterfly mark from the logo supplied on 11 Sep, on a white
+           tile like Google's so its blue and pink stay true */
+        .sl-platform-blink     i { background:#fff url("data:image/png;base64,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") center / 100% 100% no-repeat; font-size:0; box-shadow:inset 0 0 0 1px rgba(15,23,42,.10), 0 1px 2px rgba(15,23,42,.16); }
+        .sl-platform-blink     i::before { content:none; }
+        .sl-platform-default   i { background:var(--bg-light); color:var(--text-muted); box-shadow:inset 0 0 0 1px var(--border-color); }
+        /* Google and Play: white tile, glyph in the four Google colours */
+        .sl-platform-google i,
+        .sl-platform-playstore i { background:#fff; box-shadow:inset 0 0 0 1px rgba(15,23,42,.10), 0 1px 2px rgba(15,23,42,.16); }
+        .sl-platform-google i::before,
+        .sl-platform-playstore i::before {
+            display:inline-block;
+            background:conic-gradient(from -45deg, #EA4335 0deg 90deg, #4285F4 90deg 180deg, #34A853 180deg 270deg, #FBBC05 270deg 360deg);
+            -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+        }
+        /* X: the page loads Font Awesome 6.4.0, which predates the X glyph, so
+           the tile was empty. Draw the mark with a small inline mask instead. */
+        .sl-platform-twitterx i::before {
+            content:''; display:block; width:11px; height:11px; background:#fff;
+            -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='2.5,2.5 8.6,2.5 21.5,21.5 15.4,21.5' fill='%23000'/%3E%3Cpath d='M20.6 2.5 L3.4 21.5' stroke='%23000' stroke-width='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+                    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='2.5,2.5 8.6,2.5 21.5,21.5 15.4,21.5' fill='%23000'/%3E%3Cpath d='M20.6 2.5 L3.4 21.5' stroke='%23000' stroke-width='2.2'/%3E%3C/svg%3E") center / contain no-repeat;
+        }
+        /* dark tiles need a faint rim to separate from the dark card */
+        body.dark-theme .sl-platform-twitterx i,
+        body.dark-theme .sl-platform-tiktok i { box-shadow:inset 0 0 0 1px rgba(255,255,255,.16), 0 1px 2px rgba(0,0,0,.4); }
+        body.dark-theme .sl-platform-google i,
+        body.dark-theme .sl-platform-playstore i,
+        body.dark-theme .sl-platform-blink i { box-shadow:0 1px 2px rgba(0,0,0,.4); }
         .sl-keyword.hot { background:rgba(1,1,151,.06); border-color:rgba(1,1,151,.28); color:var(--accent-blue); }
         .sl-keyword.hot:hover { background:rgba(1,1,151,.16); border-color:#010197; box-shadow:0 4px 12px rgba(1,1,151,.18); }
         .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
@@ -5544,7 +5570,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.0 · 11 Sep 2026 · dark charts + AI orb';
+        const BUILD_VERSION = 'v2.33.3 · 11 Sep 2026 · blink icon';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
