@@ -3865,7 +3865,7 @@
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RISK BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">COMPLAINTS BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
                             <div class="chart-container" style="height:180px;"><canvas id="execPeakHoursChart"></canvas></div>
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
@@ -5180,7 +5180,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.24.4 · 10 Sep 2026 · rewards';
+        const BUILD_VERSION = 'v2.25.0 · 10 Sep 2026 · hours';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11163,29 +11163,35 @@ ${(() => {
                 // Volume is not the question -- failure rate is. Bars are the
                 // incident rate for that hour; hours with too little traffic are
                 // greyed out so 1-of-2 does not read as a 50% crisis.
-                const MIN_N = 5;
+                const MIN_N = 12;   // below this an hour's rate is noise, not signal
                 const rates = hourCounts.map((n, h) => n >= MIN_N ? (incidentHourCounts[h] / n) * 100 : null);
                 const totalSubs = hourCounts.reduce((a, b) => a + b, 0);
                 const totalIncs = incidentHourCounts.reduce((a, b) => a + b, 0);
                 const avgRate = totalSubs ? (totalIncs / totalSubs) * 100 : 0;
                 let worstH = -1, worstR = -1;
                 rates.forEach((r, h) => { if(r != null && r > worstR){ worstR = r; worstH = h; } });
-                const barColors = rates.map((r, h) => r == null ? (isDark ? '#1E293B' : '#EEF2F7') : h === worstH ? '#DC2626' : r > avgRate ? '#F59E0B' : '#3B5BDB');
+                // Bars are the number of complaints in each hour -- when they
+                // actually arrive. The busiest hour is highlighted; the worst by
+                // RATE is called out separately underneath, since the two differ.
+                let peakH = -1, peakN = 0;
+                incidentHourCounts.forEach((n, h) => { if(n > peakN){ peakN = n; peakH = h; } });
+                const barColors = incidentHourCounts.map((n, h) => h === peakH && n ? '#DC2626' : n ? '#3B5BDB' : (isDark ? '#1E293B' : '#EEF2F7'));
                 const datasets = [
-                    { type:'bar', label:'Incident rate', data: rates.map(r => r == null ? 0 : +r.toFixed(1)), backgroundColor: barColors, borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' },
-                    { type:'line', label:'Average', data: new Array(24).fill(+avgRate.toFixed(1)), borderColor: isDark ? '#94A3B8' : '#94A3B8', borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false, order:0, yAxisID:'y' }
+                    { type:'bar', label:'Complaints', data: incidentHourCounts, backgroundColor: barColors, borderRadius:4, maxBarThickness:16, order:2, yAxisID:'y' }
                 ];
                 (function(){
                     const v = document.getElementById('exec-hour-verdict'); if(!v) return;
                     const lbl = h => h === 0 ? '12am' : h < 12 ? h + 'am' : h === 12 ? '12pm' : (h - 12) + 'pm';
-                    if(worstH < 0 || !totalIncs){ v.uiHTML = '<div style="font-size:0.76rem;color:var(--text-muted);">Not enough traffic in any hour to judge risk reliably.</div>'; return; }
-                    const inHour = incidentHourCounts[worstH];
-                    const mult = avgRate ? (worstR / avgRate) : 0;
-                    v.uiHTML = `<div style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;background:${mult >= 1.6 ? 'rgba(220,38,38,.07)' : 'var(--bg-light)'};">
-                        <i class="fas fa-triangle-exclamation" style="color:${mult >= 1.6 ? '#DC2626' : 'var(--text-muted)'};font-size:0.8rem;margin-top:2px;"></i>
-                        <div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">
-                            Worst hour <b>${lbl(worstH)}–${lbl((worstH + 1) % 24)}</b> — <b style="color:${mult >= 1.6 ? '#DC2626' : 'var(--text-main)'};">${worstR.toFixed(1)}%</b> incident rate vs <b>${avgRate.toFixed(1)}%</b> average${mult >= 1.3 ? ' (<b>' + mult.toFixed(1) + '×</b>)' : ''}.
-                            <span style="color:var(--text-muted);">${inHour} of ${totalIncs} incident${totalIncs === 1 ? '' : 's'} landed in that hour.</span>
+                    if(!totalIncs){ v.uiHTML = '<div style="font-size:0.76rem;color:var(--text-muted);">No complaints in this period.</div>'; return; }
+                    const share = Math.round(peakN / totalIncs * 100);
+                    const mult = (worstH >= 0 && avgRate) ? (worstR / avgRate) : 0;
+                    v.uiHTML = `<div style="display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;background:var(--bg-light);">
+                        <i class="fas fa-clock" style="color:#DC2626;font-size:0.8rem;margin-top:2px;"></i>
+                        <div style="font-size:0.78rem;color:var(--text-main);line-height:1.55;">
+                            Most complaints arrive <b>${lbl(peakH)}–${lbl((peakH + 1) % 24)}</b> — <b>${peakN}</b> of ${totalIncs} (${share}%).
+                            ${worstH >= 0 && worstH !== peakH && mult >= 1.6
+                                ? `<br><span style="color:var(--text-muted);">Highest failure rate is <b style="color:#DC2626;">${lbl(worstH)}–${lbl((worstH + 1) % 24)}</b> at ${worstR.toFixed(1)}% of orders vs ${avgRate.toFixed(1)}% average — fewer orders, more going wrong.</span>`
+                                : worstH >= 0 ? `<br><span style="color:var(--text-muted);">That hour also has the highest failure rate, ${worstR.toFixed(1)}% of orders vs ${avgRate.toFixed(1)}% average.</span>` : ''}
                         </div></div>`;
                 })();
                 if(false && prevHourCounts && prevHourCounts.some(v=>v>0)){
@@ -11213,7 +11219,7 @@ ${(() => {
                         },
                         scales: {
                             x: { grid:{display:false}, ticks:{color:textColor,font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12} },
-                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},callback:v => v + '%'} },
+                            y: { beginAtZero:true, grid:{color:gridColor}, ticks:{color:textColor,font:{size:10},precision:0} },
                         }
                     }
                 });
