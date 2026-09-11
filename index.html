@@ -5774,7 +5774,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.41.1 · 11 Sep 2026 · form analytics';
+        const BUILD_VERSION = 'v2.41.2 · 11 Sep 2026 · form analytics';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18074,18 +18074,33 @@ ${(() => {
         const FAT = (function(){
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const rows = () => { const t = DataFeed.tabs.form_analytics; return (t && t.objRows) ? t.objRows : []; };
+            // Dates arrive in whatever format the backend writes them, so parse
+            // defensively: a row we cannot date is kept rather than silently
+            // dropped — losing data to a parsing quirk is worse than showing it.
+            function isoOf(v){
+                const t = String(v || '').trim();
+                let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                if(m) return m[1] + '-' + m[2] + '-' + m[3];
+                m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);            // M/D/YYYY
+                if(m) return m[3] + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
+                const d = new Date(t);
+                return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+            }
             function inRange(r){
                 const s = (document.getElementById('filter-start-date') || {}).value, e = (document.getElementById('filter-end-date') || {}).value;
-                const d = String(r['At'] || '').slice(0, 10).replace(/\//g, '-');
-                if(!s || !e || !d) return true;
-                const iso = d.length === 10 && d[4] === '-' ? d : (() => { const m = String(r['At']).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m ? m[3] + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0') : ''; })();
+                if(!s || !e) return true;
+                const iso = isoOf(r['At']);
+                if(!iso) return true;
                 return iso >= s && iso <= e;
             }
             function render(){
                 const host = document.getElementById('fa-root'); if(!host) return;
                 if(!can('users')){ host.innerHTML = '<div class="fb-empty">Form Analytics is available to the Owner.</div>'; return; }
-                const all = rows().filter(inRange);
-                if(!all.length){ host.uiHTML = `<div class="fb-empty"><b>No form activity recorded yet for this period.</b><br><span style="font-size:0.8rem;">Once the updated forms are live, every open, step and drop-off is recorded here.</span></div>`; return; }
+                const everything = rows();
+                let all = everything.filter(inRange);
+                let widened = false;
+                if(!all.length && everything.length){ all = everything; widened = true; }   // filter hid it all — show it and say so
+                if(!all.length){ host.uiHTML = `<div class="fb-empty"><b>No form activity recorded yet.</b><br><span style="font-size:0.8rem;">Every open, step and drop-off is recorded here once customers use the forms.</span></div>`; return; }
                 const sessions = {};
                 all.forEach(r => { const k = r['Session'] || Math.random(); const x = sessions[k] = sessions[k] || { branch:'', source:'', device:'', form:'', opened:false, submitted:false, steps:[], secs:0 };
                     if(r['Branch']) x.branch = r['Branch'];
@@ -18143,6 +18158,7 @@ ${(() => {
                     </div>`;
                 };
                 host.uiHTML = `
+                    ${widened ? `<div class="note info" style="margin-bottom:14px;"><i class="fas fa-circle-info"></i><div>No activity in the selected dates, so all recorded activity is shown (${everything.length} events). Change the date range to narrow it.</div></div>` : ''}
                     <div class="kpi-grid" style="margin-bottom:16px;">
                         ${[['Forms opened', opens, ''], ['Completed', subs, ''], ['Completion rate', rate.toFixed(1) + '%', rate < 40 ? 'low' : ''], ['Median time', med ? med + 's' : '—', '']]
                           .map(([l, v, flag]) => `<div class="kpi-card"><div class="kpi-label">${l}</div><div class="kpi-value" style="${flag === 'low' ? 'color:#DC2626;' : ''}">${v}</div></div>`).join('')}
