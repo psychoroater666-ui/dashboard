@@ -5770,7 +5770,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.38.0 · 11 Sep 2026 · help';
+        const BUILD_VERSION = 'v2.38.1 · 11 Sep 2026 · help';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -16826,7 +16826,7 @@ ${(() => {
                             </div>` : ''}
                             <!-- Help -->
                             <div style="padding:6px;border-top:1px solid var(--border-color);">
-                                <button class="support-row" onclick="HELP.open()" style="width:100%;border:none;background:transparent;font:inherit;cursor:pointer;text-align:left;">
+                                                <button class="support-row" id="help-open-btn" style="width:100%;border:none;background:transparent;font:inherit;cursor:pointer;text-align:left;">
                                     <span class="support-icon"><i class="fas fa-circle-question"></i></span>
                                     <span>Help &amp; what I can do</span>
                                 </button>
@@ -17250,7 +17250,19 @@ ${(() => {
             _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
             if(can('users')) setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);
             if(can('forms')) setTimeout(() => { try { FB.warm(); } catch(e){} }, 3500);   // so Form Builder opens instantly later
-            try { AI.mount(); } catch(e){}   // warm the Manage Users list
+            try { AI.mount(); } catch(e){}
+            // Delegated listener: the profile menu is re-rendered, and an inline
+            // onclick could not see HELP (declared with const, so not on window).
+            if(!window.__helpWired){
+                window.__helpWired = true;
+                document.addEventListener('click', e => {
+                    const b = e.target.closest && e.target.closest('#help-open-btn');
+                    if(!b) return;
+                    e.preventDefault(); e.stopPropagation();
+                    document.querySelectorAll('.profile-dropdown.is-open, #profile-dropdown').forEach(d => d.classList.remove('is-open'));
+                    try { HELP.open(); } catch(err){ console.error('Help failed to open:', err); }
+                }, true);
+            }   // warm the Manage Users list
             app.init();
         }
 
@@ -18042,7 +18054,7 @@ ${(() => {
         // HELP — what this person can do, and the questions the team actually
         // asks. Role-aware: nobody reads about buttons they cannot see.
         // ═══════════════════════════════════════════════════════════════════
-        const HELP = (function(){
+        window.HELP = (function(){
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const ROLE_SUMMARY = {
                 owner:         'You have full access: every branch, every action, plus user management, the activity trail and Form Builder.',
