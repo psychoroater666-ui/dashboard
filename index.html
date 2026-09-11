@@ -1371,6 +1371,30 @@
         }
         .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; transform:translateY(-2px); box-shadow:0 4px 12px rgba(1,1,151,.12); background:rgba(1,1,151,.04); }
         .sl-keyword:active { transform:scale(.95) !important; transition-duration:.08s !important; }
+        /* ── Social Listening · page header ────────────────────────────────
+           Brand-blue icon tile (was an Instagram-style pink gradient with a pink
+           glow), title sized like the other page titles, a plain one-line
+           description, and the mention count as a quiet pill beside the title
+           instead of bold blue text tacked onto the sentence. */
+        .sl-head { display:flex; align-items:center; gap:14px; min-width:0; }
+        .sl-head-icon {
+            width:40px; height:40px; border-radius:11px; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center;
+            background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; font-size:0.95rem;
+            box-shadow:0 4px 12px rgba(1,1,151,.22), inset 0 1px 0 rgba(255,255,255,.18);
+        }
+        .sl-head-title { display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; }
+        .sl-head-title h2 { margin:0; font-size:1.1rem; font-weight:800; letter-spacing:-.2px; color:var(--text-main); line-height:1.25; }
+        .sl-head-count {
+            display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px;
+            font-size:0.68rem; font-weight:700; line-height:1.3; white-space:nowrap;
+            background:var(--bg-light); color:var(--text-muted); border:1px solid var(--border-color);
+        }
+        .sl-head-count:empty { display:none; }
+        .sl-head-sub { margin:3px 0 0; font-size:0.78rem; color:var(--text-muted); line-height:1.45; }
+        body.dark-theme .sl-head-icon { box-shadow:0 4px 12px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.14); }
+        @media (max-width:820px){ .sl-head { align-items:flex-start; } .sl-head-icon { width:36px; height:36px; margin-top:2px; } }
+
         /* ── Social Listening · platform identity ──────────────────────────
            Was plain text in a square 1px box with a small tinted glyph. Now a
            rounded app-icon tile in the platform's own colours beside the name,
@@ -5042,13 +5066,14 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <div class="card" style="padding:10px 20px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
                         <!-- Brand + description -->
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <span style="width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#E1306C,#833AB4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.9rem;box-shadow:0 3px 8px rgba(225,48,108,.3);flex-shrink:0;">
-                                <i class="fas fa-hashtag"></i>
-                            </span>
+                        <div class="sl-head">
+                            <span class="sl-head-icon" aria-hidden="true"><i class="fas fa-tower-broadcast"></i></span>
                             <div>
-                                <div style="font-size:1rem;font-weight:800;color:var(--text-main);">Social Listening</div>
-                                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Public conversations about Crumble — curated &amp; intelligently classified. <span id="sl-showing-label" style="font-weight:700;color:var(--accent-blue);"></span></div>
+                                <div class="sl-head-title">
+                                    <h2>Social Listening</h2>
+                                    <span id="sl-showing-label" class="sl-head-count"></span>
+                                </div>
+                                <p class="sl-head-sub">Public posts and reviews that mention Crumble, sorted into complaints, praise and questions.</p>
                             </div>
                         </div>
 
@@ -5570,7 +5595,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.3 · 11 Sep 2026 · blink icon';
+        const BUILD_VERSION = 'v2.33.4 · 11 Sep 2026 · social header';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
