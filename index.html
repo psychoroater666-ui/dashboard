@@ -5770,7 +5770,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.38.2 · 11 Sep 2026 · help';
+        const BUILD_VERSION = 'v2.40.0 · 11 Sep 2026 · help';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9706,8 +9706,12 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 const p1 = (state.p1 || { subs: [], incs: [] }), p2 = (state.p2 || { subs: [], incs: [] });
                 const end = (document.getElementById('filter-end-date') || {}).value || '';
                 if(!p1.subs.length && !p1.incs.length){ el.className = 'verdict'; el.uiHTML = ''; return; }
-                const rate = p1.subs.length ? (p1.incs.length / p1.subs.length) * 100 : 0;
-                const prevRate = p2.subs.length ? (p2.incs.length / p2.subs.length) * 100 : 0;
+                // Fakes are not complaints: every figure below counts verified +
+                // unreviewed only, matching the complaint cards.
+                const real = l => (l || []).filter(i => i.caseStatus !== 'fake');
+                const p1i = real(p1.incs), p2i = real(p2.incs);
+                const rate = p1.subs.length ? (p1i.length / p1.subs.length) * 100 : 0;
+                const prevRate = p2.subs.length ? (p2i.length / p2.subs.length) * 100 : 0;
                 // same weekday a week earlier, the fair comparison in food service
                 const prevWk = (() => { if(!end) return null; const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 7); return t.toISOString().split('T')[0]; })();
                 // If the day in view is still running, cut last week's day at the
@@ -9726,20 +9730,20 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     const pStart = new Date(pEnd); pStart.setDate(pStart.getDate() - (spanV - 1));
                     const a = pStart.toISOString().split('T')[0], b = pEnd.toISOString().split('T')[0];
                     wkSubs = (rawData.submissions || []).filter(x => x.date >= a && x.date <= b).length;
-                    wkIncs = (rawData.incidents || []).filter(x => x.date >= a && x.date <= b).length;
+                    wkIncs = real(rawData.incidents).filter(x => x.date >= a && x.date <= b).length;
                     cmpLabel = 'vs previous ' + spanV + ' days';
                 } else {
                     wkSubs = prevWk ? _rowsUpTo(rawData.submissions, prevWk, cutHour).length : 0;
-                    wkIncs = prevWk ? _rowsUpTo(rawData.incidents, prevWk, cutHour).length : 0;
+                    wkIncs = prevWk ? _rowsUpTo(real(rawData.incidents), prevWk, cutHour).length : 0;
                     cmpLabel = 'vs last ' + dayName + (running ? ' at this time' : '');
                 }
                 const volDelta = wkSubs ? Math.round((p1.subs.length - wkSubs) / wkSubs * 100) : null;
-                const incDelta = wkIncs ? Math.round((p1.incs.length - wkIncs) / wkIncs * 100) : null;
+                const incDelta = wkIncs ? Math.round((p1i.length - wkIncs) / wkIncs * 100) : null;
                 // worst branch by count, and its dominant reason
-                const byB = {}; p1.incs.forEach(i => byB[i.branch] = (byB[i.branch] || 0) + 1);
+                const byB = {}; p1i.forEach(i => byB[i.branch] = (byB[i.branch] || 0) + 1);
                 const worstB = Object.entries(byB).sort((a, b) => b[1] - a[1])[0];
                 let reason = '';
-                if(worstB){ const rs = {}; p1.incs.filter(i => i.branch === worstB[0]).forEach(i => {
+                if(worstB){ const rs = {}; p1i.filter(i => i.branch === worstB[0]).forEach(i => {
                         let t = ''; try { const r = i.agentCategory && _resolveComplaintCategory(i.agentCategory); t = r ? r.title : (classifyComplaint(i) || {}).title || ''; } catch(e){}
                         if(t && t !== 'Others') rs[t] = (rs[t] || 0) + 1; });
                     const top = Object.entries(rs).sort((a, b) => b[1] - a[1])[0]; if(top && top[1] >= 2) reason = top[0];
@@ -9750,17 +9754,17 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 // A branch's incident COUNT alone is not a verdict: a busy branch
                 // will always top the list. What matters is concentration — one
                 // branch carrying a disproportionate share — and the rate moving.
-                const share = p1.incs.length ? (worstB ? worstB[1] / p1.incs.length : 0) : 0;
-                const branchBad = !!(worstB && worstB[1] >= 4 && share >= 0.45 && p1.incs.length >= 6);
-                const rateBad   = !!(prevRate && rate > prevRate * 1.8 && p1.incs.length >= 6);
-                const rateMixed = !!(incDelta !== null && incDelta >= 40 && p1.incs.length >= 4);
+                const share = p1i.length ? (worstB ? worstB[1] / p1i.length : 0) : 0;
+                const branchBad = !!(worstB && worstB[1] >= 4 && share >= 0.45 && p1i.length >= 6);
+                const rateBad   = !!(prevRate && rate > prevRate * 1.8 && p1i.length >= 6);
+                const rateMixed = !!(incDelta !== null && incDelta >= 40 && p1i.length >= 4);
                 let level = 'ok';
                 if(branchBad || rateBad || overdue >= 3) level = 'bad';
                 else if(rateMixed || (worstB && worstB[1] >= 3 && share >= 0.4) || overdue >= 1) level = 'mixed';
                 const parts = [];
                 const cmpNote = ` ${cmpLabel}`;
                 parts.push(`<b>${p1.subs.length}</b> submissions${volDelta !== null ? ` (${volDelta >= 0 ? '+' : ''}${volDelta}%${cmpNote})` : ''}`);
-                parts.push(`<b>${p1.incs.length}</b> incident${p1.incs.length === 1 ? '' : 's'} at <b>${rate.toFixed(1)}%</b>${incDelta !== null ? ` (${incDelta >= 0 ? '+' : ''}${incDelta}%${cmpNote})` : ''}`);
+                parts.push(`<b>${p1i.length}</b> incident${p1i.length === 1 ? '' : 's'} at <b>${rate.toFixed(1)}%</b>${incDelta !== null ? ` (${incDelta >= 0 ? '+' : ''}${incDelta}%${cmpNote})` : ''}`);
                 let cause = '';
                 if(level !== 'ok' && worstB && share >= 0.35) cause = ` Driven by <b>${worstB[0]}</b> with ${worstB[1]} of them${reason ? `, mostly <b>${reason.toLowerCase()}</b>` : ''}.`;
                 let sla = '';
@@ -10006,7 +10010,8 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 const running = _dayIsRunning(end);
                 const cutHour = running ? (new Date().getHours() + new Date().getMinutes() / 60) : null;
                 const day = d => _rowsUpTo(rawData.submissions, d, d === end ? null : cutHour);
-                const dayI = d => _rowsUpTo(rawData.incidents, d, d === end ? null : cutHour);
+                // verified + unreviewed only, to match the rest of the dashboard
+                const dayI = d => _rowsUpTo((rawData.incidents || []).filter(i => i.caseStatus !== 'fake'), d, d === end ? null : cutHour);
                 const prev = (() => { const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 7); return t.toISOString().split('T')[0]; })();
                 const A = { s: day(end), i: dayI(end) }, B = { s: day(prev), i: dayI(prev) };
                 const wd = new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long' });
@@ -10110,7 +10115,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     // (tables, breakdowns), just not in this superlative.
                     const branchMetrics = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                         const s = (state.branchGroups[b.name] || {subs:[]}).subs.length;
-                        const i = (state.branchGroups[b.name] || {incs:[]}).incs.length;
+                        const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake').length;
                         return { name: b.name, subs: s, rate: s ? (i/s)*100 : 0 };
                     })
                     // A branch with no submissions in the period has no
@@ -10234,7 +10239,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     document.querySelector('#exec-branch-master-expanded tbody').uiHTML = (() => {
                         const rows = config.branches.map(b => {
                             const s = (state.branchGroups[b.name] || {subs:[]}).subs;
-                            const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                            const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                             const sL = s.length, iL = i.length;
                             const rate = sL ? (iL/sL)*100 : 0;
                             // Average and positive-feedback % must divide by
@@ -10283,7 +10288,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
             renderBranchesView() {
                 const branchStats = config.branches.map(b => {
                     const s = (state.branchGroups[b.name] || {subs:[]}).subs;
-                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                    const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
                     return { name: b.name, subs: sL, rate };
@@ -10293,7 +10298,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
 
                 document.querySelector('#branch-master-table tbody').uiHTML = config.branches.map(b => {
                     const s = (state.branchGroups[b.name] || {subs:[]}).subs;
-                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                    const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                     const sL = s.length, iL = i.length;
                     const rate = sL ? (iL/sL)*100 : 0;
                     const rated = s.filter(x => x.smileScore != null);
@@ -11402,7 +11407,7 @@ ${(() => {
                 // so an inactive branch outranked one that genuinely resolved
                 // most of its real cases.
                 const branchRates = config.branches.map(b => {
-                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                    const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                     const res = i.filter(x=>x.resolved).length;
                     const rate = i.length ? (res/i.length)*100 : null;
                     return { name: b.name, total: i.length, rate };
@@ -11410,7 +11415,7 @@ ${(() => {
                 this.renderResRateChart(branchRates.filter(b => b.rate !== null));
 
                 document.querySelector('#res-current-table tbody').uiHTML = config.branches.map(b => {
-                    const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                    const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                     const res = i.filter(x=>x.resolved).length;
                     const unres = i.length - res;
                     // No incidents means there is no resolution rate to
@@ -11463,7 +11468,7 @@ ${(() => {
                 // "escalate to branch manager" for a branch that doesn't exist.
                 const bStats = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                     const s = (state.branchGroups[b.name] || {subs:[]}).subs.length;
-                    const i = (state.branchGroups[b.name] || {incs:[]}).incs.length;
+                    const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake').length;
                     return { name: b.name, rate: s ? (i/s)*100 : 0 };
                 }).sort((a,b) => b.rate - a.rate);
 
@@ -13100,7 +13105,7 @@ ${(() => {
 
             const branchData = config.branches.map(b => {
                 const s = (state.branchGroups[b.name] || {subs:[]}).subs;
-                const i = (state.branchGroups[b.name] || {incs:[]}).incs;
+                const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                 const sL = s.length, iL = i.length;
                 const rate = sL ? (iL / sL) * 100 : 0;
                 const rated = s.filter(x => x.smileScore != null);
@@ -18103,7 +18108,46 @@ ${(() => {
                 ['How do I sign in as a different account?',
                  'Sign out from this menu. You will be returned to the login page and can choose the other account. If it signs you straight back in, use a private window.'],
                 ['Something looks wrong — what should I send?',
-                 'Which tab you were on, what you were doing, the time, and a screenshot. That is usually enough to find it straight away.']
+                 'Which tab you were on, what you were doing, the time, and a screenshot. That is usually enough to find it straight away.'],
+
+                ['What is the difference between Verified, Fake and Not Responding?',
+                 'Verified means a real complaint you have confirmed. Fake means it is not genuine — a test entry, a duplicate, or someone abusing the form. Not Responding means the complaint may be real but the customer could not be reached. Only fakes are excluded from the complaint analysis; verified and not-yet-reviewed cases are counted.'],
+
+                ['Why do the incident numbers differ between tabs?',
+                 'They should not. Every panel counts verified and unreviewed incidents and excludes fakes. If two tabs disagree for the same date range, that is a bug — send a screenshot of both.'],
+
+                ['What counts as an incident?',
+                 'Any submission rated 3 or below. That is automatic — nobody creates incidents by hand. A 4 or 5 star submission is never an incident, even if the comment is negative.'],
+
+                ['Why does the dashboard show a different number than the Google Sheet?',
+                 'The dashboard applies a 9 AM business-day cutoff, removes exact duplicate rows, and excludes incomplete submissions. The sheet shows everything raw. The dashboard number is the one to use.'],
+
+                ['What does the date filter actually control?',
+                 'The analysis cards — totals, comparisons, complaint reasons, branch performance. It does not control the live queue (Needs Attention Today) or the alert sound, which are always about right now.'],
+
+                ['What is the red timer on an open incident?',
+                 'Time since it arrived in the portal. Grey is fine, amber means it is approaching the limit, red means it has passed it. Three minutes to review, fifteen minutes to close.'],
+
+                ['Why did an alert ring again for an incident I already saw?',
+                 'Seeing it is not the same as reviewing it. The alert repeats every five minutes until someone opens the case, and again if it is not closed within fifteen minutes of being reviewed. Use "View and acknowledge" rather than Snooze — that silences it for everyone.'],
+
+                ['I closed a case by mistake — can I undo it?',
+                 'Not from the dashboard. Tell Farooq with the branch and time; it is corrected in the sheet so there is a record of the change. Reward codes are the same: marking one used cannot be undone.'],
+
+                ['A customer says they have stamps but nothing shows — what do I do?',
+                 'Search their phone number on the Rewards tab rather than a code. It will show how many stamps they have, or say nothing was found. Stamps only count once per day, so several submissions in one day still earn one.'],
+
+                ['Can customers see any of this?',
+                 'No. Customers only ever see the feedback form and their own stamp card. Everything in the dashboard is internal.'],
+
+                ['Does the dashboard work on a phone?',
+                 'Yes — all the main tabs work on mobile. Resolving incidents and handling rewards are easier on a laptop, but nothing is blocked.'],
+
+                ['Why does the dashboard look slow on my machine?',
+                 'Close other Chrome tabs (especially open Google Sheets), keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, tell Farooq which tab and what you were doing.'],
+
+                ['What happens to what I do here — is it recorded?',
+                 'Yes. Every resolution, complaint logged, escalation and reward redemption is recorded with your name and the time. That is for accuracy and accountability, not monitoring — it is how we can tell what happened when a number looks wrong.']
             ];
             function open(){
                 let el = document.getElementById('help-modal');
@@ -18211,15 +18255,31 @@ ${(() => {
                 L.push('');
                 L.push('BY CHANNEL  (Call Center is a complaint log across all sources, not a channel — never quote a rate for it)');
                 Object.keys(byC).forEach(c => L.push('  ' + c + ': ' + byC[c].s + ' submissions, ' + byC[c].i + ' incidents' + (/call/i.test(c) ? '' : ' (' + pct(byC[c].i, byC[c].s) + ')')));
-                // complaint categories
+                // complaint categories — WITH verified/fake/unreviewed per type, so
+                // the model never has to infer a case's status (it was guessing,
+                // and getting individual cases wrong).
                 try {
                     const cats = {};
-                    p1.incs.forEach(i => { const c = (typeof classifyComplaint === 'function' ? classifyComplaint(i) : null); const t = (i.agentCategory && typeof _resolveComplaintCategory === 'function' && _resolveComplaintCategory(i.agentCategory)) ? _resolveComplaintCategory(i.agentCategory).title : (c ? c.title : 'Others'); cats[t] = cats[t] || { n:0, b:{} }; cats[t].n++; cats[t].b[i.branch] = (cats[t].b[i.branch] || 0) + 1; });
+                    const statusOf = i => i.caseStatus === 'fake' ? 'fake' : i.caseStatus === 'verified' ? 'verified' : i.caseStatus === 'not_responding' ? 'not_responding' : 'unreviewed';
+                    p1.incs.forEach(i => { const c = (typeof classifyComplaint === 'function' ? classifyComplaint(i) : null); const t = (i.agentCategory && typeof _resolveComplaintCategory === 'function' && _resolveComplaintCategory(i.agentCategory)) ? _resolveComplaintCategory(i.agentCategory).title : (c ? c.title : 'Others');
+                        const e2 = cats[t] = cats[t] || { n:0, v:0, f:0, u:0, nr:0, b:{} }; e2.n++;
+                        const st = statusOf(i);
+                        if(st === 'fake') e2.f++; else if(st === 'verified') e2.v++; else if(st === 'not_responding') e2.nr++; else e2.u++;
+                        e2.b[i.branch] = (e2.b[i.branch] || 0) + 1; });
                     L.push('');
-                    L.push('COMPLAINT TYPES  (count, then branches)');
-                    Object.keys(cats).sort((a, b) => cats[b].n - cats[a].n).slice(0, 15).forEach(t => {
-                        L.push('  ' + t + ': ' + cats[t].n + '  [' + Object.entries(cats[t].b).sort((a,b)=>b[1]-a[1]).map(([k,v]) => k + ' ' + v).join(', ') + ']');
+                    L.push('COMPLAINT TYPES  (total / verified / fake / not-responding / unreviewed, then branches)');
+                    L.push('These counts are exact. Do not add, merge or re-derive them.');
+                    Object.keys(cats).sort((a, b) => cats[b].n - cats[a].n).slice(0, 20).forEach(t => {
+                        const c2 = cats[t];
+                        L.push('  ' + t + ': ' + c2.n + ' / ' + c2.v + ' / ' + c2.f + ' / ' + c2.nr + ' / ' + c2.u + '  [' + Object.entries(c2.b).sort((a,b)=>b[1]-a[1]).map(([k,v]) => k + ' ' + v).join(', ') + ']');
                     });
+                    // every individual case with its confirmed status, so a question
+                    // about one case is answered from the record, not inferred
+                    const lines = p1.incs.slice(-60).map(i => {
+                        let t = ''; try { const r = i.agentCategory && _resolveComplaintCategory(i.agentCategory); t = r ? r.title : (classifyComplaint(i) || {}).title || 'Others'; } catch(e2){ t = 'Others'; }
+                        return '  ' + (i.date || '') + ' | ' + (i.branch || '') + ' | ' + t + ' | ' + statusOf(i) + ' | ' + (i.smileScore || '?') + '/5';
+                    });
+                    if(lines.length){ L.push(''); L.push('INDIVIDUAL CASES (date | branch | type | status | rating) — the status column is the agent\'s confirmed decision:'); L.push(...lines); }
                 } catch(e){}
                 // recent customer comments (verbatim, capped)
                 const comments = p1.incs.filter(i => i.comment && i.comment.length > 20).slice(-40)
