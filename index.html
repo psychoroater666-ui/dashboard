@@ -3921,7 +3921,10 @@
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:14px;"><h3 style="font-size:0.78rem;" id="exec-hour-title">SUBMISSIONS &amp; COMPLAINTS BY HOUR</h3><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
+                            <div class="section-header" style="margin-bottom:14px;"><h3 style="font-size:0.78rem;" id="exec-hour-title">SUBMISSIONS &amp; COMPLAINTS BY HOUR</h3><span style="display:inline-flex;align-items:center;gap:12px;font-size:0.66rem;font-weight:700;color:var(--text-muted);">
+                                    <span style="display:inline-flex;align-items:center;gap:5px;"><i style="width:9px;height:9px;border-radius:2px;background:#C7D0F5;display:inline-block;"></i>Submissions</span>
+                                    <span style="display:inline-flex;align-items:center;gap:5px;"><i style="width:14px;height:2px;border-radius:2px;background:#DC2626;display:inline-block;"></i>Complaints</span>
+                                </span><span class="text-xs text-muted" style="font-weight:600;">When activity actually happens</span></div>
                             <div class="chart-container" style="height:210px;margin-top:18px;"><canvas id="execPeakHoursChart"></canvas></div>
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
@@ -5242,7 +5245,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.32.3 · 11 Sep 2026 · palette';
+        const BUILD_VERSION = 'v2.32.4 · 11 Sep 2026 · palette';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11445,7 +11448,8 @@ ${(() => {
                         responsive:true, maintainAspectRatio:false,
                         // room for the top gridline label and the legend so the
                         // plot never touches the card heading above it
-                        layout:{ padding:{ top:8, right:4, bottom:2, left:2 } },
+                        layout:{ padding:{ top:6, right:4, bottom:2, left:2 } },
+                        plugins:{ legend:{ display:false } },   // the key lives in the card header instead
                         interaction: { mode:'index', intersect:false },
                         plugins: {
                             legend: { display:true, position:'top', align:'end', labels:{ boxWidth:9, font:{size:9}, color:textColor, usePointStyle:true, padding:10 } }
