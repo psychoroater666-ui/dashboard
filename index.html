@@ -5820,7 +5820,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.43.0 · 11 Sep 2026 · follow-ups';
+        const BUILD_VERSION = 'v2.44.0 · 11 Sep 2026 · analytics depth';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18214,6 +18214,10 @@ ${(() => {
                     if(r['Source']) x.source = r['Source'];
                     if(r['Device']) x.device = r['Device'];
                     if(r['OS']) x.os = r['OS'];
+                    if(r['Screen']) x.screen = r['Screen'];
+                    if(r['Distance m'] !== '' && r['Distance m'] != null && !isNaN(Number(r['Distance m']))) x.dist = Number(r['Distance m']);
+                    if(r['Choice'] && r['Step']) { x.choices = x.choices || {}; x.choices[r['Step']] = r['Choice']; }
+                    if(!x.day){ const iso = isoOf(r['At']); if(iso) x.day = iso; }
                     if(r['Form'])   x.form = r['Form'];
                     if(r['Event'] === 'open') x.opened = true;
                     if(r['Event'] === 'submitted'){ x.submitted = true; x.secs = Number(r['Seconds']) || x.secs; }
@@ -18254,6 +18258,34 @@ ${(() => {
                     if(r['Event'] === 'open') e2.o++; if(r['Event'] === 'submitted') e2.s++; });
                 const hourList = Object.entries(byHour).map(([h, v]) => ({ h: +h, o: v.o, s: v.s, r: v.o ? v.s/v.o*100 : 0 })).sort((a,b) => a.h - b.h);
                 const bestHour = hourList.filter(x => x.o >= 3).sort((a,b) => b.r - a.r)[0];
+                // 6. IN BRANCH OR AT HOME — the GPS distance was captured but never shown.
+                const withDist = S.filter(x => typeof x.dist === 'number');
+                const near = withDist.filter(x => x.dist <= 200), far = withDist.filter(x => x.dist > 200);
+                const nearRate = near.length ? near.filter(x => x.submitted).length / near.length * 100 : 0;
+                const farRate  = far.length  ? far.filter(x => x.submitted).length / far.length * 100 : 0;
+                // 7. DAY OF WEEK
+                const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                const byDay = {};
+                S.forEach(x => { if(!x.day) return; const d = new Date(x.day + 'T12:00:00'); if(isNaN(d)) return;
+                    const k = DAYS[d.getDay()]; const e2 = byDay[k] = byDay[k] || { o:0, s:0 }; e2.o++; if(x.submitted) e2.s++; });
+                const dayList = DAYS.filter(d => byDay[d]).map(d => ({ d, ...byDay[d], r: byDay[d].o ? byDay[d].s/byDay[d].o*100 : 0 }));
+                // 8. FORM COMPARISON — Dine-In and Delivery are different products
+                const byForm = {};
+                S.forEach(x => { const k = x.form || 'unknown'; const e2 = byForm[k] = byForm[k] || { o:0, s:0, drop:{} }; e2.o++;
+                    if(x.submitted) e2.s++; else { const last = x.lastStep || (x.steps||[])[ (x.steps||[]).length-1 ] || 'never started'; e2.drop[last] = (e2.drop[last]||0)+1; } });
+                // 9. TREND — completion rate by day, so you can see whether a change worked
+                const trend = {};
+                S.forEach(x => { if(!x.day) return; const e2 = trend[x.day] = trend[x.day] || { o:0, s:0 }; e2.o++; if(x.submitted) e2.s++; });
+                const trendList = Object.keys(trend).sort().map(d => ({ d, ...trend[d], r: trend[d].o ? trend[d].s/trend[d].o*100 : 0 }));
+                // 10. SCREEN SIZE — a collapse below a width is a layout bug
+                const byScreen = {};
+                S.forEach(x => { if(!x.screen) return; const w = parseInt(String(x.screen).split('x')[0], 10) || 0;
+                    const k = w ? (w < 380 ? 'Small phone (<380px)' : w < 430 ? 'Phone (380-430px)' : w < 820 ? 'Large phone / tablet' : 'Desktop') : 'unknown';
+                    const e2 = byScreen[k] = byScreen[k] || { o:0, s:0 }; e2.o++; if(x.submitted) e2.s++; });
+                // 11. LAST CHOICE BEFORE QUITTING
+                const quitAfter = {};
+                S.filter(x => !x.submitted && x.choices).forEach(x => { Object.entries(x.choices).forEach(([st, ch]) => { const k = st + ' = ' + ch; quitAfter[k] = (quitAfter[k]||0)+1; }); });
+                const quitList = Object.entries(quitAfter).sort((a,b) => b[1]-a[1]).slice(0, 6);
                 const opens = S.length, subs = S.filter(x => x.submitted).length;
                 const rate = opens ? (subs / opens * 100) : 0;
                 const med = (() => { const v = S.filter(x => x.submitted && x.secs).map(x => x.secs).sort((a,b)=>a-b); return v.length ? v[Math.floor(v.length/2)] : 0; })();
@@ -18381,11 +18413,75 @@ ${(() => {
                         }).join('') : '<div style="padding:12px 0;color:var(--text-muted);font-size:0.82rem;">Not enough completed steps yet to measure timing.</div>'}
                         <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">A step that is both slow and loses people is confusing — reword or remove it. Slow but rarely abandoned usually means people are thinking, which is fine.</div>
                     </div>
+                    ${trendList.length > 1 ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">COMPLETION RATE OVER TIME</h3><span class="text-xs text-muted" style="font-size:0.66rem;">is it improving?</span></div>
+                        ${trendList.map(t => { const col = t.r >= 50 ? '#059669' : t.r >= 25 ? '#010197' : '#DC2626';
+                            return `<div style="display:grid;grid-template-columns:86px 1fr auto;gap:10px;align-items:center;padding:5px 0;">
+                                <span style="font-size:0.72rem;color:var(--text-muted);">${esc(t.d)}</span>
+                                <div style="height:8px;border-radius:4px;background:var(--bg-light);overflow:hidden;"><span style="display:block;height:100%;width:${Math.round(t.r)}%;background:${col};"></span></div>
+                                <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;"><b style="color:${col};">${t.r.toFixed(0)}%</b> · ${t.s}/${t.o}</span>
+                            </div>`; }).join('')}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">A change to the form should show up here within a day or two. If it does not, the change did not help.</div>
+                    </div>` : ''}
+
+                    ${Object.keys(byForm).length > 1 ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">DINE-IN VS DELIVERY</h3><span class="text-xs text-muted" style="font-size:0.66rem;">different products, different problems</span></div>
+                        <div style="display:grid;grid-template-columns:repeat(${Math.min(2, Object.keys(byForm).length)},1fr);gap:14px;">
+                        ${Object.entries(byForm).map(([f, v]) => { const r2 = v.o ? v.s/v.o*100 : 0; const col = r2 >= 50 ? '#059669' : r2 >= 25 ? '#010197' : '#DC2626';
+                            const worst = Object.entries(v.drop).sort((a,b)=>b[1]-a[1])[0];
+                            return `<div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:0.8rem;font-weight:800;color:var(--text-main);text-transform:capitalize;">${esc(f)}</div>
+                                <div style="font-size:1.35rem;font-weight:800;color:${col};line-height:1.1;margin:5px 0 3px;">${r2.toFixed(0)}%</div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);">${v.s} of ${v.o} finished${worst ? ' · most quit at <b style="color:var(--text-main);">' + esc(worst[0]) + '</b>' : ''}</div>
+                            </div>`; }).join('')}
+                        </div>
+                    </div>` : ''}
+
+                    ${withDist.length ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">FILLED IN BRANCH OR LATER</h3><span class="text-xs text-muted" style="font-size:0.66rem;">${withDist.length} with location</span></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:0.8rem;font-weight:800;color:var(--text-main);">At the branch</div>
+                                <div style="font-size:1.35rem;font-weight:800;color:${nearRate >= 40 ? '#059669' : '#010197'};line-height:1.1;margin:5px 0 3px;">${nearRate.toFixed(0)}%</div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);">${near.length} opened within 200m</div>
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:0.8rem;font-weight:800;color:var(--text-main);">Away from the branch</div>
+                                <div style="font-size:1.35rem;font-weight:800;color:${farRate >= 40 ? '#059669' : '#010197'};line-height:1.1;margin:5px 0 3px;">${farRate.toFixed(0)}%</div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);">${far.length} opened further away</div>
+                            </div>
+                        </div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">People asked while still in the branch usually finish more often. A low in-branch rate means staff are handing over the code but not encouraging it.</div>
+                    </div>` : ''}
+
+                    ${dayList.length > 1 ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">BY DAY OF WEEK</h3></div>
+                        ${dayList.map(x => { const max = Math.max(...dayList.map(y => y.o), 1);
+                            return `<div style="display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:center;padding:5px 0;">
+                                <span style="font-size:0.74rem;color:var(--text-muted);">${x.d}</span>
+                                <div style="height:8px;border-radius:4px;background:var(--bg-light);overflow:hidden;position:relative;">
+                                    <span style="display:block;height:100%;width:${Math.round(x.o/max*100)}%;background:rgba(1,1,151,.25);"></span>
+                                    <span style="position:absolute;left:0;top:0;height:100%;width:${Math.round(x.s/max*100)}%;background:#010197;"></span>
+                                </div>
+                                <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">${x.s}/${x.o} · <b>${x.r.toFixed(0)}%</b></span>
+                            </div>`; }).join('')}
+                    </div>` : ''}
+
+                    ${quitList.length ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">CHOSEN JUST BEFORE QUITTING</h3><span class="text-xs text-muted" style="font-size:0.66rem;">what they picked, then left</span></div>
+                        ${quitList.map(([k, n]) => `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                            <span style="font-size:0.82rem;color:var(--text-main);">${esc(k)}</span><span style="font-size:0.78rem;font-weight:800;color:#DC2626;">${n}</span></div>`).join('')}
+                        <div style="font-size:0.7rem;color:var(--text-muted);padding-top:9px;">If one option dominates, the question after it is the problem.</div>
+                    </div>` : ''}
+
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
                         ${table('COMPLETION BY BRANCH', byBranch, 'completed / opened — a low rate means the branch is not asking well')}
                         ${table('BY SCAN SOURCE', bySource, 'which placement works')}
                     </div>
-                    <div style="margin-top:16px;">${table('BY DEVICE', byDevice, 'a low rate on one device is a bug')}</div>`;
+                    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        ${table('BY DEVICE', byDevice, 'a low rate on one device is a bug')}
+                        ${Object.keys(byScreen).length ? table('BY SCREEN SIZE', byScreen, 'a collapse on small screens is a layout bug') : ''}
+                    </div>`;
             }
             return { render };
         })();
