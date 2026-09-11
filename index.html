@@ -3199,67 +3199,94 @@
         .note.danger { background:rgba(220,38,38,.07); border-color:rgba(220,38,38,.22); color:#B91C1C; }
         .note.ok     { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.22); color:#047857; }
         /* ═══════════ ASSISTANT ═══════════ */
-        /* Liquid-glass orb: a dark glass shell with an iridescent core that
-           drifts, a slow conic sheen sweeping the surface, and a breathing
-           halo. Only transform / opacity / filter animate. */
+        /* Plasma orb: a deep indigo core inside a living rim of cyan, brand
+           blue, violet and magenta light, with a bloom behind it and a glow
+           pooled underneath. The outline slowly morphs like liquid. Only
+           transform, opacity and border-radius animate.
+           Palette note: violet #7C3AED and magenta #D946EF are a deliberate
+           exception for this badge only, matching the approved reference. */
         .ai-bubble {
             position:fixed; right:22px; bottom:calc(22px + env(safe-area-inset-bottom));
-            z-index:9000; width:52px; height:52px; padding:0; border:none; background:none; cursor:pointer;
+            z-index:9000; width:56px; height:56px; padding:0; border:none; background:none; cursor:pointer;
             display:flex; align-items:center; justify-content:center; isolation:isolate;
             border-radius:50%;
-            transition:transform .26s cubic-bezier(.16,1,.3,1);
+            transition:transform .3s cubic-bezier(.16,1,.3,1);
             -webkit-tap-highlight-color:transparent;
         }
         body.modal-open .ai-bubble { opacity:0; pointer-events:none; }
         .ai-bubble > span { position:absolute; inset:0; border-radius:inherit; pointer-events:none; }
 
-        /* breathing halo */
+        /* bloom behind the orb, and the glow pooled beneath it */
         .ai-bubble .orb-halo {
-            inset:-10px; border-radius:50%;
-            background:radial-gradient(circle at 50% 50%, rgba(165,180,252,.55) 0%, rgba(240,171,252,.32) 44%, rgba(165,180,252,0) 74%);
-            filter:blur(11px); opacity:.7; animation:orbBreathe 6s ease-in-out infinite; transition:opacity .26s;
+            inset:-13px; border-radius:50%;
+            background:radial-gradient(circle at 34% 38%, rgba(100,208,255,.6) 0%, rgba(100,208,255,0) 56%),
+                       radial-gradient(circle at 68% 62%, rgba(217,70,239,.5) 0%, rgba(217,70,239,0) 56%);
+            filter:blur(12px); opacity:.75; animation:orbBreathe 6s ease-in-out infinite; transition:opacity .3s;
         }
-        /* glass shell */
+        .ai-bubble::after {
+            content:''; position:absolute; left:14%; right:14%; bottom:-9px; height:9px; border-radius:50%;
+            background:radial-gradient(ellipse at center, rgba(59,91,219,.85) 0%, rgba(59,91,219,0) 72%);
+            filter:blur(3px); z-index:-1; pointer-events:none; transition:opacity .3s; opacity:.8;
+        }
+
+        /* one liquid outline shared by the body and the glass */
+        .ai-bubble .orb-body,
+        .ai-bubble .orb-glass { border-radius:47% 53% 55% 45% / 52% 45% 55% 48%; animation:orbMorph 9s ease-in-out infinite; }
+
         .ai-bubble .orb-body {
-            overflow:hidden;
-            background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.55) 0%, rgba(255,255,255,.16) 34%, rgba(255,255,255,.06) 62%, rgba(255,255,255,.14) 100%);
-            backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
-            box-shadow:0 10px 24px rgba(76,29,149,.28), inset 0 0 0 1px rgba(255,255,255,.55), inset 0 -10px 18px rgba(124,58,237,.18);
+            overflow:hidden; background:#140A52;
+            box-shadow:0 0 0 1px rgba(255,255,255,.14), 0 0 12px rgba(100,208,255,.55), 0 0 22px rgba(217,70,239,.32), 0 8px 18px rgba(1,1,151,.45);
         }
-        .ai-bubble .orb-body > span { position:absolute; inset:-50%; border-radius:50%; will-change:transform; }
-        /* iridescent core */
-        .ai-bubble .orb-i1 { background:conic-gradient(from 0deg, #3B5BDB, #64D0FF, #7C3AED, #FDA4AF, #FDE68A, #3B5BDB); filter:blur(7px); opacity:.7; animation:orbSpin 14s linear infinite; }
-        .ai-bubble .orb-i2 { background:radial-gradient(circle at 30% 70%, #64D0FF 0%, rgba(103,232,249,0) 48%), radial-gradient(circle at 74% 34%, #7C3AED 0%, rgba(240,171,252,0) 50%); filter:blur(9px); opacity:.6; animation:orbDrift 10s ease-in-out infinite alternate; }
-        /* sheen sweeping across the glass */
-        .ai-bubble .orb-i3 { inset:-50%; background:conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.85) 18deg, rgba(255,255,255,0) 44deg); filter:blur(1.5px); opacity:.55; animation:orbSpin 8s linear infinite reverse; }
-        /* specular glass */
+        .ai-bubble .orb-body > span { position:absolute; border-radius:50%; will-change:transform; }
+        /* living rim of light */
+        .ai-bubble .orb-i1 {
+            inset:-40%;
+            background:conic-gradient(from 20deg, #64D0FF, #3B5BDB 18%, #7C3AED 36%, #D946EF 52%, #F0ABFC 60%, #7C3AED 70%, #3B5BDB 84%, #64D0FF);
+            filter:blur(4px); animation:orbSpin 12s linear infinite;
+        }
+        /* deep core, drifting slightly off-centre */
+        .ai-bubble .orb-i2 {
+            inset:9%;
+            background:radial-gradient(circle at 50% 52%, #170862 0%, rgba(30,10,110,.95) 34%, rgba(46,16,130,.55) 60%, rgba(46,16,130,0) 80%);
+            filter:blur(2px); animation:orbDrift 8s ease-in-out infinite alternate;
+        }
+        /* hot flare and a cool glint, circling slowly */
+        .ai-bubble .orb-i3 {
+            inset:0;
+            background:radial-gradient(circle at 68% 32%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 12%),
+                       radial-gradient(circle at 60% 30%, rgba(244,114,182,.8) 0%, rgba(244,114,182,0) 26%),
+                       radial-gradient(circle at 28% 72%, rgba(100,208,255,.65) 0%, rgba(100,208,255,0) 28%);
+            filter:blur(2px); mix-blend-mode:screen; animation:orbSpin 16s linear infinite reverse;
+        }
+        /* glass rim and specular */
         .ai-bubble .orb-glass {
-            background:radial-gradient(circle 6px at 33% 26%, rgba(255,255,255,.98) 0%, rgba(255,255,255,.55) 55%, rgba(255,255,255,0) 100%),
-                       radial-gradient(ellipse 55% 34% at 62% 78%, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 70%);
-            box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);
+            background:radial-gradient(ellipse 42% 22% at 38% 17%, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 100%);
+            box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.32), inset 0 0 9px 1px rgba(100,208,255,.6), inset 0 -5px 10px rgba(217,70,239,.35);
         }
         .ai-bubble .orb-text {
-            position:relative; inset:auto; font:800 12px/1 'Inter',sans-serif; letter-spacing:1px; color:#2E1065;
-            text-shadow:0 1px 2px rgba(255,255,255,.85), 0 0 10px rgba(255,255,255,.7); z-index:2;
+            position:relative; inset:auto; font:800 16px/1 'Inter',sans-serif; letter-spacing:.4px; color:#fff;
+            text-shadow:0 0 8px rgba(255,255,255,.55), 0 1px 3px rgba(20,10,82,.85); z-index:2;
         }
         @keyframes orbSpin    { to { transform:rotate(360deg); } }
-        @keyframes orbDrift   { from { transform:translate3d(-8%,-6%,0) scale(1.06); } to { transform:translate3d(8%,7%,0) scale(1.2); } }
-        @keyframes orbBreathe { 0%,100% { transform:scale(1); opacity:.7; } 50% { transform:scale(1.1); opacity:.95; } }
+        @keyframes orbDrift   { from { transform:translate3d(-6%,-5%,0) scale(1); } to { transform:translate3d(6%,6%,0) scale(1.08); } }
+        @keyframes orbBreathe { 0%,100% { transform:scale(1); opacity:.7; } 50% { transform:scale(1.12); opacity:1; } }
+        @keyframes orbMorph   { 0%,100% { border-radius:47% 53% 55% 45% / 52% 45% 55% 48%; }
+                                33%     { border-radius:55% 45% 48% 52% / 46% 55% 45% 54%; }
+                                66%     { border-radius:45% 55% 52% 48% / 55% 50% 50% 45%; } }
         .ai-bubble:hover { transform:translateY(-3px) scale(1.07); }
         .ai-bubble:hover .orb-halo { opacity:1; }
-        .ai-bubble:hover .orb-i1 { animation-duration:7s; }
+        .ai-bubble:hover::after { opacity:1; }
+        .ai-bubble:hover .orb-i1 { animation-duration:6s; }
         .ai-bubble:active { transform:translateY(-1px) scale(1.02); }
-        .ai-bubble:focus-visible { outline:2px solid #3B5BDB; outline-offset:4px; }
-        .ai-bubble.active .orb-body > span { animation-duration:30s; opacity:.45; }
-        .ai-bubble.active .orb-halo { animation:none; opacity:.35; }
+        .ai-bubble:focus-visible { outline:2px solid #64D0FF; outline-offset:5px; }
+        .ai-bubble.active .orb-body > span { animation-duration:28s; }
+        .ai-bubble.active .orb-halo { animation:none; opacity:.4; }
         .ai-bubble.has-new .orb-halo { animation:orbPulse 2.4s ease-out infinite; }
-        @keyframes orbPulse { 0% { transform:scale(1); opacity:.85; } 65% { transform:scale(1.38); opacity:0; } 100% { transform:scale(1); opacity:0; } }
-        body.dark-theme .ai-bubble .orb-body { box-shadow:0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.5), inset 0 -10px 18px rgba(124,58,237,.22); }
-        body:not(.dark-theme) .ai-bubble .orb-halo { inset:-7px; opacity:.45; filter:blur(8px); }
-        body:not(.dark-theme) .ai-bubble:hover .orb-halo { opacity:.65; }
+        @keyframes orbPulse { 0% { transform:scale(1); opacity:.9; } 65% { transform:scale(1.38); opacity:0; } 100% { transform:scale(1); opacity:0; } }
+        body:not(.dark-theme) .ai-bubble .orb-halo { opacity:.55; }
+        body:not(.dark-theme) .ai-bubble:hover .orb-halo { opacity:.8; }
         @media (prefers-reduced-motion: reduce){
-            .ai-bubble .orb-body > span, .ai-bubble .orb-halo { animation:none !important; }
-            .ai-bubble .orb-i2 { transform:translate3d(0,0,0) scale(1.12); }
+            .ai-bubble .orb-body > span, .ai-bubble .orb-halo, .ai-bubble .orb-body, .ai-bubble .orb-glass { animation:none !important; }
         }
         .ai-panel { position:fixed; right:22px; bottom:calc(90px + env(safe-area-inset-bottom)); z-index:9001; width:400px; max-width:calc(100vw - 32px); height:520px; max-height:calc(100vh - 130px);
             background:var(--white); border:1px solid var(--border-color); border-radius:16px; box-shadow:0 24px 60px rgba(15,23,42,.22);
@@ -5517,7 +5544,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.32.9 · 11 Sep 2026 · dark mode repair';
+        const BUILD_VERSION = 'v2.33.0 · 11 Sep 2026 · dark charts + AI orb';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6570,6 +6597,41 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
         if (typeof ChartDataLabels !== 'undefined') {
             Chart.register(ChartDataLabels);
             Chart.defaults.set('plugins.datalabels', { display: false });
+        }
+
+        // Dark-mode chart ink. Brand navy (#010197) is right on white but close
+        // to invisible on the dark theme, so in dark mode every chart draws navy
+        // as the light brand blue (#64D0FF) instead -- bars, lines, points,
+        // ticks, legend labels. Colours only; data and scales are untouched.
+        // Runs for every chart, however it was created.
+        if (typeof Chart !== 'undefined') {
+            const _NAVY_HEX = /^#010197$/i, _NAVY_RGBA = /^rgba?\(\s*1\s*,\s*1\s*,\s*151\s*(?:,\s*([\d.]+)\s*)?\)$/i;
+            const _ink = v => {
+                if(typeof v !== 'string') return v;
+                if(_NAVY_HEX.test(v)) return '#64D0FF';
+                const m = v.match(_NAVY_RGBA); if(m) return m[1] !== undefined ? `rgba(100,208,255,${m[1]})` : '#64D0FF';
+                return v;
+            };
+            const _inkVal = v => Array.isArray(v) ? v.map(_ink)
+                : (typeof v === 'function' && !v.__inked) ? Object.assign(function(){ return _ink(v.apply(this, arguments)); }, { __inked:true })
+                : _ink(v);
+            const _COLOUR_KEYS = ['backgroundColor','borderColor','pointBackgroundColor','pointBorderColor','hoverBackgroundColor','hoverBorderColor','pointHoverBackgroundColor','pointHoverBorderColor','color'];
+            const _inkObj = (o, depth) => {
+                if(!o || typeof o !== 'object' || depth > 6) return;
+                Object.keys(o).forEach(k => {
+                    const v = o[k];
+                    if(_COLOUR_KEYS.includes(k)) o[k] = _inkVal(v);
+                    else if(v && typeof v === 'object' && !Array.isArray(v)) _inkObj(v, depth + 1);
+                });
+            };
+            const _inkChart = chart => {
+                if(!document.body.classList.contains('dark-theme')) return;
+                try {
+                    (chart.config.data.datasets || []).forEach(ds => _COLOUR_KEYS.forEach(k => { if(ds[k] !== undefined) ds[k] = _inkVal(ds[k]); }));
+                    _inkObj(chart.config.options, 0);
+                } catch(e){}
+            };
+            Chart.register({ id:'sentinelDarkInk', beforeInit:_inkChart, beforeUpdate:_inkChart });
         }
 
         // ==========================================
@@ -8505,7 +8567,11 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
             if(!_chartVisible(canvasEl)){ state._pendingCharts = state._pendingCharts || {}; state._pendingCharts[canvasId] = chartConfig; return state.charts[canvasId] || null; }
             if(state._pendingCharts) delete state._pendingCharts[canvasId];
             const existing = state.charts[canvasId];
+            // Gridline and label colours are baked in when a chart is built, so a
+            // chart built under the other theme is rebuilt, not just refilled.
+            const _dark = document.body.classList.contains('dark-theme');
             const sameShape = existing
+                && existing.$sentinelDark === _dark
                 && existing.config.type === chartConfig.type
                 && existing.data.datasets.length === chartConfig.data.datasets.length;
             if(sameShape){
@@ -8524,6 +8590,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
             if(existing) existing.destroy();
             const ctx = canvasEl.getContext('2d');
             const chart = new Chart(ctx, chartConfig);
+            chart.$sentinelDark = _dark;
             state.charts[canvasId] = chart;
             return chart;
         }
