@@ -3333,6 +3333,7 @@
         .radar-card { padding:18px 22px; }
         .churn-card { padding:18px 22px; }
         .bp-card { padding:18px 22px; }
+        .fc-card { padding:18px 22px; border-left:3px solid #DC2626; }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
            barely-there tint that fades out to the right, and a status dot instead
@@ -4435,6 +4436,12 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                             <div><span>Close</span><b>15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
+                    </div>
+
+                    <!-- Forecast: which branch is on course to breach its limit today -->
+                    <div class="card fc-card" id="forecast-card" style="display:none;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-bolt" style="color:#DC2626;margin-right:6px;"></i>HEADING FOR TROUBLE</h3><span class="text-xs text-muted" id="fc-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="fc-body"></div>
                     </div>
 
                     <!-- Capacity: the volume at which each branch starts failing -->
@@ -5736,7 +5743,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.36.1 · 11 Sep 2026 · capacity';
+        const BUILD_VERSION = 'v2.37.0 · 11 Sep 2026 · forecast';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9744,6 +9751,62 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
             // incident rate jumps. That turns "incidents are up" into "add a
             // person when you pass N orders an hour", which is a decision.
             // Uses verified + unreviewed only — fakes would flatter capacity.
+            // Forecast. Detection and escalation already exist; this is the
+            // prevention half: it compares today's running pace at each branch
+            // with that branch's known breaking point and says who will cross it,
+            // when, and what happened the last times they did. Plain arithmetic —
+            // current pace, measured threshold, historical outcome. No model.
+            renderForecast() {
+                const card = document.getElementById('forecast-card'), host = document.getElementById('fc-body'), sub = document.getElementById('fc-sub');
+                if(!card || !host) return;
+                const bps = this._breakingPoints || {};
+                const today = new Date().toISOString().split('T')[0];
+                const end = (document.getElementById('filter-end-date') || {}).value || '';
+                // only meaningful while today is still running
+                if(end !== today || !Object.keys(bps).length){ card.style.display = 'none'; return; }
+                const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+                if(nowH < 10 || nowH > 23){ card.style.display = 'none'; return; }
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const hourOf = x => { const t = String(_rawFieldExact(x._raw, 'Created At') || ''); const m = t.match(/(\d{1,2}):(\d{2})/);
+                    if(!m) return null; let h = +m[1]; if(/pm/i.test(t) && h < 12) h += 12; if(/am/i.test(t) && h === 12) h = 0; return h + (+m[2]) / 60; };
+                // this hour's pace so far, per branch
+                const hStart = Math.floor(nowH), elapsed = Math.max(0.15, nowH - hStart);
+                const thisHour = {};
+                (rawData.submissions || []).forEach(x => { if(x.date !== today || !x.branch) return;
+                    const h = hourOf(x); if(h == null || h < hStart) return; thisHour[x.branch] = (thisHour[x.branch] || 0) + 1; });
+                const warns = [];
+                Object.keys(bps).forEach(branch => {
+                    const bp = bps[branch]; if(!bp) return;
+                    const so_far = thisHour[branch] || 0;
+                    if(so_far < 2) return;
+                    const pace = so_far / elapsed;                      // submissions per hour at the current rate
+                    if(pace <= bp.t) return;                            // not on course to breach
+                    const minsToLimit = Math.max(0, ((bp.t - so_far) / pace) * 60);
+                    const when = new Date(Date.now() + minsToLimit * 60000);
+                    warns.push({ branch, bp, pace: Math.round(pace), so_far,
+                                 at: when.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' }),
+                                 already: so_far > bp.t });
+                });
+                if(!warns.length){ card.style.display = 'none'; return; }
+                warns.sort((a, b) => (b.pace / b.bp.t) - (a.pace / a.bp.t));
+                card.style.display = '';
+                if(sub) sub.textContent = warns.length + ' branch' + (warns.length === 1 ? '' : 'es') + ' on course to breach';
+                host.uiHTML = warns.slice(0, 3).map(w => `
+                    <div style="display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border-color);">
+                        <span style="width:9px;height:9px;border-radius:50%;background:#DC2626;margin-top:7px;flex-shrink:0;"></span>
+                        <div style="min-width:0;">
+                            <div style="font-size:0.85rem;font-weight:800;color:var(--text-main);">${esc2(w.branch)}</div>
+                            <div style="font-size:0.78rem;color:var(--text-main);margin-top:3px;line-height:1.55;">
+                                ${w.already
+                                  ? `Already <b style="color:#DC2626;">past its limit</b> this hour — ${w.so_far} submissions against a limit of ${w.bp.t}/hr.`
+                                  : `Running at <b>${w.pace}/hr</b> against a limit of <b>${w.bp.t}/hr</b> — on course to cross it by <b style="color:#DC2626;">${w.at}</b>.`}
+                                Above that line its incident rate goes from ${w.bp.loR.toFixed(1)}% to <b style="color:#DC2626;">${w.bp.hiR.toFixed(1)}%</b>.
+                            </div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">Add a person now, or expect roughly ${Math.max(1, Math.round(w.pace * (w.bp.hiR - w.bp.loR) / 100))} extra complaint${Math.round(w.pace * (w.bp.hiR - w.bp.loR) / 100) === 1 ? '' : 's'} this hour.</div>
+                        </div>
+                    </div>`).join('');
+            },
+
             renderBreakingPoint() {
                 const host = document.getElementById('bp-body'), sub = document.getElementById('bp-sub'); if(!host) return;
                 const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -9776,8 +9839,10 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                         if(!best || lift > best.lift) best = { t, loR, hiR, lift, hiHours: hi.length };
                     }
                     const totalS = hours.reduce((n, h) => n + h.s, 0), totalI = hours.reduce((n, h) => n + h.i, 0);
-                    out.push({ branch, peak, hours: hours.length, rate: totalS ? totalI / totalS * 100 : 0,
-                               bp: (best && best.lift >= 1.8 && best.hiR - best.loR >= 1.5) ? best : null });
+                    const confirmed = (best && best.lift >= 1.8 && best.hiR - best.loR >= 1.5) ? best : null;
+                    out.push({ branch, peak, hours: hours.length, rate: totalS ? totalI / totalS * 100 : 0, bp: confirmed });
+                    this._breakingPoints = this._breakingPoints || {};
+                    if(confirmed) this._breakingPoints[branch] = confirmed; else delete this._breakingPoints[branch];
                 });
                 if(!out.length){ host.uiHTML = '<div style="padding:16px 0;color:var(--text-muted);font-size:0.82rem;">Not enough hourly history yet — this needs a few weeks of data per branch.</div>'; return; }
                 const found = out.filter(o => o.bp).sort((a, b2) => b2.bp.lift - a.bp.lift);
@@ -9979,6 +10044,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 try { this.renderEmergingIssues(); } catch(e){ console.warn('emerging:', e); }
                 try { this.renderChurnRisk(); } catch(e){ console.warn('churn:', e); }
                 try { this.renderBreakingPoint(); } catch(e){ console.warn('breaking point:', e); }
+                try { this.renderForecast(); } catch(e){ console.warn('forecast:', e); }
                 try { this.renderVerdict(); } catch(e){ console.warn('verdict:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
