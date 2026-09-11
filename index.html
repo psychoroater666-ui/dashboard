@@ -39,7 +39,7 @@
             --status-good: #059669;
             --status-good-bg: #F8FAFC;
             --status-warn: #010197;
-            --status-warn-bg: #FFFBEB;
+            --status-warn-bg: rgba(1,1,151,0.06);
             --status-critical: #DC2626;
             --status-critical-bg: #F8FAFC;
             
@@ -57,7 +57,8 @@
             --accent-blue: #010197;
             --sidebar-bg: #010197;
             --status-good-bg: rgba(5,150,105,0.15);
-            --status-warn-bg: rgba(217,119,6,0.15);
+            --status-warn: #64D0FF;
+            --status-warn-bg: rgba(100,208,255,0.12);
             --status-critical-bg: rgba(220,38,38,0.15);
             --accent-blue-light: rgba(37,99,235,0.15);
         }
@@ -94,7 +95,13 @@
         }
 
         body.dark-theme .select-input {
-            background: var(--white) !important;
+            /* background-color, not the `background` shorthand: the shorthand
+               reset repeat/position/size, so the chevron tiled across the
+               whole field in dark mode */
+            background-color: var(--white) !important;
+            background-repeat: no-repeat !important;
+            background-position: right 10px center !important;
+            background-size: 14px !important;
             border-color: var(--border-color) !important;
             color: var(--text-main) !important;
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237D8590' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
@@ -692,7 +699,7 @@
         .branch-kpi-card::after { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:14px 0 0 14px; }
         .branch-kpi-card.good { border-left: 3px solid rgba(5,150,105,.4); background: linear-gradient(135deg, rgba(5,150,105,.03) 0%, var(--white) 60%); }
         .branch-kpi-card.good::after { background: linear-gradient(180deg,#059669,#059669); }
-        .branch-kpi-card.warn { border-left: 3px solid rgba(217,119,6,.4); background: linear-gradient(135deg, rgba(217,119,6,.03) 0%, var(--white) 60%); }
+        .branch-kpi-card.warn { border-left: 3px solid rgba(1,1,151,.4); background: linear-gradient(135deg, rgba(1,1,151,.03) 0%, var(--white) 60%); }
         .branch-kpi-card.warn::after { background: linear-gradient(180deg,#010197,#3B5BDB); }
         .branch-kpi-card.crit { border-left: 3px solid rgba(220,38,38,.4); background: linear-gradient(135deg, rgba(220,38,38,.03) 0%, var(--white) 60%); }
         .branch-kpi-card.crit::after { background: linear-gradient(180deg,#DC2626,#EF4444); }
@@ -798,7 +805,7 @@
         .branch-comp-name { font-size: 1rem; font-weight: 800; color: var(--text-main); }
         .branch-comp-badge { font-size: 0.65rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
         .badge-a { background: rgba(1,1,151,0.1); color: #010197; }
-        .badge-b { background: rgba(245,158,11,0.1); color: var(--status-warn); }
+        .badge-b { background: rgba(1,1,151,0.1); color: var(--status-warn); }
         .branch-comp-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 0 20px; height: 45px;
@@ -894,8 +901,8 @@
         .insight-critical { border-color: rgba(220,38,38,.2); background: linear-gradient(135deg, rgba(220,38,38,.03) 0%, var(--white) 60%); }
         .insight-critical .insight-icon { background: rgba(220,38,38,.1); color: var(--status-critical); }
         .insight-critical h4 { color: var(--status-critical); }
-        .insight-watch { border-color: rgba(217,119,6,.2); background: linear-gradient(135deg, rgba(217,119,6,.03) 0%, var(--white) 60%); }
-        .insight-watch .insight-icon { background: rgba(217,119,6,.1); color: var(--status-warn); }
+        .insight-watch { border-color: rgba(1,1,151,.2); background: linear-gradient(135deg, rgba(1,1,151,.03) 0%, var(--white) 60%); }
+        .insight-watch .insight-icon { background: rgba(1,1,151,.1); color: var(--status-warn); }
         .insight-watch h4 { color: var(--status-warn); }
         .insight-good { border-color: rgba(5,150,105,.2); background: linear-gradient(135deg, rgba(5,150,105,.03) 0%, var(--white) 60%); }
         .insight-good .insight-icon { background: rgba(5,150,105,.1); color: var(--status-good); }
@@ -1393,9 +1400,9 @@
         .sl-platform-foodpanda i { color:#D6006C; }
         body.dark-theme .sl-platform-twitterx i { color:#E2E8F0; }
         .sl-keyword.hot { background:rgba(1,1,151,.06); border-color:rgba(1,1,151,.28); color:var(--accent-blue); }
-        .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#010197; box-shadow:0 4px 12px rgba(217,119,6,.18); }
+        .sl-keyword.hot:hover { background:rgba(1,1,151,.16); border-color:#010197; box-shadow:0 4px 12px rgba(1,1,151,.18); }
         .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
-        .sl-keyword.sl-kw-active.hot { background:rgba(1,1,151,.14) !important; border-color:var(--accent-blue) !important; color:var(--accent-blue) !important; box-shadow:0 0 0 2px rgba(217,119,6,.25) !important; }
+        .sl-keyword.sl-kw-active.hot { background:rgba(1,1,151,.14) !important; border-color:var(--accent-blue) !important; color:var(--accent-blue) !important; box-shadow:0 0 0 2px rgba(1,1,151,.25) !important; }
 
         /* Platform/branch bar */
         .sl-bar-row { display:flex; align-items:center; gap:10px; font-size:0.78rem; }
@@ -1482,7 +1489,7 @@
         .res-stage-btn:hover { transform:translateY(-2px) scale(1.04); }
         .res-stage-btn:active { transform:scale(.95) !important; transition-duration:.1s !important; }
         .res-stage-btn.stage-none      { background:linear-gradient(135deg,#1D4ED8,#3B5BDB); color:#fff; box-shadow:0 4px 16px rgba(37,99,235,.4); }
-        .res-stage-btn.stage-contacted { background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; box-shadow:0 4px 16px rgba(217,119,6,.4); }
+        .res-stage-btn.stage-contacted { background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; box-shadow:0 4px 16px rgba(1,1,151,.4); }
         .res-stage-btn.stage-progress  { background:linear-gradient(135deg,#047857,#059669); color:#fff; box-shadow:0 4px 16px rgba(5,150,105,.4); }
         .res-stage-btn .res-btn-icon   { font-size:0.72rem; transition:transform .35s cubic-bezier(.16,1,.3,1); }
         .res-stage-btn:hover .res-btn-icon { transform:scale(1.25) rotate(-10deg); }
@@ -1920,13 +1927,15 @@
         .ivm-status-badge { display:flex; align-items:center; }
         .inc-status-badge-v2 { display:inline-block; padding:3px 11px; border-radius:20px; font-size:0.68rem; font-weight:700; }
         .inc-status-badge-v2.inc-status-resolved { background:rgba(5,150,105,.12); color:#059669; }
-        .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#010197; }
+        .inc-status-badge-v2.inc-status-open { background:rgba(1,1,151,.08); color:#010197; }
+        body.dark-theme .inc-status-badge-v2.inc-status-open { background:rgba(100,208,255,.14); color:#64D0FF; }
         .inc-status-badge-v2.inc-status-notresp { background:rgba(124,58,237,.12); color:#7C3AED; }
         .inc-columns-v2 { display:grid; grid-template-columns: 1fr 240px; gap:20px; align-items:start; padding-bottom:20px; }
         .inc-tl-entry-v2 { display:flex; gap:11px; align-items:flex-start; }
         .inc-tl-icon-v2 { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; }
         .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
-        .inc-tl-icon-reviewed { background:rgba(217,119,6,.1); color:#010197; }
+        .inc-tl-icon-reviewed { background:rgba(1,1,151,.08); color:#010197; }
+        body.dark-theme .inc-tl-icon-reviewed { background:rgba(100,208,255,.12); color:#64D0FF; }
         .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
         .inc-tl-icon-notresp { background:rgba(124,58,237,.1); color:#7C3AED; }
         .inc-tl-connector { width:2px; height:16px; background:var(--border-color); margin-left:13px; }
@@ -3333,7 +3342,7 @@
         .bc2-side.b { justify-content:flex-end; text-align:right; }
         .bc2-avatar { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem; color:#fff; flex-shrink:0; letter-spacing:.3px; }
         .bc2-side.a .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(1,1,151,.25); }
-        .bc2-side.b .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(217,119,6,.25); }
+        .bc2-side.b .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(1,1,151,.25); }
         .bc2-eyebrow { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
         .bc2-name { font-size:1.05rem; font-weight:800; color:var(--text-main); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .bc2-region { font-size:0.7rem; color:var(--text-muted); font-weight:600; }
@@ -3358,12 +3367,12 @@
         .bc2-bar { height:10px; border-radius:6px; background:var(--bg-light); position:relative; overflow:hidden; }
         .bc2-bar span { position:absolute; top:0; bottom:0; border-radius:6px; transition:width .5s cubic-bezier(.4,0,.2,1); }
         .bc2-bar.a span { right:0; background:linear-gradient(90deg,rgba(59,91,219,.55),#3B5BDB); }
-        .bc2-bar.b span { left:0;  background:linear-gradient(90deg,#3B5BDB,rgba(245,158,11,.55)); }
+        .bc2-bar.b span { left:0;  background:linear-gradient(90deg,#3B5BDB,rgba(100,208,255,.75)); }
         .bc2-bar.lose span { opacity:.35; }
         .bc2-mid { text-align:center; min-width:0; }
         .bc2-metric { font-size:0.74rem; font-weight:700; color:var(--text-main); }
         .bc2-delta { font-size:0.64rem; font-weight:700; color:var(--text-muted); margin-top:2px; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; background:var(--bg-light); }
-        .bc2-delta.a { color:#3B5BDB; background:rgba(59,91,219,.08); } .bc2-delta.b { color:#010197; background:rgba(245,158,11,.1); }
+        .bc2-delta.a { color:#3B5BDB; background:rgba(59,91,219,.08); } .bc2-delta.b { color:#010197; background:rgba(1,1,151,.1); }
         .bc2-note { font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
         @media (max-width:900px){ .bc2-row { grid-template-columns:80px 1fr 150px 1fr 80px; padding:10px 12px; } .bc2-head { grid-template-columns:1fr; } .bc2-side.b { justify-content:flex-start; text-align:left; } .bc2-score { min-width:0; } }
         body.dark-theme .bc2-row:hover { background:rgba(255,255,255,.02); }
@@ -3436,7 +3445,7 @@
         .fb-card .name { font-size:1rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
         .fb-badge { font-size:0.62rem; font-weight:800; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.4px; }
         .fb-badge.live { background:rgba(5,150,105,.12); color:#059669; }
-        .fb-badge.draft { background:rgba(217,119,6,.12); color:#010197; }
+        .fb-badge.draft { background:rgba(1,1,151,.12); color:#010197; }
         .fb-badge.archived { background:rgba(100,116,139,.15); color:#64748B; }
         .fb-meta { font-size:0.72rem; color:var(--text-muted); display:flex; gap:14px; flex-wrap:wrap; }
         .fb-meta b { color:var(--text-main); font-weight:700; }
@@ -3479,7 +3488,7 @@
         .fb-phone iframe { width:100%; height:640px; border:none; border-radius:28px; background:#fff; display:block; }
         .fb-preview-note { text-align:center; font-size:0.68rem; color:var(--text-muted); margin-top:10px; }
         .fb-alert { border-radius:10px; padding:10px 14px; font-size:0.78rem; font-weight:600; margin-bottom:14px; display:flex; gap:10px; align-items:flex-start; }
-        .fb-alert.warn { background:rgba(217,119,6,.1); color:#010197; border:1px solid rgba(217,119,6,.3); }
+        .fb-alert.warn { background:rgba(1,1,151,.1); color:#010197; border:1px solid rgba(1,1,151,.3); }
         .fb-alert.err { background:rgba(220,38,38,.08); color:#B91C1C; border:1px solid rgba(220,38,38,.3); }
         .fb-empty { text-align:center; padding:50px 20px; color:var(--text-muted); font-size:0.88rem; }
         .fb-qr { display:block; margin:6px auto 0; width:140px; height:140px; border-radius:10px; border:1px solid var(--border-color); background:#fff; }
@@ -3631,6 +3640,250 @@
             .chart-container { height: 200px !important; }
             .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
         }
+
+/* ═══════════════════════════════════════════════════════════════════
+   DARK MODE REPAIR LAYER  (v2.32.9, stylesheet only — no script changes)
+   The v2.32.x palette sweep turned many accents into brand navy #010197
+   and left amber tints behind. Navy reads well on white but is ~1.2:1 on
+   the dark surfaces — effectively invisible — and amber tints turn brown.
+   This layer lifts every navy text/icon to #64D0FF in dark mode, replaces
+   the amber tints with brand tints, and fixes a few one-off problems.
+   Inline styles written by the page's scripts are matched by attribute
+   selectors so no script had to change.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 1 · navy text & icons defined in the stylesheet */
+body.dark-theme .date-range-pill i,
+body.dark-theme .btn-link,
+body.dark-theme .icon-blue,
+body.dark-theme .form-icon,
+body.dark-theme .ai-row-act,
+body.dark-theme .ai-cnt,
+body.dark-theme .bkc-ai-note i,
+body.dark-theme .ms-option:hover,
+body.dark-theme .ai-bot-bubble .bot-text,
+body.dark-theme .badge-a,
+body.dark-theme .winner-left,
+body.dark-theme .badge-resolved,
+body.dark-theme .voc-suggest-icon,
+body.dark-theme .voc-suggest-freq,
+body.dark-theme .collapse-header:hover .collapse-chevron,
+body.dark-theme .collapse-chevron.open,
+body.dark-theme .sl-chip-query,
+body.dark-theme .sl-branch-tag,
+body.dark-theme .sl-content a,
+body.dark-theme .sl-keyword:hover,
+body.dark-theme .sl-keyword.hot,
+body.dark-theme .sl-keyword.sl-kw-active,
+body.dark-theme .sl-keyword.sl-kw-active.hot,
+body.dark-theme .sl-res-stage.active-contacted,
+body.dark-theme .sl-res-stage.active-progress,
+body.dark-theme .sl-close-attach-btn:hover,
+body.dark-theme .cs-choice-selected,
+body.dark-theme .ct-seg button.active,
+body.dark-theme .ci-title,
+body.dark-theme .ci-mon.m0 .ci-mon-val,
+body.dark-theme .support-icon,
+body.dark-theme .verdict.mixed .v-head,
+body.dark-theme .note.info,
+body.dark-theme .note.warn,
+body.dark-theme .ai-eg button:hover,
+body.dark-theme .bc2-score .wins .b,
+body.dark-theme .bc2-delta.b,
+body.dark-theme .fb-badge.draft,
+body.dark-theme .fb-q-head .num,
+body.dark-theme .fb-alert.warn{ color:#64D0FF !important; }
+
+/* navy-on-navy-tint pills/badges: give the tint a visible dark counterpart */
+body.dark-theme .badge-a,
+body.dark-theme .voc-suggest-freq,
+body.dark-theme .collapse-header:hover .collapse-chevron,
+body.dark-theme .collapse-chevron.open,
+body.dark-theme .sl-chip-query,
+body.dark-theme .sl-branch-tag,
+body.dark-theme .sl-keyword:hover,
+body.dark-theme .sl-keyword.hot,
+body.dark-theme .sl-keyword.sl-kw-active,
+body.dark-theme .sl-keyword.sl-kw-active.hot,
+body.dark-theme .sl-res-stage.active-contacted,
+body.dark-theme .sl-res-stage.active-progress,
+body.dark-theme .cs-choice-selected,
+body.dark-theme .support-icon,
+body.dark-theme .note.info,
+body.dark-theme .note.warn,
+body.dark-theme .bc2-delta.b,
+body.dark-theme .fb-badge.draft,
+body.dark-theme .fb-q-head .num,
+body.dark-theme .fb-alert.warn{ background-color:rgba(100,208,255,.13) !important; }
+
+/* 2 · navy text & icons written inline (markup + script templates) */
+body.dark-theme [style^="color:#010197" i],
+body.dark-theme [style^="color: #010197" i],
+body.dark-theme [style*=";color:#010197" i],
+body.dark-theme [style*="; color:#010197" i],
+body.dark-theme [style*=" color:#010197" i],
+body.dark-theme [style*="'color:#010197" i],
+body.dark-theme [style^="color:var(--accent-blue)" i],
+body.dark-theme [style^="color: var(--accent-blue)" i],
+body.dark-theme [style*=";color:var(--accent-blue)" i],
+body.dark-theme [style*="; color:var(--accent-blue)" i],
+body.dark-theme [style*=" color:var(--accent-blue)" i],
+body.dark-theme [style*="'color:var(--accent-blue)" i],
+body.dark-theme [style^="color:rgb(1, 1, 151)" i],
+body.dark-theme [style^="color: rgb(1, 1, 151)" i],
+body.dark-theme [style*=";color:rgb(1, 1, 151)" i],
+body.dark-theme [style*="; color:rgb(1, 1, 151)" i],
+body.dark-theme [style*=" color:rgb(1, 1, 151)" i],
+body.dark-theme [style*="'color:rgb(1, 1, 151)" i]{ color:#64D0FF !important; }
+
+/* 3 · amber tints written inline -> brand tints (both themes; amber is off-palette) */
+[style*="background:rgba(217,119,6"],
+[style*="background:rgba(245,158,11"],
+[style*="background:rgba(217, 119, 6"],
+[style*="background:rgba(245, 158, 11"],
+[style*="background: rgba(217,119,6"],
+[style*="background: rgba(245,158,11"],
+[style*="background: rgba(217, 119, 6"],
+[style*="background: rgba(245, 158, 11"],
+[style*="background-color:rgba(217,119,6"],
+[style*="background-color:rgba(245,158,11"],
+[style*="background-color:rgba(217, 119, 6"],
+[style*="background-color:rgba(245, 158, 11"],
+[style*="background-color: rgba(217,119,6"],
+[style*="background-color: rgba(245,158,11"],
+[style*="background-color: rgba(217, 119, 6"],
+[style*="background-color: rgba(245, 158, 11"]{ background-color:rgba(1,1,151,.07) !important; }
+body.dark-theme [style*="background:rgba(217,119,6"],
+body.dark-theme [style*="background:rgba(245,158,11"],
+body.dark-theme [style*="background:rgba(217, 119, 6"],
+body.dark-theme [style*="background:rgba(245, 158, 11"],
+body.dark-theme [style*="background: rgba(217,119,6"],
+body.dark-theme [style*="background: rgba(245,158,11"],
+body.dark-theme [style*="background: rgba(217, 119, 6"],
+body.dark-theme [style*="background: rgba(245, 158, 11"],
+body.dark-theme [style*="background-color:rgba(217,119,6"],
+body.dark-theme [style*="background-color:rgba(245,158,11"],
+body.dark-theme [style*="background-color:rgba(217, 119, 6"],
+body.dark-theme [style*="background-color:rgba(245, 158, 11"],
+body.dark-theme [style*="background-color: rgba(217,119,6"],
+body.dark-theme [style*="background-color: rgba(245,158,11"],
+body.dark-theme [style*="background-color: rgba(217, 119, 6"],
+body.dark-theme [style*="background-color: rgba(245, 158, 11"]{ background-color:rgba(100,208,255,.12) !important; }
+[style*="solid rgba(217,119,6"],
+[style*="solid rgba(245,158,11"],
+[style*="solid rgba(217, 119, 6"],
+[style*="solid rgba(245, 158, 11"],
+[style*="border-color:rgba(245,158,11"],
+[style*="border-color:rgba(217,119,6"]{ border-color:rgba(1,1,151,.22) !important; }
+body.dark-theme [style*="solid rgba(217,119,6"],
+body.dark-theme [style*="solid rgba(245,158,11"],
+body.dark-theme [style*="solid rgba(217, 119, 6"],
+body.dark-theme [style*="solid rgba(245, 158, 11"],
+body.dark-theme [style*="border-color:rgba(245,158,11"],
+body.dark-theme [style*="border-color:rgba(217,119,6"]{ border-color:rgba(100,208,255,.28) !important; }
+[style*="rgba(217,119,6,0.65)"]{ background-color:#3B5BDB !important; }   /* VOC sentiment bar, middle band */
+
+/* dark counterparts for brand tints set in the stylesheet */
+body.dark-theme .insight-watch .insight-icon,
+body.dark-theme .fb-badge.draft,
+body.dark-theme .bc2-delta.b,
+body.dark-theme .badge-b,
+body.dark-theme .fb-alert.warn{ background-color:rgba(100,208,255,.12) !important; }
+body.dark-theme .fb-alert.warn,
+body.dark-theme .insight-watch{ border-color:rgba(100,208,255,.28) !important; }
+body.dark-theme .branch-kpi-card.warn{ border-left-color:rgba(100,208,255,.45) !important; }
+
+/* 4 · "Not responding" purple: lifted to the lighter purple already used for
+   the Call Center form, so it stays legible on dark (was 2.8:1) */
+body.dark-theme .inc-status-badge-v2.inc-status-notresp,
+body.dark-theme .inc-tl-icon-notresp,
+body.dark-theme .inc-validity-btn.inc-validity-notresp.inc-validity-selected,
+body.dark-theme [style^="color:#7C3AED" i],
+body.dark-theme [style^="color: #7C3AED" i],
+body.dark-theme [style*=";color:#7C3AED" i],
+body.dark-theme [style*="; color:#7C3AED" i],
+body.dark-theme [style*=" color:#7C3AED" i],
+body.dark-theme [style*="'color:#7C3AED" i],
+body.dark-theme [style^="color:rgb(124, 58, 237)" i],
+body.dark-theme [style^="color: rgb(124, 58, 237)" i],
+body.dark-theme [style*=";color:rgb(124, 58, 237)" i],
+body.dark-theme [style*="; color:rgb(124, 58, 237)" i],
+body.dark-theme [style*=" color:rgb(124, 58, 237)" i],
+body.dark-theme [style*="'color:rgb(124, 58, 237)" i]{ color:#A78BFA !important; }
+body.dark-theme .inc-validity-btn.inc-validity-notresp.inc-validity-selected{ border-color:#8B5CF6 !important; }
+
+/* 5 · Refresh button had hard-coded black text and a black hover border */
+body.dark-theme #refresh-btn{ color:var(--text-main) !important; }
+body.dark-theme .refresh-btn-el:hover{ border-color:var(--text-muted) !important; }
+
+/* 6 · Category chips (incident table): category colours are tuned for white;
+   brighten them on dark so the label reads. Navy chips are handled above. */
+body.dark-theme .inc-label-chip:not([style*="#010197" i]){ filter:brightness(1.55) saturate(1.1); }
+
+/* 7 · Complaint heatmap (Complaints view): the two lightest bands had light
+   text in dark mode (dark-theme table rule forces text-main), and the scale
+   was orange. Now a red scale in both themes with readable text. */
+td.ct-cell[style*="--cell-bg:#FEF1EE"]{ --cell-bg:#FEF2F2 !important; color:#B91C1C !important; }
+td.ct-cell[style*="--cell-bg:#F7C9BC"]{ --cell-bg:#FECACA !important; color:#B91C1C !important; }
+td.ct-cell[style*="--cell-bg:#EC8F76"]{ --cell-bg:#EF4444 !important; color:#fff !important; }
+td.ct-cell[style*="--cell-bg:#D85C3A"]{ --cell-bg:#DC2626 !important; color:#fff !important; }
+td.ct-cell[style*="--cell-bg:#A8471F"]{ --cell-bg:#991B1B !important; color:#fff !important; }
+body.dark-theme td.ct-cell[style*="--cell-bg:#FEF1EE"]{ --cell-bg:rgba(220,38,38,.16) !important; color:var(--text-main) !important; }
+body.dark-theme td.ct-cell[style*="--cell-bg:#F7C9BC"]{ --cell-bg:rgba(220,38,38,.34) !important; color:#fff !important; }
+body.dark-theme td.ct-cell[style*="--cell-bg:#EC8F76"]{ --cell-bg:rgba(220,38,38,.58) !important; color:#fff !important; }
+body.dark-theme td.ct-cell[style*="--cell-bg:#D85C3A"]{ --cell-bg:rgba(220,38,38,.8) !important; color:#fff !important; }
+body.dark-theme td.ct-cell[style*="--cell-bg:#A8471F"]{ --cell-bg:#DC2626 !important; color:#fff !important; }
+
+/* 8 · Refresh icon carries its own inline black */
+body.dark-theme #refresh-icon{ color:var(--text-main) !important; }
+
+/* 9 · Complaint family colour written as --fc:#010197 */
+body.dark-theme [style*="--fc:#010197" i]{ --fc:#64D0FF !important; }
+
+/* 10 · Branch cards: the AI note box had a hard-coded near-white gradient */
+body.dark-theme .bkc-ai-note{ background:rgba(100,208,255,.06) !important; border-color:var(--border-color) !important; color:var(--text-muted) !important; }
+
+/* 11 · Slate (#64748B) and ad-hoc blue (#2563EB) small text written inline —
+   SLA "unreviewed" chips, brand-tier chips — too dim on dark */
+body.dark-theme [style^="color:#64748B" i],
+body.dark-theme [style^="color: #64748B" i],
+body.dark-theme [style*=";color:#64748B" i],
+body.dark-theme [style*="; color:#64748B" i],
+body.dark-theme [style*=" color:#64748B" i],
+body.dark-theme [style*="'color:#64748B" i],
+body.dark-theme [style^="color:rgb(100, 116, 139)" i],
+body.dark-theme [style^="color: rgb(100, 116, 139)" i],
+body.dark-theme [style*=";color:rgb(100, 116, 139)" i],
+body.dark-theme [style*="; color:rgb(100, 116, 139)" i],
+body.dark-theme [style*=" color:rgb(100, 116, 139)" i],
+body.dark-theme [style*="'color:rgb(100, 116, 139)" i]{ color:#94A3B8 !important; }
+body.dark-theme [style^="color:#2563EB" i],
+body.dark-theme [style^="color: #2563EB" i],
+body.dark-theme [style*=";color:#2563EB" i],
+body.dark-theme [style*="; color:#2563EB" i],
+body.dark-theme [style*=" color:#2563EB" i],
+body.dark-theme [style*="'color:#2563EB" i],
+body.dark-theme [style^="color:rgb(37, 99, 235)" i],
+body.dark-theme [style^="color: rgb(37, 99, 235)" i],
+body.dark-theme [style*=";color:rgb(37, 99, 235)" i],
+body.dark-theme [style*="; color:rgb(37, 99, 235)" i],
+body.dark-theme [style*=" color:rgb(37, 99, 235)" i],
+body.dark-theme [style*="'color:rgb(37, 99, 235)" i]{ color:#64D0FF !important; }
+
+/* 12 · Heatmap legend swatches follow the new red scale, and the Total column
+   (white text on no fill) was invisible in LIGHT theme */
+.ct-legend-scale span[style*="#FEF1EE"]{ background:#FEF2F2 !important; }
+.ct-legend-scale span[style*="#F7C9BC"]{ background:#FECACA !important; }
+.ct-legend-scale span[style*="#EC8F76"]{ background:#EF4444 !important; }
+.ct-legend-scale span[style*="#D85C3A"]{ background:#DC2626 !important; }
+.ct-legend-scale span[style*="#A8471F"]{ background:#991B1B !important; }
+body.dark-theme .ct-legend-scale span[style*="#FEF1EE"]{ background:rgba(220,38,38,.16) !important; }
+body.dark-theme .ct-legend-scale span[style*="#F7C9BC"]{ background:rgba(220,38,38,.34) !important; }
+body.dark-theme .ct-legend-scale span[style*="#EC8F76"]{ background:rgba(220,38,38,.58) !important; }
+body.dark-theme .ct-legend-scale span[style*="#D85C3A"]{ background:rgba(220,38,38,.8) !important; }
+body.dark-theme .ct-legend-scale span[style*="#A8471F"]{ background:#DC2626 !important; }
+td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !important; }
+
         </style>
 </head>
 <body class="app-loading">
@@ -5264,7 +5517,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.32.7 · 11 Sep 2026 · peak-hours chart top';
+        const BUILD_VERSION = 'v2.32.9 · 11 Sep 2026 · dark mode repair';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
