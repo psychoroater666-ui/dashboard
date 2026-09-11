@@ -26,22 +26,22 @@
             --brand-accent: #010197;
             --brand-button: #64D0FF;        /* Button: #64D0FF */
             --brand-hover: #010197;         /* Button Hover: #010197 */
-            --bg-light: #F8F9FA;            /* Background: #F8F9FA */
+            --bg-light: #F8FAFC;            /* Background: #F8FAFC */
             
             --primary-navy: #000000;        /* Section Heading: #000000 */
             --accent-blue: #010197;         /* Using brand accent throughout */
-            --accent-blue-light: #EEF0FF;
+            --accent-blue-light: #F1F5F9;
             --white: #FFFFFF;
-            --text-main: #1E1E3A;
+            --text-main: #0F172A;
             --text-muted: #64748B;
-            --border-color: #E4E4F0;
+            --border-color: #E2E8F0;
             
             --status-good: #059669;
-            --status-good-bg: #ECFDF5;
-            --status-warn: #D97706;
+            --status-good-bg: #F8FAFC;
+            --status-warn: #010197;
             --status-warn-bg: #FFFBEB;
             --status-critical: #DC2626;
-            --status-critical-bg: #FEF2F2;
+            --status-critical-bg: #F8FAFC;
             
             --sidebar-width: 250px;
         }
@@ -54,7 +54,7 @@
             --text-main: #E6EDF3;
             --text-muted: #7D8590;
             --border-color: #30363D;
-            --accent-blue: #2563EB;
+            --accent-blue: #010197;
             --sidebar-bg: #010197;
             --status-good-bg: rgba(5,150,105,0.15);
             --status-warn-bg: rgba(217,119,6,0.15);
@@ -320,7 +320,7 @@
         
         /* Header matches sidebar color */
         .header {
-            background: linear-gradient(180deg, #0505c8 0%, #010197 100%);
+            background: linear-gradient(180deg, #010197 0%, #010197 100%);
             padding: 0 24px; display: flex; align-items: center; gap: 0;
             flex-shrink: 0; height: 58px;
             border-bottom: 1px solid rgba(0,0,0,0.25);
@@ -613,7 +613,7 @@
         .ai-row { background:#fff; border:1px solid #eee9fb; border-radius:9px; padding:9px 10px; }
         .ai-row-top { display:flex; align-items:center; gap:7px; font-size:.78rem; color:var(--primary-navy); margin-bottom:3px; flex-wrap:wrap; }
         .ai-row-issue { font-size:.75rem; color:var(--text-muted); line-height:1.4; }
-        .ai-row-act { font-size:.75rem; color:#2563EB; font-weight:600; margin-top:3px; }
+        .ai-row-act { font-size:.75rem; color:#010197; font-weight:600; margin-top:3px; }
         .ai-pri { font-size:.6rem; font-weight:800; text-transform:uppercase; padding:2px 6px; border-radius:20px; }
         .ai-cnt { margin-left:auto; font-size:.7rem; font-weight:800; color:#7C3AED; background:#f2ecff; padding:1px 8px; border-radius:20px; }
         /* ======== AI INSIGHTS — fully redesigned spacious layout ======== */
@@ -669,12 +669,12 @@
 
         /* scrollable AI content inside active tile */
         .ai-scroll { margin-top: 12px; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 6px; scrollbar-width:thin; scrollbar-color:rgba(100,116,139,.2) transparent; }
-        .ai-row { background: #F8F9FA; border: 1px solid #EEF0FF; border-radius: 10px; padding: 10px 12px; }
-        .ai-row-top { display:flex; align-items:center; gap:7px; font-size:.82rem; color:#1E1E3A; margin-bottom:4px; flex-wrap:wrap; font-weight: 700; }
+        .ai-row { background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 10px; padding: 10px 12px; }
+        .ai-row-top { display:flex; align-items:center; gap:7px; font-size:.82rem; color:#0F172A; margin-bottom:4px; flex-wrap:wrap; font-weight: 700; }
         .ai-row-issue { font-size:.78rem; color:#64748B; line-height:1.5; }
         .ai-row-act { font-size:.78rem; color:#010197; font-weight:700; margin-top:4px; }
         .ai-pri { font-size:.62rem; font-weight:800; text-transform:uppercase; padding:2px 7px; border-radius:20px; }
-        .ai-cnt { margin-left:auto; font-size:.72rem; font-weight:800; color:#010197; background:#eef0ff; padding:2px 9px; border-radius:20px; }
+        .ai-cnt { margin-left:auto; font-size:.72rem; font-weight:800; color:#010197; background:#F1F5F9; padding:2px 9px; border-radius:20px; }
 
         /* ======== BRANCH PERFORMANCE CARDS ======== */
         .branch-cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
@@ -691,9 +691,9 @@
         .branch-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(1,1,151,.1); }
         .branch-kpi-card::after { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:14px 0 0 14px; }
         .branch-kpi-card.good { border-left: 3px solid rgba(5,150,105,.4); background: linear-gradient(135deg, rgba(5,150,105,.03) 0%, var(--white) 60%); }
-        .branch-kpi-card.good::after { background: linear-gradient(180deg,#059669,#10B981); }
+        .branch-kpi-card.good::after { background: linear-gradient(180deg,#059669,#059669); }
         .branch-kpi-card.warn { border-left: 3px solid rgba(217,119,6,.4); background: linear-gradient(135deg, rgba(217,119,6,.03) 0%, var(--white) 60%); }
-        .branch-kpi-card.warn::after { background: linear-gradient(180deg,#D97706,#F59E0B); }
+        .branch-kpi-card.warn::after { background: linear-gradient(180deg,#010197,#3B5BDB); }
         .branch-kpi-card.crit { border-left: 3px solid rgba(220,38,38,.4); background: linear-gradient(135deg, rgba(220,38,38,.03) 0%, var(--white) 60%); }
         .branch-kpi-card.crit::after { background: linear-gradient(180deg,#DC2626,#EF4444); }
         .bkc-header { display:flex; align-items:center; justify-content:space-between; }
@@ -735,8 +735,8 @@
         .form-perf-card { background: var(--white); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; box-shadow: 0 4px 14px -3px rgba(0,0,0,0.06); transition: 0.25s; position: relative; overflow: hidden; }
         .form-perf-card:hover { border-color: var(--accent-blue); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); transform: translateY(-2px); }
         .form-perf-card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:14px 14px 0 0; }
-        .form-perf-card.delivery::after { background: linear-gradient(90deg, #2563EB, #06B6D4); }
-        .form-perf-card.dinein::after { background: linear-gradient(90deg, #10B981, #84CC16); }
+        .form-perf-card.delivery::after { background: linear-gradient(90deg, #010197, #06B6D4); }
+        .form-perf-card.dinein::after { background: linear-gradient(90deg, #059669, #84CC16); }
         .form-perf-card.callcenter::after { background: linear-gradient(90deg, #8B5CF6, #EC4899); }
         .form-perf-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
         .form-perf-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
@@ -753,7 +753,7 @@
         .form-month-select { padding: 5px 28px 5px 10px; border: 1px solid var(--border-color); border-radius: 7px; font-size: 0.75rem; font-weight: 600; color: var(--text-main); background: var(--bg-light); outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px; cursor: pointer; }
 
         /* =============== AI BOT BUBBLE =============== */
-        .ai-bot-bubble { background: linear-gradient(135deg, #eef0ff, #e8f4ff); border: 1px solid #d0d4f5; border-radius: 10px; padding: 10px 14px; font-size: 0.76rem; color: var(--text-main); line-height: 1.5; font-weight: 500; display: flex; align-items: flex-start; gap: 8px; }
+        .ai-bot-bubble { background: linear-gradient(135deg, #F1F5F9, #e8f4ff); border: 1px solid #d0d4f5; border-radius: 10px; padding: 10px 14px; font-size: 0.76rem; color: var(--text-main); line-height: 1.5; font-weight: 500; display: flex; align-items: flex-start; gap: 8px; }
         .ai-bot-bubble .bot-icon { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, #010197, #64D0FF); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; flex-shrink: 0; margin-top: 1px; }
         .ai-bot-bubble .bot-text { color: #010197; font-weight: 600; }
 
@@ -829,7 +829,7 @@
         /* =============== FORM INCIDENTS BREAKDOWN =============== */
         .form-inc-section { background: var(--white); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; }
         .form-inc-header { padding: 14px 20px; background: var(--bg-light); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: background .18s cubic-bezier(.4,0,.2,1); }
-        .form-inc-header:hover { background: #EEF0FF; }
+        .form-inc-header:hover { background: #F1F5F9; }
         .form-inc-title { font-size: 0.85rem; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
         .form-inc-count { background: var(--status-critical-bg); color: var(--status-critical); font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(220,38,38,0.15); }
         .form-inc-body { display: none; }
@@ -848,7 +848,7 @@
         .inc-card-top { display:flex; justify-content:space-between; align-items:baseline; gap:12px; flex-wrap:wrap; }
         .inc-card-item { font-size:0.84rem; font-weight:700; color:var(--text-main); }
         .inc-card-meta { font-size:0.72rem; font-weight:600; color:var(--text-muted); display:flex; align-items:center; gap:8px; white-space:nowrap; }
-        .inc-stars { color:#F59E0B; letter-spacing:1px; font-size:0.72rem; }
+        .inc-stars { color:#3B5BDB; letter-spacing:1px; font-size:0.72rem; }
         .inc-note { margin-top:6px; font-size:0.82rem; line-height:1.5; color:var(--text-main); font-style:italic; }
         .inc-note-empty { color:var(--text-muted); font-style:normal; font-size:0.78rem; }
         .inc-chip-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
@@ -973,7 +973,7 @@
         /* Urgency flag chip */
         .voc-urgent-chip {
             display: inline-flex; align-items: center; gap: 5px;
-            background: #FEF2F2; border: 1px solid rgba(220,38,38,0.2);
+            background: #F8FAFC; border: 1px solid rgba(220,38,38,0.2);
             color: #DC2626; font-size: 0.68rem; font-weight: 800;
             padding: 3px 9px; border-radius: 20px;
             animation: pulse 2s infinite;
@@ -1363,8 +1363,8 @@
         .sl-kpi:hover::before { opacity:0; }
         .sl-kpi:active { transform:translateY(-1px) scale(.98) !important; transition-duration:.1s !important; }
         .sl-kpi.sl-kpi-active {
-            border-color:var(--sl-kpi-active-color, #D97706) !important;
-            box-shadow:0 0 0 3px color-mix(in srgb, var(--sl-kpi-active-color, #D97706) 15%, transparent) !important;
+            border-color:var(--sl-kpi-active-color, #010197) !important;
+            box-shadow:0 0 0 3px color-mix(in srgb, var(--sl-kpi-active-color, #010197) 15%, transparent) !important;
         }
         .sl-kpi-label { font-size:0.64rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); margin-bottom:3px; }
         .sl-kpi-val { font-size:1.2rem; font-weight:800; color:var(--text-main); }
@@ -1389,7 +1389,7 @@
         .sl-platform-blink::before     { background:#7C3AED; }
         .sl-platform-foodpanda::before { background:#D6006C; }
         .sl-keyword.hot { background:rgba(1,1,151,.06); border-color:rgba(1,1,151,.28); color:var(--accent-blue); }
-        .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#D97706; box-shadow:0 4px 12px rgba(217,119,6,.18); }
+        .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#010197; box-shadow:0 4px 12px rgba(217,119,6,.18); }
         .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
         .sl-keyword.sl-kw-active.hot { background:rgba(1,1,151,.14) !important; border-color:var(--accent-blue) !important; color:var(--accent-blue) !important; box-shadow:0 0 0 2px rgba(217,119,6,.25) !important; }
 
@@ -1477,9 +1477,9 @@
         .res-stage-btn:hover::before { opacity:1; }
         .res-stage-btn:hover { transform:translateY(-2px) scale(1.04); }
         .res-stage-btn:active { transform:scale(.95) !important; transition-duration:.1s !important; }
-        .res-stage-btn.stage-none      { background:linear-gradient(135deg,#1D4ED8,#3B82F6); color:#fff; box-shadow:0 4px 16px rgba(37,99,235,.4); }
-        .res-stage-btn.stage-contacted { background:linear-gradient(135deg,#B45309,#F59E0B); color:#fff; box-shadow:0 4px 16px rgba(217,119,6,.4); }
-        .res-stage-btn.stage-progress  { background:linear-gradient(135deg,#047857,#10B981); color:#fff; box-shadow:0 4px 16px rgba(5,150,105,.4); }
+        .res-stage-btn.stage-none      { background:linear-gradient(135deg,#1D4ED8,#3B5BDB); color:#fff; box-shadow:0 4px 16px rgba(37,99,235,.4); }
+        .res-stage-btn.stage-contacted { background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; box-shadow:0 4px 16px rgba(217,119,6,.4); }
+        .res-stage-btn.stage-progress  { background:linear-gradient(135deg,#047857,#059669); color:#fff; box-shadow:0 4px 16px rgba(5,150,105,.4); }
         .res-stage-btn .res-btn-icon   { font-size:0.72rem; transition:transform .35s cubic-bezier(.16,1,.3,1); }
         .res-stage-btn:hover .res-btn-icon { transform:scale(1.25) rotate(-10deg); }
         @keyframes resRipple { 0%{transform:scale(0);opacity:.4;} 100%{transform:scale(3);opacity:0;} }
@@ -1578,7 +1578,7 @@
         /* Full-screen background */
         .login-bg {
             position: absolute; inset: 0;
-            background: linear-gradient(135deg, #010197 0%, #0505c8 50%, #010197 100%);
+            background: linear-gradient(135deg, #010197 0%, #010197 50%, #010197 100%);
         }
         .login-bg::before {
             content: '';
@@ -1691,7 +1691,7 @@
         .login-btn:active  { transform: scale(.98); }
         .login-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; }
         .login-error {
-            display: none; background: #fef2f2;
+            display: none; background: #F8FAFC;
             border: 1.5px solid #fecaca; border-radius: 10px;
             padding: 12px 14px; font-size: 0.8rem; font-weight: 600; line-height: 1.45;
             color: #b91c1c; margin: 6px 0 16px;
@@ -1850,11 +1850,11 @@
             width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
             color: #fff; display: flex; align-items: center; justify-content: center;
             font-weight: 800; font-size: 0.72rem; letter-spacing: 0.5px;
-            border: 2px solid #0a0a7a;
+            border: 2px solid #010197;
         }
         .user-status-dot { position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%;
-            background: #22C55E; border: 2px solid #0a0a7a; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: userDotPulse 2.4s ease-out infinite; }
-        body.feed-down .user-status-dot { background: #F59E0B; animation: none; }
+            background: #22C55E; border: 2px solid #010197; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: userDotPulse 2.4s ease-out infinite; }
+        body.feed-down .user-status-dot { background: #3B5BDB; animation: none; }
         @keyframes userDotPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); } 70% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
         .user-chip-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
         .user-name { font-size: 0.8rem; font-weight: 800; color: #fff; white-space: nowrap; letter-spacing: .1px; }
@@ -1901,7 +1901,7 @@
         .inc-tl-node:hover { transform:scale(1.18) !important; box-shadow:0 2px 8px rgba(0,0,0,.15) !important; }
         .inc-tl-line { width: 22px; height: 2px; flex-shrink: 0; }
         .inc-tl-done   { border-color: #DC2626; color: #DC2626; }        /* reported */
-        .inc-tl-review { border-color: #F59E0B; color: #F59E0B; }        /* reviewing */
+        .inc-tl-review { border-color: #3B5BDB; color: #3B5BDB; }        /* reviewing */
         .inc-tl-resolved { border-color: #059669; color: #059669; }
         .inc-tl-idle   { border-color: var(--border-color); color: var(--border-color); }
         .inc-label-chip { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
@@ -1916,13 +1916,13 @@
         .ivm-status-badge { display:flex; align-items:center; }
         .inc-status-badge-v2 { display:inline-block; padding:3px 11px; border-radius:20px; font-size:0.68rem; font-weight:700; }
         .inc-status-badge-v2.inc-status-resolved { background:rgba(5,150,105,.12); color:#059669; }
-        .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#D97706; }
+        .inc-status-badge-v2.inc-status-open { background:rgba(217,119,6,.12); color:#010197; }
         .inc-status-badge-v2.inc-status-notresp { background:rgba(124,58,237,.12); color:#7C3AED; }
         .inc-columns-v2 { display:grid; grid-template-columns: 1fr 240px; gap:20px; align-items:start; padding-bottom:20px; }
         .inc-tl-entry-v2 { display:flex; gap:11px; align-items:flex-start; }
         .inc-tl-icon-v2 { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.7rem; flex-shrink:0; }
         .inc-tl-icon-created { background:rgba(220,38,38,.1); color:#DC2626; }
-        .inc-tl-icon-reviewed { background:rgba(217,119,6,.1); color:#D97706; }
+        .inc-tl-icon-reviewed { background:rgba(217,119,6,.1); color:#010197; }
         .inc-tl-icon-resolved { background:rgba(5,150,105,.1); color:#059669; }
         .inc-tl-icon-notresp { background:rgba(124,58,237,.1); color:#7C3AED; }
         .inc-tl-connector { width:2px; height:16px; background:var(--border-color); margin-left:13px; }
@@ -2940,11 +2940,11 @@
               feedback a person gets after watching this screen. ────────── */
         #sr-mark.success .sr-ring{
             animation: srPop .45s var(--ease-out) both;
-            border-color: #34D399;                 /* solid ring, not a spinner */
+            border-color: #059669;                 /* solid ring, not a spinner */
         }
         #sr-mark.success .sr-glyph{
             animation: srPop .45s var(--ease-out) both;
-            color: #34D399;
+            color: #059669;
         }
         @keyframes srPop{
             from{ transform: scale(.55); opacity: 0; }
@@ -2990,7 +2990,7 @@
             transition: width .35s var(--ease, cubic-bezier(.32,.72,0,1));
         }
         .ci-bar-conf{ background:#059669; }
-        .ci-bar-auto{ background:#D97706; }
+        .ci-bar-auto{ background:#010197; }
         body.dark-theme .ci-bar{ background:rgba(255,255,255,.08); }
     </style>
     <script>
@@ -3084,7 +3084,7 @@
         .cl-main { min-width:0; }
         .cl-title { font-size:0.86rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
         .cl-conf { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .cl-conf.all { background:#059669; } .cl-conf.some { background:#F59E0B; } .cl-conf.none { background:var(--border-color); border:1px solid #CBD5E1; }
+        .cl-conf.all { background:#059669; } .cl-conf.some { background:#3B5BDB; } .cl-conf.none { background:var(--border-color); border:1px solid #CBD5E1; }
         .cl-crit { font-size:0.6rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:#DC2626; background:rgba(220,38,38,.1); border-radius:6px; padding:2px 6px; }
         .cl-sub { font-size:0.7rem; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .cl-owner { margin-left:8px; color:var(--text-main); font-weight:600; opacity:.75; }
@@ -3202,8 +3202,8 @@
         }
         .ai-bubble .orb-body > span { position:absolute; inset:-50%; border-radius:50%; will-change:transform; }
         /* iridescent core */
-        .ai-bubble .orb-i1 { background:conic-gradient(from 0deg, #A5B4FC, #67E8F9, #F0ABFC, #FDA4AF, #FDE68A, #A5B4FC); filter:blur(7px); opacity:.7; animation:orbSpin 14s linear infinite; }
-        .ai-bubble .orb-i2 { background:radial-gradient(circle at 30% 70%, #67E8F9 0%, rgba(103,232,249,0) 48%), radial-gradient(circle at 74% 34%, #F0ABFC 0%, rgba(240,171,252,0) 50%); filter:blur(9px); opacity:.6; animation:orbDrift 10s ease-in-out infinite alternate; }
+        .ai-bubble .orb-i1 { background:conic-gradient(from 0deg, #3B5BDB, #64D0FF, #7C3AED, #FDA4AF, #FDE68A, #3B5BDB); filter:blur(7px); opacity:.7; animation:orbSpin 14s linear infinite; }
+        .ai-bubble .orb-i2 { background:radial-gradient(circle at 30% 70%, #64D0FF 0%, rgba(103,232,249,0) 48%), radial-gradient(circle at 74% 34%, #7C3AED 0%, rgba(240,171,252,0) 50%); filter:blur(9px); opacity:.6; animation:orbDrift 10s ease-in-out infinite alternate; }
         /* sheen sweeping across the glass */
         .ai-bubble .orb-i3 { inset:-50%; background:conic-gradient(from 200deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,.85) 18deg, rgba(255,255,255,0) 44deg); filter:blur(1.5px); opacity:.55; animation:orbSpin 8s linear infinite reverse; }
         /* specular glass */
@@ -3223,7 +3223,7 @@
         .ai-bubble:hover .orb-halo { opacity:1; }
         .ai-bubble:hover .orb-i1 { animation-duration:7s; }
         .ai-bubble:active { transform:translateY(-1px) scale(1.02); }
-        .ai-bubble:focus-visible { outline:2px solid #A5B4FC; outline-offset:4px; }
+        .ai-bubble:focus-visible { outline:2px solid #3B5BDB; outline-offset:4px; }
         .ai-bubble.active .orb-body > span { animation-duration:30s; opacity:.45; }
         .ai-bubble.active .orb-halo { animation:none; opacity:.35; }
         .ai-bubble.has-new .orb-halo { animation:orbPulse 2.4s ease-out infinite; }
@@ -3316,19 +3316,19 @@
         .bc2-side.b { justify-content:flex-end; text-align:right; }
         .bc2-avatar { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.9rem; color:#fff; flex-shrink:0; letter-spacing:.3px; }
         .bc2-side.a .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(1,1,151,.25); }
-        .bc2-side.b .bc2-avatar { background:linear-gradient(135deg,#D97706,#F59E0B); box-shadow:0 6px 16px rgba(217,119,6,.25); }
+        .bc2-side.b .bc2-avatar { background:linear-gradient(135deg,#010197,#3B5BDB); box-shadow:0 6px 16px rgba(217,119,6,.25); }
         .bc2-eyebrow { font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); }
         .bc2-name { font-size:1.05rem; font-weight:800; color:var(--text-main); line-height:1.15; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .bc2-region { font-size:0.7rem; color:var(--text-muted); font-weight:600; }
         .bc2-score { text-align:center; min-width:220px; }
         .bc2-score .wins { display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; margin-bottom:6px; }
-        .bc2-score .wins .a { color:#3B5BDB; } .bc2-score .wins .b { color:#D97706; }
+        .bc2-score .wins .a { color:#3B5BDB; } .bc2-score .wins .b { color:#010197; }
         .bc2-scorebar { height:8px; border-radius:8px; background:var(--bg-light); overflow:hidden; display:flex; }
         .bc2-scorebar span { height:100%; transition:width .5s cubic-bezier(.4,0,.2,1); }
         .bc2-scorebar .a { background:linear-gradient(90deg,#010197,#3B5BDB); }
-        .bc2-scorebar .b { background:linear-gradient(90deg,#F59E0B,#D97706); margin-left:auto; }
+        .bc2-scorebar .b { background:linear-gradient(90deg,#3B5BDB,#010197); margin-left:auto; }
         .bc2-verdict { margin-top:8px; font-size:0.78rem; font-weight:600; color:var(--text-main); display:flex; align-items:center; justify-content:center; gap:6px; }
-        .bc2-verdict i { color:#F59E0B; }
+        .bc2-verdict i { color:#3B5BDB; }
         .bc2-group { background:var(--white); border:1px solid var(--border-color); border-radius:14px; overflow:hidden; }
         .bc2-group-title { padding:10px 20px; font-size:0.66rem; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:var(--text-muted); background:var(--bg-light); border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:8px; }
         .bc2-row { display:grid; grid-template-columns:110px 1fr 220px 1fr 110px; align-items:center; gap:10px; padding:11px 20px; border-bottom:1px solid var(--border-color); }
@@ -3336,17 +3336,17 @@
         .bc2-row:hover { background:rgba(1,1,151,.015); }
         .bc2-val { font-size:0.95rem; font-weight:800; color:var(--text-muted); display:flex; align-items:center; gap:6px; white-space:nowrap; }
         .bc2-val.win { color:var(--text-main); }
-        .bc2-val.win .crown { color:#F59E0B; font-size:0.62rem; }
+        .bc2-val.win .crown { color:#3B5BDB; font-size:0.62rem; }
         .bc2-val.right { justify-content:flex-end; }
         .bc2-bar { height:10px; border-radius:6px; background:var(--bg-light); position:relative; overflow:hidden; }
         .bc2-bar span { position:absolute; top:0; bottom:0; border-radius:6px; transition:width .5s cubic-bezier(.4,0,.2,1); }
         .bc2-bar.a span { right:0; background:linear-gradient(90deg,rgba(59,91,219,.55),#3B5BDB); }
-        .bc2-bar.b span { left:0;  background:linear-gradient(90deg,#F59E0B,rgba(245,158,11,.55)); }
+        .bc2-bar.b span { left:0;  background:linear-gradient(90deg,#3B5BDB,rgba(245,158,11,.55)); }
         .bc2-bar.lose span { opacity:.35; }
         .bc2-mid { text-align:center; min-width:0; }
         .bc2-metric { font-size:0.74rem; font-weight:700; color:var(--text-main); }
         .bc2-delta { font-size:0.64rem; font-weight:700; color:var(--text-muted); margin-top:2px; display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; background:var(--bg-light); }
-        .bc2-delta.a { color:#3B5BDB; background:rgba(59,91,219,.08); } .bc2-delta.b { color:#D97706; background:rgba(245,158,11,.1); }
+        .bc2-delta.a { color:#3B5BDB; background:rgba(59,91,219,.08); } .bc2-delta.b { color:#010197; background:rgba(245,158,11,.1); }
         .bc2-note { font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
         @media (max-width:900px){ .bc2-row { grid-template-columns:80px 1fr 150px 1fr 80px; padding:10px 12px; } .bc2-head { grid-template-columns:1fr; } .bc2-side.b { justify-content:flex-start; text-align:left; } .bc2-score { min-width:0; } }
         body.dark-theme .bc2-row:hover { background:rgba(255,255,255,.02); }
@@ -3419,7 +3419,7 @@
         .fb-card .name { font-size:1rem; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
         .fb-badge { font-size:0.62rem; font-weight:800; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.4px; }
         .fb-badge.live { background:rgba(5,150,105,.12); color:#059669; }
-        .fb-badge.draft { background:rgba(217,119,6,.12); color:#D97706; }
+        .fb-badge.draft { background:rgba(217,119,6,.12); color:#010197; }
         .fb-badge.archived { background:rgba(100,116,139,.15); color:#64748B; }
         .fb-meta { font-size:0.72rem; color:var(--text-muted); display:flex; gap:14px; flex-wrap:wrap; }
         .fb-meta b { color:var(--text-main); font-weight:700; }
@@ -3462,7 +3462,7 @@
         .fb-phone iframe { width:100%; height:640px; border:none; border-radius:28px; background:#fff; display:block; }
         .fb-preview-note { text-align:center; font-size:0.68rem; color:var(--text-muted); margin-top:10px; }
         .fb-alert { border-radius:10px; padding:10px 14px; font-size:0.78rem; font-weight:600; margin-bottom:14px; display:flex; gap:10px; align-items:flex-start; }
-        .fb-alert.warn { background:rgba(217,119,6,.1); color:#B45309; border:1px solid rgba(217,119,6,.3); }
+        .fb-alert.warn { background:rgba(217,119,6,.1); color:#010197; border:1px solid rgba(217,119,6,.3); }
         .fb-alert.err { background:rgba(220,38,38,.08); color:#B91C1C; border:1px solid rgba(220,38,38,.3); }
         .fb-empty { text-align:center; padding:50px 20px; color:var(--text-muted); font-size:0.88rem; }
         .fb-qr { display:block; margin:6px auto 0; width:140px; height:140px; border-radius:10px; border:1px solid var(--border-color); background:#fff; }
@@ -3948,7 +3948,7 @@
 
                     <!-- Silent churn: regulars who stopped coming and never said why -->
                     <div class="card churn-card" id="churn-card">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#B45309;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#010197;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
                         <div id="churn-body"></div>
                     </div>
 
@@ -3982,7 +3982,7 @@
                         <!-- moved to top -->
                         <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:12px;">
-                                <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#B45309;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
+                                <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#010197;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
                                 <button class="btn-link" onclick="app.navigate('complaints')" style="font-size:0.72rem;">View all →</button>
                             </div>
                             <div id="exec-repeat-risk"></div>
@@ -4569,7 +4569,7 @@
                     </div>
                     <div class="card" style="padding:16px 18px;">
                         <div style="font-size:0.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Avg Resolve Time</div>
-                        <div id="ia-kpi-resolve-time" style="font-size:1.5rem;font-weight:800;color:#D97706;">—</div>
+                        <div id="ia-kpi-resolve-time" style="font-size:1.5rem;font-weight:800;color:#010197;">—</div>
                     </div>
                 </div>
 
@@ -4841,7 +4841,7 @@
                         <!-- Trending Keywords -->
                         <div class="card" style="padding:18px 20px;">
                             <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
-                                <i class="fas fa-fire" style="color:#F59E0B;"></i> Trending Keywords
+                                <i class="fas fa-fire" style="color:#010197;"></i> Trending Keywords
                             </div>
                             <div id="sl-keywords" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
                         </div>
@@ -4997,10 +4997,10 @@
 
                 <!-- Region coverage diagnostic — collapsed by default, only
                      shows when at least one branch is actually unmapped. -->
-                <div class="card" id="ct-region-gap-card" style="display:none; border-left:4px solid #D97706; padding:12px 18px;">
+                <div class="card" id="ct-region-gap-card" style="display:none; border-left:4px solid #010197; padding:12px 18px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleRegionGapPanel()">
                         <div style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:var(--text-main);">
-                            <i class="fas fa-map-location-dot" style="color:#D97706;"></i>
+                            <i class="fas fa-map-location-dot" style="color:#010197;"></i>
                             <span id="ct-region-gap-label">Region coverage</span>
                         </div>
                         <i class="fas fa-chevron-down" id="ct-region-gap-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
@@ -5021,7 +5021,7 @@
                 <!-- Repeat Customers — the same person across multiple
                      separate incidents. Highest churn risk in the dataset. -->
                 <div class="card" style="padding:14px 18px;">
-                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;"><i class="fas fa-clock-rotate-left" style="color:#B45309;margin-right:6px;"></i>REPEAT CUSTOMERS</h3><span class="text-xs text-muted" id="ct-repeat-cust-note" style="font-weight:600;font-size:0.7rem;">Same customer, multiple complaints</span></div>
+                    <div class="section-header" style="margin-bottom:4px;"><h3 style="font-size:0.85rem;"><i class="fas fa-clock-rotate-left" style="color:#010197;margin-right:6px;"></i>REPEAT CUSTOMERS</h3><span class="text-xs text-muted" id="ct-repeat-cust-note" style="font-weight:600;font-size:0.7rem;">Same customer, multiple complaints</span></div>
                     <div id="ct-repeat-customers" style="margin-top:8px;display:flex;flex-direction:column;gap:8px;"></div>
                 </div>
 
@@ -5158,10 +5158,10 @@
                      each row's channel value, per source form — so the
                      breakdown above can be verified against what's actually
                      happening, not guessed at. -->
-                <div class="card" id="channel-diag-card" style="display:none; border-left:4px solid #D97706; padding:12px 18px;">
+                <div class="card" id="channel-diag-card" style="display:none; border-left:4px solid #010197; padding:12px 18px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleChannelDiagPanel()">
                         <div style="display:flex; align-items:center; gap:8px; font-size:0.8rem; font-weight:700; color:var(--text-main);">
-                            <i class="fas fa-route" style="color:#D97706;"></i>
+                            <i class="fas fa-route" style="color:#010197;"></i>
                             <span id="channel-diag-label">How channel values are being assigned</span>
                         </div>
                         <i class="fas fa-chevron-down" id="channel-diag-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
@@ -5172,10 +5172,10 @@
                 <!-- Data completeness diagnostic — only shown on the Submissions
                      tab, only when something needs attention, last in the list,
                      collapsed by default. -->
-                <div class="card" id="submissions-excluded-card" style="display:none; border-left:4px solid #D97706; padding:14px 20px;">
+                <div class="card" id="submissions-excluded-card" style="display:none; border-left:4px solid #010197; padding:14px 20px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; cursor:pointer;" onclick="toggleExcludedPanel()">
                         <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:var(--text-main);">
-                            <i class="fas fa-triangle-exclamation" style="color:#D97706;"></i>
+                            <i class="fas fa-triangle-exclamation" style="color:#010197;"></i>
                             <span id="submissions-excluded-compact-label">Data completeness</span>
                         </div>
                         <i class="fas fa-chevron-down" id="submissions-excluded-chevron" style="color:var(--text-muted); transition:transform .2s;"></i>
@@ -5199,7 +5199,7 @@
         // ==========================================
         const config = {
             branches: [ {name:'Gujranwala', region:'Central', city:'Gujranwala', basePq:88, baseSvc:86}, {name:'Saddar', region:'North', city:'Rawalpindi', basePq:86, baseSvc:85}, {name:'Johar Town', region:'Central', city:'Lahore', basePq:85, baseSvc:82}, {name:'MM Alam Road', region:'Central', city:'Lahore', basePq:89, baseSvc:88}, {name:'Canal Road FSD', region:'Central', city:'Faisalabad', basePq:87, baseSvc:85}, {name:'DHA', region:'Central', city:'Lahore', basePq:87, baseSvc:86}, {name:'F-11', region:'North', city:'Islamabad', basePq:91, baseSvc:89}, {name:'Peshawar', region:'North', city:'Peshawar', basePq:84, baseSvc:83}, {name:'Lake City', region:'Central', city:'Lahore', basePq:88, baseSvc:86}, {name:'I-8', region:'North', city:'Islamabad', basePq:90, baseSvc:88}, {name:'Multan', region:'South', city:'Multan', basePq:82, baseSvc:80}, {name:'Bahria Phase 4', region:'North', city:'Islamabad', basePq:86, baseSvc:85} ],
-            forms: [ {name:'Cookies', color:'#F59E0B', icon:'fa-cookie'}, {name:'Shakes', color:'#10B981', icon:'fa-blender'}, {name:'Cookies & Cream', color:'#8B5CF6', icon:'fa-ice-cream'}, {name:'Crumble Pots', color:'#3B82F6', icon:'fa-mug-hot'}, {name:'Service', color:'#64748B', icon:'fa-user-tie'} ],
+            forms: [ {name:'Cookies', color:'#010197', icon:'fa-cookie'}, {name:'Shakes', color:'#10B981', icon:'fa-blender'}, {name:'Cookies & Cream', color:'#8B5CF6', icon:'fa-ice-cream'}, {name:'Crumble Pots', color:'#3B82F6', icon:'fa-mug-hot'}, {name:'Service', color:'#64748B', icon:'fa-user-tie'} ],
             channels: [ {name:'In-Store', color:'#10B981'} ],
             surveyForms: ['Product', 'Service', 'General'],
             complaints: ['Service Issue', 'Cookies', 'Shakes', 'Cookies & Cream', 'Crumble Pots']
@@ -5238,7 +5238,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.31.0 · 11 Sep 2026 · palette';
+        const BUILD_VERSION = 'v2.32.1 · 11 Sep 2026 · palette';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -5629,7 +5629,7 @@
         });
         _fetch.changed = url => { if(typeof DataFeed !== 'undefined' && DataFeed.enabled && window.__feedOk !== false && DataFeed.has(url)) return DataFeed.changed(url); const c = _fetchCache.get(url); return !c || c.changed !== false; };
         _fetch.anyChanged = urls => urls.filter(Boolean).some(u => _fetch.changed(u));
-        const _PALETTE = ['#8B5CF6','#10B981','#F59E0B','#3B82F6','#F43F5E','#FBBF24','#06B6D4','#EC4899','#84CC16','#6366F1'];
+        const _PALETTE = ['#8B5CF6','#10B981','#010197','#3B82F6','#F43F5E','#FBBF24','#06B6D4','#EC4899','#84CC16','#6366F1'];
         // Add any branch/form/channel/complaint found in the data but missing from config
         function _ensure(kind, name){
             if(!name) return;
@@ -5812,7 +5812,7 @@
         }
         /* Render the four AI Insights tiles from their fetched feeds */
         function renderAISuite(){
-            const prCol = p => /crit/i.test(p)?'#DC2626':(/high/i.test(p)?'#F59E0B':'#2563EB');
+            const prCol = p => /crit/i.test(p)?'#DC2626':(/high/i.test(p)?'#010197':'#2563EB');
             // Action Plan -> table
             (function(){
                 const el = document.getElementById('ai-tile-actionplan'); if(!el) return;
@@ -6218,7 +6218,7 @@
             }
             const liveStyle = ok
                 ? 'background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.22);color:#059669;box-shadow:0 4px 16px rgba(5,150,105,.12);'
-                : 'background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.22);color:#D97706;box-shadow:0 4px 16px rgba(245,158,11,.1);';
+                : 'background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.22);color:#010197;box-shadow:0 4px 16px rgba(245,158,11,.1);';
             el.style.cssText = `position:fixed;bottom:18px;right:20px;z-index:9999;
                 font-family:'Inter',sans-serif;font-size:0.7rem;font-weight:700;
                 padding:6px 12px 6px 10px;border-radius:99px;
@@ -6227,7 +6227,7 @@
                 transition:all .3s cubic-bezier(.16,1,.3,1);${liveStyle}`;
             const dot = ok
                 ? `<span style="width:6px;height:6px;border-radius:50%;background:#059669;display:inline-block;box-shadow:0 0 6px rgba(5,150,105,.6);animation:pulse 2s infinite;"></span>`
-                : `<span style="width:6px;height:6px;border-radius:50%;background:#D97706;display:inline-block;animation:pulse 2s infinite;"></span>`;
+                : `<span style="width:6px;height:6px;border-radius:50%;background:#010197;display:inline-block;animation:pulse 2s infinite;"></span>`;
             el.innerHTML = ok ? `${dot} Live · synced` : `${dot} Sample data`;
         }
 
@@ -7207,7 +7207,7 @@
         function slaBadge(inc){
             const st = slaState(inc); if(st.stage === 'done') return '';
             const pct = Math.min(1, st.ms / st.limit);
-            const col = st.breached ? '#DC2626' : pct > 0.6 ? '#D97706' : '#64748B';
+            const col = st.breached ? '#DC2626' : pct > 0.6 ? '#010197' : '#64748B';
             const label = st.stage === 'review' ? 'unreviewed' : 'open';
             return `<span class="sla-chip" data-sla-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="color:${col};border-color:${col}33;background:${col}14;">
                 <i class="fas fa-stopwatch"></i> ${slaFmt(st.ms)} <small>${label}</small></span>`;
@@ -7237,7 +7237,7 @@
                 if(!inc) return;
                 const st = slaState(inc);
                 if(st.stage === 'done'){ el.remove(); return; }
-                const col = st.breached ? '#DC2626' : (st.ms / st.limit) > 0.6 ? '#D97706' : '#64748B';
+                const col = st.breached ? '#DC2626' : (st.ms / st.limit) > 0.6 ? '#010197' : '#64748B';
                 el.style.color = col; el.style.borderColor = col + '33'; el.style.background = col + '14';
                 el.innerHTML = `<i class="fas fa-stopwatch"></i> ${slaFmt(st.ms)} <small>${st.stage === 'review' ? 'unreviewed' : 'open'}</small>`;
             });
@@ -7419,7 +7419,7 @@
             const el = document.createElement('button');
             el.id = 'sound-blocked-pill'; el.type = 'button';
             el.style.cssText = 'position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483001;background:#0F172A;color:#fff;border:none;border-radius:999px;padding:12px 18px;font-size:0.84rem;font-weight:700;font-family:Inter,sans-serif;box-shadow:0 12px 32px rgba(0,0,0,.35);display:flex;align-items:center;gap:10px;cursor:pointer;animation:iaPopIn .2s ease-out;';
-            el.innerHTML = '<i class="fas fa-volume-xmark" style="color:#F59E0B;"></i> Alert sound is muted by your browser — tap to enable';
+            el.innerHTML = '<i class="fas fa-volume-xmark" style="color:#010197;"></i> Alert sound is muted by your browser — tap to enable';
             el.onclick = () => _unlockAudioFromGesture();
             document.body.appendChild(el);
         }
@@ -7629,10 +7629,10 @@
                 card.style.border = '1px solid ' + (sev ? 'rgba(220,38,38,.28)' : 'rgba(217,119,6,.28)');
                 const totalEl = document.getElementById('ia-hist-total');
                 totalEl.textContent = all.length;
-                totalEl.style.color = sev ? '#DC2626' : '#B45309';
+                totalEl.style.color = sev ? '#DC2626' : '#010197';
                 const subEl = document.getElementById('ia-hist-total-sub');
                 subEl.textContent = sev ? 'HIGH RISK' : 'REPEAT';
-                subEl.style.color = sev ? '#DC2626' : '#B45309';
+                subEl.style.color = sev ? '#DC2626' : '#010197';
 
                 if(last){
                     const d = last.date ? new Date(last.date + 'T00:00:00') : null;
@@ -9207,7 +9207,7 @@
                     return;
                 }
                 host.uiHTML = risks.slice(0, 5).map(r => {
-                    const sev = r.overdue >= 5 ? '#DC2626' : '#D97706';
+                    const sev = r.overdue >= 5 ? '#DC2626' : '#010197';
                     const why = r.everComplained
                         ? (r.rating && r.rating <= 3 ? 'last visit was a ' + r.rating + '★ complaint' : 'has complained before')
                         : '<b>never complained</b> — you would not otherwise know';
@@ -9255,7 +9255,7 @@
                 }
                 const timeOf = t => { const m = String(t).match(/(\d{1,2}):(\d{2})/); if(!m) return ''; let h = +m[1]; const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + m[2] + ' ' + ap; };
                 host.uiHTML = alerts.map(a => {
-                    const sev = a.ratio >= 8 || a.n >= 6 ? '#DC2626' : '#D97706';
+                    const sev = a.ratio >= 8 || a.n >= 6 ? '#DC2626' : '#010197';
                     const times = a.ratio >= 100 ? '' : '<b>' + (a.ratio >= 10 ? Math.round(a.ratio) : a.ratio.toFixed(1)) + '×</b> above normal';
                     return `<div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);">
                         <span style="width:8px;height:8px;border-radius:50%;background:${sev};flex-shrink:0;"></span>
@@ -9626,7 +9626,7 @@
                     data: { labels: sorted.map(s=>s.name), datasets: [{
                         label:'Incident Rate %',
                         data: sorted.map(s=>+s.rate.toFixed(2)),
-                        backgroundColor: sorted.map(s => s.rate<3?'#059669':(s.rate<5?'#D97706':'#DC2626')),
+                        backgroundColor: sorted.map(s => s.rate<3?'#059669':(s.rate<5?'#010197':'#DC2626')),
                         borderRadius:5, maxBarThickness:22
                     }] },
                     options: {
@@ -9751,7 +9751,7 @@
                     type: 'line',
                     data: { labels: displayLabels, datasets: [
                         { label:'Avg Review Time (min)', data: reviewMins, borderColor:'#3B5BDB', backgroundColor:'#3B5BDB', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
-                        { label:'Avg Resolve Time (min)', data: resolveMins, borderColor:'#D97706', backgroundColor:'#D97706', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
+                        { label:'Avg Resolve Time (min)', data: resolveMins, borderColor:'#010197', backgroundColor:'#010197', borderWidth:2.5, pointRadius:3, tension:0.3, spanGaps:true },
                     ] },
                     options: {
                         responsive:true, maintainAspectRatio:false,
@@ -9808,7 +9808,7 @@
 
                 _renderOrUpdateChart(canvasId, {
                     type: 'bar',
-                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#D97706', borderRadius:5, maxBarThickness:22 }] },
+                    data: { labels: sorted.map(s=>s[0]), datasets: [{ label:'Incidents', data: sorted.map(s=>s[1]), backgroundColor:'#010197', borderRadius:5, maxBarThickness:22 }] },
                     options: {
                         indexAxis: 'y',
                         responsive:true, maintainAspectRatio:false,
@@ -10124,7 +10124,7 @@
                 const shownCount = Math.min(this._incShown || INC_WINDOW, filtered.length);
                 const rows = filtered.slice(0, shownCount);
                 this._incAll = filtered;
-                const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#D97706', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
+                const labelColors = { missing:'#DC2626', wrong:'#EA580C', broken:'#DB2777', cold:'#0891B2', sweet:'#010197', portion:'#7C3AED', delayserve:'#2563EB', delivery:'#4F46E5', staff:'#BE123C', taste:'#059669', other:'#64748B' };
                 UI.anchoredUpdate(document.querySelector('#inc-detail-table tbody'), () => {
                 document.querySelector('#inc-detail-table tbody').uiHTML = rows.map((inc, idx) => {
                     // Exact creation date+time from the sheet's precise "Created At"
@@ -10137,14 +10137,14 @@
                     const code = 'CRU-' + (inc.date||'').replace(/-/g,'').slice(2) + '-' + String(idx+1).padStart(4,'0');
                     const orderNo = _rawOrderId(inc._raw);
                     const score = inc.smileScore || inc.rating || 0;
-                    const ratingColor = score<=1?'#DC2626':score<=2?'#F97316':score<=3?'#F59E0B':'#059669';
+                    const ratingColor = score<=1?'#DC2626':score<=2?'#F97316':score<=3?'#010197':'#059669';
                     const cat = (typeof classifyComplaint === 'function') ? classifyComplaint(inc) : {title:(inc.complaintType||'—'), id:'other'};
                     const lc = labelColors[cat.id] || '#64748B';
                     // Timeline stages: reported (always) -> reviewing -> resolved
                     const resolved = !!inc.resolved;
                     const tl = `<div class="inc-timeline">
                         <span class="inc-tl-node inc-tl-done" data-tip="Reported"><i class="fas fa-triangle-exclamation"></i></span>
-                        <span class="inc-tl-line" style="background:${resolved?'#059669':'#F59E0B'};"></span>
+                        <span class="inc-tl-line" style="background:${resolved?'#059669':'#010197'};"></span>
                         <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-review'}" data-tip="Reviewing"><i class="fas fa-eye"></i></span>
                         <span class="inc-tl-line" style="background:${resolved?'#059669':'var(--border-color)'};"></span>
                         <span class="inc-tl-node ${resolved?'inc-tl-resolved':'inc-tl-idle'}" title="${resolved?'Resolved':'Not resolved'}"><i class="fas fa-thumbs-up"></i></span>
@@ -10152,7 +10152,7 @@
                     const cs = inc.caseStatus || 'verified';
                     const csMap = inc.agentVerdict
                         ? { verified:['✓','#059669','Agent Confirmed'], fake:['✕','#DC2626','Agent: Fake'], not_responding:['⏱','#7C3AED','Not Responding'] }
-                        : { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#D97706','Needs review'] };
+                        : { verified:['✓','#059669','Verified'], fake:['✕','#DC2626','Fake'], review:['⚑','#010197','Needs review'] };
                     const [csIcon, csColor, csLabel] = csMap[cs] || csMap.verified;
                     return `<tr data-row-key="${_incidentStableKey(inc).replace(/"/g,'&quot;')}" style="cursor:pointer;" onclick="app.openIncidentDetailModal('${_incidentStableKey(inc).replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">
                         <td><span style="font-family:monospace;font-size:0.75rem;font-weight:700;color:var(--accent-blue);">${code}</span><br><span title="${csLabel}" style="font-size:0.62rem;font-weight:800;color:${csColor};">${csIcon} ${csLabel}</span></td>
@@ -10376,7 +10376,7 @@ ${(() => {
                             // from a first-time complainant, and that context
                             // was previously invisible.
                             return `<div style="border-radius:9px;padding:10px 12px;margin-bottom:12px;background:${sev?'rgba(220,38,38,.07)':'rgba(217,119,6,.08)'};border:1px solid ${sev?'rgba(220,38,38,.25)':'rgba(217,119,6,.25)'};">
-                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#B45309'};display:flex;align-items:center;gap:6px;">
+                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#010197'};display:flex;align-items:center;gap:6px;">
                                     <i class="fas fa-clock-rotate-left"></i> REPEAT CUSTOMER · ${repeatCount} COMPLAINTS
                                 </div>
                                 <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.5;">
@@ -10599,7 +10599,7 @@ ${(() => {
                             // from a first-time complainant, and that context
                             // was previously invisible.
                             return `<div style="border-radius:9px;padding:10px 12px;margin-bottom:12px;background:${sev?'rgba(220,38,38,.07)':'rgba(217,119,6,.08)'};border:1px solid ${sev?'rgba(220,38,38,.25)':'rgba(217,119,6,.25)'};">
-                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#B45309'};display:flex;align-items:center;gap:6px;">
+                                <div style="font-size:0.74rem;font-weight:800;color:${sev?'#DC2626':'#010197'};display:flex;align-items:center;gap:6px;">
                                     <i class="fas fa-clock-rotate-left"></i> REPEAT CUSTOMER · ${repeatCount} COMPLAINTS
                                 </div>
                                 <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;line-height:1.5;">
@@ -10709,7 +10709,7 @@ ${(() => {
                     data: { labels: sorted.map(s=>s.name), datasets: [{
                         label:'Resolution Rate %',
                         data: sorted.map(s=>+s.rate.toFixed(1)),
-                        backgroundColor: sorted.map(s => s.rate>=70?'#059669':(s.rate>=50?'#D97706':'#DC2626')),
+                        backgroundColor: sorted.map(s => s.rate>=70?'#059669':(s.rate>=50?'#010197':'#DC2626')),
                         borderRadius:5, maxBarThickness:22
                     }] },
                     options: {
@@ -11064,7 +11064,7 @@ ${(() => {
                     data: { labels: branches.map(b=>b.name), datasets: [{
                         label:'Positive Feedback %',
                         data: branches.map(b=>b.posFB),
-                        backgroundColor: branches.map(b => b.posFB>=90?'#059669':(b.posFB>=75?'#D97706':'#DC2626')),
+                        backgroundColor: branches.map(b => b.posFB>=90?'#059669':(b.posFB>=75?'#010197':'#DC2626')),
                         borderRadius:5, maxBarThickness:26
                     }] },
                     options: {
@@ -11091,7 +11091,7 @@ ${(() => {
                     data: { labels: branches.map(b=>b.name), datasets: [{
                         label:'Smile Score',
                         data: branches.map(b=>b.avgSmile),
-                        backgroundColor: branches.map(b => b.avgSmile>=80?'#059669':(b.avgSmile>=60?'#D97706':'#DC2626')),
+                        backgroundColor: branches.map(b => b.avgSmile>=80?'#059669':(b.avgSmile>=60?'#010197':'#DC2626')),
                         borderRadius:5, maxBarThickness:32
                     }] },
                     options: {
@@ -11177,7 +11177,7 @@ ${(() => {
 
                 _renderOrUpdateChart(canvasId, {
                     type: 'line',
-                    data: { labels: displayLabels, datasets: [{ label:'Avg Resolve Time (min)', data: mins, borderColor:'#D97706', backgroundColor:'#D97706', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
+                    data: { labels: displayLabels, datasets: [{ label:'Avg Resolve Time (min)', data: mins, borderColor:'#010197', backgroundColor:'#010197', borderWidth:2.5, pointRadius:3, tension:0.3 }] },
                     options: {
                         responsive:true, maintainAspectRatio:false,
                         plugins: { legend:{display:false} },
@@ -11473,7 +11473,7 @@ ${(() => {
                         {
                             label:'Submissions',
                             data: data.map(d=>d.s),
-                            backgroundColor: data.map(d => d.rate<3?'#059669':(d.rate<5?'#D97706':'#DC2626')),
+                            backgroundColor: data.map(d => d.rate<3?'#059669':(d.rate<5?'#010197':'#DC2626')),
                             borderRadius:6, maxBarThickness:44, yAxisID:'y', order:2
                         },
                         {
@@ -11528,7 +11528,7 @@ ${(() => {
                     const last = c.incidents.slice().sort((a,b) => (a.date||'').localeCompare(b.date||''))[n-1];
                     const branches = Object.keys(c.branches);
                     const unresolved = c.incidents.filter(i => !i.resolved).length;
-                    const sev = n >= 4 ? '#DC2626' : n === 3 ? '#D97706' : '#64748B';
+                    const sev = n >= 4 ? '#DC2626' : n === 3 ? '#010197' : '#64748B';
                     const reasons = [...new Set(c.incidents.map(reasonOf).filter(Boolean))].slice(0, 2).join(', ');
                     return `<div onclick="app.openIncidentFromStableKey('${_incidentStableKey(last).replace(/'/g,"\\'")}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;">
                         <span style="width:30px;height:30px;border-radius:9px;background:${sev}14;color:${sev};display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;flex-shrink:0;">${n}×</span>
@@ -11593,7 +11593,7 @@ ${(() => {
                     const score = inc.smileScore||0;
                     const urgentBadge = cat.critical ? `<span style="background:rgba(220,38,38,.12);color:#DC2626;font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;">CRITICAL</span>` : '';
                     return `<div onclick="app.openIncidentFromStableKey('${key}')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border-color);border-radius:9px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
-                        <span style="width:30px;height:30px;border-radius:8px;background:${score<=2?'rgba(220,38,38,.1)':'rgba(217,119,6,.1)'};color:${score<=2?'#DC2626':'#D97706'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">${score||'—'}</span>
+                        <span style="width:30px;height:30px;border-radius:8px;background:${score<=2?'rgba(220,38,38,.1)':'rgba(217,119,6,.1)'};color:${score<=2?'#DC2626':'#010197'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">${score||'—'}</span>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${inc.branch||'—'} — ${cat.title}${urgentBadge}</div>
                             <div style="font-size:0.72rem;color:var(--text-muted);">${inc.surveyForm||inc.form||'—'} · ${timeDisp}</div>
@@ -11614,7 +11614,7 @@ ${(() => {
                 const labels = Object.keys(byForm);
                 const values = labels.map(l => byForm[l]);
                 const total = values.reduce((a,b)=>a+b,0);
-                const colors = ['#3B5BDB','#059669','#D97706','#8B5CF6','#DC2626'];
+                const colors = ['#3B5BDB','#059669','#010197','#8B5CF6','#DC2626'];
 
                 _renderOrUpdateChart(canvasId, {
                     type: 'doughnut',
@@ -12136,7 +12136,7 @@ ${(() => {
                 });
                 const totalWins = winsA + winsB || 1;
                 const verdict = winsA > winsB ? `<b style="color:#3B5BDB">${esc(bA)}</b> leads on ${winsA} of ${winsA+winsB} metrics`
-                              : winsB > winsA ? `<b style="color:#D97706">${esc(bB)}</b> leads on ${winsB} of ${winsA+winsB} metrics`
+                              : winsB > winsA ? `<b style="color:#010197">${esc(bB)}</b> leads on ${winsB} of ${winsA+winsB} metrics`
                               : 'Evenly matched';
 
                 const deltaText = (m, vA, vB) => {
@@ -12188,7 +12188,7 @@ ${(() => {
                             </div>
                         </div>
                         ${groupsHtml}
-                        <div class="bc2-note" style="text-align:center;padding:4px 0 2px;"><i class="fas fa-crown" style="color:#F59E0B;"></i> better on that metric · bar length = value relative to the other branch · muted bar = trailing</div>
+                        <div class="bc2-note" style="text-align:center;padding:4px 0 2px;"><i class="fas fa-crown" style="color:#010197;"></i> better on that metric · bar length = value relative to the other branch · muted bar = trailing</div>
                     </div>
                 `;
             }
@@ -12325,7 +12325,7 @@ ${(() => {
             const allAvg = ratedSubs.length ? ratedSubs.reduce((a,c)=>a+c.smileScore,0)/ratedSubs.length : 0;
             sentimentData.unshift({label:'Overall', score:Math.round(allAvg*20), count:ratedSubs.length});
 
-            const sentColors = s => s>=75?'#059669':s>=50?'#D97706':'#DC2626';
+            const sentColors = s => s>=75?'#059669':s>=50?'#010197':'#DC2626';
             const sentBg     = s => s>=75?'rgba(5,150,105,0.65)':s>=50?'rgba(217,119,6,0.65)':'rgba(220,38,38,0.65)';
 
             const sentList = document.getElementById('voc-sentiment-list');
@@ -12583,7 +12583,7 @@ ${(() => {
             const known = new Set(forms);
             const allForms = forms.concat([...new Set(state.p1.incs.map(i=>i.surveyForm))].filter(f=>!known.has(f)));
             const iconMap = { 'Dine In':'fa-utensils', 'Delivery':'fa-motorcycle', 'Call Center':'fa-headset' };
-            const colorMap = { 'Dine In':'#F59E0B', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' };
+            const colorMap = { 'Dine In':'#010197', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' };
 
             // Small chart summary above the expandable list below — the list
             // stays as the interactive drill-down (click a form to see which
@@ -13938,7 +13938,7 @@ ${(() => {
                 kpiStrip.uiHTML = [
                     { label:'Total Mentions', val:total,      sub:'across all platforms',         color:'var(--accent-blue)',    icon:'fa-hashtag',            fn:'slToggleMentionFilter',    active:_isMentionOnly   },
                     { label:'Complaints',     val:complaints, sub:`${unresolved} need attention`, color:'var(--status-critical)',icon:'fa-circle-exclamation', fn:'slToggleComplaintFilter',  active:_isComplaintOnly  },
-                    { label:'Unresolved',     val:unresolved, sub:unresolved > 0 ? `${unresolved} open` : 'all resolved', color:'#D97706', icon:'fa-clock-rotate-left', fn:'slToggleUnresolved', active:_isUnresOnly },
+                    { label:'Unresolved',     val:unresolved, sub:unresolved > 0 ? `${unresolved} open` : 'all resolved', color:'#010197', icon:'fa-clock-rotate-left', fn:'slToggleUnresolved', active:_isUnresOnly },
                 ].map((k,i)=>`
                     <div class="sl-kpi${k.active?' sl-kpi-active':''}"
                          style="--sl-kpi-active-color:${k.color};animation:${document.body.classList.contains('no-anim')||document.body.classList.contains('bg-refresh')||!document.body.classList.contains('do-anim')?'none':`slCardIn .4s cubic-bezier(.16,1,.3,1) ${i*0.08}s both`};"
@@ -14277,7 +14277,7 @@ ${(() => {
         // every category saved before this change still resolves.
         // ═══════════════════════════════════════════════════════════════════
         const COMPLAINT_FAMILIES = [
-            { id:'cookie',   title:'Cookie Quality',     icon:'fa-cookie-bite',     color:'#F59E0B' },
+            { id:'cookie',   title:'Cookie Quality',     icon:'fa-cookie-bite',     color:'#010197' },
             { id:'shake',    title:'Shake & Ice Cream',  icon:'fa-blender',         color:'#8B5CF6' },
             { id:'timing',   title:'Timing',             icon:'fa-stopwatch',       color:'#3B5BDB' },
             { id:'order',    title:'Order & Packaging',  icon:'fa-box-open',        color:'#0EA5E9' },
@@ -14940,7 +14940,7 @@ ${(() => {
                 const topCats = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t,n])=>`${t} ${n}`).join(' · ');
                 const label = (c.name && c.name.trim()) ? c.name : (c.phone || 'Unknown');
                 return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${sev?'rgba(220,38,38,.3)':'var(--border-color)'};border-radius:9px;background:${sev?'rgba(220,38,38,.04)':'transparent'};">
-                    <span style="width:38px;height:38px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;background:${sev?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${sev?'#DC2626':'#D97706'};">${c.count}</span>
+                    <span style="width:38px;height:38px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;background:${sev?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${sev?'#DC2626':'#010197'};">${c.count}</span>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:0.86rem;font-weight:700;color:var(--text-main);">${label}${c.name && c.phone ? ` <span style="font-weight:500;color:var(--text-muted);font-size:0.74rem;">${c.phone}</span>` : ''}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">${topCats || '—'}${brs.length>1?` · ${brs.length} branches`:` · ${brs[0]||'—'}`}</div>
@@ -15033,12 +15033,12 @@ ${(() => {
                 const dateRange = p.startDay === p.endDay ? fmtDay(p.startDay) : `${fmtDay(p.startDay)} – ${fmtDay(p.endDay)}`;
                 const hot = p.streakLen >= 5;
                 return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid ${hot?'rgba(220,38,38,.3)':'var(--border-color)'};border-radius:9px;background:${hot?'rgba(220,38,38,.04)':'transparent'};">
-                    <span style="width:38px;height:38px;border-radius:9px;background:${hot?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${hot?'#DC2626':'#D97706'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;flex-shrink:0;">${p.streakLen}</span>
+                    <span style="width:38px;height:38px;border-radius:9px;background:${hot?'rgba(220,38,38,.12)':'rgba(217,119,6,.1)'};color:${hot?'#DC2626':'#010197'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.95rem;flex-shrink:0;">${p.streakLen}</span>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:0.86rem;font-weight:700;color:var(--text-main);">${p.branch} — ${p.cat.title}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px;">${p.streakLen} days in a row · ${dateRange}</div>
                     </div>
-                    <div style="font-size:0.7rem;font-weight:700;color:${hot?'#DC2626':'#D97706'};text-transform:uppercase;letter-spacing:.3px;flex-shrink:0;">${hot ? 'Recurring' : 'Pattern'}</div>
+                    <div style="font-size:0.7rem;font-weight:700;color:${hot?'#DC2626':'#010197'};text-transform:uppercase;letter-spacing:.3px;flex-shrink:0;">${hot ? 'Recurring' : 'Pattern'}</div>
                 </div>`;
             }).join('');
         };
@@ -15170,7 +15170,7 @@ ${(() => {
             if(step.id === 'rating'){
                 const emojis = ['😢','😟','😐','😊','😄'];
                 const labels = ['Very Poor','Poor','Okay','Good','Excellent'];
-                const colors = ['#DC2626','#F97316','#F59E0B','#10B981','#059669'];
+                const colors = ['#DC2626','#F97316','#010197','#10B981','#059669'];
                 area.innerHTML = `<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">` +
                     emojis.map((e,i) => {
                         const sel = csData.rating === i+1;
@@ -16333,7 +16333,7 @@ ${(() => {
                 wrap.innerHTML = `<div style="text-align:center;padding:30px 0;color:var(--text-muted);font-size:0.85rem;">No users yet — add the first one.</div>`;
                 return;
             }
-            const roleColor = r => ({ owner:'#010197', admin:'#3B5BDB', reportanalyst:'#7C3AED', callcenter:'#D97706', manager:'#059669', viewer:'#64748B' })[roleKey(r)] || '#64748B';
+            const roleColor = r => ({ owner:'#010197', admin:'#3B5BDB', reportanalyst:'#7C3AED', callcenter:'#010197', manager:'#059669', viewer:'#64748B' })[roleKey(r)] || '#64748B';
             const fmtLogin = v => { if(!v) return 'Never signed in'; const d = new Date(v); if(isNaN(d)) return 'Last seen ' + v; const m = Math.round((Date.now()-d)/60000); return 'Last seen ' + (m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m/60) + ' h ago' : d.toLocaleDateString()); };
             wrap.innerHTML = users.map(u => {
                 const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region + ' region' : 'All branches');
@@ -16828,7 +16828,7 @@ ${(() => {
                 success: { bg:'#059669', icon:'fa-circle-check' },
                 error:   { bg:'#DC2626', icon:'fa-circle-exclamation' },
                 info:    { bg:'#0F172A', icon:'fa-circle-info' },
-                warning: { bg:'#D97706', icon:'fa-triangle-exclamation' }
+                warning: { bg:'#010197', icon:'fa-triangle-exclamation' }
             }[kind || 'success'] || { bg:'#0F172A', icon:'fa-circle-info' };
             const el = document.createElement('div');
             el.className = 'crumble-toast';
