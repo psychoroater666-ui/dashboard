@@ -1379,15 +1379,19 @@
         }
         .sl-keyword:hover { border-color:var(--accent-blue); color:#010197; transform:translateY(-2px); box-shadow:0 4px 12px rgba(1,1,151,.12); background:rgba(1,1,151,.04); }
         .sl-keyword:active { transform:scale(.95) !important; transition-duration:.08s !important; }
-        .sl-platform-badge::before { content:''; width:6px; height:6px; border-radius:50%; margin-right:6px; display:inline-block; vertical-align:1px; }
-        .sl-platform-facebook::before  { background:#1877F2; }
-        .sl-platform-instagram::before { background:#C2185B; }
-        .sl-platform-twitterx::before  { background:#0F172A; }
-        .sl-platform-google::before    { background:#EA4335; }
-        .sl-platform-tiktok::before    { background:#6A1B9A; }
-        .sl-platform-reddit::before    { background:#FF4500; }
-        .sl-platform-blink::before     { background:#7C3AED; }
-        .sl-platform-foodpanda::before { background:#D6006C; }
+        /* The badge already carries the platform's icon — the identity colour
+           belongs on that icon, not on an extra dot beside it. */
+        .sl-platform-badge { display:inline-flex; align-items:center; gap:6px; line-height:1; white-space:nowrap; }
+        .sl-platform-badge i { font-size:0.82em; flex-shrink:0; }
+        .sl-platform-facebook  i { color:#1877F2; }
+        .sl-platform-instagram i { color:#C2185B; }
+        .sl-platform-twitterx  i { color:#0F172A; }
+        .sl-platform-google    i { color:#EA4335; }
+        .sl-platform-tiktok    i { color:#6A1B9A; }
+        .sl-platform-reddit    i { color:#FF4500; }
+        .sl-platform-blink     i { color:#7C3AED; }
+        .sl-platform-foodpanda i { color:#D6006C; }
+        body.dark-theme .sl-platform-twitterx i { color:#E2E8F0; }
         .sl-keyword.hot { background:rgba(1,1,151,.06); border-color:rgba(1,1,151,.28); color:var(--accent-blue); }
         .sl-keyword.hot:hover { background:rgba(245,158,11,.16); border-color:#010197; box-shadow:0 4px 12px rgba(217,119,6,.18); }
         .sl-keyword.sl-kw-active { background:rgba(1,1,151,.1) !important; border-color:#010197 !important; color:#010197 !important; box-shadow:0 0 0 2px rgba(1,1,151,.2) !important; transform:translateY(-1px); }
@@ -5238,7 +5242,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.32.1 · 11 Sep 2026 · palette';
+        const BUILD_VERSION = 'v2.32.2 · 11 Sep 2026 · palette';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
