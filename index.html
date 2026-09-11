@@ -3904,11 +3904,20 @@
         @media (max-width: 820px) {
             html { -webkit-text-size-adjust: 100%; }
             body { overflow-x: hidden !important; }
-            .content-scroll, .main-content { overflow-x: hidden !important; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)) !important; gap: 12px !important; }
+            /* Only the scrolling content is inset. The padding used to sit on
+               .main-content too, which pushed the blue header away from the
+               screen edges and, with height:100vh, made the whole app taller
+               than the screen — the stray scrollbar down the right side. */
+            .main-content { overflow-x: hidden !important; padding: 0 !important; height: 100dvh !important; }
+            /* No reserved scrollbar gutter on phones: scrollbars float over the
+               content there, so the reserved strip only shrank the screen. */
+            body, .main-content, .content-scroll { scrollbar-gutter: auto !important; }
+            .content-scroll { overflow-x: hidden !important; padding: 12px 12px calc(12px + env(safe-area-inset-bottom)) !important; gap: 12px !important; }
             img, canvas, svg, video { max-width: 100%; }
 
             /* ── Header: brand + swipeable tab strip + compact controls ── */
             .header { height: auto !important; min-height: 54px !important; padding: 0 10px !important; padding-top: env(safe-area-inset-top) !important; gap: 8px !important; display: flex !important; align-items: center !important; }
+            .header { width: 100% !important; box-sizing: border-box; }
             .brand-top { flex-shrink: 0; }
             .brand-name { font-size: 0.95rem !important; letter-spacing: 1.2px !important; }
             .topnav-links {
@@ -6221,7 +6230,7 @@ body.dark-theme #pwa-ios li i{ color:#64D0FF; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.48.0 · 11 Sep 2026 · installable app';
+        const BUILD_VERSION = 'v2.48.1 · 11 Sep 2026 · phone: full-width header';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
