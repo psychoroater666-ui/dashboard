@@ -5820,7 +5820,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.44.0 · 11 Sep 2026 · analytics depth';
+        const BUILD_VERSION = 'v2.45.0 · 11 Sep 2026 · behaviour signals';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18215,6 +18215,11 @@ ${(() => {
                     if(r['Device']) x.device = r['Device'];
                     if(r['OS']) x.os = r['OS'];
                     if(r['Screen']) x.screen = r['Screen'];
+                    if(r['Visitor']) x.visitor = r['Visitor'];
+                    if(r['Event'] === 'comment_erased') x.erasedEvent = true;
+                    if(r['Event'] === 'rating_changed'){ x.ratingChanged = true; x.ratingMove = r['Choice'] || ''; }
+                    if(r['Event'] === 'first_tap') x.firstTap = Number(r['Seconds']) || 0;
+                    if(Number(r['Backs']) > 0) x.backs = Math.max(x.backs || 0, Number(r['Backs']));
                     if(r['Distance m'] !== '' && r['Distance m'] != null && !isNaN(Number(r['Distance m']))) x.dist = Number(r['Distance m']);
                     if(r['Choice'] && r['Step']) { x.choices = x.choices || {}; x.choices[r['Step']] = r['Choice']; }
                     if(!x.day){ const iso = isoOf(r['At']); if(iso) x.day = iso; }
@@ -18286,6 +18291,14 @@ ${(() => {
                 const quitAfter = {};
                 S.filter(x => !x.submitted && x.choices).forEach(x => { Object.entries(x.choices).forEach(([st, ch]) => { const k = st + ' = ' + ch; quitAfter[k] = (quitAfter[k]||0)+1; }); });
                 const quitList = Object.entries(quitAfter).sort((a,b) => b[1]-a[1]).slice(0, 6);
+                // 12-15. behaviour signals
+                const erased = S.filter(x => x.erasedEvent);
+                const changed = S.filter(x => x.ratingChanged);
+                const lowered = changed.filter(x => { const m = String(x.ratingMove||'').match(/^(\d)->(\d)$/); return m && +m[2] < +m[1]; });
+                const backers = S.filter(x => (x.backs || 0) > 0);
+                const taps = S.filter(x => typeof x.firstTap === 'number').map(x => x.firstTap).sort((a,b)=>a-b);
+                const tapMed = taps.length ? taps[Math.floor(taps.length/2)] : 0;
+                const returning = S.filter(x => x.visitor === 'returning').length;
                 const opens = S.length, subs = S.filter(x => x.submitted).length;
                 const rate = opens ? (subs / opens * 100) : 0;
                 const med = (() => { const v = S.filter(x => x.submitted && x.secs).map(x => x.secs).sort((a,b)=>a-b); return v.length ? v[Math.floor(v.length/2)] : 0; })();
@@ -18465,6 +18478,37 @@ ${(() => {
                                 </div>
                                 <span style="font-size:0.72rem;color:var(--text-muted);white-space:nowrap;">${x.s}/${x.o} · <b>${x.r.toFixed(0)}%</b></span>
                             </div>`; }).join('')}
+                    </div>` : ''}
+
+                    ${(erased.length || changed.length || backers.length || taps.length || returning) ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">WHAT THE NUMBERS DO NOT SHOW</h3><span class="text-xs text-muted" style="font-size:0.66rem;">hesitation, second thoughts, withheld feedback</span></div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;">
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:1.35rem;font-weight:800;color:${erased.length ? '#DC2626' : 'var(--text-main)'};line-height:1.1;">${erased.length}</div>
+                                <div style="font-size:0.74rem;font-weight:700;color:var(--text-main);margin-top:3px;">Wrote then deleted</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Had something to say and chose not to send it. The text itself is never recorded.</div>
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:1.35rem;font-weight:800;color:${lowered.length ? '#DC2626' : 'var(--text-main)'};line-height:1.1;">${lowered.length}</div>
+                                <div style="font-size:0.74rem;font-weight:700;color:var(--text-main);margin-top:3px;">Lowered their rating</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Started generous, then reconsidered${changed.length > lowered.length ? ' · ' + (changed.length - lowered.length) + ' raised theirs' : ''}.</div>
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:1.35rem;font-weight:800;color:var(--text-main);line-height:1.1;">${backers.length}</div>
+                                <div style="font-size:0.74rem;font-weight:700;color:var(--text-main);margin-top:3px;">Went back a step</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Usually means a question was unclear the first time.</div>
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:1.35rem;font-weight:800;color:${tapMed > 8 ? '#DC2626' : 'var(--text-main)'};line-height:1.1;">${tapMed ? tapMed.toFixed(1) + 's' : '—'}</div>
+                                <div style="font-size:0.74rem;font-weight:700;color:var(--text-main);margin-top:3px;">Pause before starting</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">A long pause means the opening screen is not convincing.</div>
+                            </div>
+                            <div style="padding:12px 14px;border:1px solid var(--border-color);border-radius:11px;">
+                                <div style="font-size:1.35rem;font-weight:800;color:var(--text-main);line-height:1.1;">${opens ? Math.round(returning / opens * 100) : 0}%</div>
+                                <div style="font-size:0.74rem;font-weight:700;color:var(--text-main);margin-top:3px;">Returning customers</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">${returning} of ${opens} had used a form before. A low figure means you are reaching new people.</div>
+                            </div>
+                        </div>
                     </div>` : ''}
 
                     ${quitList.length ? `<div class="card" style="padding:18px 22px;margin-bottom:16px;">
