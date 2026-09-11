@@ -3670,6 +3670,7 @@
                 <span class="topnav-link" data-view="incidents" onclick="app.navigate('incidents', this)">Incidents</span>
                 <span class="topnav-link" data-view="incident-analytics" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" data-view="submissions" onclick="app.navigate('submissions', this)">Submissions</span>
+                <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" data-view="branches" onclick="app.navigate('branches', this)">Branches</span>
                 <span class="topnav-link" data-view="channels" onclick="app.navigate('channels', this)">Channels</span>
@@ -3678,7 +3679,6 @@
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
-                <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
             </nav>
             <script>
@@ -5180,7 +5180,7 @@
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.24.2 · 10 Sep 2026 · rewards';
+        const BUILD_VERSION = 'v2.24.4 · 10 Sep 2026 · rewards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17186,7 +17186,25 @@ ${(() => {
         const RW = (function(){
             let q = '';
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            const all_ = () => { const t = DataFeed.tabs.stamps; return (t && t.objRows) ? t.objRows : []; };
+            // Older stamp rows were written before the form passed a name along.
+            // Look the customer up by phone in the submissions we already hold, so
+            // an agent always sees who they are talking to.
+            let _nameByPhone = null;
+            function nameFor(phone, stored){
+                if(String(stored || '').trim()) return stored;
+                const p = String(phone || '').replace(/[^0-9]/g, '').slice(-10);
+                if(!p) return '';
+                if(!_nameByPhone){
+                    _nameByPhone = {};
+                    (rawData.submissions || []).forEach(x => {
+                        const ph = String(_rawFieldExact(x._raw, 'Phone Number') || '').replace(/[^0-9]/g, '').slice(-10);
+                        const nm = String(_rawFieldExact(x._raw, 'Name') || '').trim();
+                        if(ph && nm && !_nameByPhone[ph]) _nameByPhone[ph] = nm;
+                    });
+                }
+                return _nameByPhone[p] || '';
+            }
+            const all_ = () => { const t = DataFeed.tabs.stamps; _nameByPhone = null; return (t && t.objRows) ? t.objRows : []; };
             const rows = () => all_().filter(r => String(r['Reward Code'] || '').trim());
             function render(){
                 const host = document.getElementById('rewards-root'); if(!host) return;
@@ -17223,7 +17241,7 @@ ${(() => {
                         return `<div class="rw-progress">
                             <div class="rw-prog-stamps">${Array.from({length: tgt}, (_, i) => `<span class="${i < st ? 'on' : ''}"></span>`).join('')}</div>
                             <div>
-                                <div style="font-size:0.86rem;font-weight:800;color:var(--text-main);">${esc(r['Name'] || 'Customer')} <span style="color:var(--text-muted);font-weight:600;font-size:0.76rem;">${esc(r['Phone'] || '')}</span></div>
+                                <div style="font-size:0.86rem;font-weight:800;color:var(--text-main);">${esc(nameFor(r['Phone'], r['Name']) || 'Customer')} <span style="color:var(--text-muted);font-weight:600;font-size:0.76rem;">${esc(r['Phone'] || '')}</span></div>
                                 <div style="font-size:0.78rem;color:var(--text-main);margin-top:3px;">
                                     ${left === 0
                                         ? 'Has <b>' + st + '</b> of ' + tgt + ' stamps — reward not issued yet.'
@@ -17241,7 +17259,7 @@ ${(() => {
                             const redeemed = String(r['Redeemed At'] || '').trim();
                             return `<div class="rw-row ${redeemed ? 'used' : 'ok'}">
                                 <div class="rw-code">${esc(code)}</div>
-                                <div class="rw-who"><b>${esc(r['Name'] || 'Customer')}</b><span>${esc(r['Phone'] || '')}</span></div>
+                                <div class="rw-who"><b>${esc(nameFor(r['Phone'], r['Name']) || 'Customer')}</b><span>${esc(r['Phone'] || '')}</span></div>
                                 <div class="rw-when">earned ${esc(String(r['Reward Earned At'] || '').slice(0, 16))}</div>
                                 <div class="rw-act">${redeemed
                                     ? `<span class="rw-tag used"><i class="fas fa-lock"></i> used</span><span class="rw-by">${esc(redeemed)}</span>${can('users') ? `<button class="fb-btn sm" onclick="RW.unredeem('${esc(code)}')">Undo</button>` : ''}`
