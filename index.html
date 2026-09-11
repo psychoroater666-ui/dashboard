@@ -2715,41 +2715,92 @@
         .ia-body{ overflow-y: auto; }
 
         /* ── Toasts ──────────────────────────────────────────────────────── */
+        /* Frosted glass, top centre, just under the menu bar. The colour now
+           lives in a small icon chip and a countdown line instead of a solid
+           slab, so a message reads as information, not an error screen. The
+           tone per kind is picked up from the colour the toast script already
+           sets, so no script changed. Newest toast sits on top. */
         #crumble-toasts{
             position: fixed;
             left: 50%;
-            bottom: 24px;
+            top: calc(68px + env(safe-area-inset-top));
+            bottom: auto;
             transform: translateX(-50%);
             z-index: 100000;
             display: flex;
             flex-direction: column-reverse;
             align-items: center;
             gap: 8px;
+            width: max-content;
+            max-width: calc(100vw - 24px);
             pointer-events: none;
         }
         .crumble-toast{
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 11px 18px;
-            border-radius: var(--r-ctl);
-            color: #fff;
+            --tone: #64748B; --tone-bg: rgba(100,116,139,.14);
+            position: relative; overflow: hidden;
+            display: flex; align-items: center; gap: 11px;
+            padding: 8px 18px 8px 8px;
+            border-radius: 14px;
+            background: rgba(255,255,255,.82) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(1.7);
+                    backdrop-filter: blur(18px) saturate(1.7);
+            border: 1px solid rgba(255,255,255,.7);
+            box-shadow: 0 14px 34px -10px rgba(15,23,42,.30), 0 2px 6px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.85);
+            color: #0F172A;
             font-family: 'Inter', sans-serif;
-            font-size: 0.83rem;
-            font-weight: 700;
-            letter-spacing: .1px;
-            box-shadow: var(--e-3);
-            animation: crumbleToastIn .3s var(--ease-out) both;
-            max-width: min(92vw, 460px);
+            font-size: 0.82rem; font-weight: 600; line-height: 1.4; letter-spacing: 0;
+            max-width: min(92vw, 520px);
+            animation: crumbleToastIn .34s var(--ease-out) both;
+        }
+        .crumble-toast > i{
+            width: 28px; height: 28px; border-radius: 9px; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.84rem; color: var(--tone); background: var(--tone-bg);
+        }
+        .crumble-toast > span{ min-width: 0; }
+        /* countdown line — matches the toast's 3.2s life */
+        .crumble-toast::after{
+            content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+            background: var(--tone); opacity: .55; transform-origin: left center;
+            animation: crumbleToastLife 3.2s linear both;
+        }
+        /* tone per kind, read from the background the script sets */
+        .crumble-toast[style*="rgb(5, 150, 105)"],  .crumble-toast[style*="#059669" i]{ --tone:#059669; --tone-bg:rgba(5,150,105,.14); }
+        .crumble-toast[style*="rgb(220, 38, 38)"],  .crumble-toast[style*="#DC2626" i]{ --tone:#DC2626; --tone-bg:rgba(220,38,38,.13); }
+        .crumble-toast[style*="rgb(1, 1, 151)"],    .crumble-toast[style*="#010197" i]{ --tone:#010197; --tone-bg:rgba(1,1,151,.10); }
+        .crumble-toast[style*="rgb(15, 23, 42)"],   .crumble-toast[style*="#0F172A" i]{ --tone:#3B5BDB; --tone-bg:rgba(59,91,219,.12); }
+        body.dark-theme .crumble-toast{
+            background: rgba(22,27,34,.74) !important;
+            border-color: rgba(255,255,255,.12);
+            box-shadow: 0 18px 40px -10px rgba(0,0,0,.65), 0 2px 6px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.08);
+            color: #E6EDF3;
+        }
+        body.dark-theme .crumble-toast[style*="rgb(1, 1, 151)"],
+        body.dark-theme .crumble-toast[style*="#010197" i]{ --tone:#64D0FF; --tone-bg:rgba(100,208,255,.14); }
+        body.dark-theme .crumble-toast[style*="rgb(15, 23, 42)"],
+        body.dark-theme .crumble-toast[style*="#0F172A" i]{ --tone:#64D0FF; --tone-bg:rgba(100,208,255,.12); }
+        body.dark-theme .crumble-toast[style*="rgb(220, 38, 38)"],
+        body.dark-theme .crumble-toast[style*="#DC2626" i]{ --tone-bg:rgba(220,38,38,.2); }
+        body.dark-theme .crumble-toast[style*="rgb(5, 150, 105)"],
+        body.dark-theme .crumble-toast[style*="#059669" i]{ --tone-bg:rgba(5,150,105,.2); }
+        /* browsers without backdrop blur get a solid surface instead */
+        @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+            .crumble-toast{ background: rgba(255,255,255,.97) !important; }
+            body.dark-theme .crumble-toast{ background: rgba(22,27,34,.97) !important; }
         }
         .crumble-toast.leaving{ animation: crumbleToastOut .24s var(--ease) both; }
         @keyframes crumbleToastIn{
-            from{ opacity:0; transform: translateY(14px) scale(.96); }
-            to  { opacity:1; transform: translateY(0)    scale(1);   }
+            from{ opacity:0; transform: translateY(-14px) scale(.96); }
+            to  { opacity:1; transform: translateY(0)     scale(1);   }
         }
         @keyframes crumbleToastOut{
-            from{ opacity:1; transform: translateY(0)   scale(1);   }
-            to  { opacity:0; transform: translateY(-6px) scale(.97); }
+            from{ opacity:1; transform: translateY(0)    scale(1);   }
+            to  { opacity:0; transform: translateY(-10px) scale(.97); }
+        }
+        @keyframes crumbleToastLife{ from{ transform: scaleX(1); } to{ transform: scaleX(0); } }
+        @media (prefers-reduced-motion: reduce){
+            .crumble-toast, .crumble-toast.leaving{ animation-duration: .01s; }
+            .crumble-toast::after{ animation: none; opacity: .35; }
         }
 
         /* ── Input latency & stray drag targets ──────────────────────────── */
@@ -2793,7 +2844,6 @@
                 from{ opacity:0; transform: translateY(28px); }
                 to  { opacity:1; transform: translateY(0);    }
             }
-            #crumble-toasts{ bottom: 16px; }
             .card:not([style*="padding:0"]):not([style*="padding: 0"]){ padding: 16px !important; }
         }
 
@@ -3700,7 +3750,8 @@
 
             /* ── Fixed pills stay clear of the OS bars ── */
             #feed-error-pill { left: 10px !important; right: 10px !important; max-width: none !important; bottom: calc(10px + env(safe-area-inset-bottom)) !important; }
-            #crumble-toasts { left: 10px !important; right: 10px !important; }
+            #crumble-toasts { left: 12px !important; right: 12px !important; transform: none !important; width: auto !important; top: calc(74px + env(safe-area-inset-top)) !important; }
+            .crumble-toast { max-width: 100%; }
         }
 
         /* Very small phones */
@@ -5592,7 +5643,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.5 · 11 Sep 2026 · nav: remove Channels/Forms/Products';
+        const BUILD_VERSION = 'v2.33.6 · 11 Sep 2026 · glass toasts top centre';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
