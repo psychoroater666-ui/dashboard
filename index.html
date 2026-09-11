@@ -2758,11 +2758,11 @@
             font-size: 0.84rem; color: var(--tone); background: var(--tone-bg);
         }
         .crumble-toast > span{ min-width: 0; }
-        /* countdown line — matches the toast's 3.2s life */
+        /* countdown line — runs for the toast's own life (set per toast) */
         .crumble-toast::after{
             content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
             background: var(--tone); opacity: .55; transform-origin: left center;
-            animation: crumbleToastLife 3.2s linear both;
+            animation: crumbleToastLife var(--toast-life, 3.2s) linear both;
         }
         /* tone per kind, read from the background the script sets */
         .crumble-toast[style*="rgb(5, 150, 105)"],  .crumble-toast[style*="#059669" i]{ --tone:#059669; --tone-bg:rgba(5,150,105,.14); }
@@ -5643,7 +5643,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.6 · 11 Sep 2026 · glass toasts top centre';
+        const BUILD_VERSION = 'v2.33.7 · 11 Sep 2026 · toast durations';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17265,7 +17265,7 @@ ${(() => {
            same wherever it comes from. Deliberately does not replace the
            blocking alert()/confirm() calls, which are decisions the user has
            to actually answer. */
-        UI.toast = function(message, kind){
+        UI.toast = function(message, kind, duration){
             let host = document.getElementById('crumble-toasts');
             if(!host){
                 host = document.createElement('div');
@@ -17283,11 +17283,17 @@ ${(() => {
             el.style.background = tone.bg;
             el.innerHTML = `<i class="fas ${tone.icon}"></i><span></span>`;
             el.querySelector('span').textContent = message;
+            // How long it stays: the caller's own duration when it gives one
+            // (failed saves ask for 8-9s), otherwise 6s for errors so a failure
+            // can be read, and 3.2s for everything else. The countdown line
+            // under the toast runs for the same time.
+            const life = (typeof duration === 'number' && duration > 0) ? duration : (kind === 'error' ? 6000 : 3200);
+            el.style.setProperty('--toast-life', life + 'ms');
             host.appendChild(el);
             setTimeout(() => {
                 el.classList.add('leaving');
                 setTimeout(() => el.remove(), 260);
-            }, 3200);
+            }, life);
         };
 
         /* Copies a customer's phone number for pasting into Vicidial's
