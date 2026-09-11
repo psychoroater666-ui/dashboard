@@ -5729,7 +5729,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.35.2 · 11 Sep 2026 · QA fixes';
+        const BUILD_VERSION = 'v2.35.3 · 11 Sep 2026 · QA fixes';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9669,6 +9669,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 // A multi-day range must be compared with the equivalent previous
                 // range of the same length, not with a single reference day --
                 // comparing a week against one day produced +1000% nonsense.
+                const dayName = end ? new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long' }) : '';
                 const startV = (document.getElementById('filter-start-date') || {}).value || end;
                 const spanV = Math.max(1, Math.round((new Date(end + 'T12:00:00') - new Date(startV + 'T12:00:00')) / 86400000) + 1);
                 let wkSubs = 0, wkIncs = 0, cmpLabel = '';
@@ -9684,7 +9685,6 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                     wkIncs = prevWk ? _rowsUpTo(rawData.incidents, prevWk, cutHour).length : 0;
                     cmpLabel = 'vs last ' + dayName + (running ? ' at this time' : '');
                 }
-                const dayName = end ? new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long' }) : '';
                 const volDelta = wkSubs ? Math.round((p1.subs.length - wkSubs) / wkSubs * 100) : null;
                 const incDelta = wkIncs ? Math.round((p1.incs.length - wkIncs) / wkIncs * 100) : null;
                 // worst branch by count, and its dominant reason
