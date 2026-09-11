@@ -4069,9 +4069,6 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
                 <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" data-view="branches" onclick="app.navigate('branches', this)">Branches</span>
-                <span class="topnav-link" data-view="channels" onclick="app.navigate('channels', this)">Channels</span>
-                <span class="topnav-link" data-view="forms" onclick="app.navigate('forms', this)">Forms</span>
-                <span class="topnav-link" data-view="products" onclick="app.navigate('products', this)">Products</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
@@ -5595,7 +5592,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.4 · 11 Sep 2026 · social header';
+        const BUILD_VERSION = 'v2.33.5 · 11 Sep 2026 · nav: remove Channels/Forms/Products';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
