@@ -5729,7 +5729,7 @@ td.ct-cell:not(.zero):not([style*="--cell-bg"]){ color:var(--text-main) !importa
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.33.8 · 11 Sep 2026 · create submission polish';
+        const BUILD_VERSION = 'v2.33.9 · 11 Sep 2026 · sign out';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -17018,8 +17018,17 @@ ${(() => {
         }
 
         function authLogout(){
+            // Clearing our own session is not enough: Cloudflare Access keeps its
+            // own login cookie for up to 24h, so a reload signs the same person
+            // straight back in. Two people sharing a machine could not swap
+            // accounts at all. Send the browser through Cloudflare's logout,
+            // which clears that cookie and then returns to the dashboard.
             authClearSession();
-            location.reload();
+            try {
+                localStorage.removeItem('crumble_seen_incident_keys');
+                sessionStorage.clear();
+            } catch(e){}
+            window.location.href = '/cdn-cgi/access/logout?returnTo=' + encodeURIComponent(location.origin);
         }
 
         function authShowApp(user){
