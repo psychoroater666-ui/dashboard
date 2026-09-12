@@ -6240,7 +6240,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.50.1 · 12 Sep 2026 · refresh re-reads everything';
+        const BUILD_VERSION = 'v2.50.2 · 12 Sep 2026 · social status syncs across devices';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6979,11 +6979,18 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
             // looking at it. Runs before any mapping path so it can't be skipped.
             try {
                 const slDirty = DataFeed.enabled && ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
-                if(slDirty && !opts.offline && typeof state !== 'undefined' && state.currentView === 'social' && typeof loadSocialFromSheet === 'function' && window._slHasLoadedOnce){
+                // This used to run only while the Social tab was on screen. If a
+                // mention was closed on someone else's phone while you were on
+                // another tab, the change was swallowed -- switching to Social
+                // afterwards re-used the copy already in memory and showed the
+                // old status until a full reload. Now the copy is always brought
+                // up to date; only the repaint waits for you to be looking at it.
+                if(slDirty && !opts.offline && typeof loadSocialFromSheet === 'function' && window._slHasLoadedOnce){
                     ['social','sl_resolution'].forEach(k => { if(DataFeed.tabs[k]) DataFeed.tabs[k].changed = false; });   // consumed here, not re-fired every poll
                     const sigBefore = _slDataSig();
                     loadSocialFromSheet().then(() => {
                         if(_slDataSig() === sigBefore) return;   // nothing visible changed -> leave the screen alone
+                        if(typeof state === 'undefined' || state.currentView !== 'social') return;   // updated in memory; it will paint when opened
                         const modal = document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open');
                         if(modal) return;                       // never repaint under an open dialog
                         const r = () => renderSocialListening(); (typeof UI !== 'undefined' && UI.silent) ? UI.silent(r) : r();
