@@ -4640,6 +4640,48 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
 .ord-meta span{ font-size:0.66rem; font-weight:700; color:var(--text-muted); background:var(--white); border:1px solid var(--border-color); border-radius:20px; padding:3px 9px; }
 .ord-gap{ margin-top:7px; font-size:0.7rem; color:var(--text-muted); }
 body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
+
+/* ── Orders view ── */
+.ord-head-row{ display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+.ord-ranges{ margin-left:auto; display:inline-flex; gap:2px; padding:3px; border-radius:10px; background:var(--bg-light); border:1px solid var(--border-color); }
+.ord-range{ border:none; background:transparent; padding:6px 12px; border-radius:7px; font:700 0.74rem 'Inter',sans-serif; color:var(--text-muted); cursor:pointer; }
+.ord-range.on{ background:var(--white); color:var(--text-main); box-shadow:0 1px 3px rgba(15,23,42,.12); }
+.ord-search{ display:flex; align-items:center; gap:9px; margin-top:12px; padding:0 13px; height:42px; border:1.5px solid var(--border-color); border-radius:11px; background:var(--white); color:var(--text-muted); }
+.ord-search:focus-within{ border-color:#3B5BDB; box-shadow:0 0 0 3px rgba(59,91,219,.1); }
+.ord-search input{ flex:1; border:none !important; outline:none; background:transparent !important; box-shadow:none !important; padding:0 !important; height:auto !important; font:500 0.85rem 'Inter',sans-serif; color:var(--text-main); }
+.ord-stats{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.ord-stat{ padding:16px 18px; border:1px solid var(--border-color); border-radius:14px; background:var(--white); }
+.ord-stat-l{ font-size:0.66rem; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); }
+.ord-stat-v{ margin-top:6px; font-size:1.5rem; font-weight:800; letter-spacing:-.5px; color:var(--text-main); }
+.ord-stat-s{ margin-top:3px; font-size:0.72rem; color:var(--text-muted); }
+.ord-chans{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; }
+.ord-chan-top{ display:flex; align-items:baseline; gap:8px; font-size:0.78rem; }
+.ord-chan-top b{ color:var(--text-main); font-weight:700; }
+.ord-chan-top span{ margin-left:auto; font-weight:800; color:#010197; }
+.ord-chan-bar{ margin-top:6px; height:6px; border-radius:6px; background:var(--bg-light); overflow:hidden; }
+.ord-chan-bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#010197,#3B5BDB); }
+.ord-repeats{ display:flex; flex-direction:column; gap:8px; }
+.ord-rep{ display:flex; align-items:center; gap:14px; padding:10px 12px; border:1px solid var(--border-color); border-radius:11px; background:var(--white); flex-wrap:wrap; }
+.ord-rep-who b{ display:block; font-size:0.86rem; color:var(--text-main); }
+.ord-rep-who span{ font-size:0.72rem; color:var(--text-muted); }
+.ord-rep-n{ font-size:0.78rem; color:var(--text-muted); }
+.ord-rep-flag{ margin-left:auto; font-size:0.68rem; font-weight:800; color:#B91C1C; background:rgba(220,38,38,.09); border-radius:20px; padding:4px 10px; white-space:nowrap; }
+.ord-rep-ok{ margin-left:auto; font-size:0.68rem; font-weight:700; color:var(--text-muted); }
+.ord-tag{ display:inline-block; font-size:0.66rem; font-weight:800; border-radius:20px; padding:3px 9px; white-space:nowrap; }
+.ord-tag.ok{ color:#047857; background:rgba(5,150,105,.1); }
+.ord-tag.none{ color:var(--text-muted); background:var(--bg-light); }
+.ord-tag.wait{ color:#010197; background:rgba(1,1,151,.08); }
+.ord-tag.fail{ color:#B91C1C; background:rgba(220,38,38,.09); }
+body.dark-theme .ord-chan-top span{ color:#64D0FF; }
+body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); }
+@media (max-width:820px){
+    .ord-stats{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .ord-stat{ padding:13px 14px; }
+    .ord-stat-v{ font-size:1.25rem; }
+    .ord-ranges{ margin-left:0; width:100%; overflow-x:auto; }
+    .ord-rep{ gap:8px; }
+    .ord-rep-flag, .ord-rep-ok{ margin-left:0; }
+}
         </style>
 </head>
 <body class="app-loading">
@@ -4751,6 +4793,7 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
+                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
@@ -5742,6 +5785,7 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
             </div>
 
             <!-- ACTION REGISTER -->
+            <div id="view-orders" class="view"><div id="orders-root"></div></div>
             <div id="view-actions" class="view"><div id="acts-root"></div></div>
 
             <!-- FORM ANALYTICS (Owner only) -->
@@ -6291,7 +6335,7 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.52.0 · 12 Sep 2026 · the order behind a complaint';
+        const BUILD_VERSION = 'v2.53.0 · 12 Sep 2026 · orders tab';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9730,11 +9774,11 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -10095,13 +10139,13 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -10204,6 +10248,7 @@ body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
                 else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'rewards') { RW.render(); return; }
                 else if (state.currentView === 'form-analytics') { FAT.render(); return; }
+                else if (state.currentView === 'orders')  { ORD.render(); return; }
                 else if (state.currentView === 'actions') { ACTS.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
@@ -17416,6 +17461,11 @@ ${(() => {
             if(faNav) faNav.style.display = can('users') ? '' : 'none';   // Owner only
             const acNav = document.getElementById('nav-actions');
             if(acNav) acNav.style.display = can('action') ? '' : 'none';
+            // Orders are read-only, and the backend already scopes them to the
+            // person's own branch, so anyone who can see the dashboard can see
+            // the orders they are responsible for.
+            const orNav = document.getElementById('nav-orders');
+            if(orNav) orNav.style.display = '';
             if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
@@ -20786,7 +20836,165 @@ ${(() => {
             }
 
             function count(){ return index().all.length; }
-            return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen };
+
+            // ── The Orders view ──────────────────────────────────────────
+            var _q = '', _range = 'today';
+            function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+            function dayStart(d){ var x = new Date(d); x.setHours(0,0,0,0); return x.getTime(); }
+            function inRange(o){
+                var now = Date.now();
+                if (_range === 'today')     return o.ts >= dayStart(now);
+                if (_range === 'yesterday') return o.ts >= dayStart(now) - 86400000 && o.ts < dayStart(now);
+                if (_range === '7d')        return o.ts >= dayStart(now) - 6 * 86400000;
+                if (_range === '30d')       return o.ts >= dayStart(now) - 29 * 86400000;
+                return true;
+            }
+            function matches(o){
+                if (!_q) return true;
+                var q = _q.toLowerCase();
+                return (o.code + ' ' + o.id + ' ' + o.phone + ' ' + o.customer + ' ' + o.branch + ' ' + o.items + ' ' + o.channel).toLowerCase().indexOf(q) !== -1;
+            }
+            // exposed for the inline handlers in the rendered markup
+            window.ORD_setQuery = function(v){ _q = String(v || '').trim(); render(true); };
+            window.ORD_setRange = function(v){ _range = v; render(); };
+
+            // Who ordered often and then complained -- a different, more useful
+            // question than "who complained twice", which is all the dashboard
+            // could answer before orders existed.
+            function repeatCustomers(list){
+                var by = {};
+                list.forEach(function(o){
+                    if (!o.key) return;
+                    var e = by[o.key] || (by[o.key] = { key: o.key, name: o.customer, phone: o.phone, orders: 0, spend: 0, last: 0, branches: {}, complaints: 0 });
+                    e.orders++; e.spend += o.total; e.last = Math.max(e.last, o.ts);
+                    if (o.branch) e.branches[o.branch] = 1;
+                    if (o.customer && !e.name) e.name = o.customer;
+                });
+                (rawData.incidents || []).forEach(function(inc){
+                    var k = phoneKey((typeof _rawFieldExact === 'function' ? _rawFieldExact(inc._raw || {}, 'Phone Number') : '') || inc.phone);
+                    if (k && by[k]) by[k].complaints++;
+                });
+                return Object.keys(by).map(function(k){ return by[k]; })
+                    .filter(function(e){ return e.orders > 1; })
+                    .sort(function(a, b){ return (b.complaints - a.complaints) || (b.orders - a.orders); });
+            }
+
+            function surveyStats(list){
+                var sent = 0, noEmail = 0, pending = 0, failed = 0;
+                var raw = rows();
+                var byId = {};
+                raw.forEach(function(r){ byId[String(r['Order ID'] || '')] = String(r['Survey Sent'] || '').trim(); });
+                list.forEach(function(o){
+                    var v = byId[o.id] || '';
+                    if (!v) pending++;
+                    else if (/^skipped: no email/i.test(v)) noEmail++;
+                    else if (/^failed/i.test(v)) failed++;
+                    else if (/^skipped/i.test(v)) pending++;
+                    else sent++;
+                });
+                return { sent: sent, noEmail: noEmail, pending: pending, failed: failed };
+            }
+
+            function render(keepFocus){
+                var root = document.getElementById('orders-root');
+                if (!root) return;
+                var all = index().all;
+                var list = all.filter(inRange).filter(matches);
+                var revenue = list.reduce(function(n, o){ return n + o.total; }, 0);
+                var byChannel = {};
+                list.forEach(function(o){ var c = o.channel || o.type || 'Other'; byChannel[c] = (byChannel[c] || 0) + 1; });
+                var channels = Object.keys(byChannel).sort(function(a, b){ return byChannel[b] - byChannel[a]; });
+                var sv = surveyStats(list);
+                var reach = list.length ? Math.round(sv.sent / list.length * 100) : 0;
+                var repeats = repeatCustomers(list);
+
+                var chip = function(v, label){ return '<button class="ord-range' + (_range === v ? ' on' : '') + '" onclick="ORD_setRange(\'' + v + '\')">' + label + '</button>'; };
+                var stat = function(label, value, sub, tone){
+                    return '<div class="ord-stat"><div class="ord-stat-l">' + label + '</div>'
+                         + '<div class="ord-stat-v"' + (tone ? ' style="color:' + tone + '"' : '') + '>' + value + '</div>'
+                         + '<div class="ord-stat-s">' + (sub || '') + '</div></div>';
+                };
+
+                if (!all.length){
+                    root.uiHTML = '<div class="card"><div class="section-header"><h3>Orders</h3></div>'
+                        + '<div class="fb-empty"><b>No orders yet.</b><br><span style="font-size:0.8rem;">'
+                        + 'Orders arrive from the Blink POS the moment they are placed. If this stays empty, check the Sentinel webhook in Blink.</span></div></div>';
+                    return;
+                }
+
+                root.uiHTML = ''
+                + '<div class="card" style="padding:16px 18px;">'
+                +   '<div class="ord-head-row">'
+                +     '<div><div class="section-header" style="margin-bottom:0;"><h3>Orders</h3></div>'
+                +       '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Live from the Blink POS. Read-only \u2014 Blink stays the record of what was ordered.</div></div>'
+                +     '<div class="ord-ranges">' + chip('today','Today') + chip('yesterday','Yesterday') + chip('7d','7 days') + chip('30d','30 days') + chip('all','All') + '</div>'
+                +   '</div>'
+                +   '<div class="ord-search"><i class="fas fa-magnifying-glass"></i>'
+                +     '<input id="ord-q" type="search" placeholder="Search by phone, order code, customer, item or branch\u2026" value="' + esc(_q) + '" oninput="ORD_setQuery(this.value)">'
+                +   '</div>'
+                + '</div>'
+
+                + '<div class="ord-stats">'
+                +   stat('Orders', list.length.toLocaleString(), _range === 'today' ? 'so far today' : 'in this period')
+                +   stat('Value', fmtMoney(revenue), list.length ? 'avg ' + fmtMoney(revenue / list.length) : '')
+                +   stat('Survey sent', sv.sent.toLocaleString(), reach + '% of orders reached', '#047857')
+                +   stat('No email', sv.noEmail.toLocaleString(), 'mostly call-in orders', sv.noEmail ? '#B91C1C' : '')
+                + '</div>'
+
+                + (channels.length ? '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:8px;"><h3>By channel</h3></div>'
+                +   '<div class="ord-chans">' + channels.map(function(c){
+                        var pct = Math.round(byChannel[c] / list.length * 100);
+                        return '<div class="ord-chan"><div class="ord-chan-top"><b>' + esc(c) + '</b><span>' + byChannel[c] + '</span></div>'
+                             + '<div class="ord-chan-bar"><i style="width:' + pct + '%"></i></div></div>';
+                    }).join('') + '</div></div>' : '')
+
+                + (repeats.length ? '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:2px;"><h3>Repeat customers</h3></div>'
+                +   '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">More than one order in this period. Anyone who has also complained is listed first.</div>'
+                +   '<div class="ord-repeats">' + repeats.slice(0, 12).map(function(r){
+                        return '<div class="ord-rep">'
+                            + '<div class="ord-rep-who"><b>' + esc(r.name || 'Unnamed') + '</b><span>' + esc(r.phone) + '</span></div>'
+                            + '<div class="ord-rep-n">' + r.orders + ' orders</div>'
+                            + '<div class="ord-rep-n">' + fmtMoney(r.spend) + '</div>'
+                            + '<div class="ord-rep-n">' + Object.keys(r.branches).join(', ') + '</div>'
+                            + (r.complaints ? '<span class="ord-rep-flag">' + r.complaints + ' complaint' + (r.complaints > 1 ? 's' : '') + '</span>' : '<span class="ord-rep-ok">no complaints</span>')
+                            + '</div>';
+                    }).join('') + '</div></div>' : '')
+
+                + '<div class="card" style="padding:0;overflow:hidden;">'
+                +   '<div style="padding:14px 18px 10px;"><div class="section-header" style="margin-bottom:0;"><h3>' + list.length.toLocaleString() + ' order' + (list.length === 1 ? '' : 's') + '</h3></div></div>'
+                +   '<div class="table-wrapper" style="border:none;">'
+                +   '<table class="m-cardtable" id="ord-table"><thead><tr><th>Order</th><th>Time</th><th>Branch</th><th>Channel</th><th>Customer</th><th>Items</th><th>Total</th><th>Survey</th></tr></thead><tbody>'
+                +   (list.length ? list.slice(0, 200).map(function(o){
+                        var v = (rows().find(function(r){ return String(r['Order ID']) === o.id; }) || {})['Survey Sent'] || '';
+                        var tag = !v ? '<span class="ord-tag wait">waiting</span>'
+                                : /no email/i.test(v) ? '<span class="ord-tag none">no email</span>'
+                                : /^failed/i.test(v) ? '<span class="ord-tag fail">failed</span>'
+                                : /^skipped/i.test(v) ? '<span class="ord-tag none">skipped</span>'
+                                : '<span class="ord-tag ok">sent</span>';
+                        return '<tr>'
+                            + '<td data-label="Order" style="font-family:monospace;font-size:0.78rem;">' + esc(o.code || o.id) + '</td>'
+                            + '<td data-label="Time" style="white-space:nowrap;">' + fmtWhen(o.ts) + '</td>'
+                            + '<td data-label="Branch" style="font-weight:600;">' + esc(o.branch) + '</td>'
+                            + '<td data-label="Channel">' + esc(o.channel || o.type) + '</td>'
+                            + '<td data-label="Customer">' + esc(o.customer || '\u2014') + '<div style="font-size:0.7rem;color:var(--text-muted);">' + esc(o.phone) + '</div></td>'
+                            + '<td data-label="Items" style="font-size:0.8rem;">' + esc(o.items) + '</td>'
+                            + '<td data-label="Total" style="white-space:nowrap;font-weight:700;">' + fmtMoney(o.total) + '</td>'
+                            + '<td data-label="Survey">' + tag + '</td>'
+                            + '</tr>';
+                    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:28px;">No orders match.</td></tr>')
+                +   '</tbody></table></div>'
+                +   (list.length > 200 ? '<div style="padding:10px 18px;font-size:0.74rem;color:var(--text-muted);">Showing the newest 200. Narrow the period or search to see the rest.</div>' : '')
+                + '</div>';
+
+                if (keepFocus){
+                    var el = document.getElementById('ord-q');
+                    if (el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+                }
+            }
+
+            return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen, render: render };
         })();
 
         </script>
