@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.61.0 · 13 Sep 2026 · stays fast, does not ease off';
+        const BUILD_VERSION = 'v2.62.0 · 13 Sep 2026 · says so when background jobs stop';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21109,6 +21109,40 @@ ${(() => {
             }
 
             return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen, render: render };
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Background-job watch
+        // The once-a-minute job drives alerts, the database mirror, survey
+        // emails and copying saves to the spreadsheet. It has stopped without
+        // warning more than once, and the first anyone knew was an incident
+        // that never appeared. This checks every few minutes and says so
+        // plainly instead.
+        // ═══════════════════════════════════════════════════════════════════
+        (function(){
+            let shown = false;
+            async function check(){
+                try {
+                    const r = await fetch('/api/health', { method:'POST', headers:{'content-type':'application/json'}, body:'{"action":"health"}' }).then(r => r.json());
+                    if(!r || r.status !== 'success') return;
+                    const bad = (r.cron_ok === false) || (r.saves_stuck > 0);
+                    const el = document.getElementById('health-banner');
+                    if(!bad){ if(el) el.remove(); shown = false; return; }
+                    if(shown) return;
+                    shown = true;
+                    const msg = r.cron_ok === false
+                        ? 'Background jobs have stopped — alerts and syncing are paused. Check the Worker cron trigger.'
+                        : r.saves_stuck + ' saved change' + (r.saves_stuck === 1 ? '' : 's') + ' could not reach the spreadsheet.';
+                    const div = document.createElement('div');
+                    div.id = 'health-banner';
+                    div.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#B91C1C;color:#fff;padding:10px 16px;font:600 0.82rem Inter,sans-serif;text-align:center;';
+                    div.textContent = msg;
+                    document.body.appendChild(div);
+                } catch(e){}
+            }
+            setTimeout(check, 20000);
+            setInterval(check, 180000);
         })();
 
         </script>
