@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.57.0 · 12 Sep 2026 · instant saves, 5-second sync';
+        const BUILD_VERSION = 'v2.58.0 · 12 Sep 2026 · a closed case redraws without a refresh';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9884,7 +9884,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     checkForNewIncidents();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
-                        let _lsc=-1,_lic=-1; const _s=this;
+                        let _lsc=-1,_lic=-1,_lrs=''; const _s=this;
                         let _needsRenderCatchup = false;
 
                         // Notification detection (loadLive + checkForNewIncidents)
@@ -9957,8 +9957,20 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 _syncIncidentAlertReviewState();
                                 if(skipRender){ _needsRenderCatchup = true; return; }
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
-                                if(ns===_lsc&&ni===_lic&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
-                                _lsc=ns; _lic=ni; _needsRenderCatchup=false;
+                                // Counts alone are not enough. Closing a case,
+                                // reviewing one, logging an action: none of them
+                                // change a count -- they change a field on a row
+                                // that already exists. Comparing only counts meant
+                                // the new data arrived every few seconds and was
+                                // thrown away undrawn, so a colleague's change
+                                // appeared only when something else forced a
+                                // redraw. This adds the resolution tabs' own
+                                // fingerprints, which do change.
+                                const _rs = ['incident_resolution','sl_resolution','actions']
+                                    .map(k => { const t = (DataFeed.tabs||{})[k]; return (t && t.state && (t.state.hash || t.state.tail)) || ''; })
+                                    .join('|');
+                                if(ns===_lsc&&ni===_lic&&_rs===_lrs&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
+                                _lsc=ns; _lic=ni; _lrs=_rs; _needsRenderCatchup=false;
                                 // UI.silent owns all of it now: the background
                                 // flag, chart-animation suppression, main scroll
                                 // pinning across the mid-rebuild height collapse,
