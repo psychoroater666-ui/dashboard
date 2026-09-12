@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.60.0 · 13 Sep 2026 · fast sync without the lag';
+        const BUILD_VERSION = 'v2.60.1 · 13 Sep 2026 · show more works';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11593,7 +11593,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // Windowed: an 8 GB laptop chokes on hundreds of heavy rows.
                 // Render a screenful; the rest on demand.
                 const INC_WINDOW = 60;
-                if(this._incWindowKey !== filtered.length + '|' + (state.currentView||'')) { this._incShown = INC_WINDOW; this._incWindowKey = filtered.length + '|' + (state.currentView||''); }
+                // "Show 60 more" used to clear this marker to force a redraw,
+                // and the redraw then treated a missing marker as "new view" and
+                // reset the count straight back to 60 -- so the button appeared
+                // to do nothing. The flag says: this redraw was asked for by the
+                // button, keep the larger window.
+                if(this._incKeepWindow){
+                    this._incKeepWindow = false;
+                    this._incWindowKey = filtered.length + '|' + (state.currentView||'');
+                } else if(this._incWindowKey !== filtered.length + '|' + (state.currentView||'')) {
+                    this._incShown = INC_WINDOW;
+                    this._incWindowKey = filtered.length + '|' + (state.currentView||'');
+                }
                 const shownCount = Math.min(this._incShown || INC_WINDOW, filtered.length);
                 const rows = filtered.slice(0, shownCount);
                 // _incAll is the unfiltered set the toolbar filters against.
@@ -11709,7 +11720,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // every refresh, so a position captured when the row was drawn could
             // point at a different incident by the time it was clicked -- that is
             // why clicking one incident sometimes opened another.
-            showMoreIncidents() { this._incShown = (this._incShown || 60) + 60; this._incWindowKey = null; try { UI.silent(() => this.applyFilters()); } catch(e){ this.applyFilters(); } },
+            showMoreIncidents() { this._incShown = (this._incShown || 60) + 60; this._incKeepWindow = true; try { UI.silent(() => this.applyFilters()); } catch(e){ this.applyFilters(); } },
 
             openIncidentDetailModal(idxOrKey) {
                 let inc = null;
