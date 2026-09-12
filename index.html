@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.56.0 · 12 Sep 2026 · new incidents appear at once';
+        const BUILD_VERSION = 'v2.57.0 · 12 Sep 2026 · instant saves, 5-second sync';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9984,12 +9984,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         // does — switching tab, returning to the window, closing a
                         // dialog, pressing Refresh — snaps it straight back to the
                         // fast rate, so it never feels stale in front of you.
-                        const POLL_FAST = Math.max(LIVE.refreshMs, 20000);
+                        // Five seconds. A read now costs the database a
+                        // millisecond or two, so the only thing a longer gap
+                        // buys is a colleague staring at a stale screen.
+                        const POLL_FAST = 5000;
                         // Easing off to two minutes made sense when every poll
                         // cost the backend several seconds. Reads now come from
                         // the database in milliseconds, so the only thing that
                         // long gap bought us was a stale screen.
-                        const POLL_SLOW = 45000;
+                        const POLL_SLOW = 30000;
                         let _pollIdleRounds = 0, _pollTimer = null;
                         window.pollWakeUp = function(){
                             _pollIdleRounds = 0;
@@ -10004,8 +10007,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             _pollRound();
                         };
                         function _pollDelay(){
-                            return _pollIdleRounds >= 6 ? POLL_SLOW
-                                 : _pollIdleRounds >= 3 ? Math.round(POLL_FAST * 1.5)
+                            return _pollIdleRounds >= 40 ? POLL_SLOW      // ~3 quiet minutes
+                                 : _pollIdleRounds >= 12 ? 10000
                                  : POLL_FAST;
                         }
                         function _schedulePoll(extraIdle){
