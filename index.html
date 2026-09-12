@@ -6240,7 +6240,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.49.0 · 11 Sep 2026 · phone alerts';
+        const BUILD_VERSION = 'v2.50.1 · 12 Sep 2026 · refresh re-reads everything';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6419,6 +6419,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
             // thread (~hundreds of ms). Doing it on every changed poll caused a
             // visible hitch, so: at most once every 2 minutes, plus a flush when
             // the tab is hidden or closed so nothing is lost.
+            let _didFirstFull = false;        // set once the first post-load sync has asked for everything
             const SAVE_MIN_MS = 60 * 1000;
             let saveTimer = null, lastSave = 0, dirty = false;
             async function saveNow(){
@@ -6481,7 +6482,17 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
                 syncing = (async () => {
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
-                    const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
+                    // The first round after a page load always asks for everything.
+                    // Rows and their state tokens are kept in IndexedDB between
+                    // loads, so a plain refresh used to re-send the same tokens,
+                    // the backend answered "unchanged", and an edit made
+                    // elsewhere -- a case closed on someone's phone -- stayed
+                    // invisible until the 6-hourly full round or a fresh sign-in.
+                    // The cached copy still paints instantly; it is just no longer
+                    // trusted as up to date.
+                    const firstRound = !_didFirstFull;
+                    const forceFull = firstRound || !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
+                    if(firstRound) _didFirstFull = true;
                     const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
@@ -9845,7 +9856,45 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
                             }
                         };
 
-                        setInterval(() => { _doRefresh(); }, LIVE.refreshMs);
+                        // ── How often we ask the backend for data ──────────────
+                        // Every open dashboard used to ask every 15 seconds, no
+                        // matter what. Apps Script answers one request at a time
+                        // per person and each answer takes several seconds, so a
+                        // queue built up — and a save pressed at the wrong moment
+                        // waited behind it and timed out ("Could not save this
+                        // update"). So: ask every 30s while things are happening,
+                        // and ease off towards 2 minutes once several rounds in a
+                        // row come back unchanged. Anything the person actually
+                        // does — switching tab, returning to the window, closing a
+                        // dialog, pressing Refresh — snaps it straight back to the
+                        // fast rate, so it never feels stale in front of you.
+                        const POLL_FAST = Math.max(LIVE.refreshMs, 30000);
+                        const POLL_SLOW = 120000;
+                        let _pollIdleRounds = 0, _pollTimer = null;
+                        window.pollWakeUp = function(){
+                            _pollIdleRounds = 0;
+                            _schedulePoll(0);                    // re-arm at the fast rate
+                        };
+                        function _pollDelay(){
+                            return _pollIdleRounds >= 4 ? POLL_SLOW
+                                 : _pollIdleRounds >= 2 ? Math.round(POLL_FAST * 2)
+                                 : POLL_FAST;
+                        }
+                        function _schedulePoll(extraIdle){
+                            if(extraIdle === 0) _pollIdleRounds = 0;
+                            clearTimeout(_pollTimer);
+                            _pollTimer = setTimeout(_pollRound, _pollDelay());
+                        }
+                        async function _pollRound(){
+                            const before = window.__liveChanged;
+                            try { await _doRefresh(); } catch(e){}
+                            // __liveChanged is set by loadLive: false means every
+                            // sheet came back with the same state token as before.
+                            if(window.__liveChanged === false) _pollIdleRounds++;
+                            else _pollIdleRounds = 0;
+                            _schedulePoll(1);
+                        }
+                        _schedulePoll(1);
 
                         // Catch up immediately on return — covers both the
                         // deferred chart rebuild above and any ticks the browser
@@ -9854,7 +9903,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
                         // while — a real browser limit, not something a page
                         // can override).
                         document.addEventListener('visibilitychange', () => {
-                            if(!document.hidden) _doRefresh();
+                            if(!document.hidden){ _doRefresh(); if(window.pollWakeUp) pollWakeUp(); }
                         });
 
                         // Same catch-up idea for dialogs: the moment the
@@ -9974,6 +10023,8 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
             refreshData() { this.applyFilters(); if(typeof compareEngine!=='undefined' && compareEngine.render) compareEngine.render(); },
 
             navigate(viewId, elEvt) {
+                // Someone is working: go back to the fast polling rate.
+                try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
                 if(state.currentView === viewId && document.querySelector('.view.active')){
                     // Re-clicking the tab you're already on shouldn't tear the
                     // whole view down and rebuild it — that read as a flicker.
@@ -15121,10 +15172,16 @@ ${(() => {
             if(!slMentions.length) slLoadData();
             slPopulateBranchSelects();
 
-            // Init chip styles once using a flag — not a DOM style check
+            // Init chip styles once using a flag — not a DOM style check.
+            // Opens on Today rather than All: the queue is about what is
+            // happening now, and All meant scrolling through months of history
+            // to reach it. If today is empty, fall back to 7 days once, so the
+            // tab never opens on a blank screen and read as broken.
             if(!window._slPresetInited){
                 window._slPresetInited = true;
-                slSetPreset('all');
+                const today = new Date().toISOString().split('T')[0];
+                const anyToday = (slMentions || []).some(m => String(m.date || '').slice(0, 10) === today);
+                slSetPreset(anyToday ? 'today' : '7d');
                 return; // slSetPreset calls renderSocialListening again
             }
 
@@ -16681,6 +16738,10 @@ ${(() => {
         // PREMIUM REFRESH — animated button + toast
         // ═══════════════════════════════════════════
         function appRefresh(){
+            try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
+            // Pressing Refresh means "I think what I'm looking at is wrong":
+            // re-read everything rather than asking only for new rows.
+            window.__forceFullNext = true;
             const btn   = document.getElementById('refresh-btn');
             const icon  = document.getElementById('refresh-icon');
             const label = document.getElementById('refresh-label');
