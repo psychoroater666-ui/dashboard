@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.59.0 · 12 Sep 2026 · two-second sync';
+        const BUILD_VERSION = 'v2.60.0 · 13 Sep 2026 · fast sync without the lag';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8404,6 +8404,29 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     : `${fresh.length} incidents past their time limit`, 'warning', 8000);
             } catch(e){ console.warn('sla ring failed', e); }
         }
+        /**
+         * Bring the incident rows up to date without rebuilding the page: the
+         * status pill, the timer chip and the queue tile. Everything else on
+         * screen is unaffected by a case being closed.
+         */
+        function renderIncidentsLight(){
+            try {
+                (rawData.incidents || []).forEach(inc => {
+                    const key = _incidentStableKey(inc);
+                    const row = document.querySelector(`[data-row-key="${key.replace(/"/g,'&quot;')}"]`);
+                    if(!row) return;
+                    const chip = row.querySelector('.sla-chip');
+                    if(chip && inc.resolved) chip.remove();
+                    const tl = row.querySelector('.inc-tl-node:last-child');
+                    if(tl && inc.resolved){ tl.classList.remove('inc-tl-idle'); tl.classList.add('inc-tl-resolved'); }
+                    const mid = row.querySelector('.inc-tl-node:nth-child(3)');
+                    if(mid && (inc.reviewedAt || inc.resolved)){ mid.classList.remove('inc-tl-review'); mid.classList.add(inc.resolved ? 'inc-tl-resolved' : 'inc-tl-review'); }
+                });
+                slaTick();
+                if(typeof renderAlerts === 'function') renderAlerts();
+            } catch(e){ console.warn('light incident refresh failed', e); }
+        }
+
         /** Tick the visible counters without re-rendering anything. */
         function slaTick(){
             document.querySelectorAll('.sla-chip[data-sla-key]').forEach(el => {
@@ -9884,7 +9907,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     checkForNewIncidents();
 
                     if (LIVE.sources && LIVE.sources.some(s=>s.url) && LIVE.refreshMs > 0) {
-                        let _lsc=-1,_lic=-1,_lrs=''; const _s=this;
+                        let _lsc=-1,_lic=-1,_lrs='',_lastFullRender=0; const _s=this;
                         let _needsRenderCatchup = false;
 
                         // Notification detection (loadLive + checkForNewIncidents)
@@ -9970,7 +9993,25 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                     .map(k => { const t = (DataFeed.tabs||{})[k]; return (t && t.state && (t.state.hash || t.state.tail)) || ''; })
                                     .join('|');
                                 if(ns===_lsc&&ni===_lic&&_rs===_lrs&&!_needsRenderCatchup){ document.body.classList.remove('bg-refresh'); return; }
-                                _lsc=ns; _lic=ni; _lrs=_rs; _needsRenderCatchup=false;
+                                // Rebuilding every card, table and chart is the
+                                // expensive part, and a resolution changing does
+                                // not alter any of the figures on screen -- only
+                                // a status and a timer. Polling every two seconds
+                                // made that heavy rebuild run several times a
+                                // minute, which is the lag. When only resolutions
+                                // moved, update the incident rows in place and
+                                // leave the rest alone; a full rebuild still
+                                // happens when the numbers themselves change, and
+                                // at most once every eight seconds otherwise.
+                                const _onlyResolutions = (ns === _lsc && ni === _lic && _rs !== _lrs);
+                                const _sinceFull = Date.now() - _lastFullRender;
+                                if(_onlyResolutions && _sinceFull < 8000){
+                                    _lrs = _rs;
+                                    try { if(typeof renderIncidentsLight === 'function') renderIncidentsLight(); } catch(e){}
+                                    document.body.classList.remove('bg-refresh');
+                                    return;
+                                }
+                                _lsc=ns; _lic=ni; _lrs=_rs; _needsRenderCatchup=false; _lastFullRender=Date.now();
                                 // UI.silent owns all of it now: the background
                                 // flag, chart-animation suppression, main scroll
                                 // pinning across the mid-rebuild height collapse,
