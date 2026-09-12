@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.53.0 · 12 Sep 2026 · orders tab';
+        const BUILD_VERSION = 'v2.54.0 · 12 Sep 2026 · history loads once, not every visit';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6514,7 +6514,6 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // thread (~hundreds of ms). Doing it on every changed poll caused a
             // visible hitch, so: at most once every 2 minutes, plus a flush when
             // the tab is hidden or closed so nothing is lost.
-            let _didFirstFull = false;        // set once the first post-load sync has asked for everything
             const SAVE_MIN_MS = 60 * 1000;
             let saveTimer = null, lastSave = 0, dirty = false;
             async function saveNow(){
@@ -6577,17 +6576,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 syncing = (async () => {
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
-                    // The first round after a page load always asks for everything.
-                    // Rows and their state tokens are kept in IndexedDB between
-                    // loads, so a plain refresh used to re-send the same tokens,
-                    // the backend answered "unchanged", and an edit made
-                    // elsewhere -- a case closed on someone's phone -- stayed
-                    // invisible until the 6-hourly full round or a fresh sign-in.
-                    // The cached copy still paints instantly; it is just no longer
-                    // trusted as up to date.
-                    const firstRound = !_didFirstFull;
-                    const forceFull = firstRound || !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    if(firstRound) _didFirstFull = true;
+                    // A full round throws away the saved copy and re-downloads the
+                    // whole history -- about 35,000 rows, several minutes. That is
+                    // only worth doing occasionally, so it is NOT done on every page
+                    // load: the saved copy is kept and only new rows are fetched.
+                    //
+                    // (An earlier build forced a full round on every load, to catch a
+                    // case closed on another device. That turned out to have a
+                    // different cause -- the Social view not repainting -- which is
+                    // fixed separately, so the cost is no longer justified. Anything
+                    // edited in place is still picked up by the periodic full round,
+                    // by pressing Refresh, and immediately by the live tabs below.)
+                    const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
                     const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff','blink_orders'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
@@ -6616,7 +6616,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     for(const key of pending){
                         let guard = 0;
                         while(tabs[key].complete === false && tabs[key].before > 1 && guard++ < 40){
-                            const res = await apiCall('get_data', { tabs:[key], chunk: { [key]: { before: tabs[key].before } } });
+                            // 8000 is the backend's own ceiling; the default was 6000,
+                            // so this is a third fewer round trips through a backend
+                            // that answers in seconds, not milliseconds.
+                            const res = await apiCall('get_data', { tabs:[key], chunk: { [key]: { before: tabs[key].before, limit: 8000 } } });
                             if(!res || res.status !== 'success' || !res.tabs || !res.tabs[key]) break;
                             apply(key, res.tabs[key]);
                             scheduleSave();
