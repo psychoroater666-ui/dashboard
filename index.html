@@ -4682,6 +4682,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
     .ord-rep{ gap:8px; }
     .ord-rep-flag, .ord-rep-ok{ margin-left:0; }
 }
+
+/* ── System health ── */
+.sys-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+.sys-card{ padding:16px 18px; border:1px solid var(--border-color); border-radius:14px; background:var(--white); }
+.sys-card.bad{ border-color:rgba(220,38,38,.4); background:rgba(220,38,38,.04); }
+.sys-l{ font-size:0.66rem; font-weight:800; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); }
+.sys-v{ margin-top:6px; font-size:1.5rem; font-weight:800; letter-spacing:-.5px; color:var(--text-main); }
+.sys-v.ok{ color:#047857; } .sys-v.bad{ color:#B91C1C; }
+.sys-s{ margin-top:3px; font-size:0.72rem; color:var(--text-muted); }
+.sys-beats{ display:flex; flex-direction:column; gap:8px; }
+.sys-beat{ display:flex; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--border-color); border-radius:11px; flex-wrap:wrap; }
+.sys-beat b{ font-size:0.84rem; min-width:120px; }
+.sys-beat span{ font-size:0.75rem; color:var(--text-muted); }
+.sys-beat .ago{ margin-left:auto; font-weight:700; font-size:0.75rem; }
+.sys-dot{ width:9px; height:9px; border-radius:50%; background:#059669; flex-shrink:0; }
+.sys-dot.bad{ background:#DC2626; }
         </style>
 </head>
 <body class="app-loading">
@@ -4797,6 +4813,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
+                <span class="topnav-link" data-view="system" id="nav-system" style="display:none;" onclick="app.navigate('system', this)">System</span>
             </nav>
             <script>
                 // Fixes the active nav highlight BEFORE the browser paints —
@@ -5795,6 +5812,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             <div id="view-rewards" class="view"><div id="rewards-root"></div></div>
 
             <!-- ACTIVITY / AUDIT TRAIL (admin) -->
+            <div id="view-system" class="view"><div id="system-root"></div></div>
             <div id="view-activity" class="view">
                 <div id="activity-root"></div>
             </div>
@@ -6335,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.62.0 · 13 Sep 2026 · says so when background jobs stop';
+        const BUILD_VERSION = 'v2.64.0 · 13 Sep 2026 · System health shows the whole picture';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9811,11 +9829,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -10229,13 +10247,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -10335,6 +10353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 else if (state.currentView === 'incident-analytics') this.renderIncidentAnalytics();
                 else if (state.currentView === 'resolution') this.renderResolution();
                 else if (state.currentView === 'form-builder') { FB.render(); return; }
+                else if (state.currentView === 'system')   { SYS.render(); return; }
                 else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'rewards') { RW.render(); return; }
                 else if (state.currentView === 'form-analytics') { FAT.render(); return; }
@@ -17569,6 +17588,11 @@ ${(() => {
             if(fbNav) fbNav.style.display = can('forms') ? '' : 'none';
             const actNav = document.getElementById('nav-activity');
             if(actNav) actNav.style.display = can('audit') ? '' : 'none';
+            // Same gate as Activity: the Owner only. It shows whether the
+            // background jobs are alive, which is operational plumbing rather
+            // than anything the team needs to see.
+            const sysNav = document.getElementById('nav-system');
+            if(sysNav) sysNav.style.display = can('audit') ? '' : 'none';
             const rwNav = document.getElementById('nav-rewards');
             if(rwNav) rwNav.style.display = can('reward') ? '' : 'none';
             const faNav = document.getElementById('nav-form-analytics');
@@ -21143,6 +21167,136 @@ ${(() => {
             }
             setTimeout(check, 20000);
             setInterval(check, 180000);
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // System health — Owner only
+        // Whether the background jobs are alive, and whether any saved change
+        // has failed to reach the spreadsheet. Tonight's lesson: a job that
+        // stops quietly costs far more than one that fails loudly.
+        // ═══════════════════════════════════════════════════════════════════
+        window.SYS = (function(){
+            const NAMES = {
+                cron:        ['Alerts and scheduled jobs', 'Sends phone alerts and drives everything below'],
+                mirror:      ['Database mirror',           'Copies new rows from the spreadsheet into the database'],
+                write_queue: ['Saves to spreadsheet',      'Copies saves made here into the spreadsheet'],
+                orders_cursor:['Blink orders',             'How far the order feed has been read']
+            };
+            function ago(at){
+                const m = Math.round((Date.now() - Date.parse(at)) / 60000);
+                if(!isFinite(m)) return 'never';
+                return m <= 0 ? 'just now' : m === 1 ? '1 min ago' : m + ' min ago';
+            }
+            function fmtAgo(m){
+                if(m === null || m === undefined || !isFinite(m)) return 'never';
+                if(m < 1) return 'just now';
+                if(m < 60) return m + ' min ago';
+                const h = Math.floor(m/60);
+                return h + 'h ' + (m%60) + 'm ago';
+            }
+            async function render(){
+                const root = document.getElementById('system-root'); if(!root) return;
+                root.uiHTML = '<div class="card" style="padding:16px 18px;"><div class="section-header"><h3>System health</h3></div>'
+                            + '<div style="font-size:0.8rem;color:var(--text-muted);">Checking…</div></div>';
+                let h = null;
+                try {
+                    h = await fetch('/api/health', { method:'POST', headers:{'content-type':'application/json'}, body:'{"action":"health"}' }).then(r => r.json());
+                } catch(e){}
+                if(!h || h.status !== 'success'){
+                    root.uiHTML = '<div class="card" style="padding:16px 18px;"><div class="section-header"><h3>System health</h3></div>'
+                                + '<div class="fb-empty"><b>Could not reach the health check.</b><br><span style="font-size:0.8rem;">'
+                                + 'That in itself may be the problem — check the Worker is deployed.</span></div></div>';
+                    return;
+                }
+                const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+                const cronOk = h.cron_ok !== false;
+                const stuck = h.saves_stuck || 0, waiting = h.saves_waiting_for_sheet || 0;
+                const parked = h.feedback_parked || 0, backlog = h.mirror_backlog || 0;
+                const subAge = h.last_submission_minutes_ago, ordAge = h.last_order_minutes_ago;
+                // Trading hours only: nothing arriving at 4am is not a fault.
+                const hour = new Date().getHours();
+                const trading = hour >= 11 && hour <= 23;
+                const feedStale = trading && subAge !== null && subAge > 120;
+                const card = (label, value, sub, tone) =>
+                    '<div class="sys-card' + (tone === 'bad' ? ' bad' : '') + '"><div class="sys-l">' + label + '</div>'
+                  + '<div class="sys-v ' + (tone || '') + '">' + value + '</div><div class="sys-s">' + sub + '</div></div>';
+
+                const problems = (h.problems || []).filter(p => p.action === 'error' || p.action === 'insert' || p.action === 'skip');
+                const stuckList = h.stuck_saves || [];
+
+                root.uiHTML = ''
+                + '<div class="card" style="padding:16px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:2px;"><h3>System health</h3></div>'
+                +   '<div style="font-size:0.74rem;color:var(--text-muted);">Everything below runs by itself. If something stops, this is where it shows.</div>'
+                + '</div>'
+
+                // ── is anything broken right now ──
+                + '<div class="sys-grid">'
+                +   card('Background jobs', cronOk ? 'Running' : 'STOPPED',
+                         cronOk ? 'last ran ' + fmtAgo(h.cron_last_ran_minutes_ago) : 'alerts and syncing are paused',
+                         cronOk ? 'ok' : 'bad')
+                +   card('Customer feedback held', parked,
+                         parked ? 'waiting to reach the spreadsheet' : 'nothing held', parked ? 'bad' : 'ok')
+                +   card('Saves stuck', stuck, stuck ? 'these need looking at' : 'none', stuck ? 'bad' : 'ok')
+                +   card('Saves not yet in the sheet', waiting, waiting ? 'they land within a minute' : 'nothing waiting', waiting > 20 ? 'bad' : '')
+                + '</div>'
+
+                // ── is data still arriving ──
+                + '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:2px;"><h3>Still receiving</h3></div>'
+                +   '<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:12px;">A feed that goes quiet raises no error anywhere — nothing simply arrives.</div>'
+                +   '<div class="sys-grid">'
+                +     card('Last submission', fmtAgo(subAge), h.submissions_today + ' today', feedStale ? 'bad' : 'ok')
+                +     card('Last Blink order', fmtAgo(ordAge), h.orders_today + ' today', (trading && ordAge !== null && ordAge > 120) ? 'bad' : 'ok')
+                +     card('Database catching up', backlog, backlog ? 'rows still to copy' : 'up to date', backlog > 5000 ? 'bad' : '')
+                +   '</div>'
+                + '</div>'
+
+                // ── survey emails ──
+                + '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:10px;"><h3>Survey emails today</h3></div>'
+                +   '<div class="sys-grid">'
+                +     card('Sent', h.surveys_sent_today || 0, 'to customers with a real email', '')
+                +     card('No email address', h.surveys_no_email_today || 0, 'mostly call-in orders', '')
+                +     card('Failed', h.surveys_failed || 0, (h.surveys_failed ? 'check the Resend key' : 'none'), h.surveys_failed ? 'bad' : 'ok')
+                +   '</div>'
+                + '</div>'
+
+                + (!cronOk ? '<div class="card" style="padding:14px 18px;border-color:rgba(220,38,38,.4);">'
+                    + '<b style="color:#B91C1C;">What to do</b><div style="font-size:0.82rem;color:var(--text-main);margin-top:6px;line-height:1.6;">'
+                    + 'Cloudflare → Workers &amp; Pages → sentinel-access-bridge → Settings → Trigger events. '
+                    + 'If the cron trigger is missing, add <code>* * * * *</code>. It has been known to drop after a deploy.</div></div>' : '')
+
+                // ── each job ──
+                + '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:10px;"><h3>Each job</h3></div>'
+                +   '<div class="sys-beats">' + (h.beats || []).map(b => {
+                        const meta = NAMES[b.name] || [b.name, ''];
+                        const m = Math.round((Date.now() - Date.parse(b.at)) / 60000);
+                        const bad = b.name !== 'orders_cursor' && m > 3;
+                        return '<div class="sys-beat"><span class="sys-dot' + (bad ? ' bad' : '') + '"></span>'
+                             + '<b>' + meta[0] + '</b><span>' + meta[1] + '</span>'
+                             + '<span class="ago" style="color:' + (bad ? '#B91C1C' : 'var(--text-muted)') + '">' + fmtAgo(m) + '</span></div>';
+                    }).join('') + '</div>'
+                + '</div>'
+
+                // ── what has actually gone wrong ──
+                + '<div class="card" style="padding:14px 18px;">'
+                +   '<div class="section-header" style="margin-bottom:10px;"><h3>Recent problems</h3></div>'
+                +   ((stuckList.length || problems.length)
+                      ? '<div class="sys-beats">'
+                        + stuckList.map(x => '<div class="sys-beat"><span class="sys-dot bad"></span><b>Save stuck</b>'
+                            + '<span>' + esc(x.action) + ' — ' + esc(x.err || 'no reason given') + '</span>'
+                            + '<span class="ago">' + esc(String(x.at).slice(11, 16)) + '</span></div>').join('')
+                        + problems.map(x => '<div class="sys-beat"><span class="sys-dot' + (x.action === 'error' ? ' bad' : '') + '"></span>'
+                            + '<b>' + esc(x.source) + '</b><span>' + esc(x.detail).slice(0, 120) + '</span>'
+                            + '<span class="ago">' + esc(String(x.at).slice(11, 16)) + '</span></div>').join('')
+                        + '</div>'
+                      : '<div style="font-size:0.82rem;color:var(--text-muted);">Nothing has failed recently.</div>')
+                + '</div>';
+            }
+            return { render: render };
         })();
 
         </script>
