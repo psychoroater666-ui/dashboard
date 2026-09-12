@@ -6335,7 +6335,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.54.0 · 12 Sep 2026 · history loads once, not every visit';
+        const BUILD_VERSION = 'v2.56.0 · 12 Sep 2026 · new incidents appear at once';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8785,6 +8785,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             _lastAlertedIncidentKey = _incidentStableKey(inc);
             _lastAlertedIncident = inc;
             startRepeatingIncidentSound();
+            // An alarm is the one moment where waiting twenty seconds to hear
+            // that a colleague has taken the case is too long. Check every
+            // eight until it stops.
+            try {
+                clearInterval(window._alertPollTimer);
+                window._alertPollTimer = setInterval(() => {
+                    if (!_incidentAlertShowing && !_summaryAlertKeys.length) { clearInterval(window._alertPollTimer); return; }
+                    if (window.pollNow) pollNow();
+                }, 8000);
+                if (window.pollNow) pollNow();
+            } catch(e){}
 
             const emojiFor = (score) => (score === undefined || score === null) ? '❓' : score <= 1 ? '😠' : score === 2 ? '🙁' : '😐';
             const rawCreatedAt = _rawFieldExact(inc._raw, 'Created At');
@@ -9973,16 +9984,28 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         // does — switching tab, returning to the window, closing a
                         // dialog, pressing Refresh — snaps it straight back to the
                         // fast rate, so it never feels stale in front of you.
-                        const POLL_FAST = Math.max(LIVE.refreshMs, 30000);
-                        const POLL_SLOW = 120000;
+                        const POLL_FAST = Math.max(LIVE.refreshMs, 20000);
+                        // Easing off to two minutes made sense when every poll
+                        // cost the backend several seconds. Reads now come from
+                        // the database in milliseconds, so the only thing that
+                        // long gap bought us was a stale screen.
+                        const POLL_SLOW = 45000;
                         let _pollIdleRounds = 0, _pollTimer = null;
                         window.pollWakeUp = function(){
                             _pollIdleRounds = 0;
                             _schedulePoll(0);                    // re-arm at the fast rate
                         };
+                        // Ask right now, not at the next scheduled moment. Used
+                        // while an alarm is ringing, so it goes quiet as soon as
+                        // somebody else picks the case up.
+                        window.pollNow = function(){
+                            _pollIdleRounds = 0;
+                            clearTimeout(_pollTimer);
+                            _pollRound();
+                        };
                         function _pollDelay(){
-                            return _pollIdleRounds >= 4 ? POLL_SLOW
-                                 : _pollIdleRounds >= 2 ? Math.round(POLL_FAST * 2)
+                            return _pollIdleRounds >= 6 ? POLL_SLOW
+                                 : _pollIdleRounds >= 3 ? Math.round(POLL_FAST * 1.5)
                                  : POLL_FAST;
                         }
                         function _schedulePoll(extraIdle){
@@ -17263,6 +17286,13 @@ ${(() => {
         //    completed by the time we see that, so a plain retry as POST works.
         //    Also treated as retryable: a Worker/Apps Script HTML error page
         //    that isn't the Access login, and a network blip.
+        // Actions that add or change a row. After one succeeds, ask for data
+        // straight away rather than waiting for the next scheduled poll --
+        // that wait is what made a newly logged incident feel slow to appear.
+        const WRITE_ACTIONS = ['callcenter','social_mention','incident_resolution','incident_reviewed',
+                               'incident_followup','sl_resolution','sl_escalate','action_save','action_close',
+                               'reward_redeem','save_user','delete_user'];
+
         async function apiCall(action, payload, _attempt){
             _attempt = _attempt || 1;
             const body = JSON.stringify(Object.assign({ action }, payload || {}));
@@ -17294,6 +17324,12 @@ ${(() => {
             if(data && data.status === 'error' && (data.code === 'method' || /no longer accepts GET/i.test(String(data.message||''))) && _attempt < 3){
                 await new Promise(r => setTimeout(r, 400));
                 return apiCall(action, payload, _attempt + 1);
+            }
+            // A save just succeeded: fetch straight away so it appears here now,
+            // and so anything a colleague changed in the meantime comes with it.
+            // The Worker has already pulled the row through on its side.
+            if (data && data.status === 'success' && WRITE_ACTIONS.indexOf(action) !== -1) {
+                setTimeout(() => { try { if (window.pollNow) pollNow(); } catch(e){} }, 600);
             }
             return data;
         }
