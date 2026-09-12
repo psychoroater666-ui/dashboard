@@ -4627,6 +4627,19 @@ body.push-on .push-state{ color:#047857; background:rgba(5,150,105,.1); border-c
 body.push-blocked .push-state{ color:#B91C1C; background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.25); }
 body.dark-theme.push-on .push-state{ color:#34D399; }
 body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
+
+/* ── The order behind a complaint (Blink_Orders) ── */
+.ord-card{ margin-top:10px; padding:12px 14px; border:1px solid var(--border-color); border-radius:12px; background:var(--bg-light); }
+.ord-head{ display:flex; align-items:center; gap:7px; font-size:0.66rem; font-weight:800; letter-spacing:.7px; text-transform:uppercase; color:var(--text-muted); }
+.ord-head i{ color:#010197; }
+.ord-top{ display:flex; align-items:baseline; gap:10px; margin-top:8px; }
+.ord-top b{ font-family:monospace; font-size:0.9rem; font-weight:700; color:var(--text-main); }
+.ord-total{ margin-left:auto; font-size:0.95rem; font-weight:800; color:#010197; white-space:nowrap; }
+.ord-items{ margin-top:4px; font-size:0.8rem; line-height:1.5; color:var(--text-main); }
+.ord-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.ord-meta span{ font-size:0.66rem; font-weight:700; color:var(--text-muted); background:var(--white); border:1px solid var(--border-color); border-radius:20px; padding:3px 9px; }
+.ord-gap{ margin-top:7px; font-size:0.7rem; color:var(--text-muted); }
+body.dark-theme .ord-head i, body.dark-theme .ord-total{ color:#64D0FF; }
         </style>
 </head>
 <body class="app-loading">
@@ -6278,7 +6291,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.51.0 · 12 Sep 2026 · assistant as a bottom sheet on phones';
+        const BUILD_VERSION = 'v2.52.0 · 12 Sep 2026 · the order behind a complaint';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6531,7 +6544,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
                     const firstRound = !_didFirstFull;
                     const forceFull = firstRound || !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
                     if(firstRound) _didFirstFull = true;
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff','blink_orders'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -11699,6 +11712,7 @@ body.push-busy #push-toggle-btn{ opacity:.6; pointer-events:none; }
                     </div>
                     <div class="inc-sb-card-v2">
                         <div class="inc-sb-label-v2">Order ID</div><div class="inc-sb-val-v2" style="margin-bottom:${qaHtmlSidebar?'8px':'0'};">${inc.orderId||'—'}</div>
+                        ${(() => { try { return ORD.cardHtml(inc); } catch(e){ return ''; } })()}
                         ${qaHtmlSidebar}
                     </div>
                     <div class="inc-sb-card-v2">
@@ -20640,6 +20654,139 @@ ${(() => {
             document.addEventListener('click', () => setTimeout(check, 40), true);
             window.addEventListener('resize', check);
             document.addEventListener('keydown', e => { if(e.key === 'Escape') setTimeout(check, 40); });
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // ORDERS  (Blink_Orders)
+        //
+        // Blink posts every order to the sheet; this reads them and ties them
+        // to complaints. The join is the phone number -- order codes are typed
+        // by customers and are often wrong or blank, so a matching code is
+        // treated as a bonus, never as the only evidence.
+        //
+        // Deliberately read-only: Blink is the record of what was ordered, and
+        // nothing here ever writes back to it.
+        // ═══════════════════════════════════════════════════════════════════
+        window.ORD = (function(){
+            var MATCH_WINDOW_MS = 6 * 60 * 60 * 1000;   // an order up to 6h before the feedback
+            var _index = null, _gen = -1;
+
+            function rows(){
+                var t = DataFeed.tabs && DataFeed.tabs.blink_orders;
+                return (t && t.objRows) ? t.objRows : [];
+            }
+            // Last 10 digits: +923392116663, 03392116663 and 923392116663 all
+            // become 3392116663, so the same customer matches however it was typed.
+            function phoneKey(v){
+                var d = String(v == null ? '' : v).replace(/[^0-9]/g, '');
+                return d.length >= 10 ? d.slice(-10) : '';
+            }
+            function when(v){
+                if (!v) return 0;
+                if (typeof v === 'number') return v;
+                if (v instanceof Date) return v.getTime();
+                var s = String(v).trim(), t = Date.parse(s);
+                if (!isNaN(t)) return t;
+                var m = s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0)).getTime();
+                m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if (m) return new Date(+m[3], +m[1]-1, +m[2], +m[4], +m[5], +(m[6]||0)).getTime();
+                return 0;
+            }
+            function norm(r){
+                return {
+                    id: String(r['Order ID'] || ''), code: String(r['Order Code'] || ''),
+                    ts: when(r['Created At']), branch: String(r['Branch'] || ''),
+                    channel: String(r['Channel'] || ''), type: String(r['Type'] || ''),
+                    status: String(r['Status'] || ''), customer: String(r['Customer Name'] || ''),
+                    phone: String(r['Phone'] || ''), items: String(r['Items'] || ''),
+                    count: +r['Item Count'] || 0, total: +String(r['Total'] || 0).replace(/[^0-9.]/g, '') || 0,
+                    payment: String(r['Payment'] || ''), key: phoneKey(r['Phone'])
+                };
+            }
+            function index(){
+                var t = DataFeed.tabs && DataFeed.tabs.blink_orders;
+                var gen = t ? (t.gen || 0) + (t.rows ? t.rows.length : 0) : -1;
+                if (_index && gen === _gen) return _index;                 // rebuilt only when the tab changes
+                var byPhone = {}, byCode = {}, all = [];
+                rows().forEach(function(r){
+                    var o = norm(r);
+                    if (!o.id) return;
+                    all.push(o);
+                    if (o.key) (byPhone[o.key] = byPhone[o.key] || []).push(o);
+                    if (o.code) byCode[o.code.toUpperCase()] = o;
+                });
+                Object.keys(byPhone).forEach(function(k){ byPhone[k].sort(function(a,b){ return b.ts - a.ts; }); });
+                all.sort(function(a,b){ return b.ts - a.ts; });
+                _index = { byPhone: byPhone, byCode: byCode, all: all };
+                _gen = gen;
+                return _index;
+            }
+
+            /** The order behind one incident, or null. */
+            function forIncident(inc){
+                if (!inc) return null;
+                var ix = index();
+                if (!ix.all.length) return null;
+                var raw = inc._raw || {};
+                var typed = String((typeof _rawOrderId === 'function' ? _rawOrderId(raw) : '') || inc.orderId || '').trim().toUpperCase();
+                if (typed && ix.byCode[typed]) return Object.assign({ how: 'code' }, ix.byCode[typed]);
+
+                var key = phoneKey((typeof _rawFieldExact === 'function' ? _rawFieldExact(raw, 'Phone Number') : '') || inc.phone);
+                if (!key) return null;
+                var list = ix.byPhone[key];
+                if (!list || !list.length) return null;
+                var at = when((typeof _parseSheetDateTime === 'function' ? _parseSheetDateTime(_rawFieldExact(raw, 'Created At')) : 0) || inc.date);
+                if (!at) return Object.assign({ how: 'phone' }, list[0]);
+                // the most recent order placed BEFORE the feedback, within the window
+                for (var i = 0; i < list.length; i++){
+                    if (list[i].ts && list[i].ts <= at + 60000 && at - list[i].ts <= MATCH_WINDOW_MS){
+                        return Object.assign({ how: 'phone' }, list[i]);
+                    }
+                }
+                return null;
+            }
+
+            function fmtMoney(n){ return 'PKR ' + Math.round(n).toLocaleString(); }
+            function fmtWhen(ts){
+                if (!ts) return '—';
+                try { return new Date(ts).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); }
+                catch(e){ return '—'; }
+            }
+            function gapLabel(orderTs, incTs){
+                if (!orderTs || !incTs) return '';
+                var m = Math.round((incTs - orderTs) / 60000);
+                if (m < 1) return 'moments before';
+                if (m < 60) return m + ' min before the complaint';
+                return Math.floor(m / 60) + 'h ' + (m % 60) + 'm before the complaint';
+            }
+
+            /** The card shown inside an incident. Empty string when nothing matched. */
+            function cardHtml(inc){
+                var o = forIncident(inc);
+                if (!o) return '';
+                var esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); };
+                var incTs = when((typeof _parseSheetDateTime === 'function' ? _parseSheetDateTime(_rawFieldExact(inc._raw || {}, 'Created At')) : 0) || inc.date);
+                var gap = gapLabel(o.ts, incTs);
+                return '<div class="ord-card">'
+                    + '<div class="ord-head"><i class="fas fa-receipt"></i> The order behind this</div>'
+                    + '<div class="ord-top"><b>' + esc(o.code || o.id) + '</b>'
+                    +   '<span class="ord-total">' + fmtMoney(o.total) + '</span></div>'
+                    + '<div class="ord-items">' + (esc(o.items) || '—') + '</div>'
+                    + '<div class="ord-meta">'
+                    +   '<span>' + esc(o.channel || o.type) + '</span>'
+                    +   '<span>' + esc(o.branch) + '</span>'
+                    +   '<span>' + fmtWhen(o.ts) + '</span>'
+                    +   (o.payment ? '<span>' + esc(o.payment) + '</span>' : '')
+                    + '</div>'
+                    + '<div class="ord-gap">' + (gap ? 'Placed ' + gap + ' \u00b7 ' : '')
+                    +   'matched on ' + (o.how === 'code' ? 'the order code' : 'the phone number') + '</div>'
+                    + '</div>';
+            }
+
+            function count(){ return index().all.length; }
+            return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen };
         })();
 
         </script>
