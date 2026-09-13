@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.64.0 · 13 Sep 2026 · System health shows the whole picture';
+        const BUILD_VERSION = 'v2.65.0 · 13 Sep 2026 · Latest day follows the new day';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7531,6 +7531,33 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(dates.length){ DATA_MIN_DATE = dates[0]; DATA_MAX_DATE = dates[dates.length-1]; }
             else { const t = SYSTEM_NOW.toISOString().split('T')[0]; DATA_MIN_DATE = t; DATA_MAX_DATE = t; }
         }
+        /**
+         * "Latest day" means the newest day in the data, and that was worked out
+         * once when the page loaded. First thing in the morning the page starts
+         * from its saved copy -- yesterday's -- so the filter was set to
+         * yesterday, and stayed there even as today's rows arrived. Every screen
+         * then showed yesterday for as long as the tab stayed open.
+         *
+         * This runs after each refresh: if a newer day has appeared and the
+         * person is still on "Latest day", the range moves forward with it.
+         * Anyone who has chosen a different range is left alone.
+         */
+        function syncLatestDay(){
+            try {
+                const before = DATA_MAX_DATE;
+                computeDataDateRange();
+                if(!DATA_MAX_DATE || DATA_MAX_DATE === before) return false;
+                const chip = document.querySelector('.preset-chip.active');
+                if(!chip || chip.dataset.range !== 'latest') return false;   // they chose another range
+                const s = document.getElementById('filter-start-date');
+                const e = document.getElementById('filter-end-date');
+                if(!s || !e) return false;
+                if(s.value === DATA_MAX_DATE && e.value === DATA_MAX_DATE) return false;
+                s.value = DATA_MAX_DATE; e.value = DATA_MAX_DATE;
+                return true;                                                 // caller re-renders
+            } catch(e){ return false; }
+        }
+
         const _fmtDate = d => {
             if (!(d instanceof Date)) return d;
             const y = d.getFullYear();
@@ -9997,6 +10024,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 // updated data was correctly fetched.
                                 _syncIncidentAlertReviewState();
                                 if(skipRender){ _needsRenderCatchup = true; return; }
+                                // A new day may have arrived since this page
+                                // was opened; move "Latest day" forward with it.
+                                const _dayMoved = (typeof syncLatestDay === 'function') ? syncLatestDay() : false;
+                                if(_dayMoved){
+                                    try { UI.silent(() => app.applyFilters()); } catch(e){ try { app.applyFilters(); } catch(e2){} }
+                                    _lsc = -1; _lic = -1;                    // force a full redraw on the new day
+                                }
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 // Counts alone are not enough. Closing a case,
                                 // reviewing one, logging an action: none of them
