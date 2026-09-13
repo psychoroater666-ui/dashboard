@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.68.0 · 13 Sep 2026 · compare two devices without a computer';
+        const BUILD_VERSION = 'v2.68.1 · 13 Sep 2026 · lighter background job';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7060,6 +7060,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     try { await DataFeed.sync({ full: !!window.__forceFullNext }); synced = true; }
                     catch(e){ lastErr = e; if(attempt < 2) await new Promise(r => setTimeout(r, 1200)); }
                 }
+                // Every completed round, not just the ones that redraw -- this
+                // is the number that tells you whether a device is polling at all.
+                window.__lastPollAt = Date.now();
                 if(synced){ window.__feedOk = true; window.__feedErr = null; window.__feedFailures = 0; }
                 else {
                     window.__feedErr = String(lastErr && lastErr.message || lastErr);
