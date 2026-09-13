@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.70.1 · 13 Sep 2026 · live updates, and a clean start';
+        const BUILD_VERSION = 'v2.70.2 · 13 Sep 2026 · sync drift guard';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6573,9 +6573,35 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // when the first mapping failed, left the page empty forever.
                 if(!res || res.mode === 'missing'){ if(!tabs[key]) tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true, missing:true }; return; }
                 const t = tabs[key] || (tabs[key] = { state:null, headers:[], rows:[], objRows:[], changed:false, complete:true });
-                if(res.mode === 'unchanged'){ if(res.state) t.state = res.state; return; }
+                if(res.mode === 'unchanged'){
+                    // "Unchanged" is only true if we really do hold what we claim.
+                    const exp = (res.state && typeof res.state.total === 'number') ? res.state.total : null;
+                    const scoped0 = !!(window.__dataScope && (String(window.__dataScope.branch || 'All') !== 'All' || String(window.__dataScope.region || 'All') !== 'All'));
+                    if(exp !== null && !scoped0 && t.complete !== false && t.rows.length && t.rows.length < exp){
+                        console.warn('[DataFeed] ' + key + ': holding ' + t.rows.length + ' rows but state claims ' + exp + ' — resyncing');
+                        t.state = null; t.rows = []; t.objRows = []; window.__forceFullNext = true;
+                        try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
+                        return;
+                    }
+                    if(res.state) t.state = res.state;
+                    return;
+                }
                 if(res.mode === 'delta'){
-                    t.headers = res.headers || t.headers; t.state = res.state;
+                    t.headers = res.headers || t.headers;
+                    // Check the delta lands where it should: the rows we hold plus
+                    // the rows just sent must equal the total the server reports.
+                    // If they do not, our position is wrong and every later poll
+                    // would answer "unchanged" while we stay short.
+                    const expect = (res.state && typeof res.state.total === 'number') ? res.state.total : null;
+                    const willHave = t.rows.length + ((res.rows && res.rows.length) || 0);
+                    const scoped = !!(window.__dataScope && (String(window.__dataScope.branch || 'All') !== 'All' || String(window.__dataScope.region || 'All') !== 'All'));
+                    if(expect !== null && !scoped && willHave !== expect){
+                        console.warn('[DataFeed] ' + key + ': would hold ' + willHave + ' but server says ' + expect + ' — forcing a full resync');
+                        t.state = null; t.rows = []; t.objRows = []; window.__forceFullNext = true;
+                        try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
+                        return;
+                    }
+                    t.state = res.state;
                     if(res.rows && res.rows.length){ t.rows = t.rows.concat(res.rows); t.objRows = t.objRows.concat(toObjects(t.headers, res.rows)); t.changed = true; }
                     return;
                 }
