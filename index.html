@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.70.0 · 13 Sep 2026 · live updates, not polling';
+        const BUILD_VERSION = 'v2.70.1 · 13 Sep 2026 · live updates, and a clean start';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6411,7 +6411,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // idea as the cached Cloudflare session: show what we know, verify
         // after. Anything that fails here degrades to the old behaviour.
         const DataCache = (function(){
-            const DB = 'crumble_dashboard', STORE = 'snapshot', KEY = 'latest', VER = 1, MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
+            // VER 2: one device had accumulated 24,000 duplicate rows from a
+            // fetching bug. Raising this makes every dashboard throw away what
+            // it is holding and start clean, once.
+            const DB = 'crumble_dashboard', STORE = 'snapshot', KEY = 'latest', VER = 2, MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000;
             const AI_KEYS = ['__aiSummary','__aiSummaryTime','__vocPraise','__vocComplaints','__vocSuggestions','__vocSentiment','__aiActionPlan','__aiBranchDx','__aiRadar','__aiChannelInsight'];
             function open(){
                 return new Promise((res, rej) => {
@@ -6477,7 +6480,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // from memory. If the backend can't be reached, _fetch falls back
         // to the CSV download, so nothing goes dark during the cutover.
         const DataFeed = (function(){
-            const DB = 'crumble_dashboard', STORE = 'feed', KEY = 'tabs', VER = 1;
+            const DB = 'crumble_dashboard', STORE = 'feed', KEY = 'tabs', VER = 2;   // see above
             const AI_TABS = ['summary','actionplan','branchdx','radar','channelinsight'];
             const AI_POLL_MS = 5 * 60 * 1000;        // AI sheets change once a day
             const FULL_EVERY_MS = 6 * 60 * 60 * 1000; // re-verify history (catches in-place edits)
