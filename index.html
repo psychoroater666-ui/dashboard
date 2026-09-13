@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.65.0 · 13 Sep 2026 · Latest day follows the new day';
+        const BUILD_VERSION = 'v2.67.0 · 13 Sep 2026 · no warning for a single stumble on wake-up';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6606,7 +6606,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // edited in place is still picked up by the periodic full round,
                     // by pressing Refresh, and immediately by the live tabs below.)
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff','blink_orders'].concat(wantAi ? AI_TABS : []).concat((typeof can === 'function' && can('audit')) ? ['audit'] : []).concat((typeof can === 'function' && can('reward')) ? ['stamps'] : []).concat((typeof can === 'function' && can('users')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
+                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff','blink_orders'].concat(wantAi ? AI_TABS : [])
+                        // The Activity log is Owner-only, is not mirrored into the
+                        // database, and grows without limit -- so asking for it on
+                        // every poll meant the Owner's laptop alone hammered Apps
+                        // Script every two seconds, which is why "Live feed
+                        // unavailable" appeared there and nowhere else. It is only
+                        // needed when that tab is actually open.
+                        .concat((typeof can === 'function' && can('audit') && _viewIs('activity')) ? ['audit'] : [])
+                        .concat((typeof can === 'function' && can('reward')) ? ['stamps'] : [])
+                        .concat((typeof can === 'function' && can('users') && _viewIs('form-analytics')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
@@ -7053,8 +7062,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }
                 if(synced){ window.__feedOk = true; window.__feedErr = null; window.__feedFailures = 0; }
                 else {
-                    window.__feedOk = false; window.__feedErr = String(lastErr && lastErr.message || lastErr);
+                    window.__feedErr = String(lastErr && lastErr.message || lastErr);
                     window.__feedFailures = (window.__feedFailures || 0) + 1;
+                    // The first fetch after a tab or phone wakes up is the one
+                    // most likely to fail: the connection was dropped while the
+                    // page slept and may still be reconnecting. Warning on a
+                    // single stumble made the banner appear constantly for
+                    // something that fixed itself a second later. Two bad
+                    // rounds in a row is a real problem; one is not.
+                    window.__feedOk = (window.__feedFailures >= 2) ? false : window.__feedOk;
                     console.error('[DataFeed] sync failed twice this round:', lastErr);
                     // A failed round can leave the per-tab state tokens stale, and
                     // every later poll then sends the same bad state and fails the
@@ -10147,7 +10163,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         // while — a real browser limit, not something a page
                         // can override).
                         document.addEventListener('visibilitychange', () => {
-                            if(!document.hidden){ _doRefresh(); if(window.pollWakeUp) pollWakeUp(); }
+                            if(document.hidden) return;
+                            // A phone coming back from another app often has not
+                            // finished reconnecting. Half a second costs nothing
+                            // and avoids a failure that was never real.
+                            setTimeout(() => { _doRefresh(); if(window.pollWakeUp) pollWakeUp(); }, 500);
                         });
 
                         // Same catch-up idea for dialogs: the moment the
@@ -20878,6 +20898,12 @@ ${(() => {
             document.addEventListener('keydown', e => { if(e.key === 'Escape') setTimeout(check, 40); });
         })();
 
+
+        /** Which view is open, safely -- this runs before `state` is declared,
+         *  and reading it any earlier throws rather than returning undefined. */
+        function _viewIs(name){
+            try { return state.currentView === name; } catch(e){ return false; }
+        }
 
         // ═══════════════════════════════════════════════════════════════════
         // ORDERS  (Blink_Orders)
