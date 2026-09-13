@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.71.2 · 13 Sep 2026 · cross-device sync';
+        const BUILD_VERSION = 'v2.72.1 · 13 Sep 2026 · cross-device sync';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7147,7 +7147,20 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // or escalated a mention): refresh it in place if the person is
             // looking at it. Runs before any mapping path so it can't be skipped.
             try {
-                const slDirty = DataFeed.enabled && ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
+                // Do NOT depend on the `changed` dirty flag here. Several paths
+                // clear it -- markConsumed, the incremental mapper, an earlier
+                // poll -- and whichever ran first swallowed the update, so an
+                // escalation or resolution made elsewhere did not appear until
+                // something forced a full reload. The server's own state token
+                // for these two tabs is authoritative and nothing else touches
+                // it: if it differs from the one we last acted on, the data
+                // genuinely changed.
+                const _slToken = () => ['social','sl_resolution'].map(k => {
+                    const t = DataFeed.tabs[k];
+                    return k + ':' + (t && t.state ? (t.state.hash || t.state.total || '') : '');
+                }).join('|');
+                const slNow = _slToken();
+                const slDirty = DataFeed.enabled && slNow !== window.__slSeenToken;
                 // This used to run only while the Social tab was on screen. If a
                 // mention was closed on someone else's phone while you were on
                 // another tab, the change was swallowed -- switching to Social
@@ -7155,7 +7168,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // old status until a full reload. Now the copy is always brought
                 // up to date; only the repaint waits for you to be looking at it.
                 if(slDirty && !opts.offline && typeof loadSocialFromSheet === 'function' && window._slHasLoadedOnce){
-                    ['social','sl_resolution'].forEach(k => { if(DataFeed.tabs[k]) DataFeed.tabs[k].changed = false; });   // consumed here, not re-fired every poll
+                    window.__slSeenToken = slNow;        // consumed here, not re-fired every poll
                     const sigBefore = _slDataSig();
                     loadSocialFromSheet().then(() => {
                         if(_slDataSig() === sigBefore) return;   // nothing visible changed -> leave the screen alone
@@ -7176,9 +7189,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 window.__incReason = { wasLive, nothingMapped, force: !!window.__forceFullNext, deltas: deltas.map(d => Array.isArray(d) ? d.length : null), sideChanged, sideUrls: sideUrls.map(u => DataFeed.urlKey(u) || 'csv:' + String(u).slice(0,30)) };
                 if(deltas.every(d => Array.isArray(d)) && !sideChanged){
                     const total = deltas.reduce((n, d) => n + d.length, 0);
-                    const resChanged = !!(DataFeed.tabs.incident_resolution && DataFeed.tabs.incident_resolution.changed);
+                    // Same reasoning as the social block above: the `changed`
+                    // flag is cleared by whichever path runs first, so a
+                    // resolution or review made on another device could be
+                    // dropped here and never applied. The server's state token
+                    // for the tab is the reliable signal.
+                    const _resToken = (() => { const t = DataFeed.tabs.incident_resolution;
+                        return t && t.state ? (t.state.hash || t.state.total || '') : ''; })();
+                    const resChanged = !!(DataFeed.tabs.incident_resolution && DataFeed.tabs.incident_resolution.changed)
+                                       || (_resToken !== '' && _resToken !== window.__resSeenToken);
                     const slOnly = ['social','sl_resolution'].some(k => DataFeed.tabs[k] && DataFeed.tabs[k].changed === true);
                     if(total === 0 && !resChanged && !slOnly){ DataFeed.markConsumed(); return true; }   // nothing new for the dashboard
+                    window.__resSeenToken = _resToken;
                     const out = { subs: rawData.submissions.slice(), incs: rawData.incidents.slice(), _incremental: true };
                     deltas.forEach((rows, idx) => { if(rows.length) mapSource(rows, sources[idx], out); });
                     rawData.submissions.length = 0; rawData.incidents.length = 0;
