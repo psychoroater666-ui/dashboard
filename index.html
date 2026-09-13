@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.67.0 · 13 Sep 2026 · no warning for a single stumble on wake-up';
+        const BUILD_VERSION = 'v2.68.0 · 13 Sep 2026 · compare two devices without a computer';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10047,6 +10047,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                     try { UI.silent(() => app.applyFilters()); } catch(e){ try { app.applyFilters(); } catch(e2){} }
                                     _lsc = -1; _lic = -1;                    // force a full redraw on the new day
                                 }
+                                window.__lastPollAt = Date.now();
                                 const ns=state.p1.subs.length,ni=state.p1.incs.length;
                                 // Counts alone are not enough. Closing a case,
                                 // reviewing one, logging an action: none of them
@@ -21303,6 +21304,24 @@ ${(() => {
                 + '</div>'
 
                 // ── is data still arriving ──
+                // What THIS device is holding. Comparing two screens used to
+                // mean opening a developer console, which cannot be done on a
+                // phone -- so the numbers to compare are here instead.
+                + (() => {
+                    const inc = (rawData.incidents || []);
+                    const subs = (rawData.submissions || []);
+                    const newest = inc.length ? String(inc[inc.length-1].date || '').slice(0, 16) : '—';
+                    const polled = window.__lastPollAt ? fmtAgo(Math.round((Date.now() - window.__lastPollAt)/60000)) : 'unknown';
+                    return '<div class="card" style="padding:14px 18px;">'
+                      + '<div class="section-header" style="margin-bottom:2px;"><h3>This device</h3></div>'
+                      + '<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:12px;">Open this on both screens and compare. If the numbers differ, the one behind is still catching up.</div>'
+                      + '<div class="sys-grid">'
+                      +   card('Version', esc(String(BUILD_VERSION).split('·')[0].trim()), 'all devices should match', '')
+                      +   card('Incidents held', inc.length, 'newest ' + esc(newest), '')
+                      +   card('Submissions held', subs.length.toLocaleString(), 'last checked ' + polled, '')
+                      + '</div></div>';
+                  })()
+
                 + '<div class="card" style="padding:14px 18px;">'
                 +   '<div class="section-header" style="margin-bottom:2px;"><h3>Still receiving</h3></div>'
                 +   '<div style="font-size:0.74rem;color:var(--text-muted);margin-bottom:12px;">A feed that goes quiet raises no error anywhere — nothing simply arrives.</div>'
