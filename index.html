@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.70.2 · 13 Sep 2026 · sync drift guard';
+        const BUILD_VERSION = 'v2.71.0 · 13 Sep 2026 · cross-device sync';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -6546,7 +6546,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                 } catch(e){ /* quota/private mode: fine */ }
             }
-            document.addEventListener('visibilitychange', () => { if(document.hidden) saveNow(); });
+            document.addEventListener('visibilitychange', () => {
+                if(document.hidden){ saveNow(); return; }
+                // Back in front: show whatever arrived while we were hidden, now.
+                try { _needsRenderCatchup = true; if(window.pollNow) pollNow(); } catch(e){}
+                try { if(typeof app !== 'undefined' && app.applyFilters) (typeof UI !== 'undefined' && UI.silent) ? UI.silent(() => app.applyFilters()) : app.applyFilters(); } catch(e){}
+            });
             window.addEventListener('pagehide', () => { saveNow(); });
             function scheduleSave(){
                 dirty = true;
@@ -10046,7 +10051,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // below -- data still loads and alerts still
                             // fire, only the re-render waits. _needsRenderCatchup
                             // makes it repaint the moment the dialog closes.
-                            if(document.hidden && !window.__forceFullNext){ return; }   // background tab: skip the round entirely
+                            // A hidden tab must still FETCH. Skipping the whole round
+                            // meant a dashboard on a second screen never saw another
+                            // person's work until someone clicked on it -- which is
+                            // exactly the cross-device problem. Only the repaint is
+                            // skipped; that is all the performance work needed.
                             const skipRender = document.hidden || _anyModalOpen();
                             if(!skipRender){ document.body.classList.add('bg-refresh'); void document.body.offsetHeight; }
                             try {
@@ -21438,7 +21447,7 @@ ${(() => {
 
             async function listen(){
                 if(stopped) return;
-                if(document.hidden){                       // nothing to tell a sleeping tab
+                if(false){                                 // keep listening even when not the tab in front
                     setTimeout(listen, 2000);
                     return;
                 }
