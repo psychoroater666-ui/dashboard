@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.68.1 · 13 Sep 2026 · lighter background job';
+        const BUILD_VERSION = 'v2.69.0 · 13 Sep 2026 · jobs report their failures honestly';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21357,8 +21357,12 @@ ${(() => {
                         const meta = NAMES[b.name] || [b.name, ''];
                         const m = Math.round((Date.now() - Date.parse(b.at)) / 60000);
                         const bad = b.name !== 'orders_cursor' && m > 3;
-                        return '<div class="sys-beat"><span class="sys-dot' + (bad ? ' bad' : '') + '"></span>'
-                             + '<b>' + meta[0] + '</b><span>' + meta[1] + '</span>'
+                        // If the job ran but something inside it failed, say so
+                        // rather than leaving a time that looks like a stopped job.
+                        const failed = /failed/i.test(String(b.detail || ''));
+                        const note = failed ? String(b.detail).replace(/^.*?failed:?\s*/i, '').slice(0, 90) : meta[1];
+                        return '<div class="sys-beat"><span class="sys-dot' + (bad || failed ? ' bad' : '') + '"></span>'
+                             + '<b>' + meta[0] + '</b><span' + (failed ? ' style="color:#B91C1C"' : '') + '>' + esc(note) + '</span>'
                              + '<span class="ago" style="color:' + (bad ? '#B91C1C' : 'var(--text-muted)') + '">' + fmtAgo(m) + '</span></div>';
                     }).join('') + '</div>'
                 + '</div>'
