@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.71.0 · 13 Sep 2026 · cross-device sync';
+        const BUILD_VERSION = 'v2.71.2 · 13 Sep 2026 · cross-device sync';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14709,8 +14709,25 @@ ${(() => {
         // date for accurate tracking.
         function slTimeAgo(dateStr){
             if(!dateStr) return '—';
-            const d = new Date(dateStr + 'T00:00:00');
-            if(isNaN(d)) return dateStr;
+            const raw = String(dateStr).trim();
+            // A full timestamp gets the time of day; a plain date gets the date.
+            // Appending T00:00:00 to an ISO timestamp produced an invalid date,
+            // so the raw text was shown instead -- which is why escalations read
+            // "2026-09-13T14:25:47.868Z" on screen.
+            if(/[T ]\d{2}:\d{2}/.test(raw)){
+                const dt = new Date(raw);
+                if(!isNaN(dt)){
+                    const mins = Math.round((Date.now() - dt.getTime()) / 60000);
+                    if(mins < 1) return 'just now';
+                    if(mins < 60) return mins + ' min ago';
+                    const sameDay = dt.toDateString() === new Date().toDateString();
+                    return sameDay
+                        ? dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' })
+                        : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ', ' + dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+                }
+            }
+            const d = new Date(raw + 'T00:00:00');
+            if(isNaN(d)) return raw;
             return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
         }
 
@@ -21365,6 +21382,26 @@ ${(() => {
                       +   card('Version', esc(String(BUILD_VERSION).split('·')[0].trim()), 'all devices should match', '')
                       +   card('Incidents held', inc.length, 'newest ' + esc(newest), '')
                       +   card('Submissions held', subs.length.toLocaleString(), 'last checked ' + polled, '')
+                      // The three things that actually explain two screens
+                      // disagreeing. Without them the comparison says the
+                      // numbers differ but never why.
+                      +   (() => {
+                            const t = (typeof DataFeed !== 'undefined' && DataFeed.tabs) || {};
+                            const partial = Object.keys(t).filter(k => t[k] && t[k].complete === false);
+                            const done = !partial.length;
+                            return card('History', done ? 'Complete' : 'Still loading',
+                                        done ? 'all records downloaded' : partial.join(', ') + ' incomplete', done ? 'ok' : 'bad');
+                          })()
+                      +   card('Date range',
+                            esc(((document.getElementById('filter-start-date')||{}).value || '?') + ' → ' + ((document.getElementById('filter-end-date')||{}).value || '?')),
+                            'both screens must match', '')
+                      +   (() => {
+                            const sc = window.__dataScope || {};
+                            const b = String(sc.branch || 'All'), r = String(sc.region || 'All');
+                            const all = (b === 'All' && r === 'All');
+                            return card('Account sees', all ? 'All branches' : esc(b !== 'All' ? b : r),
+                                        esc((PERM && (PERM.name || PERM.email)) || ''), all ? '' : 'bad');
+                          })()
                       + '</div></div>';
                   })()
 
