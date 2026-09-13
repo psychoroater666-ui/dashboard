@@ -6353,7 +6353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.69.0 · 13 Sep 2026 · jobs report their failures honestly';
+        const BUILD_VERSION = 'v2.70.0 · 13 Sep 2026 · live updates, not polling';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10140,6 +10140,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // costs a millisecond, and the only thing the slower
                             // cycle bought was a colleague waiting ten or twenty
                             // seconds for a change that had already happened.
+                            // When the live connection is working it tells us
+                            // the instant anything changes, so polling only has
+                            // to catch what that might miss. Without it, fall
+                            // back to asking often.
+                            if(window.__liveConnected) return 20000;
                             return _pollIdleRounds >= 900 ? POLL_SLOW     // ~30 quiet minutes
                                  : _pollIdleRounds >= 300 ? 6000          // ~10 quiet minutes
                                  : POLL_FAST;
@@ -21383,6 +21388,60 @@ ${(() => {
                 + '</div>';
             }
             return { render: render };
+        })();
+
+
+        // ═══════════════════════════════════════════════════════════════════
+        // Live updates
+        //
+        // Rather than asking "anything new?" every couple of seconds, the
+        // dashboard asks once and the question is held open by the server
+        // until there IS something new. A change made on one device then
+        // reaches the others in a fraction of a second, and a dashboard left
+        // open with nothing happening makes almost no requests at all.
+        //
+        // Polling stays underneath as a safety net, but slowly: if this
+        // connection is working, it has nothing left to find.
+        // ═══════════════════════════════════════════════════════════════════
+        (function(){
+            let rev = 0, stopped = false, failures = 0;
+            window.__liveConnected = false;
+
+            async function listen(){
+                if(stopped) return;
+                if(document.hidden){                       // nothing to tell a sleeping tab
+                    setTimeout(listen, 2000);
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ action: 'wait_for_change', rev })
+                    }).then(r => r.json());
+                    if(res && res.status === 'success'){
+                        window.__liveConnected = true;
+                        failures = 0;
+                        const first = rev === 0;
+                        rev = res.rev;
+                        // Something changed: fetch it now, don't wait for the timer.
+                        if(res.changed && !first && window.pollNow) pollNow();
+                        return listen();
+                    }
+                    throw new Error((res && res.message) || 'unexpected reply');
+                } catch(e){
+                    window.__liveConnected = false;
+                    failures++;
+                    // Back off gently, and let ordinary polling carry things
+                    // in the meantime.
+                    setTimeout(listen, Math.min(15000, 1000 * failures));
+                }
+            }
+
+            document.addEventListener('visibilitychange', () => {
+                if(!document.hidden && window.pollNow) setTimeout(() => pollNow(), 300);
+            });
+            setTimeout(listen, 1500);
         })();
 
         </script>
