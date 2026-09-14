@@ -4698,6 +4698,135 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 .sys-beat .ago{ margin-left:auto; font-weight:700; font-size:0.75rem; }
 .sys-dot{ width:9px; height:9px; border-radius:50%; background:#059669; flex-shrink:0; }
 .sys-dot.bad{ background:#DC2626; }
+
+        /* ═══════════════════════════════════════════════════
+           VOICE CALL PANEL — WebRTC browser-to-browser
+           ═══════════════════════════════════════════════════ */
+        #vc-fab {
+            position: fixed; bottom: 28px; right: 28px; z-index: 8500;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: var(--brand-accent); color: #fff;
+            border: none; cursor: pointer; font-size: 1.1rem;
+            box-shadow: 0 6px 24px rgba(1,1,151,.35);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .2s cubic-bezier(.16,1,.3,1), box-shadow .2s;
+        }
+        #vc-fab:hover { transform: scale(1.08); box-shadow: 0 10px 32px rgba(1,1,151,.45); }
+        #vc-fab .vc-badge {
+            position: absolute; top: 4px; right: 4px;
+            width: 12px; height: 12px; border-radius: 50%;
+            background: #DC2626; border: 2px solid #fff; display: none;
+            animation: vcPulse 1.5s infinite;
+        }
+        @keyframes vcPulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
+
+        #vc-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 8600; align-items: center; justify-content: center;
+        }
+        #vc-modal-overlay.open { display: flex; }
+        #vc-modal {
+            background: var(--white); border-radius: 18px;
+            width: 90%; max-width: 420px;
+            box-shadow: 0 32px 80px rgba(0,0,0,.22);
+            overflow: hidden; font-family: 'Inter', sans-serif;
+        }
+        #vc-modal-header {
+            background: var(--brand-accent); color: #fff;
+            padding: 16px 20px; display: flex; align-items: center;
+            justify-content: space-between;
+        }
+        #vc-modal-header h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+        #vc-modal-header .vc-close-btn {
+            background: rgba(255,255,255,.18); border: none; color: #fff;
+            width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+            transition: background .15s;
+        }
+        #vc-modal-header .vc-close-btn:hover { background: rgba(255,255,255,.32); }
+
+        #vc-status-bar {
+            padding: 8px 20px; font-size: 0.75rem; font-weight: 600;
+            text-align: center; letter-spacing: .3px;
+            background: var(--bg-light); color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            transition: background .3s, color .3s;
+        }
+        #vc-status-bar.calling { background: rgba(1,1,151,.07); color: var(--brand-accent); }
+        #vc-status-bar.connected { background: rgba(5,150,105,.08); color: #059669; }
+        #vc-status-bar.ringing { background: rgba(220,165,0,.08); color: #b45309; }
+        #vc-status-bar.error { background: rgba(220,38,38,.08); color: #DC2626; }
+
+        #vc-branch-list {
+            max-height: 320px; overflow-y: auto; padding: 10px 0;
+        }
+        .vc-branch-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 20px; border-bottom: 1px solid var(--border-color);
+            transition: background .15s;
+        }
+        .vc-branch-row:last-child { border-bottom: none; }
+        .vc-branch-row:hover { background: var(--bg-light); }
+        .vc-branch-info { display: flex; flex-direction: column; }
+        .vc-branch-name { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
+        .vc-branch-region { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+        .vc-call-btn {
+            background: var(--brand-accent); color: #fff; border: none;
+            border-radius: 20px; padding: 6px 14px; font-size: 0.75rem;
+            font-weight: 600; cursor: pointer; display: flex; align-items: center;
+            gap: 6px; transition: background .15s, transform .12s;
+        }
+        .vc-call-btn:hover { background: #0202cc; transform: scale(1.03); }
+        .vc-call-btn:disabled { background: var(--text-muted); cursor: not-allowed; transform: none; }
+        .vc-call-btn.busy { background: #DC2626; }
+
+        #vc-active-panel {
+            display: none; padding: 22px 20px; text-align: center;
+        }
+        #vc-active-panel.visible { display: block; }
+        .vc-avatar {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: var(--brand-accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 800; margin: 0 auto 10px;
+        }
+        .vc-calling-name { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .vc-calling-detail { font-size: 0.78rem; color: var(--text-muted); margin-top: 3px; }
+        #vc-timer { font-size: 0.8rem; font-weight: 700; color: var(--brand-accent); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+        .vc-controls {
+            display: flex; gap: 14px; justify-content: center; margin-top: 18px;
+        }
+        .vc-ctrl-btn {
+            width: 48px; height: 48px; border-radius: 50%; border: none;
+            cursor: pointer; font-size: 1rem; display: flex;
+            align-items: center; justify-content: center;
+            transition: transform .12s, box-shadow .15s;
+        }
+        .vc-ctrl-btn:hover { transform: scale(1.07); }
+        .vc-ctrl-mute { background: var(--bg-light); color: var(--text-main); border: 1px solid var(--border-color); }
+        .vc-ctrl-mute.muted { background: rgba(220,38,38,.1); color: #DC2626; border-color: rgba(220,38,38,.3); }
+        .vc-ctrl-end { background: #DC2626; color: #fff; box-shadow: 0 4px 14px rgba(220,38,38,.35); }
+        .vc-ctrl-end:hover { box-shadow: 0 6px 20px rgba(220,38,38,.5); }
+
+        /* Incoming call banner */
+        #vc-incoming-banner {
+            display: none; position: fixed; top: 70px; right: 20px; z-index: 9100;
+            background: var(--white); border: 2px solid var(--brand-accent);
+            border-radius: 14px; padding: 14px 18px; min-width: 260px;
+            box-shadow: 0 12px 40px rgba(1,1,151,.25);
+            animation: vcSlideIn .3s cubic-bezier(.16,1,.3,1);
+        }
+        #vc-incoming-banner.visible { display: block; }
+        @keyframes vcSlideIn { from{ opacity:0; transform:translateY(-16px); } to{ opacity:1; transform:translateY(0); } }
+        .vc-incoming-title { font-size: 0.75rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase; letter-spacing: .5px; }
+        .vc-incoming-name { font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 4px 0 12px; }
+        .vc-incoming-btns { display: flex; gap: 10px; }
+        .vc-ans-btn { flex: 1; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 700; }
+        .vc-ans-accept { background: #059669; color: #fff; }
+        .vc-ans-reject { background: var(--bg-light); color: #DC2626; border: 1px solid rgba(220,38,38,.3); }
         </style>
 </head>
 <body class="app-loading">
@@ -6307,6 +6436,62 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         </div>
     </main>
+
+    <!-- ══════════════════════════════════════════════════════════
+         VOICE CALL — floating button, panel modal, incoming banner
+         WebRTC browser-to-browser, no external services required.
+         Signaling via /api/ (action: vc_signal). Logs to D1 audit.
+         ══════════════════════════════════════════════════════════ -->
+
+    <!-- Floating action button -->
+    <button id="vc-fab" onclick="VoiceCall.openPanel()" title="Call a Branch Manager">
+        <i class="fas fa-phone"></i>
+        <span class="vc-badge" id="vc-fab-badge"></span>
+    </button>
+
+    <!-- Incoming call notification banner -->
+    <div id="vc-incoming-banner">
+        <div class="vc-incoming-title"><i class="fas fa-phone-volume" style="margin-right:5px;"></i>Incoming Call</div>
+        <div class="vc-incoming-name" id="vc-incoming-caller">Unknown</div>
+        <div class="vc-incoming-btns">
+            <button class="vc-ans-btn vc-ans-accept" onclick="VoiceCall.answerCall()"><i class="fas fa-phone"></i> Answer</button>
+            <button class="vc-ans-btn vc-ans-reject" onclick="VoiceCall.rejectCall()"><i class="fas fa-phone-slash"></i> Decline</button>
+        </div>
+    </div>
+
+    <!-- Call panel modal -->
+    <div id="vc-modal-overlay" onclick="if(event.target===this && !VoiceCall.state.inCall) VoiceCall.closePanel()">
+        <div id="vc-modal" role="dialog" aria-label="Voice Call">
+
+            <div id="vc-modal-header">
+                <h3><i class="fas fa-phone" style="margin-right:8px;opacity:.8;"></i>Call Branch Manager</h3>
+                <button class="vc-close-btn" onclick="VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
+            </div>
+
+            <div id="vc-status-bar">Select a branch to start a call</div>
+
+            <!-- Active call panel (shown during a call) -->
+            <div id="vc-active-panel">
+                <div class="vc-avatar" id="vc-avatar-initials">—</div>
+                <div class="vc-calling-name" id="vc-calling-name">—</div>
+                <div class="vc-calling-detail" id="vc-calling-detail">Connecting…</div>
+                <div id="vc-timer">0:00</div>
+                <div class="vc-controls">
+                    <button class="vc-ctrl-btn vc-ctrl-mute" id="vc-mute-btn" onclick="VoiceCall.toggleMute()" title="Mute / Unmute">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <button class="vc-ctrl-btn vc-ctrl-end" onclick="VoiceCall.endCall()" title="End call">
+                        <i class="fas fa-phone-slash"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Branch list (shown when not in a call) -->
+            <div id="vc-branch-list"></div>
+
+        </div>
+    </div>
+    <!-- ══════════════ END VOICE CALL HTML ══════════════ -->
 
     <script>
         // ==========================================
@@ -21555,6 +21740,413 @@ ${(() => {
             });
             setTimeout(listen, 1500);
         })();
+
+        /* ═══════════════════════════════════════════════════════════════════
+           VOICE CALL ENGINE — WebRTC browser-to-browser
+           No third-party dependencies. Signaling via existing /api/ endpoint.
+           The Worker needs one new action: vc_signal (see companion note).
+           ═══════════════════════════════════════════════════════════════════ */
+        (function(){
+            'use strict';
+
+            // ── Config ──────────────────────────────────────────────────────
+            const ICE_SERVERS = [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ];
+            const POLL_MS   = 1800;   // signaling poll interval while in call
+            const RING_SECS = 35;     // auto-reject incoming after N seconds
+
+            // ── State ────────────────────────────────────────────────────────
+            const st = {
+                inCall:       false,
+                isCaller:     false,
+                remotePeer:   null,   // branch name we're calling / being called by
+                callId:       null,
+                pc:           null,   // RTCPeerConnection
+                localStream:  null,
+                remoteStream: null,
+                muted:        false,
+                timerInterval:null,
+                timerSecs:    0,
+                pollInterval: null,
+                ringTimeout:  null,
+                panelOpen:    false
+            };
+
+            // ── DOM helpers ──────────────────────────────────────────────────
+            const $  = id => document.getElementById(id);
+            const setStatus = (msg, cls) => {
+                const el = $('vc-status-bar');
+                if (!el) return;
+                el.textContent = msg;
+                el.className = '';
+                if (cls) el.classList.add(cls);
+            };
+
+            // ── Identity (reuse Sentinel's current user) ─────────────────────
+            function myIdentity(){
+                // Try to read from the auth-user-name element Sentinel populates
+                const el = $('auth-user-name');
+                if (el) {
+                    const txt = el.textContent.trim();
+                    if (txt) return txt;
+                }
+                // Fallback: sessionStorage key Sentinel uses
+                try { return sessionStorage.getItem('crumble_user_name') || 'Agent'; } catch(e){ return 'Agent'; }
+            }
+
+            // ── Signaling via /api/ ──────────────────────────────────────────
+            async function signal(payload){
+                try {
+                    const res = await fetch('/api/', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ action: 'vc_signal', ...payload })
+                    });
+                    return await res.json();
+                } catch(e){ return null; }
+            }
+
+            async function pollSignal(){
+                if (!st.callId) return;
+                const res = await signal({ callId: st.callId, from: myIdentity(), poll: true });
+                if (!res || res.status !== 'success') return;
+                const msg = res.message;
+                if (!msg) return;
+
+                if (msg.type === 'offer' && !st.isCaller)   handleOffer(msg);
+                if (msg.type === 'answer' && st.isCaller)   handleAnswer(msg);
+                if (msg.type === 'ice')                      handleRemoteIce(msg.candidate);
+                if (msg.type === 'reject')                   onRemoteRejected();
+                if (msg.type === 'hangup')                   onRemoteHangup();
+            }
+
+            // ── RTCPeerConnection lifecycle ───────────────────────────────────
+            function createPeerConnection(){
+                const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+                pc.onicecandidate = e => {
+                    if (e.candidate) signal({ callId: st.callId, from: myIdentity(), type: 'ice', candidate: e.candidate });
+                };
+
+                pc.ontrack = e => {
+                    st.remoteStream = e.streams[0];
+                    // Play remote audio
+                    let audio = $('vc-remote-audio');
+                    if (!audio){
+                        audio = document.createElement('audio');
+                        audio.id = 'vc-remote-audio';
+                        audio.autoplay = true;
+                        document.body.appendChild(audio);
+                    }
+                    audio.srcObject = st.remoteStream;
+                };
+
+                pc.onconnectionstatechange = () => {
+                    if (pc.connectionState === 'connected'){
+                        setStatus('Connected · call in progress', 'connected');
+                        $('vc-calling-detail').textContent = 'Connected';
+                        startTimer();
+                    }
+                    if (['disconnected','failed','closed'].includes(pc.connectionState)){
+                        if (st.inCall) endCall();
+                    }
+                };
+
+                return pc;
+            }
+
+            async function getLocalStream(){
+                if (st.localStream) return st.localStream;
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                st.localStream = stream;
+                return stream;
+            }
+
+            // ── Caller side ───────────────────────────────────────────────────
+            async function startCall(branchName){
+                if (st.inCall){ setStatus('Already in a call', 'error'); return; }
+                setStatus('Requesting microphone…', 'calling');
+
+                let stream;
+                try { stream = await getLocalStream(); }
+                catch(e){
+                    setStatus('Microphone access denied — please allow it in your browser', 'error');
+                    return;
+                }
+
+                st.callId    = 'vc-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+                st.isCaller  = true;
+                st.remotePeer = branchName;
+                st.inCall    = true;
+
+                st.pc = createPeerConnection();
+                stream.getTracks().forEach(t => st.pc.addTrack(t, stream));
+
+                const offer = await st.pc.createOffer();
+                await st.pc.setLocalDescription(offer);
+
+                setStatus(`Calling ${branchName}…`, 'calling');
+                showActivePanel(branchName, 'Ringing…');
+
+                // Notify remote via signaling
+                await signal({ callId: st.callId, from: myIdentity(), to: branchName, type: 'offer', sdp: offer.sdp });
+                // Notify via /api/ so the branch manager's dashboard sees it
+                await signal({ callId: st.callId, from: myIdentity(), to: branchName, type: 'incoming_notify' });
+
+                disableBranchButtons();
+                startPollLoop();
+            }
+
+            async function handleAnswer(msg){
+                if (!st.pc || st.pc.signalingState !== 'have-local-offer') return;
+                await st.pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+                setStatus('Connecting…', 'calling');
+            }
+
+            // ── Callee side ───────────────────────────────────────────────────
+            async function handleOffer(msg){
+                st.isCaller   = false;
+                st.remotePeer = msg.from;
+                st.callId     = msg.callId;
+                // Already shown via showIncomingBanner — just store the sdp
+                st._pendingSdp = msg.sdp;
+            }
+
+            async function answerCall(){
+                hideIncomingBanner();
+                clearTimeout(st.ringTimeout);
+
+                let stream;
+                try { stream = await getLocalStream(); }
+                catch(e){
+                    setStatus('Microphone access denied', 'error');
+                    return;
+                }
+                st.inCall = true;
+                st.localStream = stream;
+                st.pc = createPeerConnection();
+                stream.getTracks().forEach(t => st.pc.addTrack(t, stream));
+
+                await st.pc.setRemoteDescription({ type: 'offer', sdp: st._pendingSdp });
+                const answer = await st.pc.createAnswer();
+                await st.pc.setLocalDescription(answer);
+
+                await signal({ callId: st.callId, from: myIdentity(), type: 'answer', sdp: answer.sdp });
+                setStatus('Connecting…', 'calling');
+                showActivePanel(st.remotePeer, 'Answering…');
+                startPollLoop();
+
+                // Open panel so agent sees the call
+                $('vc-modal-overlay').classList.add('open');
+                st.panelOpen = true;
+            }
+
+            function rejectCall(){
+                hideIncomingBanner();
+                clearTimeout(st.ringTimeout);
+                signal({ callId: st.callId, from: myIdentity(), type: 'reject' });
+                resetState();
+            }
+
+            async function handleRemoteIce(candidate){
+                try { if (st.pc && candidate) await st.pc.addIceCandidate(candidate); } catch(e){}
+            }
+
+            // ── End call ─────────────────────────────────────────────────────
+            function endCall(){
+                signal({ callId: st.callId, from: myIdentity(), type: 'hangup' });
+                logCallToAudit();
+                teardown();
+            }
+
+            function onRemoteHangup(){
+                setStatus('Call ended by other party', '');
+                logCallToAudit();
+                teardown(true);
+            }
+
+            function onRemoteRejected(){
+                setStatus('Call was declined', 'error');
+                teardown(true);
+            }
+
+            function teardown(keepPanelOpen){
+                stopTimer();
+                stopPollLoop();
+                if (st.pc){ try { st.pc.close(); } catch(e){} st.pc = null; }
+                if (st.localStream){ st.localStream.getTracks().forEach(t => t.stop()); st.localStream = null; }
+                const a = $('vc-remote-audio');
+                if (a){ a.srcObject = null; }
+                st.inCall = false; st.isCaller = false; st.callId = null; st.remotePeer = null; st._pendingSdp = null; st.muted = false;
+
+                $('vc-active-panel').classList.remove('visible');
+                $('vc-branch-list').style.display = '';
+                enableBranchButtons();
+                $('vc-fab-badge').style.display = 'none';
+
+                const mutBtn = $('vc-mute-btn');
+                if (mutBtn){ mutBtn.classList.remove('muted'); mutBtn.querySelector('i').className = 'fas fa-microphone'; }
+
+                if (!keepPanelOpen) $('vc-modal-overlay').classList.remove('open');
+            }
+
+            function resetState(){ teardown(); }
+
+            // ── Audit log to D1 ──────────────────────────────────────────────
+            function logCallToAudit(){
+                if (!st.callId) return;
+                fetch('/api/', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        action:   'log_voice_call',
+                        callId:   st.callId,
+                        caller:   myIdentity(),
+                        receiver: st.remotePeer || 'unknown',
+                        duration: st.timerSecs,
+                        at:       new Date().toISOString()
+                    })
+                }).catch(() => {}); // fire and forget — non-critical
+            }
+
+            // ── Timer ─────────────────────────────────────────────────────────
+            function startTimer(){
+                st.timerSecs = 0;
+                st.timerInterval = setInterval(() => {
+                    st.timerSecs++;
+                    const m = Math.floor(st.timerSecs / 60);
+                    const s = String(st.timerSecs % 60).padStart(2, '0');
+                    const el = $('vc-timer');
+                    if (el) el.textContent = m + ':' + s;
+                }, 1000);
+            }
+            function stopTimer(){ clearInterval(st.timerInterval); st.timerInterval = null; }
+
+            // ── Poll loop ─────────────────────────────────────────────────────
+            function startPollLoop(){ st.pollInterval = setInterval(pollSignal, POLL_MS); }
+            function stopPollLoop(){ clearInterval(st.pollInterval); st.pollInterval = null; }
+
+            // ── UI helpers ────────────────────────────────────────────────────
+            function showActivePanel(name, detail){
+                $('vc-active-panel').classList.add('visible');
+                $('vc-branch-list').style.display = 'none';
+                $('vc-calling-name').textContent   = name;
+                $('vc-calling-detail').textContent = detail || 'Connecting…';
+                $('vc-timer').textContent          = '0:00';
+                const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+                $('vc-avatar-initials').textContent = initials;
+                $('vc-fab-badge').style.display = 'block';
+            }
+
+            function showIncomingBanner(callerName){
+                const b = $('vc-incoming-banner');
+                $('vc-incoming-caller').textContent = callerName;
+                b.classList.add('visible');
+                $('vc-fab-badge').style.display = 'block';
+                setStatus('Incoming call from ' + callerName, 'ringing');
+                st.ringTimeout = setTimeout(() => { rejectCall(); }, RING_SECS * 1000);
+            }
+            function hideIncomingBanner(){ $('vc-incoming-banner').classList.remove('visible'); }
+
+            function disableBranchButtons(){
+                document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = true; b.classList.add('busy'); });
+            }
+            function enableBranchButtons(){
+                document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = false; b.classList.remove('busy'); });
+            }
+
+            // ── Render branch list ────────────────────────────────────────────
+            function renderBranchList(){
+                const list = $('vc-branch-list');
+                if (!list) return;
+                const branches = (window.config && config.branches) ? config.branches : [];
+                if (!branches.length){
+                    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.82rem;">Branch data not loaded yet. Open a tab first.</div>';
+                    return;
+                }
+                list.innerHTML = branches.map(b => `
+                    <div class="vc-branch-row">
+                        <div class="vc-branch-info">
+                            <span class="vc-branch-name">${b.name}</span>
+                            <span class="vc-branch-region">${b.region} Region · ${b.city || b.region}</span>
+                        </div>
+                        <button class="vc-call-btn ${st.inCall ? 'busy' : ''}" ${st.inCall ? 'disabled' : ''}
+                            onclick="VoiceCall.startCall('${b.name.replace(/'/g,"\\'")}')"
+                            title="Call ${b.name} Branch Manager">
+                            <i class="fas fa-phone"></i> Call
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // ── Mute toggle ───────────────────────────────────────────────────
+            function toggleMute(){
+                if (!st.localStream) return;
+                st.muted = !st.muted;
+                st.localStream.getAudioTracks().forEach(t => { t.enabled = !st.muted; });
+                const btn = $('vc-mute-btn');
+                if (!btn) return;
+                btn.classList.toggle('muted', st.muted);
+                btn.querySelector('i').className = st.muted ? 'fas fa-microphone-slash' : 'fas fa-microphone';
+                setStatus(st.muted ? 'Microphone muted' : 'Microphone active', st.inCall ? 'connected' : '');
+            }
+
+            // ── Incoming call listener (long-poll on /api/) ───────────────────
+            async function listenForIncoming(){
+                if (st.inCall) { setTimeout(listenForIncoming, 3000); return; }
+                try {
+                    const res = await fetch('/api/', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ action: 'vc_signal', from: myIdentity(), poll_incoming: true })
+                    });
+                    const data = await res.json();
+                    if (data && data.status === 'success' && data.incoming) {
+                        const { callId, from, type, sdp } = data.incoming;
+                        if (type === 'incoming_notify' && from && !st.inCall) {
+                            st.callId        = callId;
+                            st._pendingSdp   = sdp;  // may arrive with a follow-up offer poll
+                            st.remotePeer    = from;
+                            showIncomingBanner(from);
+                        }
+                    }
+                } catch(e){}
+                setTimeout(listenForIncoming, 2500);
+            }
+
+            // ── Public API ────────────────────────────────────────────────────
+            window.VoiceCall = {
+                state: st,
+                openPanel() {
+                    renderBranchList();
+                    $('vc-modal-overlay').classList.add('open');
+                    st.panelOpen = true;
+                    if (!st.inCall) setStatus('Select a branch to start a call', '');
+                },
+                closePanel() {
+                    if (st.inCall) return; // don't close during a live call
+                    $('vc-modal-overlay').classList.remove('open');
+                    st.panelOpen = false;
+                },
+                startCall,
+                answerCall,
+                rejectCall,
+                endCall,
+                toggleMute
+            };
+
+            // Start listening for incoming calls once the page is ready
+            document.addEventListener('DOMContentLoaded', () => {
+                // Small delay so auth/session loads first
+                setTimeout(listenForIncoming, 5000);
+            });
+            // If DOMContentLoaded already fired (script runs late)
+            if (document.readyState !== 'loading') setTimeout(listenForIncoming, 5000);
+
+        })();
+        /* ══════════════ END VOICE CALL ENGINE ══════════════ */
 
         </script>
 </body>
