@@ -6479,7 +6479,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
          ══════════════════════════════════════════════════════════ -->
 
     <!-- Floating action button -->
-    <button id="vc-fab" onclick="VoiceCall.openPanel()" title="Call a Branch Manager">
+    <button id="vc-fab" onclick="VoiceCall.openPanel()" title="Call a Teammate">
         <span class="vc-fab-halo"></span>
         <span class="vc-fab-ring"></span>
         <span class="vc-fab-core"><i class="fas fa-phone"></i></span>
@@ -6501,7 +6501,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         <div id="vc-modal" role="dialog" aria-label="Voice Call">
 
             <div id="vc-modal-header">
-                <h3><i class="fas fa-phone" style="margin-right:8px;opacity:.8;"></i>Call Branch Manager</h3>
+                <h3><i class="fas fa-phone" style="margin-right:8px;opacity:.8;"></i>Call a Teammate</h3>
                 <button class="vc-close-btn" onclick="VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
             </div>
 
@@ -21798,7 +21798,8 @@ ${(() => {
             const st = {
                 inCall:       false,
                 isCaller:     false,
-                remotePeer:   null,   // branch name we're calling / being called by
+                remotePeer:   null,   // email of who we're calling / being called by
+                remotePeerName: null, // their display name, for the UI
                 callId:       null,
                 pc:           null,   // RTCPeerConnection
                 localStream:  null,
@@ -21821,22 +21822,25 @@ ${(() => {
                 if (cls) el.classList.add(cls);
             };
 
-            // ── Identity (reuse Sentinel's current user) ─────────────────────
+            // ── Identity ────────────────────────────────────────────────────
+            // Calls are addressed to a specific PERSON now, not a branch, and
+            // people can be Owners, Admins, or managers of several branches --
+            // none of whom have any single "branch name" to be dialled as.
+            // The email in PERM (set once Sentinel's session resolves) is the
+            // one thing that's unique and doesn't change, so it's what the
+            // directory and signaling key on. The display name is only for
+            // what's shown on screen.
             function myIdentity(){
-                // Only the name span -- the container also holds the account
-                // dropdown (Change photo, Manage Users, Contact Support, Sign
-                // out, ...), and textContent pulls all of that in too, even
-                // while the menu is closed. Reading the whole container meant
-                // every call was addressed under a huge garbled string instead
-                // of the person's actual name.
-                const nameSpan = document.querySelector('#auth-user-name .user-name');
-                if (nameSpan) {
-                    const txt = nameSpan.textContent.trim();
-                    if (txt) return txt;
-                }
-                // Fallback: sessionStorage key Sentinel uses
-                try { return sessionStorage.getItem('crumble_user_name') || 'Agent'; } catch(e){ return 'Agent'; }
+                try { if (window.PERM && PERM.email) return PERM.email.trim().toLowerCase(); } catch(e){}
+                try { return (sessionStorage.getItem('crumble_user_email') || '').trim().toLowerCase() || 'unknown'; } catch(e){ return 'unknown'; }
             }
+            function myDisplayName(){
+                try { if (window.PERM && (PERM.name || PERM.email)) return PERM.name || PERM.email; } catch(e){}
+                const nameSpan = document.querySelector('#auth-user-name .user-name');
+                if (nameSpan) { const txt = nameSpan.textContent.trim(); if (txt) return txt; }
+                return 'Someone';
+            }
+
 
             // ── Signaling via /api/ ──────────────────────────────────────────
             async function signal(payload){
@@ -21907,7 +21911,7 @@ ${(() => {
             }
 
             // ── Caller side ───────────────────────────────────────────────────
-            async function startCall(branchName){
+            async function startCall(targetEmail, targetName){
                 if (st.inCall){ setStatus('Already in a call', 'error'); return; }
                 setStatus('Requesting microphone…', 'calling');
 
@@ -21920,7 +21924,8 @@ ${(() => {
 
                 st.callId    = 'vc-' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
                 st.isCaller  = true;
-                st.remotePeer = branchName;
+                st.remotePeer = targetEmail;
+                st.remotePeerName = targetName || targetEmail;
                 st.inCall    = true;
 
                 st.pc = createPeerConnection();
@@ -21929,17 +21934,17 @@ ${(() => {
                 const offer = await st.pc.createOffer();
                 await st.pc.setLocalDescription(offer);
 
-                setStatus(`Calling ${branchName}…`, 'calling');
-                showActivePanel(branchName, 'Ringing…');
+                setStatus(`Calling ${st.remotePeerName}…`, 'calling');
+                showActivePanel(st.remotePeerName, 'Ringing…');
 
                 // Notify remote via signaling
-                await signal({ callId: st.callId, from: myIdentity(), to: branchName, type: 'offer', sdp: offer.sdp });
-                // Notify via /api/ so the branch manager's dashboard sees it.
+                await signal({ callId: st.callId, from: myIdentity(), fromName: myDisplayName(), to: targetEmail, type: 'offer', sdp: offer.sdp });
+                // Notify via /api/ so the other person's dashboard sees it.
                 // The SDP travels with this message too -- it's the only one the
                 // callee's incoming-call listener actually reads before answering,
                 // so without it here answerCall() has nothing to set as the remote
                 // description and the call never connects.
-                await signal({ callId: st.callId, from: myIdentity(), to: branchName, type: 'incoming_notify', sdp: offer.sdp });
+                await signal({ callId: st.callId, from: myIdentity(), fromName: myDisplayName(), to: targetEmail, type: 'incoming_notify', sdp: offer.sdp });
 
                 disableBranchButtons();
                 startPollLoop();
@@ -21955,6 +21960,7 @@ ${(() => {
             async function handleOffer(msg){
                 st.isCaller   = false;
                 st.remotePeer = msg.from;
+                st.remotePeerName = msg.fromName || msg.from;
                 st.callId     = msg.callId;
                 // Already shown via showIncomingBanner — just store the sdp
                 st._pendingSdp = msg.sdp;
@@ -21981,7 +21987,7 @@ ${(() => {
 
                 await signal({ callId: st.callId, from: myIdentity(), type: 'answer', sdp: answer.sdp });
                 setStatus('Connecting…', 'calling');
-                showActivePanel(st.remotePeer, 'Answering…');
+                showActivePanel(st.remotePeerName || st.remotePeer, 'Answering…');
                 startPollLoop();
 
                 // Open panel so agent sees the call
@@ -22103,32 +22109,63 @@ ${(() => {
                 document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = false; b.classList.remove('busy'); });
             }
 
-            // ── Render branch list ────────────────────────────────────────────
-            function renderBranchList(){
+            // ── Presence heartbeat ───────────────────────────────────────────
+            // Says "I'm here" every 20s so other dashboards can list this
+            // person to call. The backend only trusts the Cloudflare-verified
+            // identity behind the request, never anything the client claims,
+            // so nobody can appear online as someone else.
+            const PRESENCE_MS = 20000;
+            function startPresenceHeartbeat(){
+                signal({ type: 'presence' });
+                setInterval(() => { if (!document.hidden) signal({ type: 'presence' }); }, PRESENCE_MS);
+            }
+
+            // ── Directory of who's online right now ──────────────────────────
+            let dirPollInterval = null;
+            const dirEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+            async function renderDirectory(){
                 const list = $('vc-branch-list');
                 if (!list) return;
-                const branches = (window.config && config.branches) ? config.branches : [];
-                if (!branches.length){
+                const res = await signal({ type: 'who' });
+                if (!res || res.status !== 'success' || !Array.isArray(res.people)) {
+                    list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--text-muted);font-size:0.82rem;">
+                        <i class="fas fa-triangle-exclamation" style="font-size:1.3rem;opacity:.35;display:block;margin-bottom:10px;"></i>
+                        Couldn't check who's online. Try again in a moment.
+                    </div>`;
+                    return;
+                }
+                if (!res.people.length){
                     list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--text-muted);font-size:0.82rem;">
                         <i class="fas fa-phone-slash" style="font-size:1.3rem;opacity:.35;display:block;margin-bottom:10px;"></i>
                         No one is available to call right now.
                     </div>`;
                     return;
                 }
-                list.innerHTML = branches.map(b => `
+                list.innerHTML = res.people.map(p => {
+                    const name  = p.name || p.email;
+                    const scope = (p.branch && p.branch !== 'All') ? p.branch
+                                : (p.region && p.region !== 'All') ? p.region + ' Region' : 'All branches';
+                    return `
                     <div class="vc-branch-row">
                         <div class="vc-branch-info">
-                            <span class="vc-branch-name">${b.name}</span>
-                            <span class="vc-branch-region">${b.region} Region · ${b.city || b.region}</span>
+                            <span class="vc-branch-name">${dirEsc(name)}</span>
+                            <span class="vc-branch-region">${dirEsc(p.role || 'Team')} · ${dirEsc(scope)}</span>
                         </div>
                         <button class="vc-call-btn ${st.inCall ? 'busy' : ''}" ${st.inCall ? 'disabled' : ''}
-                            onclick="VoiceCall.startCall('${b.name.replace(/'/g,"\\'")}')"
-                            title="Call ${b.name} Branch Manager">
+                            onclick="VoiceCall.startCall('${String(p.email).replace(/'/g,"\\'")}','${String(name).replace(/'/g,"\\'")}')"
+                            title="Call ${dirEsc(name)}">
                             <i class="fas fa-phone"></i> Call
                         </button>
-                    </div>
-                `).join('');
+                    </div>`;
+                }).join('');
             }
+            function startDirectoryPoll(){
+                renderDirectory();
+                if (dirPollInterval) clearInterval(dirPollInterval);
+                dirPollInterval = setInterval(() => { if (st.panelOpen && !st.inCall) renderDirectory(); }, 6000);
+            }
+            function stopDirectoryPoll(){ clearInterval(dirPollInterval); dirPollInterval = null; }
 
             // ── Mute toggle ───────────────────────────────────────────────────
             function toggleMute(){
@@ -22153,12 +22190,13 @@ ${(() => {
                     });
                     const data = await res.json();
                     if (data && data.status === 'success' && data.incoming) {
-                        const { callId, from, type, sdp } = data.incoming;
+                        const { callId, from, fromName, type, sdp } = data.incoming;
                         if (type === 'incoming_notify' && from && !st.inCall) {
                             st.callId        = callId;
                             st._pendingSdp   = sdp;  // may arrive with a follow-up offer poll
                             st.remotePeer    = from;
-                            showIncomingBanner(from);
+                            st.remotePeerName = fromName || from;
+                            showIncomingBanner(st.remotePeerName);
                         }
                     }
                 } catch(e){}
@@ -22169,15 +22207,16 @@ ${(() => {
             window.VoiceCall = {
                 state: st,
                 openPanel() {
-                    renderBranchList();
+                    startDirectoryPoll();
                     $('vc-modal-overlay').classList.add('open');
                     st.panelOpen = true;
-                    if (!st.inCall) setStatus('Select a branch to start a call', '');
+                    if (!st.inCall) setStatus('Select someone to call', '');
                 },
                 closePanel() {
                     if (st.inCall) return; // don't close during a live call
                     $('vc-modal-overlay').classList.remove('open');
                     st.panelOpen = false;
+                    stopDirectoryPoll();
                 },
                 startCall,
                 answerCall,
@@ -22186,13 +22225,18 @@ ${(() => {
                 toggleMute
             };
 
-            // Start listening for incoming calls once the page is ready
+            // Start listening for incoming calls, and announcing presence,
+            // once the page is ready.
             document.addEventListener('DOMContentLoaded', () => {
                 // Small delay so auth/session loads first
                 setTimeout(listenForIncoming, 5000);
+                setTimeout(startPresenceHeartbeat, 5000);
             });
             // If DOMContentLoaded already fired (script runs late)
-            if (document.readyState !== 'loading') setTimeout(listenForIncoming, 5000);
+            if (document.readyState !== 'loading') {
+                setTimeout(listenForIncoming, 5000);
+                setTimeout(startPresenceHeartbeat, 5000);
+            }
 
         })();
         /* ══════════════ END VOICE CALL ENGINE ══════════════ */
