@@ -4839,6 +4839,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         .vc-att-pending { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: .74rem;
                           color: var(--text-muted); border-top: 1px solid var(--border-color); }
         .vc-att-pending button { border: none; background: transparent; color: #DC2626; cursor: pointer; }
+        .notif-count { position:absolute; top:2px; right:2px; min-width:16px; height:16px; padding:0 4px;
+                       border-radius:9px; background:#DC2626; color:#fff; font:800 .6rem/16px 'Inter',sans-serif;
+                       text-align:center; box-shadow:0 0 0 2px var(--brand-primary,#010197); }
+        .notif-msg { display:flex; align-items:center; gap:10px; padding:9px 13px; cursor:pointer; border-bottom:1px solid var(--border-color); }
+        .notif-msg:hover { background:var(--bg-light); }
+        .notif-msg .nm-ava { width:28px; height:28px; border-radius:50%; background:var(--brand-accent); color:#fff;
+                             display:flex; align-items:center; justify-content:center; font:800 .64rem 'Inter',sans-serif; flex-shrink:0; }
+        .notif-msg .nm-body { flex:1; min-width:0; }
+        .notif-msg .nm-name { font-size:.76rem; font-weight:700; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .notif-msg .nm-text { font-size:.68rem; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .notif-msg .nm-n { flex-shrink:0; min-width:18px; height:18px; padding:0 5px; border-radius:10px; background:#DC2626;
+                           color:#fff; font:800 .62rem/18px 'Inter',sans-serif; text-align:center; }
         #vc-panel { position: fixed; inset: 0; z-index: 12050; background: rgba(15,23,42,.5); display: flex;
                     align-items: center; justify-content: center; padding: 16px; }
         #vc-panel .vc-panel-box { width: 100%; max-width: 380px; background: var(--white); border: 1px solid var(--border-color);
@@ -5112,11 +5124,19 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     </button>
                 </div>
                 <div style="position:relative;">
-                    <button class="btn-icon" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
+                    <button class="btn-icon" id="notifBell" onclick="document.getElementById('notifDropdown').classList.toggle('active'); event.stopPropagation();">
                         <i class="fas fa-bell"></i>
-                        <span class="live-dot" style="position:absolute; top:6px; right:6px;"></span>
+                        <span class="live-dot" id="notifDot" style="position:absolute; top:6px; right:6px;"></span>
+                        <span class="notif-count" id="notifCount" style="display:none;"></span>
                     </button>
                     <div id="notifDropdown" class="notif-dropdown">
+                        <!-- Messages sit above the alerts and are rendered by the
+                             chat module, so the alerts engine redrawing its own
+                             list never wipes them. -->
+                        <div id="notifChatWrap" style="display:none;">
+                            <div class="notif-header">Messages</div>
+                            <div id="notifChat"></div>
+                        </div>
                         <div class="notif-header">System Alerts</div>
                         <div id="notifList"></div>
                     </div>
@@ -6729,7 +6749,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.86.1 · 15 Sep 2026 · group admin';
+        const BUILD_VERSION = 'v2.88.0 · 15 Sep 2026 · push for chat & calls';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21575,8 +21595,23 @@ ${(() => {
             // Tapping a notification lands here: open the tab it refers to.
             function openFromUrl(href){
                 try {
-                    var v = new URL(href, location.href).searchParams.get('open');
+                    var u = new URL(href, location.href);
+                    var v = u.searchParams.get('open');
                     if (!v) return;
+                    // A message or a call notification opens the panel on that
+                    // conversation, rather than a dashboard tab that has
+                    // nothing to do with what was tapped.
+                    if (v === 'chat' || v === 'call') {
+                        var peer = u.searchParams.get('peer') || '';
+                        setTimeout(function(){
+                            try {
+                                if (peer) window.VoiceCall.openConversation(peer);
+                                else { window.VoiceCall.openPanel(); window.VoiceCall.showTab(v === 'call' ? 'call' : 'chat'); }
+                            } catch (e) {}
+                        }, 600);
+                        if (history.replaceState) history.replaceState(null, '', location.pathname);
+                        return;
+                    }
                     var link = document.querySelector('#topNav .topnav-link[data-view="' + v.replace(/[^a-z-]/g, '') + '"]');
                     if (link) link.click();
                     if (history.replaceState) history.replaceState(null, '', location.pathname);
@@ -23436,7 +23471,62 @@ ${(() => {
                 return total;
             }
 
+            /** The bell, filled from the same unread state the panel uses.
+             *  It used to carry a dot that was always lit, which told nobody
+             *  anything: a badge that never changes is not a notification. */
+            function paintBell(){
+                const wrap = document.getElementById('notifChatWrap');
+                const box = document.getElementById('notifChat');
+                const count = document.getElementById('notifCount');
+                const dot = document.getElementById('notifDot');
+                if (!wrap || !box) return;
+                const items = [];
+                for (const key in chat.unread) {
+                    const n = chat.unread[key] || 0;
+                    if (!n) continue;
+                    const grp = isGroupPeer(key) ? groupById(key) : null;
+                    const person = grp ? null : chat.people.find(p => p.email === key);
+                    const last = chat.last[key];
+                    items.push({
+                        key, n,
+                        name: grp ? grp.name : ((person && person.name) || key),
+                        group: !!grp,
+                        text: last ? ((last.who ? last.who + ': ' : '') + String(last.body || '')).slice(0, 60) : 'New message',
+                        at: last ? last.at : ''
+                    });
+                }
+                items.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+                const total = items.reduce((t, i) => t + i.n, 0);
+                if (count) {
+                    count.style.display = total ? 'block' : 'none';
+                    count.textContent = total > 9 ? '9+' : String(total);
+                }
+                // The steady dot stays for "the feed is live", but steps aside
+                // when there is something actually waiting.
+                if (dot) dot.style.display = total ? 'none' : 'block';
+                wrap.style.display = items.length ? 'block' : 'none';
+                box.innerHTML = items.map(i => `<div class="notif-msg" onclick="VoiceCall.openConversation('${String(i.key).replace(/'/g,"\\'")}')">
+                        <div class="nm-ava" style="${i.group ? 'background:#7C3AED;' : ''}">${i.group ? '<i class="fas fa-user-group"></i>' : chatEsc(chatInitials(i.name))}</div>
+                        <div class="nm-body">
+                            <div class="nm-name">${chatEsc(i.name)}</div>
+                            <div class="nm-text">${chatEsc(i.text)}</div>
+                        </div>
+                        <span class="nm-n">${i.n}</span>
+                    </div>`).join('');
+            }
+
+            /** Open the call panel straight on one conversation -- what a
+             *  notification is for. */
+            function openConversation(key){
+                try { document.getElementById('notifDropdown').classList.remove('active'); } catch(e){}
+                // openPanel lives on the exported object, not in this scope.
+                try { window.VoiceCall.openPanel(); } catch(e){}
+                showTab('chat');
+                openThread(key);
+            }
+
             function paintUnread(){
+                paintBell();
                 const total = chatUnreadTotal();
                 const tab = $('vc-tab-unread');
                 if (tab) { tab.textContent = total || ''; tab.style.display = total ? 'inline-block' : 'none'; }
@@ -23554,6 +23644,7 @@ ${(() => {
                 composerGrow,
                 composerKey,
                 typingPing,
+                openConversation,
                 newGroup,
                 groupInfo,
                 addMember,
