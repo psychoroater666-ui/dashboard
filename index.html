@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.96.2 · 16 Sep 2026 · sync trace';
+        const BUILD_VERSION = 'v2.96.3 · 16 Sep 2026 · sync trace + reason';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7538,7 +7538,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     for(const k in res.tabs) apply(k, res.tabs[k]);
                     try {
                         const changedTabs = Object.entries(res.tabs).filter(([k,v]) => v.mode !== 'unchanged').map(([k,v]) => k + ':' + v.mode + (v.rows ? '(' + v.rows.length + ')' : ''));
-                        console.info('[sync] ' + (forceFull ? 'FULL' : 'quick') + ' · ' + (Date.now() - _t0) + ' ms · served_by ' + (res.served_by || '?') + ' · changed: ' + (changedTabs.join(' ') || 'nothing') + (window.__forceFullNext ? ' · NEXT WILL BE FULL' : ''));
+                        console.info('[sync] ' + (forceFull ? 'FULL' : 'quick') + ' · ' + (Date.now() - _t0) + ' ms · served_by ' + (res.served_by || '?') + (res.d1_reason ? ' (D1 skipped: ' + res.d1_reason + ')' : '') + ' · changed: ' + (changedTabs.join(' ') || 'nothing') + (window.__forceFullNext ? ' · NEXT WILL BE FULL' : ''));
                     } catch(e){}
                     window.__lastSync = { at: new Date().toISOString(), modes: Object.fromEntries(Object.entries(res.tabs).map(([k,v]) => [k, v.mode + (v.rows ? ' ' + v.rows.length : '')])) };
                     if(_syncAgain){ _syncAgain = false; setTimeout(() => { sync().catch(()=>{}); if(window.pollNow) pollNow(); }, 50); }
