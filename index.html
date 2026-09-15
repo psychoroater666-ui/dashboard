@@ -21751,6 +21751,8 @@ ${(() => {
                     const res = await fetch('/api/', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
                         body: JSON.stringify({ action: 'wait_for_change', rev })
                     }).then(r => r.json());
                     if(res && res.status === 'success'){
@@ -21848,9 +21850,13 @@ ${(() => {
                     const res = await fetch('/api/', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
                         body: JSON.stringify({ action: 'vc_signal', ...payload })
                     });
-                    return await res.json();
+                    const out = await res.json();
+                    if (out && out.status !== 'success') console.log('vc signal refused:', payload.type || payload, out);
+                    return out;
                 } catch(e){ return null; }
             }
 
@@ -22052,6 +22058,8 @@ ${(() => {
                 fetch('/api/', {
                     method: 'POST',
                     headers: { 'content-type': 'application/json' },
+                    credentials: 'same-origin',
+                    redirect: 'follow',
                     body: JSON.stringify({
                         action:   'log_voice_call',
                         callId:   st.callId,
@@ -22115,9 +22123,11 @@ ${(() => {
             // identity behind the request, never anything the client claims,
             // so nobody can appear online as someone else.
             const PRESENCE_MS = 20000;
+            let presenceTimer = null;
             function startPresenceHeartbeat(){
+                if (presenceTimer) return;              // never stack intervals
                 signal({ type: 'presence' });
-                setInterval(() => { if (!document.hidden) signal({ type: 'presence' }); }, PRESENCE_MS);
+                presenceTimer = setInterval(() => { if (!document.hidden) signal({ type: 'presence' }); }, PRESENCE_MS);
             }
 
             // ── Directory of who's online right now ──────────────────────────
@@ -22186,6 +22196,8 @@ ${(() => {
                     const res = await fetch('/api/', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
                         body: JSON.stringify({ action: 'vc_signal', from: myIdentity(), poll_incoming: true })
                     });
                     const data = await res.json();
@@ -22226,16 +22238,21 @@ ${(() => {
             };
 
             // Start listening for incoming calls, and announcing presence,
-            // once the page is ready.
-            document.addEventListener('DOMContentLoaded', () => {
+            // once the page is ready. Guarded: this script runs late, so both
+            // the listener and the readyState branch could otherwise fire and
+            // leave two heartbeat intervals running.
+            let vcStarted = false;
+            function vcBoot(){
+                if (vcStarted) return;
+                vcStarted = true;
                 // Small delay so auth/session loads first
                 setTimeout(listenForIncoming, 5000);
                 setTimeout(startPresenceHeartbeat, 5000);
-            });
-            // If DOMContentLoaded already fired (script runs late)
-            if (document.readyState !== 'loading') {
-                setTimeout(listenForIncoming, 5000);
-                setTimeout(startPresenceHeartbeat, 5000);
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', vcBoot);
+            } else {
+                vcBoot();
             }
 
         })();
