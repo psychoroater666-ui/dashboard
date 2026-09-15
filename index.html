@@ -6649,7 +6649,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.81.0 · 15 Sep 2026 · branches live';
+        const BUILD_VERSION = 'v2.81.1 · 15 Sep 2026 · branches live';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11006,6 +11006,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);min-width:130px;">${esc2(b.name)}</span>
                         <span style="font-size:0.7rem;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:.3px;">${esc2(label)}</span>
                         <span style="font-size:0.7rem;color:var(--text-muted);">${esc2(b.hours)}</span>
+                        ${b.subDown ? '<span style="font-size:0.64rem;font-weight:800;color:#010197;background:rgba(1,1,151,.08);border-radius:20px;padding:2px 8px;">no out-of-radius delivery</span>' : ''}
                         <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
                     </div>`;
                 };
