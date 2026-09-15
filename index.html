@@ -3394,6 +3394,23 @@
         .wa-btns button { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid var(--border-color); border-radius:9px; background:var(--white); color:var(--text-main); font:700 0.75rem 'Inter',sans-serif; cursor:pointer; }
         .wa-btns button:hover { border-color:#25D366; color:#128C7E; }
         .wa-hint { font-size:0.66rem; color:var(--text-muted); margin-top:8px; }
+        .wa-btns button[disabled] { opacity:.55; cursor:default; }
+        /* Confirm-before-send. The agent used to read the message in WhatsApp
+           before pressing send; sending through Conviyo removes that step, so
+           the same check happens here instead. */
+        #cvy-confirm { position:fixed; inset:0; z-index:12000; background:rgba(15,23,42,.55); display:flex; align-items:center; justify-content:center; padding:18px; }
+        #cvy-confirm .cvy-box { width:100%; max-width:440px; background:var(--white); border:1px solid var(--border-color); border-radius:16px; box-shadow:0 30px 80px -20px rgba(15,23,42,.45); overflow:hidden; }
+        #cvy-confirm .cvy-head { padding:15px 18px 11px; border-bottom:1px solid var(--border-color); }
+        #cvy-confirm .cvy-head h4 { margin:0; font:800 0.86rem 'Inter',sans-serif; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+        #cvy-confirm .cvy-head h4 i { color:#25D366; }
+        #cvy-confirm .cvy-to { margin-top:5px; font-size:0.68rem; color:var(--text-muted); }
+        #cvy-confirm .cvy-msg { margin:0; padding:15px 18px; max-height:46vh; overflow:auto; white-space:pre-wrap; word-break:break-word; font:500 0.78rem/1.55 'Inter',sans-serif; color:var(--text-main); background:var(--bg-light); }
+        #cvy-confirm .cvy-warn { padding:9px 18px 0; font-size:0.66rem; color:var(--text-muted); }
+        #cvy-confirm .cvy-foot { display:flex; gap:8px; justify-content:flex-end; padding:13px 18px 15px; }
+        #cvy-confirm .cvy-foot button { padding:9px 15px; border-radius:9px; font:700 0.76rem 'Inter',sans-serif; cursor:pointer; border:1px solid var(--border-color); background:var(--white); color:var(--text-main); }
+        #cvy-confirm .cvy-foot .cvy-go { background:#128C7E; border-color:#128C7E; color:#fff; }
+        #cvy-confirm .cvy-foot button[disabled] { opacity:.6; cursor:default; }
+        @media (max-width:520px){ #cvy-confirm { align-items:flex-end; padding:0; } #cvy-confirm .cvy-box { max-width:none; border-radius:18px 18px 0 0; } }
         .sdlw-card { padding:18px 22px; }
         .radar-card { padding:18px 22px; }
         .churn-card { padding:18px 22px; }
@@ -6649,7 +6666,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.81.1 · 15 Sep 2026 · branches live';
+        const BUILD_VERSION = 'v2.82.0 · 15 Sep 2026 · WhatsApp via Conviyo';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8878,18 +8895,36 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // cost. Every send is recorded on the incident so we can later measure
         // whether people who got a message came back.
         // ═══════════════════════════════════════════════════════════════════
+        // These strings must stay word-for-word identical to the Meta-approved
+        // templates in Conviyo (crumble_apology, crumble_could_not_reach,
+        // crumble_apology_voucher). They are what the agent is shown before
+        // pressing send; Conviyo renders the real thing from its own stored
+        // copy, so if the two ever drift the agent approves one message and the
+        // customer receives another. Change a template in Conviyo -> change it
+        // here in the same deploy.
         const WA_TEMPLATES = {
             apology: {
                 label: 'Apology',
-                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We received your feedback about your order from our ${c.branch} branch${c.issue ? ' regarding ' + c.issue.toLowerCase() : ''}, and we're genuinely sorry.\n\nWe've looked into it with the branch team so it doesn't happen again. Thank you for telling us — it's the only way we improve.\n\nWe hope to serve you better next time.`
+                template: 'crumble_apology',
+                vars: (c) => ({ '1': c.name, '2': c.branch, '3': c.issue }),
+                text: (c) => `Hi ${c.name},\n\nThis is Crumble Pakistan. We received your feedback about your order from our ${c.branch} branch regarding ${c.issue}, and we're genuinely sorry.\n\nWe've looked into it with the branch team so it doesn't happen again. Thank you for telling us — it's the only way we improve.\n\nWe hope to serve you better next time.`
             },
             voucher: {
                 label: 'Apology + voucher',
-                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We're sorry about your recent experience at our ${c.branch} branch${c.issue ? ' (' + c.issue.toLowerCase() + ')' : ''}.\n\nWe've addressed it with the team. As an apology, please use code *${c.code}* on your next order — it's on us.\n\nThank you for giving us the chance to make it right.`
+                template: 'crumble_apology_voucher',
+                // Deliberately NOT sent through Conviyo yet: the code below is
+                // generated from a hash and exists nowhere the Call Center can
+                // redeem it. Until codes are issued through the rewards system,
+                // this one stays click-to-WhatsApp so a person sees it first.
+                viaWhatsApp: true,
+                vars: (c) => ({ '1': c.name, '2': c.branch, '3': c.issue, '4': c.code }),
+                text: (c) => `Hi ${c.name},\n\nThis is Crumble Pakistan. We're sorry about your recent experience at our ${c.branch} branch (${c.issue}).\n\nWe've addressed it with the team. As an apology, please use code *${c.code}* on your next order — it's on us.\n\nThank you for giving us the chance to make it right.`
             },
             noreply: {
                 label: 'Could not reach',
-                text: (c) => `Assalam o Alaikum ${c.name || ''}${c.name ? ',' : ''}\n\nThis is Crumble Pakistan. We tried to reach you about the feedback you shared for our ${c.branch} branch but couldn't get through.\n\nIf you'd still like us to look into it, simply reply to this message and we'll take it from there.\n\nThank you for your time.`
+                template: 'crumble_could_not_reach',
+                vars: (c) => ({ '1': c.name, '2': c.branch }),
+                text: (c) => `Hi ${c.name},\n\nThis is Crumble Pakistan. We tried to reach you about the feedback you shared for our ${c.branch} branch but couldn't get through.\n\nIf you'd still like us to look into it, simply reply to this message and we'll take it from there.\n\nThank you for your time.`
             }
         };
         function _waPhone(inc){
@@ -8922,33 +8957,170 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         }
         window.addIncidentFollowUp = addIncidentFollowUp;
 
-        function waOpen(stableKey, kind){
-            const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey); if(!inc) return;
-            const phone = _waPhone(inc);
-            if(!phone || phone.length < 11){ UI.toast('No usable phone number on this complaint.', 'warning'); return; }
+        // A template variable may not be empty, and WhatsApp rejects line
+        // breaks, tabs and runs of four or more spaces inside one. Everything
+        // going into a variable passes through here, so a stray newline in a
+        // branch name cannot fail the send at Meta's end.
+        function _cvyVal(v, fallback){
+            const s = String(v == null ? '' : v).replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+            return s || fallback;
+        }
+        // What the templates need, built once and used for both the preview the
+        // agent approves and the variables actually sent.
+        function _waContext(inc){
             let issue = '';
             try { const r = inc.agentCategory && _resolveComplaintCategory(inc.agentCategory); issue = r ? r.title : (classifyComplaint(inc) || {}).title || ''; } catch(e){}
-            const ctx = { name: (_rawFieldExact(inc._raw, 'Name') || '').split(' ')[0] || '', branch: inc.branch || 'our', issue, code: _waCode(inc) };
-            const body = (WA_TEMPLATES[kind] || WA_TEMPLATES.apology).text(ctx);
-            window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(body), '_blank', 'noopener');
-            // record it against the incident so the return-rate question can be answered later
-            inc.recoverySent = new Date().toISOString(); inc.recoveryKind = kind;
-            try { apiCall('incident_resolution', { id: stableKey, status: 'closed', note: (inc.resolutionNote || '') + ' | recovery: ' + kind, validity: inc.caseStatus === 'fake' ? 'fake' : inc.caseStatus === 'not_responding' ? 'not_responding' : 'valid', category: inc.agentCategory || '', clientId: 'wa_' + Date.now().toString(36) }).catch(()=>{}); } catch(e){}
-            UI.toast('WhatsApp opened — read it, then press send.', 'success');
+            return {
+                // No name on the complaint reads better as "Hi there," than as a
+                // guessed or blank one, and blank is not allowed anyway.
+                name:   _cvyVal((_rawFieldExact(inc._raw, 'Name') || '').split(' ')[0], 'there'),
+                branch: _cvyVal(inc.branch, ''),
+                issue:  _cvyVal(String(issue || '').toLowerCase(), 'your recent order'),
+                code:   _waCode(inc)
+            };
+        }
+        // Conviyo and Meta both answer with a code rather than a sentence a
+        // person should read. Say what actually happened and what to do next.
+        function _cvyError(r){
+            const code = String((r && (r.code || (r.error && r.error.code))) || '').toUpperCase();
+            const meta = Number((r && r.metaErrorCode) || 0);
+            if(meta === 131047) return 'WhatsApp would not deliver this: more than 24 hours since the customer last messaged us, and this template is not cleared for that. Try calling instead.';
+            if(meta === 131026) return 'That number is not on WhatsApp. Try calling instead.';
+            if(meta === 131049) return 'WhatsApp is limiting marketing messages to this customer right now. Try again tomorrow, or call.';
+            const map = {
+                RECIPIENT_OPTED_OUT:    'This customer has opted out of our WhatsApp messages. Do not retry — call them instead.',
+                TEMPLATE_NOT_APPROVED:  'That message is still waiting on Meta approval. It cannot be sent yet.',
+                TEMPLATE_NOT_FOUND:     'That message template is missing in Conviyo. Tell whoever looks after the dashboard.',
+                INVALID_PHONE:          'The phone number on this complaint is not a valid WhatsApp number.',
+                MISSING_VARIABLES:      'Something is missing from this complaint, so the message could not be filled in.',
+                INVALID_VARIABLE:       'Something on this complaint does not fit the approved message.',
+                WHATSAPP_NOT_CONNECTED: 'No WhatsApp number is connected in Conviyo. Tell whoever looks after the dashboard.',
+                RATE_LIMITED:           'Too many messages at once. Wait a minute and try again.',
+                REQUEST_IN_PROGRESS:    'This message is already being sent. Give it a second.',
+                WHATSAPP_UNAVAILABLE:   'WhatsApp could not be reached. Safe to try again in a moment.',
+                INTERNAL_ERROR:         'Conviyo had a problem. Safe to try again in a moment.',
+                UNAUTHORIZED:           'Conviyo refused our key. Tell whoever looks after the dashboard.',
+                not_configured:         'WhatsApp sending is not switched on yet.'
+            };
+            return map[code] || map[String((r && r.code) || '')] || ((r && r.message) || 'The message could not be sent.');
+        }
+
+        // Show the finished message and let the agent read it before it goes.
+        // Resolves true only on an explicit press of Send.
+        function _cvyConfirm(title, to, body, warn){
+            return new Promise(resolve => {
+                const el = document.createElement('div');
+                el.id = 'cvy-confirm';
+                el.innerHTML = `<div class="cvy-box" role="dialog" aria-modal="true" aria-label="Send WhatsApp message">
+                    <div class="cvy-head">
+                        <h4><i class="fab fa-whatsapp"></i> <span class="cvy-kind"></span></h4>
+                        <div class="cvy-to"></div>
+                    </div>
+                    <pre class="cvy-msg"></pre>
+                    ${warn ? '<div class="cvy-warn"></div>' : ''}
+                    <div class="cvy-foot">
+                        <button type="button" class="cvy-no">Cancel</button>
+                        <button type="button" class="cvy-go">Send now</button>
+                    </div>
+                </div>`;
+                // textContent, not innerHTML: a customer name or branch is not
+                // ours to trust as markup.
+                el.querySelector('.cvy-kind').textContent = title;
+                el.querySelector('.cvy-to').textContent = to;
+                el.querySelector('.cvy-msg').textContent = body;
+                if(warn) el.querySelector('.cvy-warn').textContent = warn;
+                const done = (v) => { try { document.removeEventListener('keydown', onKey, true); el.remove(); } catch(e){} resolve(v); };
+                const onKey = (e) => { if(e.key === 'Escape'){ e.preventDefault(); done(false); } };
+                el.querySelector('.cvy-no').onclick = () => done(false);
+                el.querySelector('.cvy-go').onclick = () => done(true);
+                el.onclick = (e) => { if(e.target === el) done(false); };
+                document.addEventListener('keydown', onKey, true);
+                document.body.appendChild(el);
+                try { el.querySelector('.cvy-go').focus(); } catch(e){}
+            });
+        }
+
+        async function waOpen(stableKey, kind){
+            if(!can('write')) return;
+            const inc = (rawData.incidents || []).find(i => _incidentStableKey(i) === stableKey); if(!inc) return;
+            const spec = WA_TEMPLATES[kind] || WA_TEMPLATES.apology;
+            const phone = _waPhone(inc);
+            if(!phone || phone.length < 11){ UI.toast('No usable phone number on this complaint.', 'warning'); return; }
+            const ctx = _waContext(inc);
+            // Every one of these templates says "our {branch} branch". Without a
+            // branch the sentence is broken, and a filler word would be a lie
+            // about where the complaint came from.
+            if(!ctx.branch){ UI.toast('This complaint has no branch on it, so the message cannot be filled in.', 'warning'); return; }
+            const body = spec.text(ctx);
+
+            // The voucher message still goes the old way -- see WA_TEMPLATES.
+            if(spec.viaWhatsApp){
+                window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(body), '_blank', 'noopener');
+                inc.recoverySent = new Date().toISOString(); inc.recoveryKind = kind;
+                _waRecordRecovery(stableKey, inc, kind);
+                UI.toast('WhatsApp opened — read it, then press send.', 'success');
+                return;
+            }
+
+            const ok = await _cvyConfirm(spec.label, 'To ' + ctx.name + ' · +' + phone,  body,
+                'This sends immediately from our WhatsApp number. It cannot be unsent.');
+            if(!ok) return;
+
+            const btns = Array.prototype.slice.call(document.querySelectorAll('.wa-btns button'));
+            btns.forEach(b => { b.disabled = true; });
+            try {
+                const r = await apiCall('conviyo_send', {
+                    id: stableKey,
+                    kind: kind,
+                    to: phone,
+                    vars: spec.vars(ctx),
+                    // The incident's own key, so a retry after a timeout cannot
+                    // message the same customer twice.
+                    clientReference: 'inc-' + stableKey + '-' + kind
+                });
+                if(!r || r.status !== 'success') throw Object.assign(new Error('refused'), { info: r });
+                inc.recoverySent = new Date().toISOString();
+                inc.recoveryKind = kind;
+                inc.recoveryMessageId = r.id || '';
+                _waRecordRecovery(stableKey, inc, kind);
+                UI.toast(r.replayed ? 'Already sent to this customer — not sent again.' : 'Message sent.', 'success');
+                try { if(app && app.openIncidentDetailModalDirect) app.openIncidentDetailModalDirect(inc); } catch(e){}
+            } catch(e){
+                UI.toast(_cvyError((e && e.info) || e), 'error', 9000);
+            } finally {
+                btns.forEach(b => { b.disabled = false; });
+            }
+        }
+        // Recorded against the incident so the question the recovery flow exists
+        // to answer -- do messaged customers come back -- can be asked later.
+        function _waRecordRecovery(stableKey, inc, kind){
+            try {
+                apiCall('incident_resolution', {
+                    id: stableKey, status: 'closed',
+                    note: (inc.resolutionNote || '') + ' | recovery: ' + kind,
+                    validity: inc.caseStatus === 'fake' ? 'fake' : inc.caseStatus === 'not_responding' ? 'not_responding' : 'valid',
+                    category: inc.agentCategory || '',
+                    clientId: 'wa_' + Date.now().toString(36)
+                }).catch(()=>{});
+            } catch(e){}
         }
         function waButtons(inc){
             if(!can('write')) return '';
             const phone = _waPhone(inc); if(!phone || phone.length < 11) return '';
             const k = _incidentStableKey(inc).replace(/'/g, "\\'");
             const sent = inc.recoverySent;
+            // esc() in this file is local to other functions, so the status --
+            // which only ever comes from Conviyo -- is cleaned here rather than
+            // trusted into markup.
+            const state = String(inc.recoveryStatus || (sent ? 'sent' : '')).replace(/[^a-z ]/gi, '');
             return `<div class="wa-box">
-                <div class="wa-title"><i class="fab fa-whatsapp"></i> Message the customer${sent ? '<span class="wa-sent">already opened</span>' : ''}</div>
+                <div class="wa-title"><i class="fab fa-whatsapp"></i> Message the customer${state ? '<span class="wa-sent">' + state + '</span>' : ''}</div>
                 <div class="wa-btns">
                     <button onclick="waOpen('${k}','apology')"><i class="fab fa-whatsapp"></i> Apology</button>
                     <button onclick="waOpen('${k}','voucher')"><i class="fas fa-ticket"></i> Apology + voucher</button>
                     <button onclick="waOpen('${k}','noreply')"><i class="fas fa-phone-slash"></i> Couldn't reach</button>
                 </div>
-                <div class="wa-hint">Opens WhatsApp with the message written — read it before sending.</div>
+                <div class="wa-hint">Apology and Couldn't reach send from our WhatsApp number — you'll see the message first. Apology + voucher opens WhatsApp for you to send yourself.</div>
             </div>`;
         }
 
@@ -19997,7 +20169,7 @@ ${(() => {
                      "The browser was told not to show alerts from the dashboard, and it will not ask again by itself. Click the icon just left of the address bar (usually a lock), open Notifications, choose Allow, then reload the page. The Desktop alerts switch in your profile menu will then work.",
                      "alerts"],
                     ["Which WhatsApp message should I send?",
-                     "Apology: once you have spoken to the customer and put things right. Apology + voucher: for a verified complaint serious enough to deserve a goodwill voucher — the message includes a voucher code. Could not reach: after you have called and got no answer. Each button opens WhatsApp with the message already written; read it, then press send yourself. The buttons only appear when the complaint has a usable phone number, and the dashboard records which message was opened.",
+                     "Apology: once you have spoken to the customer and put things right. Apology + voucher: for a verified complaint serious enough to deserve a goodwill voucher — the message includes a voucher code. Could not reach: after you have called and got no answer. Apology and Could not reach send from our own WhatsApp number through Conviyo: you are shown the finished message first and nothing goes out until you press Send, after which it cannot be unsent, and the customer's reply lands in the Conviyo inbox. Apology + voucher still opens WhatsApp for you to send yourself. The buttons only appear when the complaint has a usable phone number and a branch, and the dashboard records what was sent and whether it was delivered.",
                      "write"],
                     ["The customer does not answer or the number is wrong — what do I do?",
                      "Try once more, then mark the case Not Responding — not Fake, because the complaint may still be real. If there is a WhatsApp number, send the Could not reach message so the customer can reply when they are free.",
