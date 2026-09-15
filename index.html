@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.96.1 · 16 Sep 2026 · one clock, no missed changes';
+        const BUILD_VERSION = 'v2.96.2 · 16 Sep 2026 · sync trace';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7499,9 +7499,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // it. Remember to go once more when this one finishes; otherwise
                 // that change waits for the next timer tick, which is exactly
                 // the "landed 20 seconds later on the other device" complaint.
-                if(syncing){ _syncAgain = true; return syncing; }
+                if(syncing){ _syncAgain = true; console.info('[sync] already running — will go again after'); return syncing; }
                 syncing = (async () => {
                     const now = Date.now();
+                    const _t0 = now;
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
                     // A full round throws away the saved copy and re-downloads the
                     // whole history -- about 35,000 rows, several minutes. That is
@@ -7535,6 +7536,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // travels with the data it describes.
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
                     for(const k in res.tabs) apply(k, res.tabs[k]);
+                    try {
+                        const changedTabs = Object.entries(res.tabs).filter(([k,v]) => v.mode !== 'unchanged').map(([k,v]) => k + ':' + v.mode + (v.rows ? '(' + v.rows.length + ')' : ''));
+                        console.info('[sync] ' + (forceFull ? 'FULL' : 'quick') + ' · ' + (Date.now() - _t0) + ' ms · served_by ' + (res.served_by || '?') + ' · changed: ' + (changedTabs.join(' ') || 'nothing') + (window.__forceFullNext ? ' · NEXT WILL BE FULL' : ''));
+                    } catch(e){}
                     window.__lastSync = { at: new Date().toISOString(), modes: Object.fromEntries(Object.entries(res.tabs).map(([k,v]) => [k, v.mode + (v.rows ? ' ' + v.rows.length : '')])) };
                     if(_syncAgain){ _syncAgain = false; setTimeout(() => { sync().catch(()=>{}); if(window.pollNow) pollNow(); }, 50); }
                     if(wantAi) lastAiPoll = now;
@@ -11187,7 +11192,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 // Nothing changed in any sheet -> nothing to do.
                                 // No remap, no alert check, no repaint.
                                 if(window.__needsRepaintAfterModal){ _needsRenderCatchup = true; window.__needsRepaintAfterModal = false; }
-                                if(window.__liveChanged === false && !_needsRenderCatchup){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
+                                if(window.__liveChanged === false && !_needsRenderCatchup){ console.info('[refresh] nothing changed — no repaint'); if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
+                                console.info('[refresh] applying' + (skipRender ? ' (repaint deferred: ' + (document.hidden ? 'tab hidden' : 'dialog open') + ')' : ''));
                                 applyGlobalFilters();
                                 checkForNewIncidents();
                                 // The open dialog updates even though the page
@@ -23125,7 +23131,7 @@ ${(() => {
                         const first = rev === 0;
                         rev = res.rev;
                         // Something changed: fetch it now, don't wait for the timer.
-                        if(res.changed && !first && window.pollNow) pollNow();
+                        if(res.changed && !first){ console.info('[live] change notice · rev ' + res.rev + ' · ' + new Date().toLocaleTimeString()); if(window.pollNow) pollNow(); else console.warn('[live] pollNow not ready'); }
                         return listen();
                     }
                     throw new Error((res && res.message) || 'unexpected reply');
