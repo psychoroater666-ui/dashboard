@@ -6575,7 +6575,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.76.0 · 15 Sep 2026 · call connect fix';
+        const BUILD_VERSION = 'v2.77.0 · 15 Sep 2026 · TURN support';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21793,6 +21793,34 @@ ${(() => {
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' }
             ];
+            // STUN alone only connects two people who can already reach each
+            // other directly. Across different networks the audio must be
+            // relayed through TURN, whose credentials come from the Worker so
+            // they are not sitting in this file. Falls back to STUN-only, which
+            // still works for two people on the same network.
+            let iceConfig = null, iceHasTurn = false;
+            async function ensureIceConfig(){
+                if (iceConfig) return iceConfig;
+                try {
+                    const res = await fetch('/api/', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
+                        body: JSON.stringify({ action: 'vc_ice' })
+                    });
+                    const data = await res.json();
+                    if (data && data.status === 'success' && Array.isArray(data.iceServers) && data.iceServers.length) {
+                        iceConfig  = data.iceServers;
+                        iceHasTurn = !!data.hasTurn;
+                        if (!iceHasTurn) console.log('voice call: no TURN configured — calls between different networks will not connect');
+                        return iceConfig;
+                    }
+                } catch(e){ console.log('ice config fetch failed:', e && e.message); }
+                iceConfig = ICE_SERVERS;          // STUN only
+                iceHasTurn = false;
+                return iceConfig;
+            }
             const POLL_MS   = 1800;   // signaling poll interval while in call
             const RING_SECS = 35;     // auto-reject incoming after N seconds
 
@@ -21982,10 +22010,31 @@ ${(() => {
 
             // ── RTCPeerConnection lifecycle ───────────────────────────────────
             function createPeerConnection(){
-                const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+                const pc = new RTCPeerConnection({ iceServers: iceConfig || ICE_SERVERS });
+                st._sawRelay = false;
 
                 pc.onicecandidate = e => {
-                    if (e.candidate) signal({ callId: st.callId, from: myIdentity(), type: 'ice', candidate: e.candidate });
+                    if (e.candidate) {
+                        // 'relay' means a TURN server offered a path. With no
+                        // relay candidate on either side, a cross-network call
+                        // has nothing to fall back to.
+                        if (e.candidate.type === 'relay' || /(^| )typ relay( |$)/.test(e.candidate.candidate || '')) st._sawRelay = true;
+                        signal({ callId: st.callId, from: myIdentity(), type: 'ice', candidate: e.candidate });
+                    }
+                };
+
+                pc.oniceconnectionstatechange = () => {
+                    console.log('voice call: ice state =', pc.iceConnectionState,
+                                '| relay candidate seen:', st._sawRelay, '| TURN configured:', iceHasTurn);
+                    if (pc.iceConnectionState === 'failed') {
+                        // Say what actually went wrong instead of sitting on
+                        // "Connecting..." until it times out.
+                        setStatus(iceHasTurn
+                            ? 'Could not connect — the network blocked the call'
+                            : 'Could not connect — a TURN relay is needed for calls between networks', 'error');
+                        VcSfx.ended();
+                        teardown(true);
+                    }
                 };
 
                 pc.ontrack = e => {
@@ -22041,6 +22090,7 @@ ${(() => {
                 st.remotePeerName = targetName || targetEmail;
                 st.inCall    = true;
 
+                await ensureIceConfig();
                 st.pc = createPeerConnection();
                 stream.getTracks().forEach(t => st.pc.addTrack(t, stream));
 
@@ -22094,6 +22144,7 @@ ${(() => {
                 }
                 st.inCall = true;
                 st.localStream = stream;
+                await ensureIceConfig();
                 st.pc = createPeerConnection();
                 stream.getTracks().forEach(t => st.pc.addTrack(t, stream));
 
