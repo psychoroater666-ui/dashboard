@@ -6666,7 +6666,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.82.0 · 15 Sep 2026 · WhatsApp via Conviyo';
+        const BUILD_VERSION = 'v2.83.0 · 15 Sep 2026 · voucher codes live';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8912,11 +8912,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             voucher: {
                 label: 'Apology + voucher',
                 template: 'crumble_apology_voucher',
-                // Deliberately NOT sent through Conviyo yet: the code below is
-                // generated from a hash and exists nowhere the Call Center can
-                // redeem it. Until codes are issued through the rewards system,
-                // this one stays click-to-WhatsApp so a person sees it first.
-                viaWhatsApp: true,
+                // The code is issued into the Stamps tab BEFORE this message is
+                // sent, so the Call Center can find and redeem it. It used to
+                // be a hash of the incident key, which existed nowhere and left
+                // customers at the counter holding something nobody could
+                // honour. Needs the 'reward' capability, like every other
+                // rewards action.
+                needsCode: true,
                 vars: (c) => ({ '1': c.name, '2': c.branch, '3': c.issue, '4': c.code }),
                 text: (c) => `Hi ${c.name},\n\nThis is Crumble Pakistan. We're sorry about your recent experience at our ${c.branch} branch (${c.issue}).\n\nWe've addressed it with the team. As an apology, please use code *${c.code}* on your next order — it's on us.\n\nThank you for giving us the chance to make it right.`
             },
@@ -8934,7 +8936,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(p.length === 10) return '92' + p;
             return p;
         }
-        function _waCode(inc){ return 'CRB-' + String(Math.abs(_hashStr(_incidentStableKey(inc)))).slice(0, 4); }
+        // Kept only as a fallback label. The code a customer is actually given
+        // is issued by the Worker into the Stamps tab -- see waOpen.
+        function _waCode(inc){ return inc.voucherCode || ('CRB-' + String(Math.abs(_hashStr(_incidentStableKey(inc)))).slice(0, 4)); }
         function _hashStr(str){ let h = 0; for(let i = 0; i < String(str).length; i++){ h = ((h << 5) - h) + String(str).charCodeAt(i); h |= 0; } return h; }
         async function addIncidentFollowUp(stableKey){
             if(!requireCap('write', 'adding a follow-up note')) return;
@@ -9051,22 +9055,42 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // branch the sentence is broken, and a filler word would be a lie
             // about where the complaint came from.
             if(!ctx.branch){ UI.toast('This complaint has no branch on it, so the message cannot be filled in.', 'warning'); return; }
-            const body = spec.text(ctx);
-
-            // The voucher message still goes the old way -- see WA_TEMPLATES.
-            if(spec.viaWhatsApp){
-                window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(body), '_blank', 'noopener');
-                inc.recoverySent = new Date().toISOString(); inc.recoveryKind = kind;
-                _waRecordRecovery(stableKey, inc, kind);
-                UI.toast('WhatsApp opened — read it, then press send.', 'success');
-                return;
-            }
-
-            const ok = await _cvyConfirm(spec.label, 'To ' + ctx.name + ' · +' + phone,  body,
-                'This sends immediately from our WhatsApp number. It cannot be unsent.');
-            if(!ok) return;
 
             const btns = Array.prototype.slice.call(document.querySelectorAll('.wa-btns button'));
+            // A voucher is money, so it follows the same rule as every other
+            // rewards action rather than the rule for closing a complaint.
+            if(spec.needsCode && !can('reward')){
+                UI.toast('Vouchers are issued by the Call Center, the Owner or a Report Analyst.', 'warning');
+                return;
+            }
+            // The code must exist in the rewards system BEFORE the customer is
+            // told about it. If this fails, nothing is sent.
+            if(spec.needsCode){
+                btns.forEach(b => { b.disabled = true; });
+                try {
+                    const r = await apiCall('reward_issue', {
+                        id: stableKey, phone: phone,
+                        name: (_rawFieldExact(inc._raw, 'Name') || '').trim()
+                    });
+                    if(!r || r.status !== 'success'){
+                        UI.toast((r && r.message) || 'The voucher code could not be issued, so nothing was sent.', 'warning', 9000);
+                        return;
+                    }
+                    ctx.code = r.code;
+                    inc.voucherCode = r.code;
+                } catch(e){
+                    UI.toast('The voucher code could not be issued, so nothing was sent.', 'error', 8000);
+                    return;
+                } finally { btns.forEach(b => { b.disabled = false; }); }
+            }
+            const body = spec.text(ctx);
+
+            const ok = await _cvyConfirm(spec.label, 'To ' + ctx.name + ' · +' + phone,  body,
+                spec.needsCode
+                    ? 'Code ' + ctx.code + ' is now live in the Rewards tab. This sends immediately and cannot be unsent.'
+                    : 'This sends immediately from our WhatsApp number. It cannot be unsent.');
+            if(!ok) return;
+
             btns.forEach(b => { b.disabled = true; });
             try {
                 const r = await apiCall('conviyo_send', {
@@ -9120,7 +9144,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button onclick="waOpen('${k}','voucher')"><i class="fas fa-ticket"></i> Apology + voucher</button>
                     <button onclick="waOpen('${k}','noreply')"><i class="fas fa-phone-slash"></i> Couldn't reach</button>
                 </div>
-                <div class="wa-hint">Apology and Couldn't reach send from our WhatsApp number — you'll see the message first. Apology + voucher opens WhatsApp for you to send yourself.</div>
+                <div class="wa-hint">All three send from our WhatsApp number — you'll see the message first. Apology + voucher issues a real reward code the Call Center can redeem.</div>
             </div>`;
         }
 
@@ -20169,7 +20193,7 @@ ${(() => {
                      "The browser was told not to show alerts from the dashboard, and it will not ask again by itself. Click the icon just left of the address bar (usually a lock), open Notifications, choose Allow, then reload the page. The Desktop alerts switch in your profile menu will then work.",
                      "alerts"],
                     ["Which WhatsApp message should I send?",
-                     "Apology: once you have spoken to the customer and put things right. Apology + voucher: for a verified complaint serious enough to deserve a goodwill voucher — the message includes a voucher code. Could not reach: after you have called and got no answer. Apology and Could not reach send from our own WhatsApp number through Conviyo: you are shown the finished message first and nothing goes out until you press Send, after which it cannot be unsent, and the customer's reply lands in the Conviyo inbox. Apology + voucher still opens WhatsApp for you to send yourself. The buttons only appear when the complaint has a usable phone number and a branch, and the dashboard records what was sent and whether it was delivered.",
+                     "Apology: once you have spoken to the customer and put things right. Apology + voucher: for a verified complaint serious enough to deserve a goodwill voucher — the message includes a voucher code. Could not reach: after you have called and got no answer. All three send from our own WhatsApp number through Conviyo: you are shown the finished message first and nothing goes out until you press Send, after which it cannot be unsent, and the customer's reply lands in the Conviyo inbox. Apology + voucher first issues a real reward code into the Rewards tab, then sends it the same way, so the Call Center can find and redeem that code when the customer rings; it needs rewards permission, and a customer can only be given one voucher every 30 days. The buttons only appear when the complaint has a usable phone number and a branch, and the dashboard records what was sent and whether it was delivered.",
                      "write"],
                     ["The customer does not answer or the number is wrong — what do I do?",
                      "Try once more, then mark the case Not Responding — not Fake, because the complaint may still be real. If there is a WhatsApp number, send the Could not reach message so the customer can reply when they are free.",
