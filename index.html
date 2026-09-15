@@ -422,6 +422,7 @@
         }
         .topnav-more i { font-size: .6rem; opacity: .8; transition: transform .2s; }
         .topnav-more.open i { transform: rotate(180deg); }
+        #topnav-more-label { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .topnav-more-count {
             min-width: 18px; height: 16px; line-height: 16px; padding: 0 5px; border-radius: 9px;
             background: #64D0FF; color: #010197; font-size: .6rem; font-weight: 800; text-align: center;
@@ -7131,7 +7132,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.93.3 · 15 Sep 2026 · photos no longer squashed';
+        const BUILD_VERSION = 'v2.93.4 · 15 Sep 2026 · nav fit correction';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22099,6 +22100,25 @@ ${(() => {
                 isOpen() ? close() : open();
             }
 
+            /** What the button says decides how wide it is, so this runs before
+             *  it is measured. If the view you are on sits in the menu, the
+             *  button carries its name -- otherwise nothing in the bar would
+             *  read as selected. */
+            function label(hidden){
+                const b = moreB(); if (!b) return;
+                const act = hidden.find(el => el.classList.contains('active'));
+                const lab = document.getElementById('topnav-more-label');
+                const cnt = document.getElementById('topnav-more-count');
+                if (act){
+                    b.classList.add('is-active');
+                    if (lab) lab.textContent = act.textContent.trim();
+                } else {
+                    b.classList.remove('is-active');
+                    if (lab) lab.textContent = 'More';
+                    if (cnt) cnt.textContent = hidden.length;
+                }
+            }
+
             function layout(){
                 const n = nav(), b = moreB();
                 if (!n || !b) return;
@@ -22117,25 +22137,42 @@ ${(() => {
                     return;
                 }
                 const items = links.filter(inRole);
-                const avail = n.clientWidth - 8;
+                // A few pixels of headroom: a row that lands exactly on the edge
+                // gets clipped by the first sub-pixel rounding.
+                const avail = n.clientWidth - 12;
                 const w = items.map(el => el.offsetWidth + 2);
                 const total = w.reduce((a, x) => a + x, 0);
-                // The button is display:none until it is needed, so it has to be
-                // shown before it can be measured. Measured, not assumed: a
-                // guessed reserve is what left a gap in the row.
-                b.classList.add('visible');
-                const moreW = (b.offsetWidth || 112) + 6;
 
                 let hidden = [], used = total;
                 if (total > avail){
-                    let run = 0, keep = 0;
-                    for (let i = 0; i < items.length; i++){
-                        if (run + w[i] + moreW > avail) break;
-                        run += w[i]; keep++;
+                    b.classList.add('visible');
+                    // The button's own width depends on what it ends up saying --
+                    // "More 9" and "Incident Analytics" are not the same size --
+                    // so label it first, measure it, and give back another tab if
+                    // it turned out wider than the fit allowed for. Measuring a
+                    // button labelled "More" and then renaming it is what pushed
+                    // the last tab off the edge.
+                    let keep = items.length, run = total, moreW = 0;
+                    for (let guard = 0; guard < items.length + 2; guard++){
+                        if (keep === items.length){       // first pass: rough fit
+                            label(items.slice(0));
+                            moreW = (b.offsetWidth || 112) + 6;
+                            run = 0; keep = 0;
+                            for (let i = 0; i < items.length; i++){
+                                if (run + w[i] + moreW > avail) break;
+                                run += w[i]; keep++;
+                            }
+                            if (keep < 1) keep = 1;
+                        }
+                        hidden = items.slice(keep);
+                        hidden.forEach(el => el.classList.add('is-overflow'));
+                        label(hidden);
+                        moreW = (b.offsetWidth || 112) + 6;
+                        if (run + moreW <= avail || keep <= 1) break;
+                        // still too wide once labelled: hand one more tab back
+                        keep--; run -= w[keep];
+                        items[keep].classList.add('is-overflow');
                     }
-                    if (keep < 1) keep = 1;
-                    hidden = items.slice(keep);
-                    hidden.forEach(el => el.classList.add('is-overflow'));
                     used = run + moreW;
                 }
                 // Whatever is left over is given back to the tabs as padding, so
@@ -22154,19 +22191,6 @@ ${(() => {
                     return;
                 }
                 build(hidden);
-                // If the view you are on ended up in the menu, the button says
-                // so -- otherwise nothing in the bar would look selected.
-                const act = hidden.find(el => el.classList.contains('active'));
-                const label = document.getElementById('topnav-more-label');
-                const count = document.getElementById('topnav-more-count');
-                if (act){
-                    b.classList.add('is-active');
-                    if (label) label.textContent = act.textContent.trim();
-                } else {
-                    b.classList.remove('is-active');
-                    if (label) label.textContent = 'More';
-                    if (count) count.textContent = hidden.length;
-                }
                 if (isOpen()) place();
             }
             function schedule(){
@@ -22215,6 +22239,8 @@ ${(() => {
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
             else start();
             window.addEventListener('load', schedule);
+            // Text measured in the fallback font is not the text you end up with.
+            try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule); } catch(e){}
 
             return { refresh: schedule, toggle: toggle, close: close };
         })();
