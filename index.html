@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.95.0 · 16 Sep 2026 · ops fixes';
+        const BUILD_VERSION = 'v2.96.0 · 16 Sep 2026 · live everywhere';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11165,6 +11165,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 if(window.__liveChanged === false && !_needsRenderCatchup){ if(!skipRender) document.body.classList.remove('bg-refresh'); return; }
                                 applyGlobalFilters();
                                 checkForNewIncidents();
+                                // The open dialog updates even though the page
+                                // behind it does not repaint yet.
+                                try { app.syncOpenIncidentModal(); } catch(e){}
                                 // Runs unconditionally, even when the render
                                 // below gets skipped for having an unchanged
                                 // submission/incident count — reviewing an
@@ -13023,6 +13026,39 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }
                 if(!inc) return;
                 this.openIncidentDetailModalDirect(inc);
+            },
+
+            /** Bring the open incident up to date with what just arrived --
+             *  another agent resolving it, reviewing it, changing its category.
+             *  This check used to live only inside the table render, and the
+             *  refresh path skips rendering while a dialog is open: so the one
+             *  moment it mattered was the one moment it never ran. Anything the
+             *  agent has typed into the dialog is kept across the rebuild. */
+            syncOpenIncidentModal() {
+                const key = window._openIncidentModalKey;
+                if(!key) return false;
+                const live = (rawData.incidents || []).find(i => _incidentStableKey(i) === key);
+                if(!live) return false;
+                const sig = _incidentModalSig(live);
+                if(window._openIncidentModalSig === sig) return false;
+                // Preserve what they were writing.
+                const drafts = {};
+                try {
+                    document.querySelectorAll('#incident-view-modal textarea, #incident-view-modal input[type="text"]').forEach((el, i) => {
+                        if(el.value) drafts[el.id || ('idx' + i)] = { id: el.id, idx: i, value: el.value };
+                    });
+                } catch(e){}
+                window._openIncidentModalSig = sig;
+                this.openIncidentDetailModalDirect(live);
+                try {
+                    const fields = document.querySelectorAll('#incident-view-modal textarea, #incident-view-modal input[type="text"]');
+                    Object.values(drafts).forEach(d => {
+                        const el = (d.id && document.getElementById(d.id)) || fields[d.idx];
+                        if(el && !el.value) el.value = d.value;
+                    });
+                } catch(e){}
+                try { UI.toast('This case was updated' + (live.resolvedBy ? ' by ' + live.resolvedBy : '') + ' — showing the latest.', 'info', 4000); } catch(e){}
+                return true;
             },
 
             openIncidentDetailModalDirect(inc) {
