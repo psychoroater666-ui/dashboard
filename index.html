@@ -6714,7 +6714,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.84.0 · 15 Sep 2026 · chat files & receipts';
+        const BUILD_VERSION = 'v2.85.1 · 15 Sep 2026 · chat poll recovery';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -18654,7 +18654,12 @@ ${(() => {
             _usersInFlight = apiCall('get_users').then(res => {
                 if(!res || res.status !== 'success') throw new Error(res && res.message || 'get_users failed');
                 const users = res.users || [];
-                try { sessionStorage.setItem(_USERS_CACHE_KEY, JSON.stringify(users)); } catch(e){}
+                // The cached copy is shown instantly on the next open, so who was
+                // online ten minutes ago must not be cached as online now.
+                try {
+                    sessionStorage.setItem(_USERS_CACHE_KEY,
+                        JSON.stringify(users.map(u => Object.assign({}, u, { online: false }))));
+                } catch(e){}
                 return users;
             }).finally(() => { _usersInFlight = null; });
             return _usersInFlight;
@@ -18684,13 +18689,32 @@ ${(() => {
                 return;
             }
             const roleColor = r => ({ owner:'#010197', admin:'#3B5BDB', reportanalyst:'#7C3AED', callcenter:'#010197', manager:'#059669', viewer:'#64748B' })[roleKey(r)] || '#64748B';
-            const fmtLogin = v => { if(!v) return 'Never signed in'; const d = new Date(v); if(isNaN(d)) return 'Last seen ' + v; const m = Math.round((Date.now()-d)/60000); return 'Last seen ' + (m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m/60) + ' h ago' : d.toLocaleDateString()); };
+            // "Online" is the heartbeat the dashboard sends every 20 seconds while
+            // it is open and in front of someone, so it means exactly that: the
+            // dashboard is open on a screen somewhere. A closed laptop drops off
+            // within a minute or two, which is the honest answer rather than a
+            // green dot that lingers.
+            const fmtSeen = u => {
+                if(u.online) return 'Online now';
+                const v = u.lastSeen || u.lastLogin;
+                if(!v) return 'Not seen yet';
+                const d = new Date(v); if(isNaN(d)) return 'Last seen ' + v;
+                const m = Math.round((Date.now()-d)/60000);
+                if(m < 2) return 'Last seen just now';
+                if(m < 60) return 'Last seen ' + m + ' min ago';
+                if(m < 1440) return 'Last seen ' + Math.round(m/60) + ' h ago';
+                if(m < 10080) return 'Last seen ' + Math.round(m/1440) + ' d ago';
+                return 'Last seen ' + d.toLocaleDateString();
+            };
             wrap.innerHTML = users.map(u => {
                 const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region + ' region' : 'All branches');
                 const isSelf = (u.email||'').trim().toLowerCase() === (PERM.email||'').trim().toLowerCase();
                 const disabled = String(u.status||'active').toLowerCase() === 'disabled';
                 return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);${disabled?'opacity:.55;':''}">
-                    <div style="width:34px;height:34px;border-radius:50%;background:${getAvatarColor(u.name||u.email).bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.72rem;flex-shrink:0;">${(u.name||u.email||'U').split(/\\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U'}</div>
+                    <div style="position:relative;flex-shrink:0;">
+                        <div style="width:34px;height:34px;border-radius:50%;background:${getAvatarColor(u.name||u.email).bg};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:0.72rem;">${(u.name||u.email||'U').split(/\\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U'}</div>
+                        ${u.online ? '<span title="Online now" style="position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#16A34A;border:2px solid var(--white);"></span>' : ''}
+                    </div>
                     <div style="flex:1;min-width:0;">
                         <div style="font-size:0.84rem;font-weight:700;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.name||'—'}${isSelf?' <span style="font-weight:600;color:var(--text-muted);">(you)</span>':''}</div>
                         <div style="font-size:0.72rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</div>
@@ -18698,7 +18722,7 @@ ${(() => {
                     <div style="flex-shrink:0;text-align:right;">
                         <span style="font-size:0.66rem;font-weight:800;padding:3px 8px;border-radius:20px;background:${roleColor(u.role)}1f;color:${roleColor(u.role)};">${ROLE_LABEL[roleKey(u.role)] || u.role}</span>
                         ${disabled ? '<span style="font-size:0.62rem;font-weight:800;padding:3px 8px;border-radius:20px;background:rgba(220,38,38,.1);color:#DC2626;margin-left:4px;">DISABLED</span>' : ''}
-                        <div style="font-size:0.66rem;color:var(--text-muted);margin-top:3px;">${scope} · ${fmtLogin(u.lastLogin)}</div>
+                        <div style="font-size:0.66rem;color:var(--text-muted);margin-top:3px;">${scope} · <span style="${u.online?'color:#16A34A;font-weight:700;':''}">${fmtSeen(u)}</span></div>
                     </div>
                     <button onclick='openUserForm(${JSON.stringify(u).replace(/'/g,"&apos;")})' title="Edit" style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;flex-shrink:0;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'"><i class="fas fa-pen" style="font-size:0.72rem;"></i></button>
                     <button onclick="deleteUserRow('${(u.email||'').replace(/'/g,"\\'")}')" title="${isSelf?'Cannot delete your own account':'Delete'}" ${isSelf?'disabled':''} style="width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:${isSelf?'var(--border-color)':'#DC2626'};cursor:${isSelf?'not-allowed':'pointer'};flex-shrink:0;" ${isSelf?'':`onmouseover="this.style.background='rgba(220,38,38,.08)'" onmouseout="this.style.background='transparent'"`}><i class="fas fa-trash-can" style="font-size:0.72rem;"></i></button>
@@ -22789,10 +22813,11 @@ ${(() => {
                 // An uploaded file waiting to be sent, an in-progress
                 // recording, and when we last told the other side we were
                 // typing -- all per conversation, cleared when it changes.
-                pending: null, rec: null, recTimer: null, lastTyping: 0
+                pending: null, rec: null, recTimer: null, lastTyping: 0, quietUntil: 0
             };
 
-            async function chatApi(action, extra){
+            async function chatApi(action, extra, _attempt){
+                _attempt = _attempt || 1;
                 try {
                     const res = await fetch('/api/', {
                         method: 'POST',
@@ -22801,10 +22826,36 @@ ${(() => {
                         redirect: 'follow',
                         body: JSON.stringify(Object.assign({ action }, extra || {}))
                     });
-                    const out = await res.json();
+                    const text = await res.text();
+                    const t = text.trimStart();
+                    // An HTML answer is never ours. Two kinds: the Cloudflare
+                    // Access sign-in page, which means the session has run out
+                    // and only a reload fixes it; or a transient error page,
+                    // which the next attempt usually gets past. Before this,
+                    // both were logged and swallowed -- so an expired session
+                    // left the chat polling into a login wall for ever, saying
+                    // nothing, while messages silently stopped arriving.
+                    if (t.startsWith('<')) {
+                        const isLogin = /cloudflareaccess|cdn-cgi\/access|Cloudflare Access|<title>Sign in/i.test(t);
+                        if (isLogin) { window.location.reload(); return null; }
+                        if (_attempt < 3) {
+                            await new Promise(r => setTimeout(r, 700 * _attempt));
+                            return chatApi(action, extra, _attempt + 1);
+                        }
+                        console.log('chat: backend returned a page, not an answer', action, res.status);
+                        return null;
+                    }
+                    const out = JSON.parse(text);
                     if (out && out.status !== 'success') console.log('chat refused:', action, out);
                     return out;
-                } catch(e){ console.log('chat failed:', action, e && e.message); return null; }
+                } catch(e){
+                    if (_attempt < 3) {
+                        await new Promise(r => setTimeout(r, 700 * _attempt));
+                        return chatApi(action, extra, _attempt + 1);
+                    }
+                    console.log('chat failed:', action, e && e.message);
+                    return null;
+                }
             }
 
             const chatEsc = dirEsc;
@@ -23178,7 +23229,8 @@ ${(() => {
 
             async function chatPoll(){
                 const res = await chatApi('chat_poll', { sinceId: chat.sinceId, peer: chat.peer || '' });
-                if (!res || res.status !== 'success') return;
+                if (!res || res.status !== 'success') { chat.quietUntil = Date.now() + 15000; return; }
+                chat.quietUntil = 0;
                 chat.unread = res.unread || {};
                 if (typeof res.sinceId === 'number') chat.sinceId = res.sinceId;
                 const fresh = res.messages || [];
@@ -23210,6 +23262,11 @@ ${(() => {
                 // the background, where only the unread badge matters.
                 chat.pollTimer = setInterval(() => {
                     if (document.hidden) return;
+                    // After a failed poll, stand back for a while. Two seconds
+                    // is right when things are working and exactly wrong when
+                    // they are not -- it turns one problem into thirty requests
+                    // a minute against a backend already in trouble.
+                    if (chat.quietUntil && Date.now() < chat.quietUntil) return;
                     if (chat.peer || st.panelOpen || (Date.now() % 12000) < 5000) chatPoll();
                 }, 2000);
             }
