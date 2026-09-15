@@ -364,7 +364,7 @@
         }
         .topnav-links::-webkit-scrollbar { display:none; }
         .topnav-link {
-            padding: 6px 13px; border-radius: 7px;
+            padding: 6px var(--nav-pad, 13px); border-radius: 7px;
             color: rgba(255,255,255,.46); font-size:.78rem; font-weight:600;
             cursor:pointer; white-space:nowrap;
             border: 1px solid transparent; letter-spacing:0.2px;
@@ -410,7 +410,7 @@
         .topnav-link.is-overflow { display: none !important; }
         .topnav-more {
             display: none; align-items: center; gap: 7px; flex-shrink: 0; margin-left: 4px;
-            padding: 6px 11px; border-radius: 8px; white-space: nowrap; cursor: pointer;
+            padding: 6px var(--nav-pad-more, 11px); border-radius: 8px; white-space: nowrap; cursor: pointer;
             font-size: .78rem; font-weight: 700; letter-spacing: .2px;
             color: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.18);
             transition: background .18s, color .18s, border-color .18s;
@@ -7118,7 +7118,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.92.0 · 15 Sep 2026 · nav overflow menu';
+        const BUILD_VERSION = 'v2.93.0 · 15 Sep 2026 · nav fills the row';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21987,8 +21987,9 @@ ${(() => {
                 rewards:'fa-gift', 'form-builder':'fa-pen-to-square', activity:'fa-clock-rotate-left',
                 system:'fa-heart-pulse'
             };
-            const RESERVE = 124;          // room the More button needs
-            const MIN_W   = 900;          // below this the bar scrolls instead
+            const BASE_PAD = 13;          // a tab's resting horizontal padding
+            const MAX_PAD  = 26;          // and the widest it is allowed to grow to
+            const MIN_W    = 900;         // below this the bar scrolls instead
             let menuEl = null, queued = false;
 
             const nav   = () => document.getElementById('topNav');
@@ -22075,9 +22076,16 @@ ${(() => {
                 if (!n || !b) return;
                 const links = allLinks();
                 links.forEach(el => el.classList.remove('is-overflow'));
+                // Always measure at resting padding, never at whatever width the
+                // last pass stretched the tabs to -- otherwise each run feeds on
+                // the one before it and the bar creeps.
+                n.style.setProperty('--nav-pad', BASE_PAD + 'px');
+                n.style.setProperty('--nav-pad-more', '11px');
 
                 if (window.innerWidth < MIN_W){
                     b.classList.remove('visible');
+                    n.style.removeProperty('--nav-pad');
+                    n.style.removeProperty('--nav-pad-more');
                     close();
                     return;
                 }
@@ -22085,24 +22093,42 @@ ${(() => {
                 const avail = n.clientWidth - 8;
                 const w = items.map(el => el.offsetWidth + 2);
                 const total = w.reduce((a, x) => a + x, 0);
+                // The button is display:none until it is needed, so it has to be
+                // shown before it can be measured. Measured, not assumed: a
+                // guessed reserve is what left a gap in the row.
+                b.classList.add('visible');
+                const moreW = (b.offsetWidth || 112) + 6;
 
-                let hidden = [];
+                let hidden = [], used = total;
                 if (total > avail){
                     let run = 0, keep = 0;
                     for (let i = 0; i < items.length; i++){
-                        if (run + w[i] + RESERVE > avail) break;
+                        if (run + w[i] + moreW > avail) break;
                         run += w[i]; keep++;
                     }
                     if (keep < 1) keep = 1;
                     hidden = items.slice(keep);
                     hidden.forEach(el => el.classList.add('is-overflow'));
+                    used = run + moreW;
+                }
+                // Whatever is left over is given back to the tabs as padding, so
+                // the row reads as a full bar instead of a short row with a hole
+                // before the icons. Capped, or three tabs on a wide screen would
+                // stretch into a banner.
+                const shownCount = items.length - hidden.length + (hidden.length ? 1 : 0);
+                if (shownCount > 0){
+                    const slack = Math.max(0, avail - used);
+                    const extra = Math.min(MAX_PAD - BASE_PAD, Math.floor(slack / shownCount / 2));
+                    if (extra > 0){
+                        n.style.setProperty('--nav-pad', (BASE_PAD + extra) + 'px');
+                        n.style.setProperty('--nav-pad-more', (11 + extra) + 'px');
+                    }
                 }
                 if (!hidden.length){
                     b.classList.remove('visible', 'is-active');
                     close();
                     return;
                 }
-                b.classList.add('visible');
                 build(hidden);
                 // If the view you are on ended up in the menu, the button says
                 // so -- otherwise nothing in the bar would look selected.
