@@ -5562,7 +5562,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <button class="view-btn" onclick="app.setExecMode('trend', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Trend</button>
                         <button class="view-btn" onclick="app.setExecMode('breakdown', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Breakdown</button>
                     </div>
-                    <button id="refresh-btn" onclick="appRefresh()" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:#000;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
+                    <button id="refresh-btn" onclick="appRefresh(event)" title="Refresh (Shift+click to re-verify all history)" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:#000;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
                         <i id="refresh-icon" class="fas fa-infinity" style="font-size:0.85rem;color:#000;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
                         <span id="refresh-label">Refresh</span>
                     </button>
@@ -6225,7 +6225,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <!-- Header -->
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
                     <div>
-                        <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);">Incident Case Log</h2>
+                        <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-main);">Incident Case Log
+                            <button id="inc-refresh-btn" onclick="incidentQuickRefresh()" title="Fetch the latest cases without leaving this page"
+                                    style="vertical-align:middle;margin-left:10px;padding:5px 11px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font:700 .72rem 'Inter',sans-serif;cursor:pointer;">
+                                <i class="fas fa-rotate"></i> Refresh
+                            </button>
+                        </h2>
                         <p style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;">Low-rated submissions across all channels. <span id="inc-count-label" style="font-weight:700;color:var(--accent-blue);"></span></p>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
@@ -7132,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.94.0 · 15 Sep 2026 · channels discovered';
+        const BUILD_VERSION = 'v2.95.0 · 16 Sep 2026 · ops fixes';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9105,10 +9110,26 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
         }
 
+        /** Refresh the incident list in place. Agents used to reload the whole
+         *  page, which dropped them back on the Overview and lost the case they
+         *  were working. This fetches what is new and repaints where they are. */
+        function incidentQuickRefresh(){
+            const btn = document.getElementById('inc-refresh-btn');
+            if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Refreshing…'; }
+            try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
+            window.__forceFullNext = false;
+            const done = () => { if(btn){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-rotate"></i> Refresh'; } };
+            Promise.resolve(typeof loadLive === 'function' ? loadLive() : null)
+                .then(() => { try { UI.silent(() => { applyGlobalFilters(); app.applyFilters(); }); } catch(e){ try { app.applyFilters(); } catch(e2){} } })
+                .finally(done);
+        }
+
         function submissionsManualRefresh() {
             const btn = document.getElementById('submissions-refresh-btn');
             if(btn){ btn.disabled = true; btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Refreshing…'; }
-            window.__forceFullNext = true;   // manual refresh = re-verify history, not just append
+            // Quick by default; the whole-history re-verify took minutes and made
+            // the button look broken. See appRefresh.
+            window.__forceFullNext = false;
             loadLive().then(() => {
                 UI.silent(() => { applyGlobalFilters(); app.applyFilters(); });
             }).finally(() => {
@@ -10541,7 +10562,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // "resolving takes time" complaint. On failure the change is
             // reverted and the agent is told to redo it.
             const resolvedCaseStatus = validity === 'fake' ? 'fake' : validity === 'not_responding' ? 'not_responding' : 'verified';
-            const resolvedAt = new Date().toISOString();
+            // The resolve clock stopped when the case was first closed. Setting
+            // the real determination later -- Not Responding, then Verified once
+            // the customer is finally reached -- must not restart it: the days
+            // spent unable to reach someone are not handling time. So a case
+            // that already has a resolvedAt keeps it.
+            const already = (rawData.incidents||[]).find(inc => _incidentStableKey(inc) === stableKey);
+            const keepClock = !!(already && already.resolved && already.resolvedAt);
+            const resolvedAt = keepClock ? already.resolvedAt : new Date().toISOString();
             const snapshot = [];
             (rawData.incidents||[]).forEach(inc => {
                 if(_incidentStableKey(inc) === stableKey){
@@ -10559,7 +10587,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             try { UI.toast(validity === 'not_responding' ? 'Closed — customer not responding' : `Closed as ${validity === 'fake' ? 'Fake' : 'Valid'}`, 'success'); } catch(e){}
 
             const clientId = 'res_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-            apiCall('incident_resolution', { id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '', clientId })
+            apiCall('incident_resolution', { id: stableKey, status: 'closed', note: note || '', validity: validity, category: category || '', clientId,
+                                             // tell the backend the clock already stopped
+                                             keepResolvedAt: keepClock, resolvedAt: keepClock ? resolvedAt : '' })
             .then(r => { if(!r || r.status !== 'success') throw new Error((r && r.message) || 'save failed'); })
             .catch(err => {
                 console.warn('Incident resolution save failed:', err);
@@ -11400,6 +11430,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             refreshData() { this.applyFilters(); if(typeof compareEngine!=='undefined' && compareEngine.render) compareEngine.render(); },
 
             navigate(viewId, elEvt) {
+                // A full page reload used to land on the Overview whatever was
+                // open. The address now carries the view, and the existing
+                // ?open= handler puts the agent back where they were.
+                try { if(viewId && history.replaceState) history.replaceState(null, '', location.pathname + '?open=' + encodeURIComponent(viewId)); } catch(e){}
                 // Someone is working: go back to the fast polling rate.
                 try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
                 if(state.currentView === viewId && document.querySelector('.view.active')){
@@ -11941,7 +11975,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const host = document.getElementById('radar-body'), sub = document.getElementById('radar-sub'); if(!host) return;
                 const end = (document.getElementById('filter-end-date') || {}).value; if(!end){ host.uiHTML = ''; return; }
                 const reasonOf = i => { try { const r = i.agentCategory && _resolveComplaintCategory(i.agentCategory); return r ? r.title : (classifyComplaint(i) || {}).title || 'Others'; } catch(e){ return 'Others'; } };
-                const all = rawData.incidents || [];
+                // A case the agent has marked fake is not an issue at all --
+                // counting it alongside real ones meant made-up complaints could
+                // register as a "trend" at a branch and pull Ops toward nothing.
+                // Open, unreviewed cases still count: an emerging issue has to
+                // be visible before anyone has had time to verify it, or it is
+                // not emerging, it is history.
+                const all = (rawData.incidents || []).filter(i => i.caseStatus !== 'fake');
                 const today = all.filter(i => i.date === end);
                 // baseline: the 14 days before the day in view
                 const from = (() => { const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 14); return t.toISOString().split('T')[0]; })();
@@ -18209,11 +18249,16 @@ ${(() => {
         // ═══════════════════════════════════════════
         // PREMIUM REFRESH — animated button + toast
         // ═══════════════════════════════════════════
-        function appRefresh(){
+        function appRefresh(ev){
             try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
-            // Pressing Refresh means "I think what I'm looking at is wrong":
-            // re-read everything rather than asking only for new rows.
-            window.__forceFullNext = true;
+            // A quick refresh fetches what is new and the tabs that change in
+            // place -- a couple of seconds. It used to re-download the entire
+            // history every time, which took minutes; the screen showed old
+            // data throughout, agents pressed again, and every press joined the
+            // same slow reload. That was the "refresh only works after four or
+            // five tries" complaint: one slow refresh, not five failed ones.
+            // Shift+click still does the full re-verify for when it is wanted.
+            window.__forceFullNext = !!(ev && ev.shiftKey);
             const btn   = document.getElementById('refresh-btn');
             const icon  = document.getElementById('refresh-icon');
             const label = document.getElementById('refresh-label');
@@ -22055,7 +22100,8 @@ ${(() => {
                     }
                     var link = document.querySelector('#topNav .topnav-link[data-view="' + v.replace(/[^a-z-]/g, '') + '"]');
                     if (link) link.click();
-                    if (history.replaceState) history.replaceState(null, '', location.pathname);
+                    // Keep the address as it is: navigate() writes ?open= so a
+                    // reload returns here, and stripping it would undo that.
                 } catch (e) {}
             }
             if (supported){
