@@ -6575,7 +6575,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.74.0 · 15 Sep 2026 · call directory + sounds';
+        const BUILD_VERSION = 'v2.75.0 · 15 Sep 2026 · call identity fix';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22312,6 +22312,13 @@ ${(() => {
                         body: JSON.stringify({ action: 'vc_signal', from: myIdentity(), poll_incoming: true })
                     });
                     const data = await res.json();
+                    // The Worker reports who it believes we are, from the
+                    // Cloudflare session. Adopt it: if PERM had not loaded when
+                    // this started we were polling as 'unknown', and every later
+                    // message would have gone out under the wrong name too.
+                    if (data && data.identity && data.identity !== myIdentity()) {
+                        try { sessionStorage.setItem('crumble_user_email', data.identity); } catch(e){}
+                    }
                     if (data && data.status === 'success' && data.incoming) {
                         const { callId, from, fromName, type, sdp } = data.incoming;
                         if (type === 'incoming_notify' && from && !st.inCall) {
