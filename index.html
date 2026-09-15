@@ -4839,6 +4839,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         .vc-att-pending { display: flex; align-items: center; gap: 8px; padding: 6px 12px; font-size: .74rem;
                           color: var(--text-muted); border-top: 1px solid var(--border-color); }
         .vc-att-pending button { border: none; background: transparent; color: #DC2626; cursor: pointer; }
+        #vc-panel { position: fixed; inset: 0; z-index: 12050; background: rgba(15,23,42,.5); display: flex;
+                    align-items: center; justify-content: center; padding: 16px; }
+        #vc-panel .vc-panel-box { width: 100%; max-width: 380px; background: var(--white); border: 1px solid var(--border-color);
+                    border-radius: 16px; overflow: hidden; box-shadow: 0 26px 70px -18px rgba(15,23,42,.45); }
+        #vc-panel .vc-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+                    padding: 13px 15px; border-bottom: 1px solid var(--border-color); font: 800 .84rem 'Inter',sans-serif; color: var(--text-main); }
+        #vc-panel .vc-panel-x { border: none; background: transparent; color: var(--text-muted); cursor: pointer; font-size: .9rem; }
+        #vc-panel .vc-panel-body { padding: 14px 15px; }
+        #vc-panel .vc-panel-foot { padding: 0 15px 14px; }
+        #vc-panel .vc-panel-ok { width: 100%; padding: 10px; border: none; border-radius: 10px; background: var(--brand-accent);
+                    color: #fff; font: 700 .8rem 'Inter',sans-serif; cursor: pointer; }
+        #vc-panel .vc-panel-ok:disabled { opacity: .6; cursor: default; }
+        .vc-msg-who { display: block; font-size: .66rem; font-weight: 800; opacity: .75; margin-bottom: 2px; }
+        .vc-readby { align-self: flex-end; font-size: .63rem; color: var(--text-muted); margin: -2px 2px 2px; }
+        @media (max-width:520px){ #vc-panel { align-items: flex-end; padding: 0; } #vc-panel .vc-panel-box { max-width: none; border-radius: 16px 16px 0 0; } }
         .vc-chat-empty { padding: 30px 20px; text-align: center; color: var(--text-muted); font-size: .8rem; }
 
         #vc-modal-overlay {
@@ -6714,7 +6729,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.85.1 · 15 Sep 2026 · chat poll recovery';
+        const BUILD_VERSION = 'v2.86.0 · 15 Sep 2026 · group chats';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22813,7 +22828,8 @@ ${(() => {
                 // An uploaded file waiting to be sent, an in-progress
                 // recording, and when we last told the other side we were
                 // typing -- all per conversation, cleared when it changes.
-                pending: null, rec: null, recTimer: null, lastTyping: 0, quietUntil: 0
+                pending: null, rec: null, recTimer: null, lastTyping: 0, quietUntil: 0,
+                groups: [], members: {}
             };
 
             async function chatApi(action, extra, _attempt){
@@ -22892,8 +22908,17 @@ ${(() => {
                     const res = await chatApi('chat_people');
                     if (res && res.status === 'success') { chat.people = res.people || []; chat.loaded = true; }
                 }
+                loadGroups();
                 renderPeople();
             }
+            async function loadGroups(){
+                const res = await chatApi('group_list');
+                if (res && res.status === 'success') { chat.groups = res.groups || []; renderPeople(); }
+            }
+            // A conversation is either an email or "g:<id>", so one function
+            // opens both and one list shows both.
+            const isGroupPeer = t => String(t || '').indexOf('g:') === 0;
+            function groupById(id){ return chat.groups.find(g => 'g:' + g.id === id || g.id === id) || null; }
 
             function renderPeople(){
                 const el = $('vc-chat-people');
@@ -22902,6 +22927,33 @@ ${(() => {
                     el.innerHTML = '<div class="vc-chat-empty">No teammates to message yet.</div>';
                     return;
                 }
+                const newBtn = `<div class="vc-chat-row vc-new-group" onclick="VoiceCall.newGroup()">
+                        <div class="vc-chat-ava" style="background:var(--brand-accent);color:#fff;"><i class="fas fa-user-group"></i></div>
+                        <div class="vc-chat-meta"><div class="vc-chat-name">New group</div>
+                        <div class="vc-chat-sub">Message several people at once</div></div>
+                    </div>`;
+                const groupRows = chat.groups.slice().sort((a,b) => {
+                    const ua = chat.unread['g:' + a.id] || 0, ub = chat.unread['g:' + b.id] || 0;
+                    if (ua !== ub) return ub - ua;
+                    const la = chat.last['g:' + a.id], lb = chat.last['g:' + b.id];
+                    if (la && lb) return String(lb.at).localeCompare(String(la.at));
+                    if (la) return -1; if (lb) return 1;
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                }).map(g => {
+                    const key = 'g:' + g.id;
+                    const n = chat.unread[key] || 0;
+                    const last = chat.last[key];
+                    const sub = last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(last.body).slice(0, 40)
+                              : g.members + ' members';
+                    return `<div class="vc-chat-row" onclick="VoiceCall.openThread('${key}')">
+                        <div class="vc-chat-ava" style="background:#7C3AED;color:#fff;"><i class="fas fa-user-group"></i></div>
+                        <div class="vc-chat-meta">
+                            <div class="vc-chat-name">${chatEsc(g.name)}</div>
+                            <div class="vc-chat-sub">${chatEsc(sub)}</div>
+                        </div>
+                        ${n ? `<span class="vc-chat-unread">${n}</span>` : ''}
+                    </div>`;
+                }).join('');
                 // Anyone with unread messages first, then most recent conversation.
                 const sorted = chat.people.slice().sort((a,b) => {
                     const ua = chat.unread[a.email] || 0, ub = chat.unread[b.email] || 0;
@@ -22912,7 +22964,7 @@ ${(() => {
                     if (lb) return 1;
                     return String(a.name || '').localeCompare(String(b.name || ''));
                 });
-                el.innerHTML = sorted.map(p => {
+                el.innerHTML = newBtn + groupRows + sorted.map(p => {
                     const n = chat.unread[p.email] || 0;
                     const last = chat.last[p.email];
                     const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
@@ -22929,17 +22981,23 @@ ${(() => {
             }
 
             async function openThread(email){
-                const p = chat.people.find(x => x.email === email);
+                const grp = isGroupPeer(email) ? groupById(email) : null;
+                const p = grp ? null : chat.people.find(x => x.email === email);
                 chat.peer = email;
-                chat.peerName = (p && p.name) || email;
+                chat.peerName = grp ? grp.name : ((p && p.name) || email);
                 chat.threadIds = new Set();
                 // A file picked for one person must not follow us into
                 // somebody else's conversation.
                 if (chat.rec) cancelVoice();
                 clearAttachment();
                 $('vc-thread-name').textContent = chat.peerName;
-                $('vc-thread-sub').textContent = p ? (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch) : '';
-                $('vc-thread-ava').textContent = chatInitials(chat.peerName);
+                $('vc-thread-sub').textContent = grp ? (grp.members + ' members · tap for details')
+                                               : (p ? (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch) : '');
+                $('vc-thread-ava').textContent = grp ? '' : chatInitials(chat.peerName);
+                $('vc-thread-ava').innerHTML = grp ? '<i class="fas fa-user-group"></i>' : chatEsc(chatInitials(chat.peerName));
+                $('vc-thread-sub').onclick = grp ? () => VoiceCall.groupInfo() : null;
+                $('vc-thread-sub').style.cursor = grp ? 'pointer' : '';
+                if (grp) loadMembers(email);
                 $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
                 showTab('chat');
                 const res = await chatApi('chat_history', { peer: email });
@@ -23097,6 +23155,113 @@ ${(() => {
                 }
             }
 
+            /** A small sheet over the call panel: used by New group and Group
+             *  info. Built here rather than reusing the dashboard's modals,
+             *  which live in a different scope and assume a full-page overlay. */
+            function vcPanelClose(){ const el = $('vc-panel'); if (el) el.remove(); }
+            function vcPanel(title, bodyHtml, okLabel, onOk){
+                vcPanelClose();
+                const el = document.createElement('div');
+                el.id = 'vc-panel';
+                el.innerHTML = `<div class="vc-panel-box" role="dialog" aria-label="${chatEsc(title)}">
+                        <div class="vc-panel-head"><span>${chatEsc(title)}</span>
+                            <button type="button" class="vc-panel-x" aria-label="Close"><i class="fas fa-times"></i></button></div>
+                        <div class="vc-panel-body">${bodyHtml}</div>
+                        ${okLabel ? `<div class="vc-panel-foot"><button type="button" class="vc-panel-ok">${chatEsc(okLabel)}</button></div>` : ''}
+                    </div>`;
+                el.querySelector('.vc-panel-x').onclick = vcPanelClose;
+                el.onclick = e => { if (e.target === el) vcPanelClose(); };
+                const ok = el.querySelector('.vc-panel-ok');
+                if (ok) ok.onclick = async () => {
+                    ok.disabled = true;
+                    let done = true;
+                    try { done = await onOk(); } catch(e){ done = false; }
+                    ok.disabled = false;
+                    if (done !== false) vcPanelClose();
+                };
+                document.body.appendChild(el);
+                const first = el.querySelector('input, select');
+                if (first) try { first.focus(); } catch(e){}
+            }
+
+            async function loadMembers(peer){
+                const res = await chatApi('group_members', { peer });
+                if (res && res.status === 'success') chat.members[peer] = res.members || [];
+            }
+            function memberName(email){
+                const list = chat.members[chat.peer] || [];
+                const m = list.find(x => x.email === email);
+                if (m) return m.name;
+                const p = chat.people.find(x => x.email === email);
+                return (p && p.name) || email;
+            }
+
+            /** Create a group: a name and at least one other person. */
+            function newGroup(){
+                const people = chat.people.slice().sort((a,b) => String(a.name||'').localeCompare(String(b.name||'')));
+                if (!people.length) { setStatus('No teammates to add yet', 'warning'); return; }
+                const rows = people.map(p => `<label style="display:flex;align-items:center;gap:9px;padding:7px 2px;cursor:pointer;">
+                        <input type="checkbox" value="${chatEsc(p.email)}" style="width:16px;height:16px;">
+                        <span style="flex:1;min-width:0;">
+                            <span style="display:block;font-size:.8rem;font-weight:700;color:var(--text-main);">${chatEsc(p.name)}</span>
+                            <span style="display:block;font-size:.68rem;color:var(--text-muted);">${chatEsc(p.role)}${p.scope === 'all' ? '' : ' · ' + chatEsc(p.branch)}</span>
+                        </span>
+                    </label>`).join('');
+                vcPanel('New group', `
+                    <input id="vc-grp-name" placeholder="Group name" maxlength="60"
+                           style="width:100%;padding:9px 12px;border:1px solid var(--border-color);border-radius:10px;font:600 .82rem inherit;margin-bottom:10px;color:var(--text-main);background:var(--white);">
+                    <div style="font-size:.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Who is in it</div>
+                    <div id="vc-grp-people" style="max-height:44vh;overflow:auto;">${rows}</div>`,
+                    'Create group', async () => {
+                        const name = String(($('vc-grp-name') || {}).value || '').trim();
+                        if (!name) { setStatus('Give the group a name', 'warning'); return false; }
+                        const members = Array.from(document.querySelectorAll('#vc-grp-people input:checked')).map(i => i.value);
+                        if (!members.length) { setStatus('Pick at least one person', 'warning'); return false; }
+                        const res = await chatApi('group_create', { name, members });
+                        if (!res || res.status !== 'success') { setStatus((res && res.message) || 'Could not create the group', 'error'); return false; }
+                        await loadGroups();
+                        openThread(res.target);
+                        return true;
+                    });
+            }
+
+            /** Who is in this group, and the way out of it. */
+            async function groupInfo(){
+                if (!isGroupPeer(chat.peer)) return;
+                const peer = chat.peer;
+                await loadMembers(peer);
+                const g = groupById(peer);
+                const list = (chat.members[peer] || []).map(m => `<div style="display:flex;align-items:center;gap:9px;padding:7px 2px;">
+                        <div class="vc-chat-ava" style="width:28px;height:28px;font-size:.66rem;">${chatEsc(chatInitials(m.name))}</div>
+                        <span style="flex:1;min-width:0;font-size:.79rem;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chatEsc(m.name)}</span>
+                        <span style="font-size:.66rem;color:var(--text-muted);">${chatEsc(m.role)}</span>
+                    </div>`).join('');
+                const others = chat.people.filter(p => !(chat.members[peer] || []).some(m => m.email === p.email));
+                const addOpts = others.map(p => `<option value="${chatEsc(p.email)}">${chatEsc(p.name)}</option>`).join('');
+                vcPanel(g ? g.name : 'Group', `
+                    <div style="font-size:.68rem;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Members</div>
+                    <div style="max-height:34vh;overflow:auto;margin-bottom:12px;">${list}</div>
+                    ${others.length ? `<div style="display:flex;gap:7px;">
+                        <select id="vc-grp-add" style="flex:1;padding:8px 10px;border:1px solid var(--border-color);border-radius:9px;font:600 .78rem inherit;background:var(--white);color:var(--text-main);">${addOpts}</select>
+                        <button class="fb-btn sm" onclick="VoiceCall.addMember()">Add</button></div>` : ''}
+                    <button class="fb-btn sm" style="margin-top:12px;color:#DC2626;" onclick="VoiceCall.leaveGroup()">Leave group</button>`, '', null);
+            }
+            async function addMember(){
+                const sel = $('vc-grp-add'); if (!sel || !sel.value) return;
+                const res = await chatApi('group_add', { peer: chat.peer, email: sel.value });
+                if (res && res.status === 'success') { await loadGroups(); groupInfo(); }
+                else setStatus((res && res.message) || 'Could not add them', 'error');
+            }
+            async function leaveGroup(){
+                const res = await chatApi('group_leave', { peer: chat.peer });
+                if (res && res.status === 'success') {
+                    vcPanelClose();
+                    chat.peer = null;
+                    await loadGroups();
+                    showTab('chat'); renderPeople();
+                } else setStatus((res && res.message) || 'Could not leave', 'error');
+            }
+
             /** Tell the other side we are writing -- at most once every 3s. */
             function typingPing(){
                 if (!chat.peer) return;
@@ -23108,7 +23273,9 @@ ${(() => {
             function paintTyping(list){
                 const box = $('vc-thread-msgs');
                 if (!box) return;
-                const on = chat.peer && (list || []).indexOf(chat.peer) !== -1;
+                const on = chat.peer && (isGroupPeer(chat.peer)
+                    ? (list || []).length > 0                    // the Worker already scoped this to the group
+                    : (list || []).indexOf(chat.peer) !== -1);
                 let el = box.querySelector('.vc-typing');
                 if (on && !el){
                     box.insertAdjacentHTML('beforeend', '<div class="vc-typing"><span></span><span></span><span></span></div>');
@@ -23120,6 +23287,9 @@ ${(() => {
              *  everyone already knows from WhatsApp. */
             function tickFor(m){
                 if (!m.mine) return '';
+                // A group has many recipients, so one pair of ticks cannot
+                // speak for all of them -- the read-by line below does.
+                if (isGroupPeer(chat.peer)) return '';
                 if (m.readAt) return '<i class="fas fa-check-double vc-tick seen"></i>';
                 if (m.deliveredAt) return '<i class="fas fa-check-double vc-tick"></i>';
                 return '<i class="fas fa-check vc-tick"></i>';
@@ -23152,7 +23322,11 @@ ${(() => {
                     const day = chatDay(m.at);
                     if (day !== lastDay) { parts.push(`<div class="vc-msg-day">${chatEsc(day)}</div>`); lastDay = day; }
                     const text = m.body ? chatEsc(m.body).replace(/\n/g,'<br>') : '';
-                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}" data-id="${m.id}">${attachmentHtml(m)}${text}`
+                    // In a group you need to know who said it; in a one-to-one
+                    // it is obvious and the name is just noise.
+                    const who = (!m.mine && isGroupPeer(chat.peer))
+                        ? `<span class="vc-msg-who">${chatEsc(m.fromName || memberName(m.from))}</span>` : '';
+                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}" data-id="${m.id}">${who}${attachmentHtml(m)}${text}`
                              + `<span class="vc-msg-time">${chatEsc(chatTime(m.at))}<span class="vc-tick-slot">${tickFor(m)}</span></span></div>`);
                 }
                 box.dataset.lastDay = lastDay;
@@ -23167,6 +23341,23 @@ ${(() => {
                     box.scrollTop = box.scrollHeight;
                 }
             }
+            /** "Read by …" under my most recent message in a group. */
+            function paintGroupReads(gr){
+                const box = $('vc-thread-msgs');
+                if (!box) return;
+                const old = box.querySelector('.vc-readby');
+                if (old) old.remove();
+                if (!gr || !gr.messageId || !gr.of) return;
+                const msg = box.querySelector('.vc-msg[data-id="' + gr.messageId + '"]');
+                if (!msg) return;
+                const readers = gr.readers || [];
+                const label = !readers.length ? 'Delivered'
+                    : readers.length === gr.of ? 'Read by everyone'
+                    : readers.length <= 2 ? 'Read by ' + readers.join(' and ')
+                    : 'Read by ' + readers.length + ' of ' + gr.of;
+                msg.insertAdjacentHTML('afterend', '<div class="vc-readby" title="' + chatEsc(readers.join(', ')) + '">' + chatEsc(label) + '</div>');
+            }
+
             /** Update the ticks on messages already on screen. */
             function paintReceipts(list){
                 const box = $('vc-thread-msgs');
@@ -23234,20 +23425,21 @@ ${(() => {
                 chat.unread = res.unread || {};
                 if (typeof res.sinceId === 'number') chat.sinceId = res.sinceId;
                 const fresh = res.messages || [];
+                const keyOf = m => m.group ? ('g:' + m.group) : (m.mine ? m.to : m.from);
                 for (const m of fresh) {
-                    const peer = m.mine ? m.to : m.from;
-                    chat.last[peer] = { at: m.at, mine: m.mine,
+                    chat.last[keyOf(m)] = { at: m.at, mine: m.mine, who: m.group ? (m.fromName || '') : '',
                         body: m.body || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo' : m.kind === 'file' ? 'Attachment' : '') };
                 }
                 // Anything for the conversation on screen goes straight in.
                 if (chat.peer) {
-                    const forThread = fresh.filter(m => (m.mine ? m.to : m.from) === chat.peer);
+                    const forThread = fresh.filter(m => keyOf(m) === chat.peer);
                     if (forThread.length) {
                         renderThread(forThread);
                         await chatApi('chat_mark_read', { peer: chat.peer });
                         chat.unread[chat.peer] = 0;
                     }
                     paintReceipts(res.receipts || []);
+                    paintGroupReads(res.groupReads);
                     paintTyping(res.typing || []);
                 }
                 paintUnread();
@@ -23334,6 +23526,10 @@ ${(() => {
                 composerGrow,
                 composerKey,
                 typingPing,
+                newGroup,
+                groupInfo,
+                addMember,
+                leaveGroup,
                 pickFile,
                 clearAttachment,
                 toggleVoice,
