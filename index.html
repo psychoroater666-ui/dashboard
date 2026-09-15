@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.96.4 · 16 Sep 2026 · no dropped notices';
+        const BUILD_VERSION = 'v2.96.5 · 16 Sep 2026 · self-healing live channel';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11296,8 +11296,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         // Ask right now, not at the next scheduled moment. Used
                         // while an alarm is ringing, so it goes quiet as soon as
                         // somebody else picks the case up.
+                        let _pollByNotice = false;
                         window.pollNow = function(){
                             _pollIdleRounds = 0;
+                            _pollByNotice = true;
                             clearTimeout(_pollTimer);
                             _pollRound();
                         };
@@ -11316,7 +11318,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // Polls no longer wait on Apps Script, so a quicker
                             // safety net costs almost nothing -- and phones do
                             // drop the live connection without saying so.
-                            if(window.__liveConnected) return 10000;
+                            if(window.__liveConnected) return (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 5000 : 10000);
                             return _pollIdleRounds >= 900 ? POLL_SLOW     // ~30 quiet minutes
                                  : _pollIdleRounds >= 300 ? 6000          // ~10 quiet minutes
                                  : POLL_FAST;
@@ -11328,7 +11330,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         }
                         async function _pollRound(){
                             const before = window.__liveChanged;
+                            const byNotice = _pollByNotice; _pollByNotice = false;
                             try { await _doRefresh(); } catch(e){}
+                            // A change found by the TIMER, while the live channel
+                            // claims to be connected, means the channel missed it.
+                            // Phones drop long-held connections without a word,
+                            // and the page goes on believing it is live while
+                            // every update arrives on the slow fallback. Two of
+                            // those in a row and this device stops trusting the
+                            // channel and polls fast until a notice actually
+                            // arrives again.
+                            if(!byNotice && window.__liveChanged === true && window.__liveConnected){
+                                window.__liveMissed = (window.__liveMissed || 0) + 1;
+                                console.warn('[live] change found by fallback poll (' + window.__liveMissed + ') — channel may be stalled');
+                                if(window.__liveMissed >= 2){ window.__liveConnected = false; if(window.liveRestart) liveRestart(); }
+                            } else if(byNotice && window.__liveChanged === true){ window.__liveMissed = 0; }
                             // __liveChanged is set by loadLive: false means every
                             // sheet came back with the same state token as before.
                             if(window.__liveChanged === false) _pollIdleRounds++;
@@ -23109,11 +23125,17 @@ ${(() => {
         // connection is working, it has nothing left to find.
         // ═══════════════════════════════════════════════════════════════════
         (function(){
-            let rev = 0, stopped = false, failures = 0;
+            let rev = 0, stopped = false, failures = 0, inflight = null;
             window.__liveConnected = false;
+            // Start a fresh listener when the page decides the old one has
+            // gone quiet. The stale request, if it is still alive somewhere,
+            // simply returns to a loop that ignores it.
+            let generation = 0;
+            window.liveRestart = function(){ generation++; failures = 0; console.info('[live] restarting listener'); setTimeout(listen, 200); };
 
             async function listen(){
                 if(stopped) return;
+                const myGen = generation;
                 if(false){                                 // keep listening even when not the tab in front
                     setTimeout(listen, 2000);
                     return;
@@ -23126,9 +23148,11 @@ ${(() => {
                         redirect: 'follow',
                         body: JSON.stringify({ action: 'wait_for_change', rev })
                     }).then(r => r.json());
+                    if(myGen !== generation) return;         // superseded by a restart
                     if(res && res.status === 'success'){
                         window.__liveConnected = true;
                         failures = 0;
+                        if(res.changed) window.__liveMissed = 0;
                         const first = rev === 0;
                         rev = res.rev;
                         // Something changed: fetch it now, don't wait for the timer.
