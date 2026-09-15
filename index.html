@@ -4959,6 +4959,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             border-radius: 17px; font-size: .82rem; line-height: 1.45; word-wrap: break-word;
             animation: vcMsgIn .22s cubic-bezier(.16,1,.3,1) both;
         }
+        /* The thread is a flex column, so once it has more messages than fit,
+           the browser starts shrinking its children to make room -- and a photo
+           bubble, which carries overflow:hidden, has no minimum height to stop
+           it. That is what squashed photos into a strip as a conversation grew.
+           Nothing in a message list should ever be compressed: it scrolls. */
+        .vc-msg, .vc-msg-day, .vc-typing, .vc-readby { flex-shrink: 0; }
+        #vc-thread-head, #vc-composer, .vc-rec-bar, .vc-att-pending { flex-shrink: 0; }
         @keyframes vcMsgIn { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
         .vc-msg.them {
             align-self: flex-start; background: var(--white); color: var(--text-main);
@@ -7124,7 +7131,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.93.2 · 15 Sep 2026 · photo spacing in threads';
+        const BUILD_VERSION = 'v2.93.3 · 15 Sep 2026 · photos no longer squashed';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
