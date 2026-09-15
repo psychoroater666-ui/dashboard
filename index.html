@@ -3399,6 +3399,7 @@
         .churn-card { padding:18px 22px; }
         .bp-card { padding:18px 22px; }
         .fc-card { padding:18px 22px; border-left:3px solid #DC2626; }
+        .blink-card { padding:18px 22px; }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
            barely-there tint that fades out to the right, and a status dot instead
@@ -5246,6 +5247,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         </div>
                     </div>
 
+                    <!-- Live from the POS: which branches are trading, what is out of stock -->
+                    <div class="card blink-card" id="blink-card" style="display:none;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-store" style="color:#010197;margin-right:6px;"></i>BRANCHES LIVE</h3><span class="text-xs text-muted" id="blink-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="blink-body"></div>
+                    </div>
+
                     <!-- Forecast: which branch is on course to breach its limit today -->
                     <div class="card fc-card" id="forecast-card" style="display:none;">
                         <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-bolt" style="color:#DC2626;margin-right:6px;"></i>HEADING FOR TROUBLE</h3><span class="text-xs text-muted" id="fc-sub" style="font-size:0.68rem;"></span></div>
@@ -6642,7 +6649,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.80.0 · 15 Sep 2026 · team messaging';
+        const BUILD_VERSION = 'v2.81.0 · 15 Sep 2026 · branches live';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10971,6 +10978,48 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // with that branch's known breaking point and says who will cross it,
             // when, and what happened the last times they did. Plain arithmetic —
             // current pace, measured threshold, historical outcome. No model.
+            // Live POS state. Which branches are open, which are closed inside
+            // their own trading hours, and what each has run out of and for how
+            // long. Read from the Worker, which polls Blink on the minute job.
+            // Hidden entirely until Blink is configured -- an empty card would
+            // only invite the question "is it broken".
+            async renderBlinkLive() {
+                const card = document.getElementById('blink-card'), host = document.getElementById('blink-body'), sub = document.getElementById('blink-sub');
+                if (!card || !host) return;
+                let d = null;
+                try { d = await apiCall('blink_status', {}); } catch (e) { d = null; }
+                if (!d || d.status !== 'success' || !(d.branches || []).length) { card.style.display = 'none'; return; }
+                card.style.display = '';
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const ago = m => m == null ? '' : m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+                const open = d.branches.filter(b => b.open === 1), closed = d.branches.filter(b => b.open === 0);
+                const offline = closed.filter(b => b.offlineMinutes != null);
+                if (sub) sub.textContent = open.length + ' open · ' + closed.length + ' closed' + (offline.length ? ' · ' + offline.length + ' offline in hours' : '') + (d.lastPoll != null ? ' · checked ' + ago(d.lastPoll) + ' ago' : '');
+                const byBranch = {};
+                (d.outOfStock || []).forEach(i => (byBranch[i.branch] = byBranch[i.branch] || []).push(i));
+                const chip = (b) => {
+                    const col = b.offlineMinutes != null ? '#DC2626' : b.open === 1 ? '#059669' : '#64748B';
+                    const label = b.offlineMinutes != null ? 'OFFLINE ' + ago(b.offlineMinutes) : b.open === 1 ? 'open' : b.open === 0 ? 'closed' : 'unknown';
+                    const oos = byBranch[b.name] || [];
+                    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
+                        <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+                        <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);min-width:130px;">${esc2(b.name)}</span>
+                        <span style="font-size:0.7rem;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:.3px;">${esc2(label)}</span>
+                        <span style="font-size:0.7rem;color:var(--text-muted);">${esc2(b.hours)}</span>
+                        <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
+                    </div>`;
+                };
+                const ordered = offline.concat(closed.filter(b => b.offlineMinutes == null)).concat(open);
+                const oosList = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0)).slice(0, 12);
+                host.uiHTML = ordered.map(chip).join('')
+                  + (oosList.length ? `<div style="margin-top:12px;"><div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Out of stock right now</div>`
+                      + oosList.map(i => `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:0.76rem;">
+                            <span style="color:var(--text-main);"><b>${esc2(i.item)}</b> <span style="color:var(--text-muted);">· ${esc2(i.branch)}</span></span>
+                            <span style="color:${(i.outMinutes || 0) > 120 ? '#DC2626' : 'var(--text-muted)'};white-space:nowrap;">${ago(i.outMinutes)}</span></div>`).join('')
+                      + ((d.outOfStock || []).length > 12 ? `<div style="font-size:0.68rem;color:var(--text-muted);padding-top:4px;">and ${(d.outOfStock || []).length - 12} more</div>` : '') + '</div>'
+                    : `<div style="font-size:0.74rem;color:var(--text-muted);padding-top:8px;">Nothing out of stock.</div>`);
+            },
+
             renderForecast() {
                 const card = document.getElementById('forecast-card'), host = document.getElementById('fc-body'), sub = document.getElementById('fc-sub');
                 if(!card || !host) return;
@@ -11264,6 +11313,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try { this.renderChurnRisk(); } catch(e){ console.warn('churn:', e); }
                 try { this.renderBreakingPoint(); } catch(e){ console.warn('breaking point:', e); }
                 try { this.renderForecast(); } catch(e){ console.warn('forecast:', e); }
+                try { this.renderBlinkLive(); } catch(e){ console.warn('blink live:', e); }
                 try { this.renderVerdict(); } catch(e){ console.warn('verdict:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
