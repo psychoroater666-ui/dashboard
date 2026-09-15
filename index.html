@@ -7132,7 +7132,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.93.4 · 15 Sep 2026 · nav fit correction';
+        const BUILD_VERSION = 'v2.94.0 · 15 Sep 2026 · channels discovered';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7177,6 +7177,58 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                   url:'https://docs.google.com/spreadsheets/d/e/2PACX-1vQMntuqxR552YXPbFMkI4yIWsIp-0OeIC8ZN3VhKCfK8pEXcx72JKAENFLNHNmBE-mQy76LSPm72rYi/pub?gid=906346255&single=true&output=csv' }
             ]
         };
+        /* ── Channels, discovered rather than written down ─────────────────
+           The three originals used to be listed here, in the sync call, and
+           in a dozen display arrays. A form built in Form Builder therefore
+           collected answers that nothing on this screen could see.
+
+           The backend now sends the live list with every get_data. It is
+           kept here and remembered between loads, so a new form appears as
+           a channel on its own -- and so the very first paint after a
+           reload already knows about it, before any request returns. */
+        const ChannelReg = (function(){
+            const KEY = 'crumble_channels_v1';
+            // The originals. Present even if the list has never arrived, so a
+            // cold start on a bad connection still shows the dashboard people
+            // have always had.
+            const BUILTIN = [
+                { key:'feedback',   dashKey:'feedback',   label:'Dine In',     builtin:true },
+                { key:'delivery',   dashKey:'delivery',   label:'Delivery',    builtin:true },
+                { key:'callcenter', dashKey:'callcenter', label:'Call Center', builtin:true }
+            ];
+            let list = BUILTIN.slice();
+            try {
+                const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+                if(Array.isArray(saved) && saved.length) list = saved;
+            } catch(e){}
+            function merge(incoming){
+                if(!Array.isArray(incoming) || !incoming.length) return false;
+                const byKey = {};
+                BUILTIN.forEach(c => byKey[c.dashKey] = Object.assign({}, c));
+                incoming.forEach(c => {
+                    if(!c || !c.key) return;
+                    const dashKey = c.dashKey || c.key;
+                    byKey[dashKey] = { key: c.key === 'dinein' ? 'feedback' : c.key,
+                                       dashKey, label: c.label || dashKey,
+                                       tab: c.tab || '', builtin: !!byKey[dashKey] && byKey[dashKey].builtin };
+                });
+                const next = Object.values(byKey);
+                const changed = JSON.stringify(next) !== JSON.stringify(list);
+                list = next;
+                if(changed) { try { localStorage.setItem(KEY, JSON.stringify(list)); } catch(e){} }
+                return changed;
+            }
+            return {
+                all: () => list.slice(),
+                // Everything that is a survey form -- i.e. not the Call Center log.
+                forms: () => list.filter(c => c.dashKey !== 'callcenter'),
+                labels: () => list.map(c => c.label),
+                keys: () => list.map(c => c.dashKey),
+                labelFor: k => (list.find(c => c.dashKey === k) || {}).label || k,
+                merge
+            };
+        })();
+
         // A completed visit rated at or below this counts as an incident/complaint. Change to 2 or 1 to tighten.
         const INCIDENT_MAX_RATING = 3;
         const NIGHT_SHIFT_CUTOFF_HOUR = 9;
@@ -7189,6 +7241,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // loadLive() replaces it with fresh data in the background. Same
         // idea as the cached Cloudflare session: show what we know, verify
         // after. Anything that fails here degrades to the old behaviour.
+        // The remembered list applies before any request returns, so a reload
+        // paints the channels this dashboard already knew about.
+        try { if (typeof LIVE !== 'undefined' && LIVE && Array.isArray(LIVE.sources)) {
+            ChannelReg.forms().forEach(c => {
+                if(c.builtin) return;
+                const url = 'form:' + c.dashKey;
+                if(!LIVE.sources.some(s => s.url === url))
+                    LIVE.sources.push({ form: c.label, url, channelFields: ['order channel','mode order'] });
+            });
+        } } catch(e){}
+
         const DataCache = (function(){
             // VER 2: one device had accumulated 24,000 duplicate rows from a
             // fetching bug. Raising this makes every dashboard throw away what
@@ -7272,12 +7335,33 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // old CSV url -> tab key
             function urlKey(url){
                 if(!url) return null;
+                // A discovered form has no published CSV, so it is given a
+                // stand-in address of the form "form:<key>". Everything that
+                // walks LIVE.sources then treats it like any other source.
+                if(String(url).indexOf('form:') === 0) return String(url).slice(5);
                 const src = (LIVE.sources||[]).find(s => s.url === url);
                 if(src){ const f = String(src.form).toLowerCase(); if(f.includes('dine')) return 'feedback'; if(f.includes('deliver')) return 'delivery'; if(f.includes('call')) return 'callcenter'; }
                 const map = { slSheetUrl:'social', slResolutionUrl:'sl_resolution', incidentResolutionUrl:'incident_resolution', branchStaffUrl:'branch_staff',
                               summaryUrl:'summary', actionPlanUrl:'actionplan', branchDxUrl:'branchdx', radarUrl:'radar', channelInsightUrl:'channelinsight' };
                 for(const k in map){ if(LIVE[k] && LIVE[k] === url) return map[k]; }
                 return null;
+            }
+
+            /** Add a source for every discovered form. Called whenever the
+             *  list changes, so the rest of the dashboard -- submissions,
+             *  incidents, branch figures, the AI snapshot -- picks the new
+             *  form up without a single edit in any of those places. */
+            function syncSourcesWithChannels(){
+                if(!LIVE || !Array.isArray(LIVE.sources)) return false;
+                let added = false;
+                ChannelReg.forms().forEach(c => {
+                    if(c.builtin) return;                       // already listed with its CSV
+                    const url = 'form:' + c.dashKey;
+                    if(LIVE.sources.some(s => s.url === url)) return;
+                    LIVE.sources.push({ form: c.label, url, channelFields: ['order channel', 'mode order'] });
+                    added = true;
+                });
+                return added;
             }
 
             function toObjects(headers, rows){
@@ -7419,7 +7503,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // edited in place is still picked up by the periodic full round,
                     // by pressing Refresh, and immediately by the live tabs below.)
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
-                    const keys = ['feedback','delivery','callcenter','social','sl_resolution','incident_resolution','branch_staff','blink_orders'].concat(wantAi ? AI_TABS : [])
+                    const keys = ChannelReg.keys()
+                        .concat(['social','sl_resolution','incident_resolution','branch_staff','blink_orders']).concat(wantAi ? AI_TABS : [])
                         // The Activity log is Owner-only, is not mirrored into the
                         // database, and grows without limit -- so asking for it on
                         // every poll meant the Owner's laptop alone hammered Apps
@@ -7434,6 +7519,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
                     const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
+                    // A form added in the builder arrives here first: the list
+                    // travels with the data it describes.
+                    if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
                     for(const k in res.tabs) apply(k, res.tabs[k]);
                     window.__lastSync = { at: new Date().toISOString(), modes: Object.fromEntries(Object.entries(res.tabs).map(([k,v]) => [k, v.mode + (v.rows ? ' ' + v.rows.length : '')])) };
                     if(wantAi) lastAiPoll = now;
@@ -8354,7 +8442,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         const channelObj = config.channels[Math.floor(Math.random() * config.channels.length)];
                         // Use the same survey forms the dashboard actually filters by, so the
                         // fallback/sample view isn't blank in Form Performance, VOC sentiment, etc.
-                        const SAMPLE_SURVEY_FORMS = ['Delivery', 'Dine In', 'Call Center'];
+                        const SAMPLE_SURVEY_FORMS = ChannelReg.labels();
                         const surveyForm = SAMPLE_SURVEY_FORMS[Math.floor(Math.random() * SAMPLE_SURVEY_FORMS.length)];
                         const smileScore = Math.random() > 0.15 ? (Math.random() > 0.4 ? 5 : 4) : Math.floor(Math.random() * 3) + 1;
                         
@@ -14933,7 +15021,8 @@ ${(() => {
                     posSubs.forEach(s => { const k=s.surveyForm||'General'; praiseByForm[k]=(praiseByForm[k]||0)+1; });
                     const dims = Object.entries(praiseByForm).sort((a,b)=>b[1]-a[1]);
                     const maxV = dims[0]?.[1]||1;
-                    const labels = {'Delivery':'Delivery Experience','Dine In':'Dine-In Experience','Call Center':'Call Center Experience'};
+                    const labels = new Proxy({'Delivery':'Delivery Experience','Dine In':'Dine-In Experience','Call Center':'Call Center Experience'},
+                        { get: (t,k) => t[k] || (k + ' Feedback') });
                     praiseList.uiHTML = dims.length
                         ? dims.map(([k,v])=>`<div class="voc-praise-item">
                             <span class="voc-praise-label">${labels[k]||k}</span>
@@ -15006,7 +15095,7 @@ ${(() => {
             // and the displayed count here use rated-only submissions —
             // showing "50 submissions" next to a score computed from fewer
             // actual ratings would be inconsistent/misleading.
-            const sentimentData = ['Delivery','Dine In','Call Center'].map(f=>{
+            const sentimentData = ChannelReg.labels().map(f=>{
                 const fSubs = subs.filter(s=>s.surveyForm===f && s.smileScore != null);
                 const avgRaw = fSubs.length ? fSubs.reduce((a,c)=>a+c.smileScore,0)/fSubs.length : 0;
                 return {label:f, score:Math.round(avgRaw*20), count:fSubs.length};
@@ -15165,7 +15254,7 @@ ${(() => {
 
             // Group by surveyForm -> branches -> complaint types
             const formGroups = {};
-            const forms = ['Delivery', 'Dine In', 'Call Center'];
+            const forms = ChannelReg.labels();
 
             forms.forEach(fn => {
                 const formIncs = state.p1.incs.filter(i => i.surveyForm === fn);
@@ -15193,8 +15282,10 @@ ${(() => {
                 if (formIncs.length) formGroups[fn] = { incs: formIncs.length, subs: formSubs.length, branches };
             });
 
-            const iconMap = { 'Delivery': 'fa-motorcycle', 'Dine In': 'fa-utensils', 'Call Center': 'fa-headset' };
-            const colorMap = { 'Delivery': '#2563EB', 'Dine In': '#10B981', 'Call Center': '#8B5CF6' };
+            const iconMap = new Proxy({ 'Delivery': 'fa-motorcycle', 'Dine In': 'fa-utensils', 'Call Center': 'fa-headset' },
+                { get: (t,k) => t[k] || 'fa-clipboard-list' });   // a form we have never seen still gets an icon
+            const colorMap = new Proxy({ 'Delivery': '#2563EB', 'Dine In': '#10B981', 'Call Center': '#8B5CF6' },
+                { get: (t,k) => t[k] || '#0EA5E9' });
 
             container.uiHTML = Object.entries(formGroups).map(([formName, data]) => {
                 const rate = data.subs ? ((data.incs/data.subs)*100).toFixed(2) : '0.00';
@@ -15269,11 +15360,13 @@ ${(() => {
         app.renderIncidentMonitor = function() {
             const container = document.getElementById('exec-incident-monitor');
             if (!container) return;
-            const forms = ['Dine In', 'Delivery', 'Call Center'];
+            const forms = ChannelReg.labels();
             const known = new Set(forms);
             const allForms = forms.concat([...new Set(state.p1.incs.map(i=>i.surveyForm))].filter(f=>!known.has(f)));
-            const iconMap = { 'Dine In':'fa-utensils', 'Delivery':'fa-motorcycle', 'Call Center':'fa-headset' };
-            const colorMap = { 'Dine In':'#010197', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' };
+            const iconMap = new Proxy({ 'Dine In':'fa-utensils', 'Delivery':'fa-motorcycle', 'Call Center':'fa-headset' },
+                { get: (t,k) => t[k] || 'fa-clipboard-list' });
+            const colorMap = new Proxy({ 'Dine In':'#010197', 'Delivery':'#10B981', 'Call Center':'#8B5CF6' },
+                { get: (t,k) => t[k] || '#0EA5E9' });
 
             // Small chart summary above the expandable list below — the list
             // stays as the interactive drill-down (click a form to see which
