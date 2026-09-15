@@ -40,7 +40,18 @@ self.addEventListener('push', event => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'Crumble Sentinel', body: event.data ? event.data.text() : '' }; }
   const title = d.title || 'Crumble Sentinel';
-  event.waitUntil(self.registration.showNotification(title, {
+  const isCall = d.kind === 'call' || /^call\|/.test(String(d.tag || ''));
+
+  // A call is not a message, and should not behave like one.
+  //
+  // What a browser can do: stay on screen until it is dealt with, vibrate
+  // insistently rather than once, and offer Answer and Decline without
+  // opening anything first.
+  //
+  // What it cannot do, on any browser: play a ringtone of our choosing. The
+  // sound belongs to the phone's notification channel and is not ours to set.
+  // The real ringtone starts once the dashboard is open and answering.
+  const opts = {
     body: d.body || '',
     icon: '/icons/icon-192.png',
     // The badge is the small mark in the status bar. It has to be a white
@@ -54,15 +65,42 @@ self.addEventListener('push', event => {
     tag: d.tag || 'sentinel',
     renotify: true,
     // Overdue cases stay on the lock screen until somebody deals with them.
-    requireInteraction: !!d.critical,
-    vibrate: d.critical ? [200, 80, 200, 80, 200] : [150],
-    data: { url: d.url || '/' }
-  }));
+    // A ringing call stays there too, for the obvious reason.
+    requireInteraction: isCall || !!d.critical,
+    vibrate: isCall ? [500, 250, 500, 250, 500, 250, 500]
+           : d.critical ? [200, 80, 200, 80, 200] : [150],
+    data: { url: d.url || '/', kind: d.kind || '', callId: d.callId || '', me: d.me || '' }
+  };
+  if (isCall) {
+    // Not supported on iOS, which shows the notification without them. The
+    // tap still opens the call, so nothing is lost there -- there is just no
+    // way to decline without opening it.
+    opts.actions = [
+      { action: 'answer',  title: 'Answer' },
+      { action: 'decline', title: 'Decline' }
+    ];
+  }
+  event.waitUntil(self.registration.showNotification(title, opts));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || '/';
+  const d = event.notification.data || {};
+  const target = d.url || '/';
+
+  // Declined from the lock screen: tell the caller now, rather than leaving
+  // them listening to a ring nobody is going to answer. This runs with the
+  // dashboard shut, so the request carries the Cloudflare Access cookie of
+  // the person whose phone it is -- which is exactly who is declining.
+  if (event.action === 'decline' && d.callId && d.me) {
+    event.waitUntil(fetch('/api/', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'vc_signal', callId: d.callId, from: d.me, type: 'reject' })
+    }).catch(() => {}));
+    return;
+  }
   event.waitUntil((async () => {
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const c of all) {
