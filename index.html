@@ -6729,7 +6729,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.86.0 · 15 Sep 2026 · group chats';
+        const BUILD_VERSION = 'v2.86.1 · 15 Sep 2026 · group admin';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22829,7 +22829,7 @@ ${(() => {
                 // recording, and when we last told the other side we were
                 // typing -- all per conversation, cleared when it changes.
                 pending: null, rec: null, recTimer: null, lastTyping: 0, quietUntil: 0,
-                groups: [], members: {}
+                groups: [], members: {}, me: '', groupOwner: {}
             };
 
             async function chatApi(action, extra, _attempt){
@@ -22906,7 +22906,7 @@ ${(() => {
             async function loadPeople(){
                 if (!chat.loaded) {
                     const res = await chatApi('chat_people');
-                    if (res && res.status === 'success') { chat.people = res.people || []; chat.loaded = true; }
+                    if (res && res.status === 'success') { chat.people = res.people || []; chat.me = res.me || ''; chat.loaded = true; }
                 }
                 loadGroups();
                 renderPeople();
@@ -23186,7 +23186,15 @@ ${(() => {
 
             async function loadMembers(peer){
                 const res = await chatApi('group_members', { peer });
-                if (res && res.status === 'success') chat.members[peer] = res.members || [];
+                if (res && res.status === 'success') {
+                    chat.members[peer] = res.members || [];
+                    chat.groupOwner[peer] = String((res.group && res.group.created_by) || '').toLowerCase();
+                }
+            }
+            /** Whoever created the group runs it: they can take people out.
+             *  Everyone can add, and everyone can leave of their own accord. */
+            function iRunGroup(peer){
+                return !!chat.me && chat.groupOwner[peer] === String(chat.me).toLowerCase();
             }
             function memberName(email){
                 const list = chat.members[chat.peer] || [];
@@ -23231,11 +23239,21 @@ ${(() => {
                 const peer = chat.peer;
                 await loadMembers(peer);
                 const g = groupById(peer);
-                const list = (chat.members[peer] || []).map(m => `<div style="display:flex;align-items:center;gap:9px;padding:7px 2px;">
+                const owner = chat.groupOwner[peer] || '';
+                const admin = iRunGroup(peer);
+                const meLower = String(chat.me || '').toLowerCase();
+                const list = (chat.members[peer] || []).map(m => {
+                    const isOwner = String(m.email).toLowerCase() === owner;
+                    const isMe = String(m.email).toLowerCase() === meLower;
+                    return `<div style="display:flex;align-items:center;gap:9px;padding:7px 2px;">
                         <div class="vc-chat-ava" style="width:28px;height:28px;font-size:.66rem;">${chatEsc(chatInitials(m.name))}</div>
-                        <span style="flex:1;min-width:0;font-size:.79rem;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chatEsc(m.name)}</span>
-                        <span style="font-size:.66rem;color:var(--text-muted);">${chatEsc(m.role)}</span>
-                    </div>`).join('');
+                        <span style="flex:1;min-width:0;font-size:.79rem;color:var(--text-main);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${chatEsc(m.name)}${isMe ? ' <span style="color:var(--text-muted);font-weight:600;">(you)</span>' : ''}</span>
+                        ${isOwner ? '<span style="font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:20px;background:rgba(124,58,237,.12);color:#7C3AED;">ADMIN</span>'
+                                  : `<span style="font-size:.66rem;color:var(--text-muted);">${chatEsc(m.role)}</span>`}
+                        ${(admin && !isOwner) ? `<button title="Remove from group" onclick="VoiceCall.removeMember('${chatEsc(m.email).replace(/'/g,"\\'")}')"
+                              style="border:none;background:transparent;color:#DC2626;cursor:pointer;padding:2px 4px;"><i class="fas fa-user-minus"></i></button>` : ''}
+                    </div>`;
+                }).join('');
                 const others = chat.people.filter(p => !(chat.members[peer] || []).some(m => m.email === p.email));
                 const addOpts = others.map(p => `<option value="${chatEsc(p.email)}">${chatEsc(p.name)}</option>`).join('');
                 vcPanel(g ? g.name : 'Group', `
@@ -23244,13 +23262,23 @@ ${(() => {
                     ${others.length ? `<div style="display:flex;gap:7px;">
                         <select id="vc-grp-add" style="flex:1;padding:8px 10px;border:1px solid var(--border-color);border-radius:9px;font:600 .78rem inherit;background:var(--white);color:var(--text-main);">${addOpts}</select>
                         <button class="fb-btn sm" onclick="VoiceCall.addMember()">Add</button></div>` : ''}
-                    <button class="fb-btn sm" style="margin-top:12px;color:#DC2626;" onclick="VoiceCall.leaveGroup()">Leave group</button>`, '', null);
+                    <div style="margin-top:12px;font-size:.66rem;color:var(--text-muted);">
+                        ${admin ? 'You created this group, so you can remove people. Anyone in it can add someone.'
+                                : 'Only whoever created this group can remove people.'}</div>
+                    <button class="fb-btn sm" style="margin-top:10px;color:#DC2626;" onclick="VoiceCall.leaveGroup()">Leave group</button>`, '', null);
             }
             async function addMember(){
                 const sel = $('vc-grp-add'); if (!sel || !sel.value) return;
                 const res = await chatApi('group_add', { peer: chat.peer, email: sel.value });
                 if (res && res.status === 'success') { await loadGroups(); groupInfo(); }
                 else setStatus((res && res.message) || 'Could not add them', 'error');
+            }
+            async function removeMember(email){
+                const name = memberName(email);
+                if (!confirm('Remove ' + name + ' from this group?\n\nThey will stop receiving its messages. Anything already sent stays in their history.')) return;
+                const res = await chatApi('group_remove', { peer: chat.peer, email });
+                if (res && res.status === 'success') { await loadGroups(); groupInfo(); }
+                else setStatus((res && res.message) || 'Could not remove them', 'error');
             }
             async function leaveGroup(){
                 const res = await chatApi('group_leave', { peer: chat.peer });
@@ -23529,6 +23557,7 @@ ${(() => {
                 newGroup,
                 groupInfo,
                 addMember,
+                removeMember,
                 leaveGroup,
                 pickFile,
                 clearAttachment,
