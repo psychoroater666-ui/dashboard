@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.96.0 · 16 Sep 2026 · live everywhere';
+        const BUILD_VERSION = 'v2.96.1 · 16 Sep 2026 · one clock, no missed changes';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7491,8 +7491,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
 
             // ── one sync round ──
+            let _syncAgain = false;
             async function sync(opts){
-                if(syncing) return syncing;          // never overlap two syncs
+                // Never overlap two syncs -- but a request that arrives while one
+                // is running was most likely prompted by a change that happened
+                // AFTER the running one started, so it cannot be satisfied by
+                // it. Remember to go once more when this one finishes; otherwise
+                // that change waits for the next timer tick, which is exactly
+                // the "landed 20 seconds later on the other device" complaint.
+                if(syncing){ _syncAgain = true; return syncing; }
                 syncing = (async () => {
                     const now = Date.now();
                     const wantAi = (now - lastAiPoll) > AI_POLL_MS || !tabs.summary;
@@ -7529,6 +7536,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
                     for(const k in res.tabs) apply(k, res.tabs[k]);
                     window.__lastSync = { at: new Date().toISOString(), modes: Object.fromEntries(Object.entries(res.tabs).map(([k,v]) => [k, v.mode + (v.rows ? ' ' + v.rows.length : '')])) };
+                    if(_syncAgain){ _syncAgain = false; setTimeout(() => { sync().catch(()=>{}); if(window.pollNow) pollNow(); }, 50); }
                     if(wantAi) lastAiPoll = now;
                     if(forceFull || !lastFull) lastFull = now;
                     window.__dataScope = res.scope || null;
@@ -9376,8 +9384,25 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             return _slaArrival[k];
         }
+        /** When the clock starts. The case's own Created At, which every
+         *  device agrees on. It used to be "when this device first saw it",
+         *  kept in localStorage -- so the same case read 5m 40s on a laptop
+         *  and 13s on a phone opened later. That was a workaround for cases
+         *  landing minutes after creation; with direct intake they land in
+         *  seconds, and the true time is the honest one. Local arrival is
+         *  kept only as a fallback for a row with no parseable Created At. */
+        function slaStart(inc){
+            const raw = inc._raw && (inc._raw['Created At'] || inc._raw['created at']);
+            let t = raw ? Date.parse(raw) : NaN;
+            if(isNaN(t)){
+                // "9/16/2026 8:36:59" -- the sheet's own format -- is not ISO.
+                const m = String(raw || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ ,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+                if(m) t = new Date(+m[3], +m[1]-1, +m[2], +m[4], +m[5], +(m[6]||0)).getTime();
+            }
+            return isNaN(t) ? slaArrival(inc) : Math.min(t, Date.now());
+        }
         function slaState(inc){
-            const now = Date.now(), arrived = slaArrival(inc);
+            const now = Date.now(), arrived = slaStart(inc);
             if(inc.resolved) return { stage: 'done' };
             const reviewedAt = inc.reviewedAt ? Date.parse(inc.reviewedAt) : null;
             if(!reviewedAt) return { stage: 'review', ms: now - arrived, limit: SLA.REVIEW_RING_MS, breached: (now - arrived) > SLA.REVIEW_RING_MS };
@@ -11281,7 +11306,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // the instant anything changes, so polling only has
                             // to catch what that might miss. Without it, fall
                             // back to asking often.
-                            if(window.__liveConnected) return 20000;
+                            // Polls no longer wait on Apps Script, so a quicker
+                            // safety net costs almost nothing -- and phones do
+                            // drop the live connection without saying so.
+                            if(window.__liveConnected) return 10000;
                             return _pollIdleRounds >= 900 ? POLL_SLOW     // ~30 quiet minutes
                                  : _pollIdleRounds >= 300 ? 6000          // ~10 quiet minutes
                                  : POLL_FAST;
