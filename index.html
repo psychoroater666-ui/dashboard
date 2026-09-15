@@ -4832,8 +4832,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         /* people list */
         #vc-chat-people, #vc-chat-thread { display: none; }
         #vc-chat-people.visible { display: block; }
-        #vc-chat-thread.visible { display: block; }
-        #vc-chat-people { max-height: 340px; overflow-y: auto; padding: 8px 8px 10px; }
+        /* The panel is capped to the window height, so the message list is the
+           part that gives: everything else keeps its size and the thread
+           shrinks into whatever is left. */
+        #vc-chat-thread.visible { display: flex; flex-direction: column; min-height: 0; }
+        #vc-modal-header, #vc-tabs, #vc-status-bar { flex-shrink: 0; }
+        #vc-chat-people, #vc-branch-list { min-height: 0; }
+        #vc-chat-people { max-height: clamp(260px, 44vh, 440px); overflow-y: auto; padding: 8px 8px 10px; }
         .vc-chat-row {
             display: flex; align-items: center; gap: 12px; padding: 9px 11px;
             cursor: pointer; border-radius: 14px; transition: background .16s, transform .12s;
@@ -4886,7 +4891,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         /* thread surface */
         #vc-thread-msgs {
-            height: 320px; overflow-y: auto; padding: 14px 14px 12px;
+            height: clamp(260px, 46vh, 460px); flex: 1 1 auto; min-height: 150px;
+            overflow-y: auto; padding: 14px 14px 12px;
             display: flex; flex-direction: column; background: var(--bg-light);
         }
         .vc-msg {
@@ -4924,10 +4930,40 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         /* photos — fill the bubble, open in-app */
         .vc-msg.has-media { padding: 4px; overflow: hidden; }
+        /* The wrapper carries the height while the photo is on its way, so the
+           bubble can never collapse into a sliver. */
+        .vc-photo { display: block; position: relative; width: 224px; max-width: 100%; min-height: 150px;
+                    border-radius: 14px; overflow: hidden; background: rgba(255,255,255,.14); }
+        .vc-msg.them .vc-photo { background: rgba(1,1,151,.06); }
+        .vc-photo.ok { min-height: 0; background: transparent; }
         .vc-msg img.vc-att-img {
             display: block; width: 224px; max-width: 100%; max-height: 260px;
-            object-fit: cover; border-radius: 14px; cursor: zoom-in; background: rgba(0,0,0,.05);
+            object-fit: cover; border-radius: 14px; cursor: zoom-in;
         }
+        .vc-photo-ph, .vc-photo-bad {
+            position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center;
+            justify-content: center; gap: 6px; text-align: center; padding: 10px;
+            color: rgba(255,255,255,.75); pointer-events: none;
+        }
+        .vc-msg.them .vc-photo-ph, .vc-msg.them .vc-photo-bad { color: var(--text-muted); }
+        .vc-photo-ph i, .vc-photo-bad i { font-size: 1.35rem; opacity: .75; }
+        .vc-photo-bad { display: none; cursor: pointer; pointer-events: auto; }
+        .vc-photo-bad b { font-size: .76rem; font-weight: 700; }
+        .vc-photo-bad em { font-size: .66rem; font-style: normal; opacity: .75; }
+        .vc-photo.ok .vc-photo-ph, .vc-photo.bad .vc-photo-ph { display: none; }
+        .vc-photo.bad { min-height: 150px; }
+        .vc-photo.bad img { visibility: hidden; }
+        .vc-photo.bad .vc-photo-bad { display: flex; }
+        /* a slow shimmer so a loading photo reads as loading, not as broken */
+        .vc-photo:not(.ok):not(.bad)::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: 45%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+            animation: vcShimmer 1.5s ease-in-out infinite;
+        }
+        .vc-msg.them .vc-photo:not(.ok):not(.bad)::after {
+            background: linear-gradient(90deg, transparent, rgba(1,1,151,.07), transparent);
+        }
+        @keyframes vcShimmer { 0% { left: -45%; } 100% { left: 100%; } }
         .vc-msg.has-media .vc-msg-time { padding: 0 8px 4px; }
         .vc-msg.media-only .vc-msg-time {
             position: absolute; right: 10px; bottom: 10px; margin: 0; padding: 2px 8px;
@@ -5103,18 +5139,42 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                          font-weight: 600; line-height: 1.6; }
         .vc-chat-empty i { display: block; font-size: 1.5rem; margin-bottom: 10px; opacity: .35; }
 
+        /* ── Docked, not blocking ───────────────────────────────────────────
+           A conversation with the call centre is almost always about something
+           already on screen -- a branch, a complaint, an order. As a centred
+           modal over a dimmed dashboard it forced you to close the chat to look
+           anything up. It now docks in the bottom-right corner: no dim layer,
+           the dashboard stays readable and clickable, and clicking away no
+           longer closes it. The overlay itself is click-through; only the panel
+           takes pointer events. */
         #vc-modal-overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
-            z-index: 8600; align-items: center; justify-content: center;
+            display: none; position: fixed; inset: 0; background: transparent;
+            pointer-events: none; z-index: 8600;
+            align-items: flex-end; justify-content: flex-end; padding: 0 20px 20px;
         }
         #vc-modal-overlay.open { display: flex; }
         #vc-modal {
-            background: var(--white); border-radius: 18px;
-            width: 90%; max-width: 420px;
-            box-shadow: 0 32px 80px rgba(0,0,0,.22);
-            overflow: hidden; font-family: 'Inter', sans-serif;
+            pointer-events: auto; background: var(--white); border-radius: 18px;
+            width: 380px; max-width: calc(100vw - 40px); max-height: calc(100vh - 84px);
+            display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif;
+            box-shadow: 0 26px 70px rgba(15,23,42,.3), 0 0 0 1px var(--border-color);
+            animation: vcDockIn .26s cubic-bezier(.16,1,.3,1) both;
+        }
+        @keyframes vcDockIn { from { opacity: 0; transform: translateY(20px) scale(.97); } to { opacity: 1; transform: none; } }
+        /* minimised: the header alone, still showing who you were talking to */
+        #vc-modal.vc-min { width: 300px; }
+        #vc-modal.vc-min > *:not(#vc-modal-header) { display: none !important; }
+        #vc-modal.vc-min #vc-modal-header { cursor: pointer; }
+        #vc-min-btn i { transition: transform .2s; }
+        #vc-modal.vc-min #vc-min-btn i { transform: rotate(180deg); }
+        /* while the chat is docked the assistant orb shares that corner, so it
+           steps aside and comes back when the panel closes */
+        body.vc-docked .ai-bubble { opacity: 0 !important; pointer-events: none !important; transform: scale(.85) !important; }
+        /* on a phone a floating window is useless -- it stays a full-width sheet */
+        @media (max-width: 640px) {
+            #vc-modal-overlay { padding: 0; }
+            #vc-modal { width: 100%; max-width: none; max-height: 92vh; border-radius: 18px 18px 0 0; }
+            #vc-modal.vc-min { width: 100%; }
         }
         #vc-modal-header {
             background: linear-gradient(135deg, #010197 0%, #1B1BB5 58%, #3B5BDB 135%); color: #fff;
@@ -5147,7 +5207,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         #vc-status-bar.error { background: rgba(220,38,38,.08); color: #DC2626; }
 
         #vc-branch-list {
-            max-height: 320px; overflow-y: auto; padding: 10px 0;
+            max-height: clamp(260px, 44vh, 440px); overflow-y: auto; padding: 10px 0;
         }
         .vc-branch-row {
             display: flex; align-items: center; justify-content: space-between;
@@ -6866,12 +6926,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
     </div>
 
     <!-- Call panel modal -->
-    <div id="vc-modal-overlay" onclick="if(event.target===this && !VoiceCall.state.inCall) VoiceCall.closePanel()">
+    <div id="vc-modal-overlay">
         <div id="vc-modal" role="dialog" aria-label="Voice Call">
 
-            <div id="vc-modal-header">
+            <div id="vc-modal-header" onclick="VoiceCall.expandIfMinimised()">
                 <h3><span class="vc-head-ic"><i class="fas fa-phone" id="vc-modal-icon"></i></span><span id="vc-modal-title">Call a Teammate</span></h3>
-                <button class="vc-close-btn" onclick="VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
+                <span style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
+                    <button class="vc-close-btn" id="vc-min-btn" onclick="event.stopPropagation(); VoiceCall.toggleMinimise()" title="Minimise"><i class="fas fa-minus"></i></button>
+                    <button class="vc-close-btn" onclick="event.stopPropagation(); VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
+                </span>
             </div>
 
             <div id="vc-tabs">
@@ -6990,7 +7053,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.90.0 · 15 Sep 2026 · chat redesign';
+        const BUILD_VERSION = 'v2.91.0 · 15 Sep 2026 · docked chat + photo fix';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21932,6 +21995,12 @@ ${(() => {
                 if (wave) { seek(wave, e); return; }
                 const play = t.closest('.vc-voice-play');
                 if (play) { const el = play.closest('.vc-voice'); if (el) playVoice(el); return; }
+                const bad = t.closest('.vc-photo.bad');
+                if (bad) {
+                    const src = bad.querySelector('img');
+                    if (src) window.open(src.getAttribute('src'), '_blank', 'noopener');
+                    return;
+                }
                 const img = t.closest('img.vc-att-img');
                 if (img) { openLightbox(img.getAttribute('src'), img.getAttribute('alt')); return; }
                 // Leaving a conversation should not leave a note playing.
@@ -22943,7 +23012,7 @@ ${(() => {
                 startPollLoop();
 
                 // Open panel so agent sees the call
-                $('vc-modal-overlay').classList.add('open');
+                setPanelOpen(true);
                 st.panelOpen = true;
             }
 
@@ -23014,7 +23083,7 @@ ${(() => {
                 const mutBtn = $('vc-mute-btn');
                 if (mutBtn){ mutBtn.classList.remove('muted'); mutBtn.querySelector('i').className = 'fas fa-microphone'; }
 
-                if (!keepPanelOpen) $('vc-modal-overlay').classList.remove('open');
+                if (!keepPanelOpen) setPanelOpen(false);
             }
 
             function resetState(){ teardown(); }
@@ -23245,6 +23314,32 @@ ${(() => {
                 if (same(d, now)) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                 if (same(d, y)) return 'Yesterday';
                 return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+            }
+
+            /** Opening and closing the docked panel in one place: the body class
+             *  moves the assistant orb out of the corner, and a panel that is
+             *  reopened should never come back still minimised. */
+            function setPanelOpen(on){
+                const ov = $('vc-modal-overlay');
+                if (ov) ov.classList.toggle('open', !!on);
+                document.body.classList.toggle('vc-docked', !!on);
+                if (!on) { const m = $('vc-modal'); if (m) m.classList.remove('vc-min'); }
+            }
+            function toggleMinimise(){
+                const m = $('vc-modal');
+                if (!m) return;
+                const min = m.classList.toggle('vc-min');
+                // Minimised, the header is all you can see -- so it should say
+                // who you were talking to, not just "Messages".
+                const t = $('vc-modal-title');
+                if (!t) return;
+                t.textContent = (min && chat.tab === 'chat' && chat.peer)
+                    ? (chat.peerName || 'Messages')
+                    : (chat.tab === 'call' ? 'Call a Teammate' : 'Messages');
+            }
+            function expandIfMinimised(){
+                const m = $('vc-modal');
+                if (m && m.classList.contains('vc-min')) toggleMinimise();
             }
 
             function showTab(which){
@@ -23717,7 +23812,19 @@ ${(() => {
                 if (!f || !f.key) return '';
                 const url = chatFileUrl(f.key);
                 if (m.kind === 'image')
-                    return `<img class="vc-att-img" src="${url}" alt="${chatEsc(f.name)}" loading="lazy">`;
+                    // The image is the only thing giving this bubble height, so
+                    // the wrapper holds the space open until it arrives (and for
+                    // good if it never does). Lazy-loading is deliberately off:
+                    // a zero-height lazy image inside a scrolling thread can sit
+                    // outside the viewport forever and never load at all.
+                    return `<span class="vc-photo">
+                                <img class="vc-att-img" src="${url}" alt="${chatEsc(f.name)}"
+                                     onload="this.parentNode.classList.add('ok')"
+                                     onerror="this.parentNode.classList.add('bad')">
+                                <span class="vc-photo-ph"><i class="fas fa-image"></i></span>
+                                <span class="vc-photo-bad"><i class="fas fa-triangle-exclamation"></i>
+                                    <b>Photo unavailable</b><em>Tap to open in a new tab</em></span>
+                            </span>`;
                 if (m.kind === 'audio'){
                     const bars = chatWaveBars(String(f.key), 26);
                     return `<div class="vc-voice" data-src="${url}" data-dur="${Number(f.duration) || 0}">
@@ -24006,16 +24113,18 @@ ${(() => {
                 state: st,
                 openPanel() {
                     startDirectoryPoll();
-                    $('vc-modal-overlay').classList.add('open');
+                    setPanelOpen(true);
                     st.panelOpen = true;
                     if (!st.inCall) setStatus('Select someone to call', '');
                 },
                 closePanel() {
                     if (st.inCall) return; // don't close during a live call
-                    $('vc-modal-overlay').classList.remove('open');
+                    setPanelOpen(false);
                     st.panelOpen = false;
                     stopDirectoryPoll();
                 },
+                toggleMinimise,
+                expandIfMinimised,
                 startCall,
                 answerCall,
                 rejectCall,
