@@ -21844,6 +21844,107 @@ ${(() => {
             }
 
 
+            // ── Call sounds ──────────────────────────────────────────────────
+            // Generated with WebAudio rather than audio files: nothing to host,
+            // nothing to preload, and no request that can fail mid-call.
+            //
+            // Browsers refuse to play audio until the page has had a real user
+            // interaction. The caller always has one (they clicked Call), but an
+            // incoming call can arrive on a tab nobody has touched yet -- so the
+            // context is unlocked on the first click anywhere, once, and after
+            // that ringing works whenever it is needed.
+            const VcSfx = (() => {
+                let ac = null, master = null, timers = [], unlocked = false;
+
+                function ctx(){
+                    if (!ac) {
+                        const AC = window.AudioContext || window.webkitAudioContext;
+                        if (!AC) return null;
+                        ac = new AC();
+                        master = ac.createGain();
+                        master.gain.value = 0.9;
+                        master.connect(ac.destination);
+                    }
+                    if (ac.state === 'suspended') ac.resume().catch(() => {});
+                    return ac;
+                }
+
+                // Called once on the first user gesture so later rings are allowed.
+                function unlock(){
+                    if (unlocked) return;
+                    unlocked = true;
+                    const a = ctx();
+                    if (!a) return;
+                    try {                       // a silent blip satisfies the gesture requirement
+                        const o = a.createOscillator(), g = a.createGain();
+                        g.gain.value = 0.0001;
+                        o.connect(g); g.connect(master);
+                        o.start(); o.stop(a.currentTime + 0.01);
+                    } catch(e){}
+                }
+
+                // One shaped tone. Envelope kept soft so looping never grates.
+                function tone(freq, startAt, dur, peak, type){
+                    const a = ctx();
+                    if (!a) return;
+                    const t0 = a.currentTime + (startAt || 0);
+                    const o = a.createOscillator(), g = a.createGain();
+                    o.type = type || 'sine';
+                    o.frequency.setValueAtTime(freq, t0);
+                    g.gain.setValueAtTime(0.0001, t0);
+                    g.gain.exponentialRampToValueAtTime(peak || 0.12, t0 + 0.02);
+                    g.gain.setValueAtTime(peak || 0.12, t0 + dur - 0.05);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                    o.connect(g); g.connect(master);
+                    o.start(t0); o.stop(t0 + dur + 0.02);
+                }
+
+                function sweep(from, to, dur, peak){
+                    const a = ctx();
+                    if (!a) return;
+                    const t0 = a.currentTime;
+                    const o = a.createOscillator(), g = a.createGain();
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(from, t0);
+                    o.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+                    g.gain.setValueAtTime(0.0001, t0);
+                    g.gain.exponentialRampToValueAtTime(peak || 0.14, t0 + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+                    o.connect(g); g.connect(master);
+                    o.start(t0); o.stop(t0 + dur + 0.02);
+                }
+
+                function loop(fn, everyMs){
+                    fn();
+                    timers.push(setInterval(fn, everyMs));
+                }
+
+                function stopAll(){
+                    timers.forEach(clearInterval);
+                    timers = [];
+                }
+
+                return {
+                    unlock,
+                    // What the CALLER hears while waiting: the classic two-tone
+                    // ringback, 2s of ring then a gap, repeating.
+                    ringbackStart(){
+                        stopAll();
+                        loop(() => { tone(440, 0, 1.0, 0.09); tone(480, 0, 1.0, 0.09); }, 4000);
+                    },
+                    // What the CALLEE hears: a brighter two-note chime, repeated,
+                    // so it reads as "someone wants you" rather than a system beep.
+                    incomingStart(){
+                        stopAll();
+                        loop(() => { tone(880, 0, 0.18, 0.13); tone(1175, 0.22, 0.28, 0.13); }, 2200);
+                    },
+                    connected(){ stopAll(); sweep(620, 940, 0.18, 0.13); },
+                    ended(){     stopAll(); sweep(480, 320, 0.28, 0.11); },
+                    declined(){  stopAll(); tone(320, 0, 0.18, 0.11); tone(280, 0.22, 0.3, 0.11); },
+                    stop: stopAll
+                };
+            })();
+
             // ── Signaling via /api/ ──────────────────────────────────────────
             async function signal(payload){
                 try {
@@ -21897,6 +21998,7 @@ ${(() => {
 
                 pc.onconnectionstatechange = () => {
                     if (pc.connectionState === 'connected'){
+                        VcSfx.connected();
                         setStatus('Connected · call in progress', 'connected');
                         $('vc-calling-detail').textContent = 'Connected';
                         startTimer();
@@ -21942,6 +22044,7 @@ ${(() => {
 
                 setStatus(`Calling ${st.remotePeerName}…`, 'calling');
                 showActivePanel(st.remotePeerName, 'Ringing…');
+                VcSfx.ringbackStart();
 
                 // Notify remote via signaling
                 await signal({ callId: st.callId, from: myIdentity(), fromName: myDisplayName(), to: targetEmail, type: 'offer', sdp: offer.sdp });
@@ -21959,6 +22062,7 @@ ${(() => {
             async function handleAnswer(msg){
                 if (!st.pc || st.pc.signalingState !== 'have-local-offer') return;
                 await st.pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+                VcSfx.stop();                     // they picked up: ringback ends here
                 setStatus('Connecting…', 'calling');
             }
 
@@ -22014,23 +22118,27 @@ ${(() => {
 
             // ── End call ─────────────────────────────────────────────────────
             function endCall(){
+                VcSfx.ended();
                 signal({ callId: st.callId, from: myIdentity(), type: 'hangup' });
                 logCallToAudit();
                 teardown();
             }
 
             function onRemoteHangup(){
+                VcSfx.ended();
                 setStatus('Call ended by other party', '');
                 logCallToAudit();
                 teardown(true);
             }
 
             function onRemoteRejected(){
+                VcSfx.declined();
                 setStatus('Call was declined', 'error');
                 teardown(true);
             }
 
             function teardown(keepPanelOpen){
+                VcSfx.stop();          // nothing may keep ringing past a call ending
                 stopTimer();
                 stopPollLoop();
                 if (st.pc){ try { st.pc.close(); } catch(e){} st.pc = null; }
@@ -22106,9 +22214,12 @@ ${(() => {
                 b.classList.add('visible');
                 $('vc-fab-badge').style.display = 'block';
                 setStatus('Incoming call from ' + callerName, 'ringing');
+                VcSfx.incomingStart();
                 st.ringTimeout = setTimeout(() => { rejectCall(); }, RING_SECS * 1000);
             }
-            function hideIncomingBanner(){ $('vc-incoming-banner').classList.remove('visible'); }
+            // Every way an incoming call can end -- answered, declined, or timed
+            // out -- goes through here, so the ringing stops in one place.
+            function hideIncomingBanner(){ VcSfx.stop(); $('vc-incoming-banner').classList.remove('visible'); }
 
             function disableBranchButtons(){
                 document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = true; b.classList.add('busy'); });
@@ -22245,6 +22356,12 @@ ${(() => {
             function vcBoot(){
                 if (vcStarted) return;
                 vcStarted = true;
+                // Arm the audio on the first click anywhere, so an incoming call
+                // can ring even on a tab the person has not interacted with since
+                // loading. Browsers block audio until then.
+                const arm = () => { try { VcSfx.unlock(); } catch(e){} };
+                document.addEventListener('pointerdown', arm, { once: true });
+                document.addEventListener('keydown', arm, { once: true });
                 // Small delay so auth/session loads first
                 setTimeout(listenForIncoming, 5000);
                 setTimeout(startPresenceHeartbeat, 5000);
