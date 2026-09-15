@@ -402,6 +402,60 @@
             left: 12%; right: 12%;
             opacity: 1;
         }
+        /* ── Nav overflow ───────────────────────────────────────────────────
+           Seventeen views never fit one row, and the faded right edge hid the
+           last of them with no way to reach them. Whatever does not fit now
+           collapses into this one button, grouped, in a fixed order so nothing
+           jumps about as the window resizes. */
+        .topnav-link.is-overflow { display: none !important; }
+        .topnav-more {
+            display: none; align-items: center; gap: 7px; flex-shrink: 0; margin-left: 4px;
+            padding: 6px 11px; border-radius: 8px; white-space: nowrap; cursor: pointer;
+            font-size: .78rem; font-weight: 700; letter-spacing: .2px;
+            color: rgba(255,255,255,.72); border: 1px solid rgba(255,255,255,.18);
+            transition: background .18s, color .18s, border-color .18s;
+        }
+        .topnav-more.visible { display: flex; }
+        .topnav-more:hover { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.3); }
+        .topnav-more.open, .topnav-more.is-active {
+            background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.32);
+        }
+        .topnav-more i { font-size: .6rem; opacity: .8; transition: transform .2s; }
+        .topnav-more.open i { transform: rotate(180deg); }
+        .topnav-more-count {
+            min-width: 18px; height: 16px; line-height: 16px; padding: 0 5px; border-radius: 9px;
+            background: #64D0FF; color: #010197; font-size: .6rem; font-weight: 800; text-align: center;
+        }
+        .topnav-more.is-active .topnav-more-count { display: none; }
+        /* The menu is fixed-positioned and lives on <body>: the nav scrolls
+           horizontally, which would clip a dropdown drawn inside it. */
+        .topnav-menu {
+            position: fixed; z-index: 9000; display: none; width: 430px; max-width: calc(100vw - 24px);
+            background: var(--white); border: 1px solid var(--border-color); border-radius: 14px; padding: 8px;
+            box-shadow: 0 22px 56px rgba(15,23,42,.24);
+            animation: crumbleMenuIn .18s cubic-bezier(.16,1,.3,1) both;
+        }
+        .topnav-menu.open { display: grid; grid-template-columns: 1fr 1fr; column-gap: 6px; }
+        .topnav-menu .tm-grp {
+            grid-column: 1 / -1; padding: 9px 10px 5px; font-size: .6rem; font-weight: 800;
+            letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted);
+        }
+        .topnav-menu .tm-item {
+            display: flex; align-items: center; gap: 9px; min-height: 36px; padding: 8px 10px;
+            border-radius: 9px; font-size: .78rem; font-weight: 600; color: var(--text-main);
+            cursor: pointer; transition: background .15s;
+        }
+        .topnav-menu .tm-item:hover { background: var(--bg-light); }
+        .topnav-menu .tm-item.active { background: rgba(1,1,151,.07); color: #010197; font-weight: 800; }
+        .topnav-menu .tm-ic {
+            width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0; font-size: .68rem;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(1,1,151,.07); color: #010197;
+        }
+        body.dark-theme .topnav-menu .tm-ic { background: rgba(100,208,255,.13); color: #64D0FF; }
+        body.dark-theme .topnav-menu .tm-item.active { background: rgba(100,208,255,.13); color: #64D0FF; }
+        @media (max-width: 620px) { .topnav-menu.open { grid-template-columns: 1fr; } }
+
         .header-controls { display: flex; align-items: center; gap: 5px; padding-left: 6px; }
         .btn-icon { background: none; border: none; color: rgba(255,255,255,0.65); cursor: pointer; font-size: 0.9rem; padding: 0; width:32px; height:32px; display:flex; align-items:center; justify-content:center; transition: all .18s cubic-bezier(.4,0,.2,1); border-radius: 8px; }
         .btn-icon:hover { background: rgba(255,255,255,0.1); color:#fff; }
@@ -1898,7 +1952,12 @@
         .btn-icon:hover { background: rgba(255,255,255,0.1); color: #fff; }
         .header-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.1); margin: 0 6px; }
         /* fade nav right edge */
-        .topnav-links { -webkit-mask-image: linear-gradient(to right, #000 94%, transparent); mask-image: linear-gradient(to right, #000 94%, transparent); }
+        /* The fade marks a nav that scrolls. On a laptop it no longer does --
+           the More menu holds the overflow -- and the fade only dimmed the last
+           tab for no reason. */
+        @media (max-width: 899px) {
+            .topnav-links { -webkit-mask-image: linear-gradient(to right, #000 94%, transparent); mask-image: linear-gradient(to right, #000 94%, transparent); }
+        }
 
         /* ── Identity chip: glass pill, gradient-ringed avatar with a live
            status dot, name over a muted role line, chevron that rotates. ── */
@@ -5372,24 +5431,30 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             <div class="brand-top" onclick="app.navigate('executive', this)" style="cursor:pointer;">
                 <span class="brand-name">Crumble</span>
             </div>
+            <!-- Views in priority order: the seven used during a shift first,
+                 then everything else. NavBar (below) keeps as many as fit in the
+                 bar and moves the rest into the More menu, so the row can never
+                 run off the edge again. -->
             <nav class="topnav-links" id="topNav">
                 <span class="topnav-link active" data-view="executive" onclick="app.navigate('executive', this)">Overview</span>
-                <span class="topnav-link" data-view="social" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#E1306C;display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
+                <span class="topnav-link" data-view="social" onclick="app.navigate('social', this)" style="display:flex;align-items:center;gap:5px;"><span style="width:6px;height:6px;border-radius:50%;background:#64D0FF;box-shadow:0 0 6px rgba(100,208,255,.9);display:inline-block;animation:pulse 2s infinite;"></span>Social</span>
                 <span class="topnav-link" data-view="complaints" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" data-view="incidents" onclick="app.navigate('incidents', this)">Incidents</span>
-                <span class="topnav-link" data-view="incident-analytics" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" data-view="submissions" onclick="app.navigate('submissions', this)">Submissions</span>
-                <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" data-view="branches" onclick="app.navigate('branches', this)">Branches</span>
+                <span class="topnav-link" data-view="incident-analytics" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
+                <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
-                <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
                 <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
-                <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
+                <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
+                <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
                 <span class="topnav-link" data-view="activity" id="nav-activity" style="display:none;" onclick="app.navigate('activity', this)">Activity</span>
                 <span class="topnav-link" data-view="system" id="nav-system" style="display:none;" onclick="app.navigate('system', this)">System</span>
+                <span class="topnav-more" id="topnav-more" role="button" tabindex="0" title="More views"
+                      onclick="NavBar.toggle(event)"><span id="topnav-more-label">More</span><span class="topnav-more-count" id="topnav-more-count">0</span><i class="fas fa-chevron-down"></i></span>
             </nav>
             <script>
                 // Fixes the active nav highlight BEFORE the browser paints —
@@ -7053,7 +7118,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.91.0 · 15 Sep 2026 · docked chat + photo fix';
+        const BUILD_VERSION = 'v2.92.0 · 15 Sep 2026 · nav overflow menu';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21898,6 +21963,203 @@ ${(() => {
             }
             if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
             return { toggle: toggle, refresh: refresh, supported: supported };
+        })();
+
+
+        // ── Top nav: keep what fits, group the rest ─────────────────────────
+        // The bar holds seventeen views for an owner and about nine fit at
+        // 1366px, so the last of them were cut off behind a fade with no way to
+        // reach them. This measures what actually fits and moves the remainder
+        // into one grouped menu. The order is fixed, so a view never swaps
+        // between bar and menu as the window resizes; below 900px the bar goes
+        // back to scrolling (phones also have the bottom tab bar).
+        window.NavBar = (function(){
+            const GROUPS = [
+                { name: 'Analysis',      views: ['incident-analytics','form-analytics','insights','data'] },
+                { name: 'Operations',    views: ['orders','actions','rewards'] },
+                { name: 'Setup & system',views: ['form-builder','activity','system'] }
+            ];
+            const ICONS = {
+                executive:'fa-gauge-high', social:'fa-hashtag', complaints:'fa-comment-dots',
+                incidents:'fa-triangle-exclamation', submissions:'fa-inbox', resolution:'fa-circle-check',
+                branches:'fa-store', 'incident-analytics':'fa-chart-line', 'form-analytics':'fa-chart-pie',
+                insights:'fa-lightbulb', data:'fa-database', orders:'fa-receipt', actions:'fa-list-check',
+                rewards:'fa-gift', 'form-builder':'fa-pen-to-square', activity:'fa-clock-rotate-left',
+                system:'fa-heart-pulse'
+            };
+            const RESERVE = 124;          // room the More button needs
+            const MIN_W   = 900;          // below this the bar scrolls instead
+            let menuEl = null, queued = false;
+
+            const nav   = () => document.getElementById('topNav');
+            const moreB = () => document.getElementById('topnav-more');
+            const allLinks = () => Array.from(document.querySelectorAll('#topNav .topnav-link'));
+            // A link hidden by role is not in the bar at all, so it is neither
+            // measured nor listed in the menu.
+            const inRole = el => el.style.display !== 'none';
+
+            function menu(){
+                if (!menuEl){
+                    menuEl = document.createElement('div');
+                    menuEl.className = 'topnav-menu';
+                    menuEl.id = 'topnav-menu';
+                    document.body.appendChild(menuEl);
+                }
+                return menuEl;
+            }
+            function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+            function build(hidden){
+                const m = menu();
+                const by = {};
+                hidden.forEach(el => { by[el.getAttribute('data-view')] = el; });
+                const used = {};
+                let html = '';
+                GROUPS.forEach(g => {
+                    const rows = g.views.filter(v => by[v]);
+                    if (!rows.length) return;
+                    html += `<div class="tm-grp">${esc(g.name)}</div>`;
+                    rows.forEach(v => {
+                        used[v] = 1;
+                        const el = by[v];
+                        html += `<div class="tm-item${el.classList.contains('active') ? ' active' : ''}" data-view="${esc(v)}">`
+                              + `<span class="tm-ic"><i class="fas ${ICONS[v] || 'fa-circle-dot'}"></i></span>`
+                              + `<span>${esc(el.textContent.trim())}</span></div>`;
+                    });
+                });
+                // Anything ungrouped (a narrow window pushing the daily views in)
+                // still has to appear, above the groups.
+                const rest = hidden.filter(el => !used[el.getAttribute('data-view')]);
+                if (rest.length){
+                    let top = '<div class="tm-grp">Views</div>';
+                    rest.forEach(el => {
+                        const v = el.getAttribute('data-view');
+                        top += `<div class="tm-item${el.classList.contains('active') ? ' active' : ''}" data-view="${esc(v)}">`
+                             + `<span class="tm-ic"><i class="fas ${ICONS[v] || 'fa-circle-dot'}"></i></span>`
+                             + `<span>${esc(el.textContent.trim())}</span></div>`;
+                    });
+                    html = top + html;
+                }
+                m.innerHTML = html;
+            }
+
+            function place(){
+                const b = moreB(), m = menu();
+                if (!b) return;
+                const r = b.getBoundingClientRect();
+                m.style.top = (r.bottom + 8) + 'px';
+                // keep it on screen on a narrow window
+                const w = m.offsetWidth || 430;
+                let left = r.left;
+                if (left + w > window.innerWidth - 12) left = window.innerWidth - 12 - w;
+                m.style.left = Math.max(12, left) + 'px';
+            }
+            function open(){
+                const b = moreB(); if (!b) return;
+                menu().classList.add('open');
+                b.classList.add('open');
+                place();
+            }
+            function close(){
+                if (menuEl) menuEl.classList.remove('open');
+                const b = moreB(); if (b) b.classList.remove('open');
+            }
+            function isOpen(){ return !!(menuEl && menuEl.classList.contains('open')); }
+            function toggle(e){
+                if (e) e.stopPropagation();
+                isOpen() ? close() : open();
+            }
+
+            function layout(){
+                const n = nav(), b = moreB();
+                if (!n || !b) return;
+                const links = allLinks();
+                links.forEach(el => el.classList.remove('is-overflow'));
+
+                if (window.innerWidth < MIN_W){
+                    b.classList.remove('visible');
+                    close();
+                    return;
+                }
+                const items = links.filter(inRole);
+                const avail = n.clientWidth - 8;
+                const w = items.map(el => el.offsetWidth + 2);
+                const total = w.reduce((a, x) => a + x, 0);
+
+                let hidden = [];
+                if (total > avail){
+                    let run = 0, keep = 0;
+                    for (let i = 0; i < items.length; i++){
+                        if (run + w[i] + RESERVE > avail) break;
+                        run += w[i]; keep++;
+                    }
+                    if (keep < 1) keep = 1;
+                    hidden = items.slice(keep);
+                    hidden.forEach(el => el.classList.add('is-overflow'));
+                }
+                if (!hidden.length){
+                    b.classList.remove('visible', 'is-active');
+                    close();
+                    return;
+                }
+                b.classList.add('visible');
+                build(hidden);
+                // If the view you are on ended up in the menu, the button says
+                // so -- otherwise nothing in the bar would look selected.
+                const act = hidden.find(el => el.classList.contains('active'));
+                const label = document.getElementById('topnav-more-label');
+                const count = document.getElementById('topnav-more-count');
+                if (act){
+                    b.classList.add('is-active');
+                    if (label) label.textContent = act.textContent.trim();
+                } else {
+                    b.classList.remove('is-active');
+                    if (label) label.textContent = 'More';
+                    if (count) count.textContent = hidden.length;
+                }
+                if (isOpen()) place();
+            }
+            function schedule(){
+                if (queued) return;
+                queued = true;
+                requestAnimationFrame(() => { queued = false; try { layout(); } catch(e){} });
+            }
+
+            document.addEventListener('click', function(e){
+                const t = e.target;
+                if (!t || !t.closest) return;
+                const item = t.closest('#topnav-menu .tm-item');
+                if (item){
+                    const v = item.getAttribute('data-view');
+                    close();
+                    // No element passed: navigate() then finds the real nav link
+                    // by data-view and marks it active, hidden or not.
+                    try { app.navigate(v); } catch(err){}
+                    schedule();
+                    return;
+                }
+                if (t.closest('#topnav-more')) return;          // its own handler
+                if (isOpen() && !t.closest('#topnav-menu')) close();
+                if (t.closest('#topNav .topnav-link')) schedule();
+            });
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+            window.addEventListener('resize', schedule);
+            // Role decides which views exist at all, and that is applied after
+            // sign-in by flipping inline display -- so watch for it.
+            function watch(){
+                const n = nav(); if (!n) return;
+                try {
+                    new MutationObserver(schedule).observe(n, {
+                        attributes: true, subtree: true, attributeFilter: ['style']
+                    });
+                } catch(e){}
+            }
+            function start(){ watch(); schedule(); setTimeout(schedule, 400); setTimeout(schedule, 1600); }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+            else start();
+            window.addEventListener('load', schedule);
+
+            return { refresh: schedule, toggle: toggle, close: close };
         })();
 
 
