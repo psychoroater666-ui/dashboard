@@ -7137,7 +7137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.96.3 · 16 Sep 2026 · sync trace + reason';
+        const BUILD_VERSION = 'v2.96.4 · 16 Sep 2026 · no dropped notices';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11301,6 +11301,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             clearTimeout(_pollTimer);
                             _pollRound();
                         };
+                        if(window.__pollWhenReady){ window.__pollWhenReady = false; setTimeout(() => pollNow(), 100); }
                         function _pollDelay(){
                             // Stay at two seconds for a full ten quiet minutes.
                             // Easing off after one minute was left over from when
@@ -23131,7 +23132,13 @@ ${(() => {
                         const first = rev === 0;
                         rev = res.rev;
                         // Something changed: fetch it now, don't wait for the timer.
-                        if(res.changed && !first){ console.info('[live] change notice · rev ' + res.rev + ' · ' + new Date().toLocaleTimeString()); if(window.pollNow) pollNow(); else console.warn('[live] pollNow not ready'); }
+                        if(res.changed && !first){
+                            console.info('[live] change notice · rev ' + res.rev + ' · ' + new Date().toLocaleTimeString());
+                            // Before the first load has finished there is nothing
+                            // to poll with yet; remember, and go the moment it
+                            // exists rather than dropping the notice.
+                            if(window.pollNow) pollNow(); else { window.__pollWhenReady = true; console.info('[live] first load still running — will fetch as soon as it finishes'); }
+                        }
                         return listen();
                     }
                     throw new Error((res && res.message) || 'unexpected reply');
