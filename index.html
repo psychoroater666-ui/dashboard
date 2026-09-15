@@ -4720,6 +4720,77 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         #vc-fab.vc-ringing:hover { background: rgba(220,38,38,1) !important; }
         @keyframes vcPulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.3); } }
 
+        /* ── Messaging ──────────────────────────────────────────────────── */
+        #vc-tabs { display: flex; background: var(--bg-light); border-bottom: 1px solid var(--border-color); }
+        #vc-tabs button {
+            flex: 1; background: none; border: none; cursor: pointer;
+            padding: 10px 0; font-size: .78rem; font-weight: 700; letter-spacing: .3px;
+            color: var(--text-muted); border-bottom: 2px solid transparent;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: color .15s, border-color .15s;
+        }
+        #vc-tabs button.active { color: var(--brand-accent); border-bottom-color: var(--brand-accent); }
+        #vc-tabs .vc-tab-count {
+            background: #DC2626; color: #fff; border-radius: 9px; min-width: 17px;
+            padding: 0 5px; font-size: .64rem; line-height: 17px; display: none;
+        }
+        #vc-chat-people, #vc-chat-thread { display: none; }
+        #vc-chat-people.visible, #vc-chat-thread.visible { display: block; }
+        #vc-chat-people { max-height: 320px; overflow-y: auto; padding: 6px 0; }
+        .vc-chat-row {
+            display: flex; align-items: center; gap: 10px; padding: 9px 20px;
+            cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background .15s;
+        }
+        .vc-chat-row:last-child { border-bottom: none; }
+        .vc-chat-row:hover { background: var(--bg-light); }
+        .vc-chat-ava {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            background: var(--brand-accent); color: #fff; font-size: .72rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .vc-chat-meta { flex: 1; min-width: 0; }
+        .vc-chat-name { font-size: .85rem; font-weight: 700; color: var(--text-main); }
+        .vc-chat-sub  { font-size: .7rem; color: var(--text-muted); margin-top: 1px;
+                        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vc-chat-unread {
+            background: #DC2626; color: #fff; border-radius: 9px; min-width: 18px;
+            padding: 0 5px; font-size: .65rem; font-weight: 700; line-height: 18px; text-align: center;
+        }
+        /* Thread */
+        #vc-thread-head {
+            display: flex; align-items: center; gap: 9px; padding: 9px 14px;
+            border-bottom: 1px solid var(--border-color); background: var(--bg-light);
+        }
+        #vc-thread-head button {
+            background: none; border: none; cursor: pointer; color: var(--text-muted);
+            font-size: .9rem; padding: 4px 6px; border-radius: 6px;
+        }
+        #vc-thread-head button:hover { background: rgba(0,0,0,.06); color: var(--text-main); }
+        #vc-thread-name { font-size: .85rem; font-weight: 700; color: var(--text-main); }
+        #vc-thread-msgs {
+            height: 300px; overflow-y: auto; padding: 12px 14px;
+            display: flex; flex-direction: column; gap: 7px;
+        }
+        .vc-msg { max-width: 78%; padding: 7px 11px; border-radius: 13px; font-size: .82rem; line-height: 1.4; word-wrap: break-word; }
+        .vc-msg.them { align-self: flex-start; background: var(--bg-light); color: var(--text-main); border-bottom-left-radius: 4px; }
+        .vc-msg.mine { align-self: flex-end; background: var(--brand-accent); color: #fff; border-bottom-right-radius: 4px; }
+        .vc-msg-time { font-size: .62rem; opacity: .6; margin-top: 3px; display: block; }
+        .vc-msg-day { align-self: center; font-size: .66rem; color: var(--text-muted); font-weight: 700;
+                      text-transform: uppercase; letter-spacing: .4px; margin: 6px 0 2px; }
+        #vc-composer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border-color); }
+        #vc-composer textarea {
+            flex: 1; resize: none; border: 1px solid var(--border-color); border-radius: 18px;
+            padding: 8px 13px; font-family: inherit; font-size: .82rem; max-height: 84px;
+            color: var(--text-main); background: var(--white); outline: none;
+        }
+        #vc-composer textarea:focus { border-color: var(--brand-accent); }
+        #vc-composer button {
+            width: 36px; height: 36px; border-radius: 50%; border: none; flex-shrink: 0;
+            background: var(--brand-accent); color: #fff; cursor: pointer; align-self: flex-end;
+        }
+        #vc-composer button:disabled { background: var(--text-muted); cursor: not-allowed; }
+        .vc-chat-empty { padding: 30px 20px; text-align: center; color: var(--text-muted); font-size: .8rem; }
+
         #vc-modal-overlay {
             display: none; position: fixed; inset: 0;
             background: rgba(0,0,0,.45); backdrop-filter: blur(6px);
@@ -6469,11 +6540,39 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         <div id="vc-modal" role="dialog" aria-label="Voice Call">
 
             <div id="vc-modal-header">
-                <h3><i class="fas fa-phone" style="margin-right:8px;opacity:.8;"></i>Call a Teammate</h3>
+                <h3><i class="fas fa-phone" style="margin-right:8px;opacity:.8;"></i><span id="vc-modal-title">Call a Teammate</span></h3>
                 <button class="vc-close-btn" onclick="VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
             </div>
 
+            <div id="vc-tabs">
+                <button id="vc-tab-call" class="active" onclick="VoiceCall.showTab('call')"><i class="fas fa-phone"></i> Call</button>
+                <button id="vc-tab-chat" onclick="VoiceCall.showTab('chat')"><i class="fas fa-comment"></i> Messages <span class="vc-tab-count" id="vc-tab-unread"></span></button>
+            </div>
+
             <div id="vc-status-bar">Select a branch to start a call</div>
+
+            <!-- Messages: who to talk to -->
+            <div id="vc-chat-people"></div>
+
+            <!-- Messages: one conversation -->
+            <div id="vc-chat-thread">
+                <div id="vc-thread-head">
+                    <button onclick="VoiceCall.closeThread()" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <div class="vc-chat-ava" id="vc-thread-ava">—</div>
+                    <div style="flex:1;min-width:0;">
+                        <div id="vc-thread-name">—</div>
+                        <div class="vc-chat-sub" id="vc-thread-sub"></div>
+                    </div>
+                    <button onclick="VoiceCall.callCurrentThread()" title="Call this person"><i class="fas fa-phone"></i></button>
+                </div>
+                <div id="vc-thread-msgs"></div>
+                <div id="vc-composer">
+                    <textarea id="vc-composer-input" rows="1" placeholder="Write a message…"
+                              oninput="VoiceCall.composerGrow(this)"
+                              onkeydown="VoiceCall.composerKey(event)"></textarea>
+                    <button id="vc-send-btn" onclick="VoiceCall.sendMessage()" title="Send"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
 
             <!-- Active call panel (shown during a call) -->
             <div id="vc-active-panel">
@@ -6543,7 +6642,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.79.0 · 15 Sep 2026 · marimba ringtone';
+        const BUILD_VERSION = 'v2.80.0 · 15 Sep 2026 · team messaging';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22229,7 +22328,7 @@ ${(() => {
                 $('vc-active-panel').classList.remove('visible');
                 $('vc-branch-list').style.display = '';
                 enableBranchButtons();
-                $('vc-fab-badge').style.display = 'none';
+                { const b = $('vc-fab-badge'); b.dataset.call = '0'; if (!chatUnreadTotal()) b.style.display = 'none'; }
                 { const f = $('vc-fab'); if (f) f.classList.remove('vc-ringing'); }
 
                 const mutBtn = $('vc-mute-btn');
@@ -22285,7 +22384,7 @@ ${(() => {
                 $('vc-timer').textContent          = '0:00';
                 const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
                 $('vc-avatar-initials').textContent = initials;
-                $('vc-fab-badge').style.display = 'block';
+                { const b = $('vc-fab-badge'); b.dataset.call = '1'; b.style.display = 'block'; }
                 { const f = $('vc-fab'); if (f) f.classList.add('vc-ringing'); }
             }
 
@@ -22293,7 +22392,7 @@ ${(() => {
                 const b = $('vc-incoming-banner');
                 $('vc-incoming-caller').textContent = callerName;
                 b.classList.add('visible');
-                $('vc-fab-badge').style.display = 'block';
+                { const b = $('vc-fab-badge'); b.dataset.call = '1'; b.style.display = 'block'; }
                 { const f = $('vc-fab'); if (f) f.classList.add('vc-ringing'); }
                 setStatus('Incoming call from ' + callerName, 'ringing');
                 VcSfx.incomingStart();
@@ -22382,7 +22481,230 @@ ${(() => {
                 setStatus(st.muted ? 'Microphone muted' : 'Microphone active', st.inCall ? 'connected' : '');
             }
 
-            // ── Incoming call listener (long-poll on /api/) ───────────────────
+            // ══════════════════════════════════════════════════════════════
+            // Messaging
+            // Kept in D1 so a message is still there tomorrow. The Worker
+            // records the sender from the Cloudflare session, so nothing here
+            // needs to prove who it is.
+            // ══════════════════════════════════════════════════════════════
+            const chat = {
+                tab: 'call', peer: null, peerName: '', people: [],
+                unread: {}, last: {}, sinceId: 0, threadIds: new Set(),
+                pollTimer: null, loaded: false
+            };
+
+            async function chatApi(action, extra){
+                try {
+                    const res = await fetch('/api/', {
+                        method: 'POST',
+                        headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin',
+                        redirect: 'follow',
+                        body: JSON.stringify(Object.assign({ action }, extra || {}))
+                    });
+                    const out = await res.json();
+                    if (out && out.status !== 'success') console.log('chat refused:', action, out);
+                    return out;
+                } catch(e){ console.log('chat failed:', action, e && e.message); return null; }
+            }
+
+            const chatEsc = dirEsc;
+            const chatInitials = s => String(s || '?').trim().split(/\s+/).slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '?';
+            function chatTime(iso){
+                const d = new Date(iso);
+                if (isNaN(d)) return '';
+                return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            }
+            function chatDay(iso){
+                const d = new Date(iso); if (isNaN(d)) return '';
+                const today = new Date(); const y = new Date(Date.now() - 86400000);
+                const same = (a,b) => a.toDateString() === b.toDateString();
+                if (same(d, today)) return 'Today';
+                if (same(d, y)) return 'Yesterday';
+                return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+            }
+
+            function showTab(which){
+                chat.tab = which;
+                $('vc-tab-call').classList.toggle('active', which === 'call');
+                $('vc-tab-chat').classList.toggle('active', which === 'chat');
+                $('vc-modal-title').textContent = which === 'call' ? 'Call a Teammate' : 'Messages';
+                const inThread = which === 'chat' && chat.peer;
+                $('vc-branch-list').style.display = (which === 'call' && !st.inCall) ? '' : 'none';
+                $('vc-status-bar').style.display  = which === 'call' ? '' : 'none';
+                $('vc-chat-people').classList.toggle('visible', which === 'chat' && !inThread);
+                $('vc-chat-thread').classList.toggle('visible', !!inThread);
+                if (which === 'chat') { loadPeople(); chatPoll(); }
+            }
+
+            async function loadPeople(){
+                if (!chat.loaded) {
+                    const res = await chatApi('chat_people');
+                    if (res && res.status === 'success') { chat.people = res.people || []; chat.loaded = true; }
+                }
+                renderPeople();
+            }
+
+            function renderPeople(){
+                const el = $('vc-chat-people');
+                if (!el) return;
+                if (!chat.people.length) {
+                    el.innerHTML = '<div class="vc-chat-empty">No teammates to message yet.</div>';
+                    return;
+                }
+                // Anyone with unread messages first, then most recent conversation.
+                const sorted = chat.people.slice().sort((a,b) => {
+                    const ua = chat.unread[a.email] || 0, ub = chat.unread[b.email] || 0;
+                    if (ua !== ub) return ub - ua;
+                    const la = chat.last[a.email], lb = chat.last[b.email];
+                    if (la && lb) return String(lb.at).localeCompare(String(la.at));
+                    if (la) return -1;
+                    if (lb) return 1;
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                });
+                el.innerHTML = sorted.map(p => {
+                    const n = chat.unread[p.email] || 0;
+                    const last = chat.last[p.email];
+                    const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
+                              : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch);
+                    return `<div class="vc-chat-row" onclick="VoiceCall.openThread('${String(p.email).replace(/'/g,"\\'")}')">
+                        <div class="vc-chat-ava">${chatEsc(chatInitials(p.name))}</div>
+                        <div class="vc-chat-meta">
+                            <div class="vc-chat-name">${chatEsc(p.name)}</div>
+                            <div class="vc-chat-sub">${chatEsc(sub)}</div>
+                        </div>
+                        ${n ? `<span class="vc-chat-unread">${n}</span>` : ''}
+                    </div>`;
+                }).join('');
+            }
+
+            async function openThread(email){
+                const p = chat.people.find(x => x.email === email);
+                chat.peer = email;
+                chat.peerName = (p && p.name) || email;
+                chat.threadIds = new Set();
+                $('vc-thread-name').textContent = chat.peerName;
+                $('vc-thread-sub').textContent = p ? (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch) : '';
+                $('vc-thread-ava').textContent = chatInitials(chat.peerName);
+                $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
+                showTab('chat');
+                const res = await chatApi('chat_history', { peer: email });
+                if (res && res.status === 'success') renderThread(res.messages || [], true);
+                await chatApi('chat_mark_read', { peer: email });
+                chat.unread[email] = 0;
+                paintUnread();
+            }
+
+            function closeThread(){ chat.peer = null; showTab('chat'); renderPeople(); }
+
+            function renderThread(msgs, replace){
+                const box = $('vc-thread-msgs');
+                if (!box) return;
+                if (replace) { box.innerHTML = ''; chat.threadIds = new Set(); }
+                let lastDay = box.dataset.lastDay || '';
+                const parts = [];
+                for (const m of msgs) {
+                    if (chat.threadIds.has(m.id)) continue;      // never show one twice
+                    chat.threadIds.add(m.id);
+                    const day = chatDay(m.at);
+                    if (day !== lastDay) { parts.push(`<div class="vc-msg-day">${chatEsc(day)}</div>`); lastDay = day; }
+                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}">${chatEsc(m.body).replace(/\n/g,'<br>')}<span class="vc-msg-time">${chatEsc(chatTime(m.at))}</span></div>`);
+                }
+                box.dataset.lastDay = lastDay;
+                if (!parts.length && replace) {
+                    box.innerHTML = '<div class="vc-chat-empty">No messages yet. Say hello.</div>';
+                    return;
+                }
+                if (parts.length) {
+                    const empty = box.querySelector('.vc-chat-empty');
+                    if (empty) empty.remove();
+                    box.insertAdjacentHTML('beforeend', parts.join(''));
+                    box.scrollTop = box.scrollHeight;
+                }
+            }
+
+            function composerGrow(el){
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 84) + 'px';
+            }
+            function composerKey(e){
+                // Enter sends, Shift+Enter makes a new line -- what people expect.
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+            }
+
+            async function sendMessage(){
+                const input = $('vc-composer-input');
+                const body = String(input.value || '').trim();
+                if (!body || !chat.peer) return;
+                const btn = $('vc-send-btn');
+                input.value = ''; composerGrow(input);
+                btn.disabled = true;
+                const res = await chatApi('chat_send', { to: chat.peer, body });
+                btn.disabled = false;
+                if (res && res.status === 'success') {
+                    renderThread([{ id: res.id, at: res.at, body: res.body, mine: true }]);
+                    chat.last[chat.peer] = { at: res.at, body: res.body, mine: true };
+                    if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
+                } else {
+                    // Put it back rather than losing what they typed.
+                    input.value = body; composerGrow(input);
+                    setStatus((res && res.message) || 'Message could not be sent', 'error');
+                }
+            }
+
+            function chatUnreadTotal(){
+                let total = 0;
+                for (const k in chat.unread) total += chat.unread[k] || 0;
+                return total;
+            }
+
+            function paintUnread(){
+                const total = chatUnreadTotal();
+                const tab = $('vc-tab-unread');
+                if (tab) { tab.textContent = total || ''; tab.style.display = total ? 'inline-block' : 'none'; }
+                // Same badge the incoming call uses, so one dot means "something
+                // is waiting for you" wherever it comes from.
+                const b = $('vc-fab-badge');
+                if (b && !st.inCall) b.style.display = total ? 'block' : (b.dataset.call === '1' ? 'block' : 'none');
+            }
+
+            async function chatPoll(){
+                const res = await chatApi('chat_poll', { sinceId: chat.sinceId });
+                if (!res || res.status !== 'success') return;
+                chat.unread = res.unread || {};
+                if (typeof res.sinceId === 'number') chat.sinceId = res.sinceId;
+                const fresh = res.messages || [];
+                for (const m of fresh) {
+                    const peer = m.mine ? m.to : m.from;
+                    chat.last[peer] = { at: m.at, body: m.body, mine: m.mine };
+                }
+                // Anything for the conversation on screen goes straight in.
+                if (chat.peer) {
+                    const forThread = fresh.filter(m => (m.mine ? m.to : m.from) === chat.peer);
+                    if (forThread.length) {
+                        renderThread(forThread);
+                        await chatApi('chat_mark_read', { peer: chat.peer });
+                        chat.unread[chat.peer] = 0;
+                    }
+                }
+                paintUnread();
+                if (chat.tab === 'chat' && !chat.peer) renderPeople();
+            }
+
+            function startChatPoll(){
+                if (chat.pollTimer) return;
+                chatPoll();
+                // Faster while a conversation is open, slower in the background.
+                chat.pollTimer = setInterval(() => {
+                    if (document.hidden) return;
+                    if (chat.peer || st.panelOpen || (Date.now() % 12000) < 5000) chatPoll();
+                }, 5000);
+            }
+
+            function callCurrentThread(){
+                if (chat.peer) { showTab('call'); startCall(chat.peer, chat.peerName); }
+            }
+
             async function listenForIncoming(){
                 if (st.inCall) { setTimeout(listenForIncoming, 3000); return; }
                 try {
@@ -22434,7 +22756,14 @@ ${(() => {
                 answerCall,
                 rejectCall,
                 endCall,
-                toggleMute
+                toggleMute,
+                showTab,
+                openThread,
+                closeThread,
+                sendMessage,
+                composerGrow,
+                composerKey,
+                callCurrentThread
             };
 
             // Start listening for incoming calls, and announcing presence,
@@ -22454,6 +22783,7 @@ ${(() => {
                 // Small delay so auth/session loads first
                 setTimeout(listenForIncoming, 5000);
                 setTimeout(startPresenceHeartbeat, 5000);
+                setTimeout(startChatPoll, 6000);
             }
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', vcBoot);
