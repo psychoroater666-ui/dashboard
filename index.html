@@ -4972,6 +4972,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         body.dark-theme .vc-msg.mine { background: linear-gradient(145deg, #3B5BDB, #1B1BB5); box-shadow: none; }
         /* consecutive messages from the same person hug together */
         .vc-msg.grouped { margin-top: 2px; }
+        /* ...but never against a photo: same colour, two pixels apart, it read
+           as one merged block rather than two messages */
+        .vc-msg.has-media { margin-top: 9px; }
+        .vc-msg.has-media + .vc-msg { margin-top: 9px; }
+        .vc-msg.has-media + .vc-msg.them.grouped { border-top-left-radius: 17px; }
+        .vc-msg.has-media + .vc-msg.mine.grouped { border-top-right-radius: 17px; }
         .vc-msg.them.grouped { border-top-left-radius: 7px; }
         .vc-msg.mine.grouped { border-top-right-radius: 7px; }
         .vc-msg-time {
@@ -7118,7 +7124,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.93.0 · 15 Sep 2026 · nav fills the row';
+        const BUILD_VERSION = 'v2.93.2 · 15 Sep 2026 · photo spacing in threads';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21993,6 +21999,12 @@ ${(() => {
             let menuEl = null, queued = false;
 
             const nav   = () => document.getElementById('topNav');
+            function setPad(n, pad, morePad){
+                if (n.style.getPropertyValue('--nav-pad') !== pad + 'px')
+                    n.style.setProperty('--nav-pad', pad + 'px');
+                if (n.style.getPropertyValue('--nav-pad-more') !== morePad + 'px')
+                    n.style.setProperty('--nav-pad-more', morePad + 'px');
+            }
             const moreB = () => document.getElementById('topnav-more');
             const allLinks = () => Array.from(document.querySelectorAll('#topNav .topnav-link'));
             // A link hidden by role is not in the bar at all, so it is neither
@@ -22010,7 +22022,16 @@ ${(() => {
             }
             function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+            let lastKey = '';
             function build(hidden){
+                // Rewriting the menu while it is open destroys whatever the
+                // pointer is pressing on, so the click never completes. Only
+                // rebuild when the contents genuinely differ.
+                const active = document.querySelector('#topNav .topnav-link.active');
+                const key = hidden.map(el => el.getAttribute('data-view')).join('|')
+                          + '#' + (active ? active.getAttribute('data-view') : '');
+                if (key === lastKey) return;
+                lastKey = key;
                 const m = menu();
                 const by = {};
                 hidden.forEach(el => { by[el.getAttribute('data-view')] = el; });
@@ -22079,8 +22100,7 @@ ${(() => {
                 // Always measure at resting padding, never at whatever width the
                 // last pass stretched the tabs to -- otherwise each run feeds on
                 // the one before it and the bar creeps.
-                n.style.setProperty('--nav-pad', BASE_PAD + 'px');
-                n.style.setProperty('--nav-pad-more', '11px');
+                setPad(n, BASE_PAD, 11);
 
                 if (window.innerWidth < MIN_W){
                     b.classList.remove('visible');
@@ -22119,10 +22139,7 @@ ${(() => {
                 if (shownCount > 0){
                     const slack = Math.max(0, avail - used);
                     const extra = Math.min(MAX_PAD - BASE_PAD, Math.floor(slack / shownCount / 2));
-                    if (extra > 0){
-                        n.style.setProperty('--nav-pad', (BASE_PAD + extra) + 'px');
-                        n.style.setProperty('--nav-pad-more', (11 + extra) + 'px');
-                    }
+                    if (extra > 0) setPad(n, BASE_PAD + extra, 11 + extra);
                 }
                 if (!hidden.length){
                     b.classList.remove('visible', 'is-active');
@@ -22175,9 +22192,16 @@ ${(() => {
             function watch(){
                 const n = nav(); if (!n) return;
                 try {
-                    new MutationObserver(schedule).observe(n, {
-                        attributes: true, subtree: true, attributeFilter: ['style']
-                    });
+                    // Only links matter here: role decides which views exist by
+                    // flipping their inline display. The nav element itself is
+                    // skipped on purpose -- layout() writes its padding there,
+                    // and watching that made every pass trigger the next one,
+                    // relaying the menu on every frame.
+                    new MutationObserver(recs => {
+                        for (const r of recs) {
+                            if (r.target !== n) { schedule(); return; }
+                        }
+                    }).observe(n, { attributes: true, subtree: true, attributeFilter: ['style'] });
                 } catch(e){}
             }
             function start(){ watch(); schedule(); setTimeout(schedule, 400); setTimeout(schedule, 1600); }
@@ -24153,10 +24177,14 @@ ${(() => {
                     const who = (!m.mine && isGroupPeer(chat.peer))
                         ? `<span class="vc-msg-who">${chatEsc(m.fromName || memberName(m.from))}</span>` : '';
                     // Consecutive messages from one person read as a block, not
-                    // as a stack of identical balloons.
+                    // as a stack of identical balloons. An attachment breaks the
+                    // block on both sides: two navy bubbles two pixels apart are
+                    // fine for two lines of text, but a photo running straight
+                    // into the next message reads as one merged shape.
+                    const hasFile = !!(m.file && m.file.key);
                     const fromKey = m.mine ? 'me' : String(m.from || 'them');
-                    const grouped = (!newDay && fromKey === lastFrom) ? ' grouped' : '';
-                    lastFrom = fromKey;
+                    const grouped = (!newDay && !hasFile && fromKey === lastFrom) ? ' grouped' : '';
+                    lastFrom = hasFile ? '' : fromKey;
                     const media = m.kind === 'image' ? (text ? ' has-media' : ' has-media media-only') : '';
                     parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}" data-id="${m.id}">${who}${attachmentHtml(m)}${text}`
                              + `<span class="vc-msg-time">${chatEsc(chatTime(m.at))}<span class="vc-tick-slot">${tickFor(m)}</span></span></div>`);
