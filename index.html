@@ -6575,7 +6575,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.75.0 · 15 Sep 2026 · call identity fix';
+        const BUILD_VERSION = 'v2.76.0 · 15 Sep 2026 · call connect fix';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21965,14 +21965,19 @@ ${(() => {
                 if (!st.callId) return;
                 const res = await signal({ callId: st.callId, from: myIdentity(), poll: true });
                 if (!res || res.status !== 'success') return;
-                const msg = res.message;
-                if (!msg) return;
-
-                if (msg.type === 'offer' && !st.isCaller)   handleOffer(msg);
-                if (msg.type === 'answer' && st.isCaller)   handleAnswer(msg);
-                if (msg.type === 'ice')                      handleRemoteIce(msg.candidate);
-                if (msg.type === 'reject')                   onRemoteRejected();
-                if (msg.type === 'hangup')                   onRemoteHangup();
+                // The Worker hands over everything the other side has sent since
+                // the last poll, oldest first. Every one matters: a dropped ICE
+                // candidate is a call that never connects.
+                const msgs = Array.isArray(res.messages) ? res.messages
+                           : (res.message ? [res.message] : []);
+                for (const msg of msgs) {
+                    if (!msg) continue;
+                    if (msg.type === 'offer' && !st.isCaller)   await handleOffer(msg);
+                    if (msg.type === 'answer' && st.isCaller)   await handleAnswer(msg);
+                    if (msg.type === 'ice')                      await handleRemoteIce(msg.candidate);
+                    if (msg.type === 'reject')                   onRemoteRejected();
+                    if (msg.type === 'hangup')                   onRemoteHangup();
+                }
             }
 
             // ── RTCPeerConnection lifecycle ───────────────────────────────────
@@ -22062,6 +22067,7 @@ ${(() => {
             async function handleAnswer(msg){
                 if (!st.pc || st.pc.signalingState !== 'have-local-offer') return;
                 await st.pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+                await flushPendingIce();
                 VcSfx.stop();                     // they picked up: ringback ends here
                 setStatus('Connecting…', 'calling');
             }
@@ -22092,6 +22098,7 @@ ${(() => {
                 stream.getTracks().forEach(t => st.pc.addTrack(t, stream));
 
                 await st.pc.setRemoteDescription({ type: 'offer', sdp: st._pendingSdp });
+                await flushPendingIce();
                 const answer = await st.pc.createAnswer();
                 await st.pc.setLocalDescription(answer);
 
@@ -22112,8 +22119,24 @@ ${(() => {
                 resetState();
             }
 
+            // A candidate that arrives before the remote description is set is
+            // rejected by the browser and lost for good. Hold those until the
+            // description lands, then add them in the order they arrived.
             async function handleRemoteIce(candidate){
-                try { if (st.pc && candidate) await st.pc.addIceCandidate(candidate); } catch(e){}
+                if (!candidate) return;
+                if (!st.pc || !st.pc.remoteDescription || !st.pc.remoteDescription.type) {
+                    (st._pendingIce = st._pendingIce || []).push(candidate);
+                    return;
+                }
+                try { await st.pc.addIceCandidate(candidate); } catch(e){ console.log('ice add failed:', e && e.message); }
+            }
+
+            async function flushPendingIce(){
+                const queued = st._pendingIce || [];
+                st._pendingIce = [];
+                for (const c of queued) {
+                    try { await st.pc.addIceCandidate(c); } catch(e){ console.log('queued ice failed:', e && e.message); }
+                }
             }
 
             // ── End call ─────────────────────────────────────────────────────
@@ -22145,7 +22168,7 @@ ${(() => {
                 if (st.localStream){ st.localStream.getTracks().forEach(t => t.stop()); st.localStream = null; }
                 const a = $('vc-remote-audio');
                 if (a){ a.srcObject = null; }
-                st.inCall = false; st.isCaller = false; st.callId = null; st.remotePeer = null; st._pendingSdp = null; st.muted = false;
+                st.inCall = false; st.isCaller = false; st.callId = null; st.remotePeer = null; st._pendingSdp = null; st._pendingIce = []; st.muted = false;
 
                 $('vc-active-panel').classList.remove('visible');
                 $('vc-branch-list').style.display = '';
