@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.106.0 · 16 Sep 2026 · Blink tab, focused overview';
+        const BUILD_VERSION = 'v2.106.1 · 16 Sep 2026 · Blink tab shows status without orders';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -23748,9 +23748,14 @@ ${(() => {
                 };
 
                 if (!all.length){
-                    root.uiHTML = '<div class="card"><div class="section-header"><h3>Orders</h3></div>'
+                    // Branch status and order timings still belong here even
+                    // with no order rows: they come from Blink directly, not
+                    // from this table, and they are the reason to open the tab.
+                    root.uiHTML = '<div id="blink-tab-status"></div>'
+                        + '<div class="card"><div class="section-header"><h3>Orders</h3></div>'
                         + '<div class="fb-empty"><b>No orders yet.</b><br><span style="font-size:0.8rem;">'
                         + 'Orders arrive from the Blink POS the moment they are placed. If this stays empty, check the Sentinel webhook in Blink.</span></div></div>';
+                    setTimeout(renderBlinkTabStatus, 0);
                     return;
                 }
 
