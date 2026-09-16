@@ -7540,7 +7540,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.108.0 · 16 Sep 2026 · Overview in five zones, compact Blink';
+        const BUILD_VERSION = 'v2.108.1 · 17 Sep 2026 · orders only on Blink, clicks paint first';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7949,7 +7949,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // by pressing Refresh, and immediately by the live tabs below.)
                     const forceFull = !!(opts && opts.full) || (lastFull && (now - lastFull) > FULL_EVERY_MS);
                     const keys = ChannelReg.keys()
-                        .concat(['social','sl_resolution','incident_resolution','branch_staff','blink_orders']).concat(wantAi ? AI_TABS : [])
+                        .concat(['social','sl_resolution','incident_resolution','branch_staff'])
+                        // Ten thousand order rows are only needed on the Blink tab
+                        // -- the Overview reads its own summary. Asking for them on
+                        // every poll from every screen made each sync carry and
+                        // re-check the heaviest table in the system for nothing.
+                        .concat((typeof _viewIs === 'function' && _viewIs('orders')) ? ['blink_orders'] : [])
+                        .concat(wantAi ? AI_TABS : [])
                         // The Activity log is Owner-only, is not mirrored into the
                         // database, and grows without limit -- so asking for it on
                         // every poll meant the Owner's laptop alone hammered Apps
@@ -11314,13 +11320,26 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // the background jump). Queue it; the next poll after the dialog
             // closes paints it, and closing a modal triggers that poll path.
             if(document.querySelector('.ia-overlay.is-open, .sl-modal-overlay.is-open')){ window.__needsRepaintAfterModal = true; return; }
-            try {
-                const run = () => {
-                    if(typeof app !== 'undefined' && app.applyFilters) app.applyFilters();
-                    if(typeof renderAlerts === 'function') renderAlerts();
-                };
-                (typeof UI !== 'undefined' && UI.silent) ? UI.silent(run) : run();
-            } catch(e){ console.warn('Post-save refresh failed:', e); }
+            // Off the click's own frame. applyFilters() recomputes and repaints
+            // the whole page -- tens of thousands of rows -- and running it inside
+            // the click handler meant nothing painted until it had finished: the
+            // dialog stayed up, the toast waited, the screen "froze". Yielding
+            // one frame lets the click land first; the heavy work follows a few
+            // milliseconds later, and two changes in quick succession share one
+            // repaint instead of running it twice.
+            if(window.__postChangeRepaint) return;
+            window.__postChangeRepaint = true;
+            const go = () => {
+                window.__postChangeRepaint = false;
+                try {
+                    const run = () => {
+                        if(typeof app !== 'undefined' && app.applyFilters) app.applyFilters();
+                        if(typeof renderAlerts === 'function') renderAlerts();
+                    };
+                    (typeof UI !== 'undefined' && UI.silent) ? UI.silent(run) : run();
+                } catch(e){ console.warn('Post-save refresh failed:', e); }
+            };
+            (window.requestAnimationFrame || setTimeout)(() => setTimeout(go, 0));
         }
 
         function _protectIncidentResolution(stableKey, resolved, caseStatus, resolutionNote, resolvedAt, agentCategory){
@@ -12486,7 +12505,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 else if (state.currentView === 'activity') { ACT.render(); return; }
                 else if (state.currentView === 'rewards') { RW.render(); return; }
                 else if (state.currentView === 'form-analytics') { FAT.render(); return; }
-                else if (state.currentView === 'orders')  { ORD.render(); return; }
+                else if (state.currentView === 'orders')  {
+                    ORD.render();
+                    // Orders are only fetched while this tab is open, so pull
+                    // them the moment it opens rather than on the next tick.
+                    try { if(window.pollNow) pollNow(); } catch(e){}
+                    return;
+                }
                 else if (state.currentView === 'actions') { ACTS.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
