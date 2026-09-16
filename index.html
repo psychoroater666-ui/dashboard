@@ -7443,7 +7443,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.99.4 · 16 Sep 2026 · steady message list';
+        const BUILD_VERSION = 'v2.99.5 · 16 Sep 2026 · steady menus';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22596,6 +22596,13 @@ ${(() => {
                     });
                     html = top + html;
                 }
+                // Rebuilt on every layout pass -- and a pass is scheduled each
+                // time any nav link's inline style changes, which a refresh does
+                // when it re-applies role visibility. So the open menu was torn
+                // down and redrawn every few seconds with identical content:
+                // the More menu flicker. Leave the DOM alone when nothing moved.
+                if (m.__lastHtml === html) return;
+                m.__lastHtml = html;
                 m.innerHTML = html;
             }
 
@@ -24088,7 +24095,7 @@ ${(() => {
                     </div>`;
                     return;
                 }
-                list.innerHTML = res.people.map(p => {
+                const dirHtml = res.people.map(p => {
                     const name  = p.name || p.email;
                     const scope = (p.branch && p.branch !== 'All') ? p.branch
                                 : (p.region && p.region !== 'All') ? p.region + ' Region' : 'All branches';
@@ -24105,6 +24112,9 @@ ${(() => {
                         </button>
                     </div>`;
                 }).join('');
+                // Redrawn every six seconds while the panel is open; only when
+                // someone's presence actually changed is it worth repainting.
+                if (list.__lastHtml !== dirHtml) { list.__lastHtml = dirHtml; list.innerHTML = dirHtml; }
             }
             function startDirectoryPoll(){
                 renderDirectory();
