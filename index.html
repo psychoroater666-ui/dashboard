@@ -1,26 +1,3 @@
-        async function saveOwnerSettings(tab){
-            const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
-            const payload = {};
-            if(tab === 'alerts'){
-                payload.quietStart = parseInt(document.getElementById('os-qs').value, 10);
-                payload.quietEnd   = parseInt(document.getElementById('os-qe').value, 10);
-                payload.alertBranches = Array.from(document.querySelectorAll('.os-branch:checked')).map(i => i.value);
-            } else {
-                payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
-                payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
-                payload.currentDrop       = document.getElementById('os-drop').value.trim();
-            }
-            const res = await apiCall('settings_set', payload).catch(() => null);
-            if(!res || res.status !== 'success'){
-                if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
-                UI.toast((res && res.message) || 'Could not save the settings.', 'error');
-                return;
-            }
-            const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
-            UI.toast('Saved — every device picks this up within a few seconds.', 'success');
-            applyOwnerSettings(res.settings);
-        }
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9508,6 +9485,29 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         /* ── Owner settings ────────────────────────────────────────────────
            Three rules, changed here instead of by asking for a new build. */
+        async function saveOwnerSettings(tab){
+            const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+            const payload = {};
+            if(tab === 'alerts'){
+                payload.quietStart = parseInt(document.getElementById('os-qs').value, 10);
+                payload.quietEnd   = parseInt(document.getElementById('os-qe').value, 10);
+                payload.alertBranches = Array.from(document.querySelectorAll('.os-branch:checked')).map(i => i.value);
+            } else {
+                payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
+                payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
+                payload.currentDrop       = document.getElementById('os-drop').value.trim();
+            }
+            const res = await apiCall('settings_set', payload).catch(() => null);
+            if(!res || res.status !== 'success'){
+                if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
+                UI.toast((res && res.message) || 'Could not save the settings.', 'error');
+                return;
+            }
+            const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
+            UI.toast('Saved — every device picks this up within a few seconds.', 'success');
+            applyOwnerSettings(res.settings);
+        }
+
         function openOwnerSettings(tab){
             try { document.getElementById('dp-menu').style.display = 'none'; } catch(e){}
             const st = window.OwnerSettings || {};
