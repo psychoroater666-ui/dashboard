@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.105.0 · 16 Sep 2026 · impact, gaps, people, undo, backup';
+        const BUILD_VERSION = 'v2.105.1 · 16 Sep 2026 · recovery shown with the actions';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21478,6 +21478,31 @@ ${(() => {
             }
             const STYLE = { worked:['#059669','fa-circle-check'], returned:['#D97706','fa-rotate-left'], nochange:['#DC2626','fa-circle-xmark'],
                             partial:['#010197','fa-arrow-trend-down'], early:['#64748B','fa-hourglass-half'], thin:['#64748B','fa-circle-question'], unknown:['#64748B','fa-circle-question'] };
+            /** Did the people we apologised to come back? Shown to everyone who
+             *  can see this register -- they log the actions, so they should
+             *  see whether the follow-up worked. */
+            async function renderRecoveryStrip(){
+                const box = document.getElementById('acts-recovery'); if(!box) return;
+                const res = await apiCall('impact_report', { days: 30 }).catch(() => null);
+                if(!res || res.status !== 'success' || !res.recovery){ box.innerHTML = ''; return; }
+                const r = res.recovery;
+                if(!r.messaged){
+                    box.innerHTML = `<div style="border:1px dashed var(--border-color);border-radius:12px;padding:12px 14px;font-size:.76rem;color:var(--text-muted);">
+                        No recovery messages sent in the last 30 days — nothing to measure yet.</div>`;
+                    return;
+                }
+                const pct = Math.round((r.returned / r.messaged) * 100);
+                box.innerHTML = `<div style="border:1px solid var(--border-color);border-radius:12px;padding:12px 14px;background:var(--white);">
+                    <div style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Customers we apologised to · last 30 days</div>
+                    <div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:8px;">
+                        <div><div style="font:800 1.3rem 'Inter',sans-serif;">${r.messaged}</div><div style="font-size:.68rem;color:var(--text-muted);">messaged</div></div>
+                        <div><div style="font:800 1.3rem 'Inter',sans-serif;color:${pct >= 25 ? '#059669' : 'var(--text-main)'};">${r.returned}</div><div style="font-size:.68rem;color:var(--text-muted);">came back (${pct}%)</div></div>
+                        <div><div style="font:800 1.3rem 'Inter',sans-serif;color:${r.returnedBetter ? '#059669' : 'var(--text-main)'};">${r.returnedBetter}</div><div style="font-size:.68rem;color:var(--text-muted);">rated us better</div></div>
+                    </div>
+                    <div style="font-size:.68rem;color:var(--text-muted);margin-top:8px;">A customer who returns after a complaint is the whole point of the apology — this is the only place it is counted.</div>
+                </div>`;
+            }
+
             function render(){
                 const host = document.getElementById('acts-root'); if(!host) return;
                 if(!can('action')){ host.innerHTML = '<div class="fb-empty">The action register is available to the Owner and Report Analysts.</div>'; return; }
@@ -21497,6 +21522,11 @@ ${(() => {
                         <div class="rw-stat"><b style="color:#DC2626;">${tally.nochange}</b><span>no change</span></div>
                         <div class="rw-stat"><b>${decided ? Math.round(tally.worked / decided * 100) : 0}%</b><span>fix rate</span></div>
                     </div>
+                    <!-- The other half of "did it work": the customers we went
+                         back to. The per-action verdicts above already answer
+                         it for branch fixes; nothing answered it for the people
+                         we apologised to. Filled in after the panel renders. -->
+                    <div id="acts-recovery" style="margin:0 0 14px;"></div>
                     ${!all.length ? `<div class="fb-empty"><b>No actions logged yet.</b><br><span style="font-size:0.8rem;">Use <b>Log an action</b> on any flagged issue. The dashboard then watches that branch and reason and tells you whether it improved.</span></div>` : ''}
                     ${judged.map(({ a, v }) => {
                         const [col, ic] = STYLE[v.key] || STYLE.unknown;
@@ -21516,6 +21546,9 @@ ${(() => {
                         </div>`;
                     }).join('')}
                     ${all.length > open_.length ? `<div style="font-size:0.7rem;color:var(--text-muted);padding:10px 2px;">${all.length - open_.length} closed action${all.length - open_.length === 1 ? '' : 's'} hidden.</div>` : ''}`;
+                // Filled in after the markup is on screen: it needs a
+                // round trip, and the register must not wait for it.
+                setTimeout(renderRecoveryStrip, 0);
             }
             /** Open the log dialog, pre-filled from a flagged issue. */
             function log(branch, reason){
