@@ -3562,6 +3562,84 @@
         .bp-card { padding:18px 22px; }
         .fc-card { padding:18px 22px; border-left:3px solid #DC2626; }
         .blink-card { padding:18px 22px; }
+        /* ── Overview: Blink section ── */
+        .bk { --bk-brand:#010197; --bk-soft:rgba(1,1,151,.06); --bk-red:#DC2626; --bk-red-t:#B91C1C; --bk-green:#059669; }
+        body.dark-theme .bk { --bk-brand:#64D0FF; --bk-soft:rgba(100,208,255,.12); --bk-red:#F87171; --bk-red-t:#F87171; --bk-green:#34D399; }
+        .bk-hd { display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+        .bk-hd h3 { margin:0; font-size:0.78rem; font-weight:800; letter-spacing:.4px; color:var(--text-main); }
+        .bk-hd h3 i { color:var(--bk-brand); margin-right:7px; }
+        .bk-fresh { margin-left:auto; font-size:0.72rem; color:var(--text-muted); display:inline-flex; align-items:center; gap:6px; }
+        .bk-live { width:7px; height:7px; border-radius:50%; background:var(--bk-green); display:inline-block; }
+        .bk-live.off { background:var(--bk-red); }
+        .bk-open { font-size:0.76rem; font-weight:700; color:var(--bk-brand); text-decoration:none; }
+        .bk-open:hover, .bk-open:focus-visible { text-decoration:underline; }
+        .bk-att { border:1px solid var(--border-color); border-left:4px solid var(--bk-red); border-radius:12px; padding:2px 16px; margin-bottom:14px; }
+        .bk-att-h { margin:10px 0 2px; font-size:0.74rem; font-weight:800; color:var(--bk-red-t); }
+        .bk-row { display:grid; grid-template-columns:86px minmax(120px,190px) 1fr auto; gap:14px; align-items:center; padding:9px 0; border-top:1px solid var(--border-color); font-size:0.8rem; color:var(--text-main); }
+        .bk-att-h + .bk-row { border-top:0; }
+        .bk-sev { font-size:0.62rem; font-weight:800; padding:3px 8px; border-radius:20px; justify-self:start; letter-spacing:.3px; }
+        .bk-sev.c { background:rgba(220,38,38,.10); color:var(--bk-red-t); }
+        .bk-sev.h { background:var(--bk-soft); color:var(--bk-brand); }
+        .bk-who { font-weight:700; }
+        .bk-owner { color:var(--text-muted); font-size:0.72rem; text-align:right; white-space:nowrap; }
+        .bk-clear { display:flex; align-items:center; gap:10px; padding:11px 14px; margin-bottom:14px; border:1px solid var(--border-color); border-radius:12px; font-size:0.8rem; color:var(--text-muted); }
+        .bk-clear i { color:var(--bk-green); }
+        .bk-grid { display:grid; grid-template-columns:1.05fr 1.1fr 1.15fr .85fr; gap:14px; }
+        .bk-p { border:1px solid var(--border-color); border-radius:12px; padding:14px 16px; min-width:0; }
+        .bk-ph { display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; font-size:0.72rem; font-weight:800; color:var(--text-muted); }
+        .bk-ph span { font-weight:600; }
+        .bk-trio { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; }
+        .bk-big { font-size:1.65rem; font-weight:800; letter-spacing:-.6px; line-height:1; color:var(--text-main); }
+        .bk-big.bad { color:var(--bk-red-t); }
+        .bk-big.muted { color:var(--text-muted); }
+        .bk-small { font-size:0.7rem; color:var(--text-muted); margin-top:4px; }
+        .bk-dots { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 12px; margin-top:10px; }
+        .bk-dot { display:flex; align-items:center; gap:7px; font-size:0.72rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .bk-dot i { width:8px; height:8px; border-radius:50%; background:var(--bk-green); flex-shrink:0; }
+        .bk-dot.off { color:var(--bk-red-t); font-weight:700; }
+        .bk-dot.off i { background:var(--bk-red); }
+        .bk-dot.cl, .bk-dot.nd { color:var(--text-muted); }
+        .bk-dot.cl i { background:var(--text-muted); }
+        .bk-dot.nd i { background:transparent; border:1.5px solid var(--text-muted); }
+        .bk-split { display:flex; height:8px; border-radius:5px; overflow:hidden; margin:12px 0 8px; background:var(--border-color); }
+        .bk-split .s1, .bk-legend i.s1 { background:var(--bk-brand); }
+        .bk-split .s2, .bk-legend i.s2 { background:#3B5BDB; }
+        .bk-split .s3, .bk-legend i.s3 { background:#64D0FF; }
+        .bk-split .s4, .bk-legend i.s4 { background:var(--text-muted); }
+        body.dark-theme .bk-split .s3, body.dark-theme .bk-legend i.s3 { background:rgba(100,208,255,.45); }
+        .bk-legend { display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; font-size:0.72rem; color:var(--text-muted); }
+        .bk-legend b { color:var(--text-main); font-weight:700; }
+        .bk-legend i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; }
+        .bk-kv { display:flex; justify-content:space-between; gap:10px; font-size:0.78rem; padding:7px 0; border-top:1px solid var(--border-color); }
+        .bk-ph + .bk-kv { border-top:0; }
+        .bk-kv span { color:var(--text-muted); min-width:0; overflow:hidden; text-overflow:ellipsis; }
+        .bk-kv b { font-weight:700; color:var(--text-main); white-space:nowrap; }
+        .bk-kv b.bad { color:var(--bk-red-t); }
+        .bk-kv b.dash { color:var(--text-muted); font-weight:600; }
+        .bk-kv .bk-item { color:var(--text-main); font-weight:700; margin-right:4px; }
+        .bk-ok { display:flex; gap:8px; align-items:flex-start; font-size:0.8rem; color:var(--text-main); line-height:1.45; }
+        .bk-ok i { color:var(--bk-green); margin-top:3px; }
+        .bk-note { font-size:0.72rem; color:var(--text-muted); margin-top:12px; line-height:1.5; }
+        .bk-pc { margin-top:14px; border:1px solid var(--border-color); border-radius:12px; padding:12px 16px; display:grid; grid-template-columns:210px repeat(3,minmax(0,1fr)); gap:22px; align-items:center; }
+        .bk-pct { font-size:0.72rem; font-weight:800; color:var(--text-muted); }
+        .bk-pct small { display:block; font-weight:500; margin-top:3px; font-size:0.66rem; }
+        .bk-stepl { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; font-size:0.76rem; color:var(--text-main); }
+        .bk-stepl b { font-weight:800; }
+        .bk-stepl b.bad { color:var(--bk-red-t); }
+        .bk-track { height:6px; border-radius:4px; background:var(--border-color); overflow:hidden; }
+        .bk-track div { height:100%; background:var(--bk-brand); border-radius:4px; }
+        .bk-track div.z { background:var(--bk-red); }
+        .bk-of { font-size:0.64rem; color:var(--text-muted); margin-top:4px; }
+        @media (max-width:1180px){ .bk-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:820px){
+            .bk-grid { grid-template-columns:1fr; }
+            .bk-row { grid-template-columns:auto 1fr; gap:4px 10px; }
+            .bk-row .bk-what { grid-column:1 / -1; }
+            .bk-row .bk-owner { grid-column:1 / -1; text-align:left; }
+            .bk-pc { grid-template-columns:1fr; gap:12px; }
+            .bk-fresh { margin-left:0; order:3; width:100%; }
+            .bk-open { margin-left:auto; }
+        }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
            barely-there tint that fades out to the right, and a status dot instead
@@ -6026,8 +6104,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     </div>
 
                     <!-- Live from the POS: which branches are trading, what is out of stock -->
-                    <div class="card blink-card" id="blink-card" style="display:none;">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-store" style="color:#010197;margin-right:6px;"></i>BRANCHES LIVE</h3><span class="text-xs text-muted" id="blink-sub" style="font-size:0.68rem;"></span></div>
+                    <div class="card blink-card bk" id="blink-card" style="display:none;">
+                        <div class="bk-hd"><h3><i class="fas fa-store"></i>BLINK</h3>
+                            <span class="bk-fresh" id="blink-sub"></span>
+                            <a href="#" class="bk-open" onclick="app.navigate('orders'); return false;">Open Blink tab</a></div>
                         <div id="blink-body"></div>
                     </div>
 
@@ -7453,7 +7533,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.106.4 · 16 Sep 2026 · order timings split: own riders, Foodpanda handover, pickup';
+        const BUILD_VERSION = 'v2.107.0 · 16 Sep 2026 · Overview Blink section';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12586,62 +12666,159 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // with that branch's known breaking point and says who will cross it,
             // when, and what happened the last times they did. Plain arithmetic —
             // current pace, measured threshold, historical outcome. No model.
-            // Live POS state. Which branches are open, which are closed inside
-            // their own trading hours, and what each has run out of and for how
-            // long. Read from the Worker, which polls Blink on the minute job.
-            // Hidden entirely until Blink is configured -- an empty card would
-            // only invite the question "is it broken".
+            // The Overview's Blink section. Everything the POS says, in one
+            // place: what needs action first, then branches, today's orders,
+            // order speed, stock, and whether branches use Blink's steps.
+            // Read from the Worker; branch status and orders are refreshed at
+            // most once a minute, order speed every five, whatever the
+            // dashboard's own refresh rate. Hidden until Blink is configured.
             async renderBlinkLive() {
                 const card = document.getElementById('blink-card'), host = document.getElementById('blink-body'), sub = document.getElementById('blink-sub');
                 if (!card || !host) return;
-                let d = null;
-                try { d = await apiCall('blink_status', {}); } catch (e) { d = null; }
-                if (!d || d.status !== 'success' || !(d.branches || []).length) { card.style.display = 'none'; return; }
+                const C = this._bk || (this._bk = { st: null, ov: null, tm: null, tSt: 0, tOv: 0, tTm: 0 });
+                const now = Date.now(), jobs = [];
+                if (now - C.tSt > 55000) { C.tSt = now; jobs.push(apiCall('blink_status', {}).then(r => { if (r && r.status === 'success') C.st = r; }).catch(() => {})); }
+                if (now - C.tOv > 55000) { C.tOv = now; jobs.push(apiCall('blink_overview', {}).then(r => { if (r && r.status === 'success') C.ov = r; }).catch(() => {})); }
+                if (now - C.tTm > 300000) { C.tTm = now; jobs.push(apiCall('blink_timing', { days: 7 }).then(r => { if (r && r.status === 'success') C.tm = r; }).catch(() => {})); }
+                if (jobs.length) await Promise.all(jobs);
+                const d = C.st, ov = C.ov, tm = C.tm;
+                if (!d || (!(d.branches || []).length && !d.stale && !(d.noData || []).length)) { card.style.display = 'none'; return; }
                 card.style.display = '';
+
                 const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                 const ago = m => m == null ? '' : m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
-                const open = d.branches.filter(b => b.open === 1), closed = d.branches.filter(b => b.open === 0);
-                const offline = closed.filter(b => b.offlineMinutes != null);
-                if (sub) sub.textContent = open.length + ' open · ' + closed.length + ' closed' + (offline.length ? ' · ' + offline.length + ' offline in hours' : '') + (d.lastPoll != null ? ' · checked ' + ago(d.lastPoll) + ' ago' : '');
-                const byBranch = {};
-                (d.outOfStock || []).forEach(i => (byBranch[i.branch] = byBranch[i.branch] || []).push(i));
-                const chip = (b) => {
-                    const col = b.offlineMinutes != null ? '#DC2626' : b.open === 1 ? '#059669' : '#64748B';
-                    const label = b.offlineMinutes != null ? 'OFFLINE ' + ago(b.offlineMinutes) : b.open === 1 ? 'open' : b.open === 0 ? 'closed' : 'unknown';
-                    const oos = byBranch[b.name] || [];
-                    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-color);">
-                        <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></span>
-                        <span style="font-size:0.83rem;font-weight:700;color:var(--text-main);min-width:130px;">${esc2(b.name)}</span>
-                        <span style="font-size:0.7rem;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:.3px;">${esc2(label)}</span>
-                        <span style="font-size:0.7rem;color:var(--text-muted);">${esc2(b.hours)}</span>
-                        ${b.subDown ? '<span style="font-size:0.64rem;font-weight:800;color:#010197;background:rgba(1,1,151,.08);border-radius:20px;padding:2px 8px;">no out-of-radius delivery</span>' : ''}
-                        <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
-                    </div>`;
-                };
-                // Overview shows only what is WRONG. The full branch list lives
-                // in the Blink tab -- twenty branches all reading "open" is
-                // twenty lines telling you nothing, and it buried the one line
-                // that mattered. A branch closed inside its own trading hours
-                // is the exception worth a place on the front page.
-                const ordered = offline;
-                if (!offline.length && !(d.outOfStock || []).length) {
-                    if (sub) sub.textContent = open.length + ' open · ' + closed.length + ' closed · nothing needs attention';
-                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--text-muted);font-size:0.82rem;">
-                        <i class="fas fa-circle-check" style="color:#059669;"></i>
-                        Every branch is trading as expected and nothing is out of stock.
-                        <a href="#" onclick="app.navigate('orders'); return false;" style="margin-left:auto;font-size:0.74rem;font-weight:700;color:var(--accent-blue);">Open Blink →</a></div>`;
-                    return;
+                const mm = v => v == null ? null : v + ' min';
+                const branches = d.branches || [];
+                const scopeName = branches.length === 1 && !(d.noData || []).length ? branches[0].name : 'All branches';
+
+                // freshness line in the header
+                if (sub) {
+                    const late = d.stale || d.lastPoll == null || d.lastPoll > 10;
+                    sub.uiHTML = late
+                        ? `<span class="bk-live off"></span>Branch status not refreshed${d.lastPoll != null ? ' for ' + esc2(ago(d.lastPoll)) : ''}`
+                        : `<span class="bk-live"></span>Live from the POS, updated ${esc2(d.lastPoll < 1 ? 'just now' : ago(d.lastPoll) + ' ago')}`;
                 }
-                const oosList = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0)).slice(0, 8);
-                host.uiHTML = ordered.map(chip).join('')
-                  + (oosList.length ? `<div style="margin-top:12px;"><div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Out of stock right now</div>`
-                      + oosList.map(i => `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:0.76rem;">
-                            <span style="color:var(--text-main);"><b>${esc2(i.item)}</b> <span style="color:var(--text-muted);">· ${esc2(i.branch)}</span></span>
-                            <span style="color:${(i.outMinutes || 0) > 120 ? '#DC2626' : 'var(--text-muted)'};white-space:nowrap;">${ago(i.outMinutes)}</span></div>`).join('')
-                      + ((d.outOfStock || []).length > 12 ? `<div style="font-size:0.68rem;color:var(--text-muted);padding-top:4px;">and ${(d.outOfStock || []).length - 12} more</div>` : '') + '</div>'
-                    : `<div style="font-size:0.74rem;color:var(--text-muted);padding-top:8px;">Nothing out of stock.</div>`)
-                  + `<div style="padding-top:10px;text-align:right;"><a href="#" onclick="app.navigate('orders'); return false;"
-                        style="font-size:0.74rem;font-weight:700;color:var(--accent-blue);">All branches and order times in Blink →</a></div>`;
+
+                // ── what needs action, most serious first ──
+                const att = [];
+                const offline = branches.filter(b => b.offlineMinutes != null);
+                offline.forEach(b => att.push({ sev: 'c', who: b.name, owner: 'Area Manager',
+                    what: `Closed in Blink for ${ago(b.offlineMinutes)} inside its trading hours${b.hours ? ' (' + b.hours + ')' : ''}.${b.subDown ? ' Out-of-radius delivery also off.' : ''}` }));
+                const stuck = (ov && ov.stuck) || [];
+                const chName = c => {
+                    const u = String(c || '').toUpperCase();
+                    if (/CALL/.test(u)) return 'Call-in order';
+                    if (/FOODPANDA|PANDA/.test(u)) return 'Foodpanda order';
+                    if (/ANDROID/.test(u)) return 'Android app order';
+                    if (/IOS/.test(u)) return 'iOS app order';
+                    if (/WEB/.test(u)) return 'Website order';
+                    if (/QR/.test(u)) return 'QR order';
+                    return 'Order';
+                };
+                stuck.slice(0, 3).forEach(o => att.push({ sev: 'c', who: o.branch || 'Unknown branch',
+                    owner: /CALL/i.test(o.channel) ? 'Call Center / Branch' : 'Branch Manager',
+                    what: `${chName(o.channel)} ${o.order} not accepted after ${o.minutes} min.` }));
+                if (ov && ov.stuckCount > 3) att.push({ sev: 'c', who: 'Several branches', owner: 'Call Center', what: `${ov.stuckCount - 3} more orders not accepted after 15 min.` });
+                if (d.stale || (d.lastPoll != null && d.lastPoll > 10)) att.push({ sev: 'h', who: 'Blink connection', owner: 'Sentinel admin',
+                    what: 'Branch status has stopped refreshing, so open and closed states below may be out of date.' });
+                else if ((d.noData || []).length) att.push({ sev: 'h', who: d.noData.length === 1 ? d.noData[0] : d.noData.length + ' branches', owner: 'Sentinel admin',
+                    what: `No live reading from Blink${d.noData.length > 1 ? ' for ' + d.noData.join(', ') : ''}.` });
+                const oosBy = {};
+                (d.outOfStock || []).forEach(i => (oosBy[i.branch] = oosBy[i.branch] || []).push(i));
+                Object.keys(oosBy).forEach(br => {
+                    const list = oosBy[br], longest = list.reduce((m, i) => Math.max(m, i.outMinutes || 0), 0);
+                    if (longest >= 120) att.push({ sev: 'h', who: br, owner: 'Branch Manager',
+                        what: list.length === 1 ? `${list[0].item} out of stock for ${ago(longest)}.` : `${list.length} items out of stock, the longest for ${ago(longest)}.` });
+                });
+                const med = (tm && tm.median) || {};
+                const slowFp = (tm && med.handover != null) ? (tm.branches || []).filter(b => b.handover != null && b.handover >= Math.max(10, med.handover * 2)) : [];
+                slowFp.slice(0, 2).forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager',
+                    what: `Foodpanda handover ${b.handover} min, ${(b.handover / Math.max(1, med.handover)).toFixed(1)}× the network median of ${med.handover} min.` }));
+                const slowOwn = tm ? (tm.branches || []).filter(b => b.total != null && b.total >= 60) : [];
+                slowOwn.slice(0, 2).forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager',
+                    what: `Our riders take ${b.total} min door to door (median).` }));
+                const st = (ov && ov.steps) || {};
+                if (st.ready && st.ready.of >= 10 && st.ready.pct != null && st.ready.pct < 50) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
+                    what: st.ready.pct === 0 ? 'No order marked Ready in Blink today, so kitchen time cannot be measured.'
+                                             : `Ready pressed on only ${st.ready.pct}% of orders, so kitchen time is incomplete.` });
+                if (st.dispatched && st.dispatched.of >= 10 && st.dispatched.pct != null && st.dispatched.pct < 50) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
+                    what: `Dispatched pressed on only ${st.dispatched.pct}% of our riders' orders, so road time is incomplete.` });
+                if (st.delivered && st.delivered.of >= 10 && st.delivered.pct != null && st.delivered.pct < 60) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
+                    what: `Only ${st.delivered.pct}% of orders older than 90 min are closed as delivered in Blink.` });
+
+                const sevLabel = { c: 'CRITICAL', h: 'HIGH' };
+                const attHtml = att.length
+                    ? `<div class="bk-att"><div class="bk-att-h">Needs action now (${att.length})</div>
+                        ${att.map(a => `<div class="bk-row"><span class="bk-sev ${a.sev}">${sevLabel[a.sev]}</span>
+                            <b class="bk-who">${esc2(a.who)}</b><span class="bk-what">${esc2(a.what)}</span><span class="bk-owner">${esc2(a.owner)}</span></div>`).join('')}</div>`
+                    : `<div class="bk-clear"><i class="fas fa-circle-check"></i>Nothing needs action. Every branch is trading and orders are moving.</div>`;
+
+                // ── Branches panel ──
+                const closed = branches.filter(b => b.open === 0 && b.offlineMinutes == null);
+                const open = branches.filter(b => b.open === 1);
+                const dotOrder = offline.concat(closed, open, branches.filter(b => b.open !== 0 && b.open !== 1));
+                const dots = dotOrder.map(b => {
+                    const cls = b.offlineMinutes != null ? 'off' : b.open === 0 ? 'cl' : b.open === 1 ? '' : 'nd';
+                    return `<div class="bk-dot ${cls}" title="${esc2(b.hours || '')}"><i></i>${esc2(b.name)}</div>`;
+                }).concat((d.noData || []).map(n => `<div class="bk-dot nd" title="no live reading"><i></i>${esc2(n)}</div>`)).join('');
+                const big = (n, label, cls) => `<div><div class="bk-big ${cls || ''}">${n}</div><div class="bk-small">${label}</div></div>`;
+                const pBranches = `<div class="bk-p"><div class="bk-ph">Branches<span>live status</span></div>
+                    <div class="bk-trio">${big(open.length, 'open')}${big(offline.length, 'offline in hours', offline.length ? 'bad' : '')}${big(closed.length, 'closed', 'muted')}${(d.noData || []).length ? big(d.noData.length, 'no data', 'muted') : ''}</div>
+                    <div class="bk-dots">${dots}</div></div>`;
+
+                // ── Orders today ──
+                let pOrders;
+                if (ov) {
+                    const ch = ov.channels || {}, tot = Math.max(1, (ch.foodpanda || 0) + (ch.app || 0) + (ch.callin || 0) + (ch.pickup || 0));
+                    const seg = [['foodpanda', 'Foodpanda', 's1'], ['app', 'App and website', 's2'], ['callin', 'Call-in', 's3'], ['pickup', 'Pickup', 's4']];
+                    pOrders = `<div class="bk-p"><div class="bk-ph">Orders today<span>since 10:00</span></div>
+                        <div class="bk-trio">${big(ov.placed || 0, 'placed')}${big(ov.inProgress || 0, 'in progress')}${big(ov.stuckCount || 0, 'not accepted over 15 min', ov.stuckCount ? 'bad' : '')}</div>
+                        <div class="bk-split">${seg.map(s => `<div class="${s[2]}" style="width:${((ch[s[0]] || 0) / tot * 100).toFixed(1)}%"></div>`).join('')}</div>
+                        <div class="bk-legend">${seg.map(s => `<div><i class="${s[2]}"></i>${s[1]} <b>${ch[s[0]] || 0}</b></div>`).join('')}</div></div>`;
+                } else {
+                    pOrders = `<div class="bk-p"><div class="bk-ph">Orders today</div><div class="bk-note">Order figures are not available yet.</div></div>`;
+                }
+
+                // ── Order speed ──
+                const kv = (label, val, fallback, bad) => `<div class="bk-kv"><span>${label}</span><b class="${val == null ? 'dash' : bad ? 'bad' : ''}">${esc2(val == null ? fallback : val)}</b></div>`;
+                let slowest = null;
+                if (tm) {
+                    const bs = tm.branches || [];
+                    const byTotal = bs.filter(b => b.total != null).sort((a, b) => b.total - a.total)[0];
+                    const byHand = bs.filter(b => b.handover != null).sort((a, b) => b.handover - a.handover)[0];
+                    if (byTotal) slowest = { text: byTotal.branch + ', ' + byTotal.total + ' min door to door', bad: byTotal.total >= 60 };
+                    else if (byHand) slowest = { text: byHand.branch + ', ' + byHand.handover + ' min handover', bad: slowFp.some(b => b.branch === byHand.branch) };
+                }
+                const pSpeed = `<div class="bk-p"><div class="bk-ph">Order speed<span>median, 7 days</span></div>
+                    ${kv('Foodpanda handover', mm(med.handover), 'waiting for data')}
+                    ${kv('Pickup, placed to collected', mm(med.pickup), 'waiting for data')}
+                    ${kv('Our riders, door to door', mm(med.total), 'waiting for data')}
+                    ${kv('Kitchen, placed to ready', mm(med.prep), 'not recorded')}
+                    ${kv('Slowest branch', slowest ? slowest.text : null, 'not enough orders', slowest && slowest.bad)}</div>`;
+
+                // ── Stock ──
+                const oos = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0));
+                const pStock = `<div class="bk-p"><div class="bk-ph">Stock${oos.length ? `<span>${oos.length} out</span>` : ''}</div>
+                    ${oos.length
+                        ? oos.slice(0, 5).map(i => `<div class="bk-kv"><span><b class="bk-item">${esc2(i.item)}</b> ${esc2(i.branch)}</span><b class="${(i.outMinutes || 0) >= 120 ? 'bad' : ''}">${esc2(ago(i.outMinutes))}</b></div>`).join('')
+                          + (oos.length > 5 ? `<div class="bk-note">and ${oos.length - 5} more in the Blink tab.</div>` : '')
+                        : `<div class="bk-ok"><i class="fas fa-check"></i><span>Nothing is out of stock${scopeName === 'All branches' ? ' at any branch' : ''}.</span></div>
+                           <div class="bk-note">An item appears here as soon as Blink marks it unavailable, with how long it has been off.</div>`}</div>`;
+
+                // ── Are branches using Blink fully? ──
+                const meter = (label, s) => {
+                    const p = s && s.pct != null ? s.pct : null;
+                    const bad = p != null && p < 50;
+                    return `<div><div class="bk-stepl"><span>${label}</span><b class="${bad ? 'bad' : ''}">${p == null ? '—' : p + '%'}</b></div>
+                        <div class="bk-track"><div class="${bad ? 'z' : ''}" style="width:${p == null ? 0 : Math.max(p, 2)}%"></div></div>
+                        <div class="bk-of">${s && s.of ? 'of ' + s.of + ' orders' : 'no orders to measure yet'}</div></div>`;
+                };
+                const steps = ov ? `<div class="bk-pc"><div class="bk-pct">Are branches using Blink fully?<small>share of today's orders with each step pressed</small></div>
+                    ${meter('Ready pressed', st.ready)}
+                    ${meter('Dispatched pressed, our riders', st.dispatched)}
+                    ${meter('Closed as delivered', st.delivered)}</div>` : '';
+
+                host.uiHTML = attHtml + `<div class="bk-grid">${pBranches}${pOrders}${pSpeed}${pStock}</div>` + steps;
             },
 
             renderForecast() {
