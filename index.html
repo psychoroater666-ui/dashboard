@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.104.0 · 16 Sep 2026 · audit trail usable';
+        const BUILD_VERSION = 'v2.105.0 · 16 Sep 2026 · impact, gaps, people, undo, backup';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9492,6 +9492,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 payload.quietStart = parseInt(document.getElementById('os-qs').value, 10);
                 payload.quietEnd   = parseInt(document.getElementById('os-qe').value, 10);
                 payload.alertBranches = Array.from(document.querySelectorAll('.os-branch:checked')).map(i => i.value);
+                payload.pauseAlerts   = !!document.getElementById('os-pa').checked;
+                payload.pauseWhatsApp = !!document.getElementById('os-pw').checked;
             } else {
                 payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
                 payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
@@ -9557,11 +9559,24 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <select id="os-qe" style="${inp}">${h24(st.quietEnd||0)}</select>
                         </div>
                         <span style="${hint}">No phone is buzzed between these hours. Cases still land and still wait in the morning list — this only decides whether someone is woken. Set both to the same hour to switch quiet hours off. Incoming calls always ring.</span></div>
+                    <div style="display:grid;gap:8px;border:1px solid var(--border-color);border-radius:10px;padding:12px;">
+                        <span style="${lbl()}">Break glass</span>
+                        <label style="display:flex;align-items:center;gap:9px;font-size:.8rem;cursor:pointer;">
+                            <input type="checkbox" id="os-pa" ${st.pauseAlerts?'checked':''} style="width:16px;height:16px;">
+                            <span>Pause all phone alerts</span></label>
+                        <label style="display:flex;align-items:center;gap:9px;font-size:.8rem;cursor:pointer;">
+                            <input type="checkbox" id="os-pw" ${st.pauseWhatsApp?'checked':''} style="width:16px;height:16px;">
+                            <span>Pause WhatsApp sending to customers</span></label>
+                        <span style="${hint}">For when something misfires out of hours. Nothing is lost — alerts still record and messages can still be sent by hand afterwards. Incoming calls always ring regardless.</span>
+                    </div>
                     <div style="display:grid;gap:6px;"><span style="${lbl()}">Alert for these branches only</span>
                         <div style="max-height:30vh;overflow:auto;border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;">${branchBoxes || '<span style="' + hint + '">No branches found.</span>'}</div>
                         <span style="${hint}">Leave everything unticked to alert for all branches, which is the usual setting.</span></div>
                 </div>`,
               status: `<div id="os-status" style="font-size:.8rem;color:var(--text-muted);">Checking…</div>`,
+              impact: `<div id="os-impact" style="font-size:.8rem;color:var(--text-muted);">Working it out…</div>`,
+              gaps: `<div id="os-gaps" style="font-size:.8rem;color:var(--text-muted);">Looking…</div>`,
+              people: `<div id="os-people" style="font-size:.8rem;color:var(--text-muted);">Counting…</div>`,
               audit: `<div style="display:grid;gap:14px;">
                     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
                         <label style="display:grid;gap:4px;"><span style="${lbl()}">From</span>
@@ -9585,6 +9600,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <span style="${hint}">Sent one-to-one, not as a group — so anyone replying answers you alone. They get a phone alert too, unless it is quiet hours.</span></label>
                     <button class="fb-btn sm" id="os-bc-send" onclick="sendBroadcast()" style="justify-self:start;">Send to everyone</button>
                     <div style="border-top:1px solid var(--border-color);padding-top:16px;display:grid;gap:6px;">
+                        <span style="${lbl()}">Take a copy</span>
+                        <span style="${hint}">Downloads the operating data as CSV files — submissions, orders, the audit trail, WhatsApp sends, users and messages. D1 is currently the only copy of most of it.</span>
+                        <button class="fb-btn sm" id="os-backup" onclick="downloadBackup()" style="justify-self:start;"><i class="fas fa-download"></i> Download backup</button>
+                        <div id="os-backup-log" style="${hint}"></div>
+                    </div>
+                    <div style="border-top:1px solid var(--border-color);padding-top:16px;display:grid;gap:6px;">
                         <span style="${lbl()}">This device</span>
                         <span style="${hint}">Clears what this browser has remembered — conversations, the teammate list, channels and filters. Nothing on the server changes, and nothing is lost: it all loads again. Use it if this device is showing something stale.</span>
                         <button class="fb-btn sm" onclick="resetThisDevice()" style="justify-self:start;color:#DC2626;">Reset this device</button>
@@ -9602,7 +9623,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;">
-                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;">
@@ -9614,6 +9635,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             document.body.appendChild(el);
             if(tab === 'status') loadSystemStatus();
             if(tab === 'audit'){ loadAudit(); loadAuditFlags(); }
+            if(tab === 'impact') loadImpact();
+            if(tab === 'gaps') loadBlindSpots();
+            if(tab === 'people') loadAgentStats();
         }
 
         /** Each integration in one line: working, or what is wrong. */
@@ -9677,12 +9701,19 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             if(!_auditRows.length){ box.innerHTML = '<div style="padding:16px;font-size:.78rem;color:var(--text-muted);">Nothing recorded in that window.</div>'; return; }
             const when = t => { const d = new Date(t); return isNaN(d) ? String(t).slice(0,16) : d.toLocaleString(); };
-            box.innerHTML = _auditRows.map(r => `<div style="display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border-color);font-size:.74rem;">
+            // Undo sits here, next to the record of what was done -- the only
+            // place where you can see the mistake and reverse it in one move.
+            const undoable = r => r.result === 'ok' &&
+                ((r.action === 'incident_resolution' && r.target) || (r.action === 'reward_issue' && r.target));
+            box.innerHTML = _auditRows.map(r => `<div style="display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border-color);font-size:.74rem;align-items:baseline;">
                     <span style="color:var(--text-muted);white-space:nowrap;">${_aesc(when(r.at))}</span>
                     <span style="font-weight:700;color:var(--text-main);white-space:nowrap;">${_aesc(r.actor || '—')}</span>
                     <span style="color:var(--text-main);">${_aesc(r.action)}</span>
                     <span style="color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_aesc(r.target || '')}</span>
                     ${r.result && r.result !== 'ok' ? `<span style="color:#DC2626;font-weight:700;">${_aesc(r.result)}</span>` : ''}
+                    ${undoable(r) ? `<button onclick="undoAction('${r.action}','${String(r.target).replace(/'/g,"\\'")}')"
+                        title="${r.action === 'reward_issue' ? 'Void this voucher' : 'Reopen this case'}"
+                        style="border:none;background:transparent;color:#B45309;font:700 .7rem 'Inter',sans-serif;cursor:pointer;white-space:nowrap;">undo</button>` : ''}
                 </div>`).join('');
         }
 
@@ -9715,6 +9746,138 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             document.body.appendChild(a); a.click();
             setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
             UI.toast('Exported ' + _auditRows.length + ' entries.', 'success');
+        }
+
+        /** The impact report on its own, for Admin and Report Analyst -- the
+         *  rest of Owner settings stays Owner-only. */
+        function openImpactOnly(){
+            try { document.getElementById('dp-menu').style.display = 'none'; } catch(e){}
+            const old = document.getElementById('owner-settings-modal'); if(old) old.remove();
+            const el = document.createElement('div');
+            el.className = 'ia-overlay is-open'; el.id = 'owner-settings-modal'; el.style.display = 'flex';
+            el.innerHTML = `<div class="ia-card" style="max-width:560px;">
+                <div class="ia-header"><div><div class="ia-title">Impact report</div>
+                    <div class="ia-sub">Did the actions and apologies change anything?</div></div>
+                    <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button></div>
+                <div style="padding:16px 22px 20px;"><div id="os-impact" style="font-size:.8rem;color:var(--text-muted);">Working it out…</div></div>
+            </div>`;
+            el.onclick = e => { if(e.target === el) el.remove(); };
+            document.body.appendChild(el);
+            loadImpact();
+        }
+
+        /* ── did any of it work? ───────────────────────────────────────────
+           Available to Owner, Admin and Report Analyst. */
+        async function loadImpact(){
+            const box = document.getElementById('os-impact'); if(!box) return;
+            const res = await apiCall('impact_report', { days: 30 }).catch(() => null);
+            if(!res || res.status !== 'success'){ box.innerHTML = '<span style="color:#DC2626;">' + ((res && res.message) || 'Could not work it out.') + '</span>'; return; }
+            const r = res.recovery || {};
+            const pct = (a, b) => b ? Math.round((a / b) * 100) : 0;
+            const verdictColour = v => v === 'improved' ? '#059669' : v === 'worse' ? '#DC2626' : 'var(--text-muted)';
+            const acts = (res.actions || []);
+            box.innerHTML = `
+                <div style="border:1px solid var(--border-color);border-radius:10px;padding:12px;margin-bottom:14px;background:var(--bg-light);">
+                    <div style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Customers we apologised to · last ${res.days} days</div>
+                    <div style="font-size:.8rem;color:var(--text-main);margin-top:6px;">
+                        ${r.messaged || 0} messaged · <b>${r.returned || 0}</b> came back (${pct(r.returned, r.messaged)}%)
+                        ${r.returned ? ` · <b>${r.returnedBetter || 0}</b> rated us better than before` : ''}
+                    </div>
+                    <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;">
+                        ${!r.messaged ? 'No recovery messages sent yet in this window.' : 'Whether a message brings someone back is the question the recovery flow exists to answer.'}
+                    </div>
+                </div>
+                <div style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Actions logged · complaint rate 14 days either side</div>
+                ${!acts.length ? '<div style="font-size:.76rem;color:var(--text-muted);">No actions logged in this window.</div>' :
+                  acts.map(a => `<div style="padding:9px 0;border-bottom:1px solid var(--border-color);">
+                    <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;">
+                        <span style="font-weight:800;font-size:.78rem;">${_aesc(a.branch)}</span>
+                        <span style="font-size:.72rem;color:var(--text-muted);flex:1;min-width:0;">${_aesc(a.reason || a.what || '')}</span>
+                        <span style="font-weight:800;font-size:.74rem;color:${verdictColour(a.verdict)};">${_aesc(a.verdict)}</span>
+                    </div>
+                    <div style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">
+                        ${a.before == null ? '—' : a.before + '%'} → ${a.after == null ? '—' : a.after + '%'} complaints
+                        · ${a.beforeN} then ${a.afterN} submissions
+                        ${a.owner ? ' · ' + _aesc(a.owner) : ''}
+                    </div></div>`).join('')}`;
+        }
+
+        /** What is NOT arriving. Owner only. */
+        async function loadBlindSpots(){
+            const box = document.getElementById('os-gaps'); if(!box) return;
+            const res = await apiCall('blind_spots', {}).catch(() => null);
+            if(!res || res.status !== 'success'){ box.innerHTML = '<span style="color:#DC2626;">' + ((res && res.message) || 'Could not check.') + '</span>'; return; }
+            const sec = (title, items, empty) => `<div style="margin-bottom:14px;">
+                    <div style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">${title}</div>
+                    ${items.length ? items.join('') : `<div style="font-size:.75rem;color:var(--text-muted);">${empty}</div>`}</div>`;
+            const silent = (res.silentBranches || []).map(b => `<div style="font-size:.78rem;padding:4px 0;">
+                    <b>${_aesc(b.branch)}</b> — ${b.got != null ? ('only ' + b.got + ' in 2 days, usually about ' + b.expected) : ('nothing for 2 days, usually about ' + b.expected)}</div>`);
+            const never = (res.neverResolve || []).map(p => `<div style="font-size:.78rem;padding:4px 0;">
+                    <b>${_aesc(p.actor)}</b> — logged ${p.logged} case${p.logged===1?'':'s'}, closed none</div>`);
+            box.innerHTML =
+                sec('Branches that have gone quiet', silent, 'Every branch is submitting at its usual rate.')
+              + sec('Logs complaints but never closes one', never, 'Everyone who logs cases also closes them.')
+              + `<div style="font-size:.7rem;color:var(--text-muted);border-top:1px solid var(--border-color);padding-top:10px;">
+                    A quiet branch is usually staff not asking for feedback, not customers going quiet — which is the thing no other screen here can show you.</div>`;
+        }
+
+        /** Who is actually working. Owner only. */
+        async function loadAgentStats(){
+            const box = document.getElementById('os-people'); if(!box) return;
+            const res = await apiCall('agent_stats', { days: 30 }).catch(() => null);
+            if(!res || res.status !== 'success'){ box.innerHTML = '<span style="color:#DC2626;">' + ((res && res.message) || 'Could not count.') + '</span>'; return; }
+            const team = res.teamFakeShare;
+            const rows = (res.people || []).map(p => {
+                // Far from everyone else's is worth a conversation -- in either
+                // direction. It is not evidence of anything on its own.
+                const odd = p.fakeShare != null && team != null && p.resolved >= 10 && Math.abs(p.fakeShare - team) > 20;
+                return `<div style="display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--border-color);font-size:.76rem;">
+                    <span style="font-weight:800;min-width:120px;">${_aesc(p.actor)}</span>
+                    <span style="color:var(--text-muted);flex:1;">${p.logged} logged · ${p.resolved} closed · ${p.reviewed} reviewed${p.vouchers ? ' · ' + p.vouchers + ' vouchers' : ''}${p.messages ? ' · ' + p.messages + ' messages' : ''}</span>
+                    <span style="${odd ? 'color:#B45309;font-weight:800;' : 'color:var(--text-muted);'}">${p.fakeShare == null ? '—' : p.fakeShare + '% fake'}</span>
+                </div>`; }).join('');
+            box.innerHTML = (rows || '<div style="font-size:.76rem;color:var(--text-muted);">Nothing recorded in the last 30 days.</div>')
+                + `<div style="font-size:.7rem;color:var(--text-muted);margin-top:10px;">Team average ${team == null ? '—' : team + '%'} marked fake. A figure far from it is worth asking about, not acting on.</div>`;
+        }
+
+        /** Every table, paged, as CSV files. */
+        async function downloadBackup(){
+            const btn = document.getElementById('os-backup'), log = document.getElementById('os-backup-log');
+            const tables = ['submissions','orders','audit','wa_sends','users','messages'];
+            if(btn){ btn.disabled = true; }
+            for(const t of tables){
+                if(log) log.textContent = 'Fetching ' + t + '…';
+                let rows = [], offset = 0, more = true, guard = 0;
+                while(more && guard++ < 60){
+                    const res = await apiCall('export_table', { table: t, offset, limit: 2000 }).catch(() => null);
+                    if(!res || res.status !== 'success'){ more = false; break; }
+                    rows = rows.concat(res.rows || []); more = !!res.more; offset += 2000;
+                }
+                if(!rows.length) continue;
+                const cols = Object.keys(rows[0]);
+                const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+                const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => q(r[c])).join(','))).join('\r\n');
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+                a.download = 'crumble-' + t + '-' + new Date().toISOString().slice(0,10) + '.csv';
+                document.body.appendChild(a); a.click();
+                setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+                if(log) log.textContent = t + ': ' + rows.length + ' rows saved';
+                await new Promise(r => setTimeout(r, 600));   // browsers refuse a burst of downloads
+            }
+            if(btn){ btn.disabled = false; }
+            if(log) log.textContent = 'Done — check your downloads folder.';
+        }
+
+        /** Undo a resolution or void a voucher. Owner only, and audited. */
+        async function undoAction(what, target){
+            const label = what === 'reward_issue' ? ('void voucher ' + target) : ('reopen case ' + target);
+            if(!confirm('Are you sure you want to ' + label + '?\n\nThis is recorded in the audit trail as an undo.')) return;
+            const res = await apiCall('undo_action', { what, target }).catch(() => null);
+            if(res && res.status === 'success'){
+                UI.toast(what === 'reward_issue' ? 'Voucher voided.' : 'Case reopened.', 'success');
+                try { if(window.pollNow) pollNow(); } catch(e){}
+            } else UI.toast((res && res.message) || 'Could not undo that.', 'error', 8000);
         }
 
         async function sendBroadcast(){
@@ -19664,6 +19827,7 @@ ${(() => {
                             <div class="dpm-group">
                                 ${can('users') ? `<button class="dpm-row" onclick="openUsersModal()"><span class="dpm-ico"><i class="fas fa-users-gear"></i></span><span>Manage Users</span></button>` : ''}
                                 ${String(PERM.role||'').toLowerCase().replace(/[^a-z]/g,'').indexOf('owner') !== -1 ? `<button class="dpm-row" onclick="openOwnerSettings()"><span class="dpm-ico"><i class="fas fa-sliders"></i></span><span>Owner settings</span></button>` : ''}
+                                ${(() => { const r = String(PERM.role||'').toLowerCase().replace(/[^a-z]/g,''); return (r.indexOf('admin') !== -1 || r.indexOf('analyst') !== -1) ? `<button class="dpm-row" onclick="openImpactOnly()"><span class="dpm-ico"><i class="fas fa-chart-line"></i></span><span>Impact report</span></button>` : ''; })()}
                                 <button class="support-row" id="help-open-btn"><span class="support-icon"><i class="fas fa-circle-question"></i></span><span>Help &amp; what I can do</span></button>
                                 <div class="pwa-install-wrap">
                                     <button class="support-row" id="pwa-install-btn" onclick="PWA.install()"><span class="support-icon"><i class="fas fa-circle-down"></i></span><span>Install app</span></button>
