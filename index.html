@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.100.0 · 16 Sep 2026 · conversations open instantly';
+        const BUILD_VERSION = 'v2.102.0 · 16 Sep 2026 · call form tells the truth';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7551,8 +7551,37 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         })();
 
         // A completed visit rated at or below this counts as an incident/complaint. Change to 2 or 1 to tighten.
-        const INCIDENT_MAX_RATING = 3;
-        const NIGHT_SHIFT_CUTOFF_HOUR = 9;
+        // Both used to be constants, changed only by shipping a new build. They
+        // are now Owner settings, kept on the server and applied on load; the
+        // values here are only what a brand-new device shows before its first
+        // answer arrives.
+        let INCIDENT_MAX_RATING = 3;
+        let NIGHT_SHIFT_CUTOFF_HOUR = 9;
+        window.OwnerSettings = { businessDayStart: 9, incidentMaxRating: 3, currentDrop: '' };
+        /** Apply a settings object from the server. The rating threshold takes
+         *  effect on the next repaint. The business-day boundary is stamped
+         *  onto every row as it is parsed, so changing it means re-parsing --
+         *  a reload, announced rather than sprung on whoever is working. */
+        function applyOwnerSettings(st, quiet){
+            if(!st || typeof st !== 'object') return;
+            const prev = Object.assign({}, window.OwnerSettings);
+            window.OwnerSettings = Object.assign({}, window.OwnerSettings, st);
+            if(typeof st.incidentMaxRating === 'number') INCIDENT_MAX_RATING = st.incidentMaxRating;
+            if(typeof st.businessDayStart === 'number' && st.businessDayStart !== NIGHT_SHIFT_CUTOFF_HOUR){
+                if(NIGHT_SHIFT_CUTOFF_HOUR === 9 && !window.__settingsApplied){
+                    // First application on this load: just adopt it silently.
+                    NIGHT_SHIFT_CUTOFF_HOUR = st.businessDayStart;
+                } else if(!quiet){
+                    try { UI.toast('The trading-day boundary was changed to ' + st.businessDayStart + ':00 — reloading in 5 seconds to re-date everything.', 'info', 5000); } catch(e){}
+                    setTimeout(() => location.reload(), 5200);
+                    return;
+                }
+            }
+            if(prev.incidentMaxRating !== window.OwnerSettings.incidentMaxRating && window.__settingsApplied){
+                try { applyGlobalFilters(); app.applyFilters(); } catch(e){}
+            }
+            window.__settingsApplied = true;
+        }
         let LIVE_MODE = false;
 
         // ── Local data snapshot (instant paint on reload) ──────────────────
@@ -7851,6 +7880,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // A form added in the builder arrives here first: the list
                     // travels with the data it describes.
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
+                    if(res.settings) applyOwnerSettings(res.settings);
                     for(const k in res.tabs) apply(k, res.tabs[k]);
                     try {
                         const changedTabs = Object.entries(res.tabs).filter(([k,v]) => v.mode !== 'unchanged').map(([k,v]) => k + ':' + v.mode + (v.rows ? '(' + v.rows.length + ')' : ''));
@@ -9451,6 +9481,66 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             Promise.resolve(typeof loadLive === 'function' ? loadLive() : null)
                 .then(() => { try { UI.silent(() => { applyGlobalFilters(); app.applyFilters(); }); } catch(e){ try { app.applyFilters(); } catch(e2){} } })
                 .finally(done);
+        }
+
+        /* ── Owner settings ────────────────────────────────────────────────
+           Three rules, changed here instead of by asking for a new build. */
+        function openOwnerSettings(){
+            try { document.getElementById('dp-menu').style.display = 'none'; } catch(e){}
+            const st = window.OwnerSettings || {};
+            const hours = Array.from({length:13}, (_,h) => `<option value="${h}" ${h===st.businessDayStart?'selected':''}>${h === 0 ? 'Midnight (calendar days)' : (h + ':00')}</option>`).join('');
+            const ratings = [1,2,3,4].map(r => `<option value="${r}" ${r===st.incidentMaxRating?'selected':''}>${r} star${r>1?'s':''} or below</option>`).join('');
+            const old = document.getElementById('owner-settings-modal'); if(old) old.remove();
+            const el = document.createElement('div');
+            el.className = 'ia-overlay is-open'; el.id = 'owner-settings-modal'; el.style.display = 'flex';
+            el.innerHTML = `<div class="ia-card" style="max-width:520px;">
+                <div class="ia-header">
+                    <div><div class="ia-title">Owner settings</div>
+                    <div class="ia-sub">Apply to every device the moment you save.</div></div>
+                    <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div style="padding:18px 22px;display:grid;gap:18px;">
+                    <label style="display:grid;gap:6px;">
+                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Trading day starts at</span>
+                        <select id="os-hour" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">${hours}</select>
+                        <span style="font-size:.7rem;color:var(--text-muted);">Anything before this hour counts as the previous day. Branches trade until 1:30 AM, so a 1 AM order belongs to the day before. Changing this re-dates every row and reloads the dashboard.</span>
+                    </label>
+                    <label style="display:grid;gap:6px;">
+                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">A rating counts as an incident at</span>
+                        <select id="os-rating" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">${ratings}</select>
+                        <span style="font-size:.7rem;color:var(--text-muted);">Takes effect immediately on every screen. Lower it to focus the Call Centre on the worst cases.</span>
+                    </label>
+                    <label style="display:grid;gap:6px;">
+                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">This month's drop</span>
+                        <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie"
+                               style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">
+                        <span style="font-size:.7rem;color:var(--text-muted);">Stamped on every monthly-drop response so months stay comparable, and shown as the button label on the dine-in QR screen.</span>
+                    </label>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px;">
+                    <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Cancel</button>
+                    <button class="fb-btn sm primary" id="os-save" onclick="saveOwnerSettings()" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>
+                </div>
+            </div>`;
+            el.onclick = e => { if(e.target === el) el.remove(); };
+            document.body.appendChild(el);
+        }
+        async function saveOwnerSettings(){
+            const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+            const payload = {
+                businessDayStart: parseInt(document.getElementById('os-hour').value, 10),
+                incidentMaxRating: parseInt(document.getElementById('os-rating').value, 10),
+                currentDrop: document.getElementById('os-drop').value.trim()
+            };
+            const res = await apiCall('settings_set', payload).catch(() => null);
+            if(!res || res.status !== 'success'){
+                if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
+                UI.toast((res && res.message) || 'Could not save the settings.', 'error');
+                return;
+            }
+            const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
+            UI.toast('Settings saved — every device will pick them up within a few seconds.', 'success');
+            applyOwnerSettings(res.settings);
         }
 
         function submissionsManualRefresh() {
@@ -18616,28 +18706,39 @@ ${(() => {
                 status          : 'completed',
             };
 
-            try {
-                await fetch(CS_SCRIPT_URL, {
-                    method : 'POST',
-                    mode   : 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body   : JSON.stringify(payload),
-                });
-                // Re-enable before closing — this button element persists
-                // across modal opens (csRenderStep only replaces #cs-body,
-                // not the Next/Prev/Skip buttons around it), so leaving it
-                // disabled here means the NEXT time this form opens for a
-                // second submission in the same session, every step that
-                // actually requires clicking Next (unlike rating, which
-                // auto-advances on its own) would silently do nothing.
-                nextBtn.disabled = false;
-                nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
+            // Re-enable the persistent Next button whatever happens: it lives
+            // across modal opens, so leaving it disabled would break the next
+            // submission in the same session.
+            const restore = () => { nextBtn.disabled = false; nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit'; };
+
+            // Through apiCall, NOT a no-cors fetch.
+            //
+            // This used to post no-cors, which makes the response opaque: the
+            // browser cannot see whether the Worker saved the row, refused it,
+            // or bounced it to the Access login wall. So it showed "saved
+            // successfully" every single time -- including when nothing saved.
+            // That is the whole "I submitted 4-5 and none landed" report: the
+            // agent's session had lapsed, every write failed at the wall, and
+            // the form told them it worked. Same origin (/api/), so there was
+            // never a CORS reason for no-cors in the first place.
+            let res = null;
+            try { res = await apiCall('callcenter', payload); }
+            catch(err){ res = null; }
+
+            restore();
+            if(res && res.status === 'success'){
                 csCloseForm();
-                UI.toast('Submission saved successfully', 'success');
-            } catch(err){
-                alert('Submission failed. Please try again.');
-                nextBtn.disabled = false;
-                nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit';
+                UI.toast(res.duplicate ? 'Already logged — not saved twice.' : 'Submission saved.', 'success');
+                // Bring it onto this screen now rather than at the next poll.
+                try { if(window.pollNow) pollNow(); } catch(e){}
+            } else if(res && res.status === 'error'){
+                // A real answer from the server: show its reason, keep the form
+                // open with the data intact so nothing is retyped.
+                UI.toast(res.message || 'The submission was not saved.', 'error', 8000);
+            } else {
+                // No answer at all -- almost always a lapsed Access session. Say
+                // so plainly and do NOT pretend it saved.
+                UI.toast('Not saved — your session may have expired. Reload the page and sign in, then submit again.', 'error', 10000);
             }
         }
 
@@ -19360,6 +19461,7 @@ ${(() => {
                             <!-- Tools -->
                             <div class="dpm-group">
                                 ${can('users') ? `<button class="dpm-row" onclick="openUsersModal()"><span class="dpm-ico"><i class="fas fa-users-gear"></i></span><span>Manage Users</span></button>` : ''}
+                                ${String(PERM.role||'').toLowerCase().replace(/[^a-z]/g,'').indexOf('owner') !== -1 ? `<button class="dpm-row" onclick="openOwnerSettings()"><span class="dpm-ico"><i class="fas fa-sliders"></i></span><span>Owner settings</span></button>` : ''}
                                 <button class="support-row" id="help-open-btn"><span class="support-icon"><i class="fas fa-circle-question"></i></span><span>Help &amp; what I can do</span></button>
                                 <div class="pwa-install-wrap">
                                     <button class="support-row" id="pwa-install-btn" onclick="PWA.install()"><span class="support-icon"><i class="fas fa-circle-down"></i></span><span>Install app</span></button>
@@ -19886,6 +19988,7 @@ ${(() => {
                 // the cache was written, without making them wait for it.
                 apiCall('cf_session').then(data => {
                     if (data.status === 'success') {
+                        if (data.settings) applyOwnerSettings(data.settings, true);
                         authSaveSession({
                             name: data.name, email: data.email, role: data.role,
                             region: data.region || 'All', branch: data.branch || 'All'
@@ -19913,6 +20016,7 @@ ${(() => {
                 let data = null, err = null;
                 try { data = await apiCall('cf_session'); } catch (e) { err = e; }
                 if (data && data.status === 'success') {
+                    if (data.settings) applyOwnerSettings(data.settings, true);
                     const user = { name: data.name, email: data.email, role: data.role, region: data.region || 'All', branch: data.branch || 'All' };
                     authSaveSession(user);
                     authShowApp(user);
