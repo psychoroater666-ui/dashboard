@@ -2636,6 +2636,26 @@
         body.bg-refresh #users-modal *,
         body.bg-refresh #user-form-modal,
         body.bg-refresh #user-form-modal *,
+        /* The surfaces added since that list was written, and the ones that
+           were never on it. Each opens with an entrance animation set to
+           'both': forcing its duration to near-zero on every refresh makes a
+           finished animation re-evaluate, and the surface snaps through a
+           half-faded frame. With refreshes now seconds apart, that read as a
+           constant flicker on the profile menu and the call panel. */
+        body.bg-refresh #dp-menu,
+        body.bg-refresh #dp-menu *,
+        body.bg-refresh #vc-modal,
+        body.bg-refresh #vc-modal *,
+        body.bg-refresh #vc-panel,
+        body.bg-refresh #vc-panel *,
+        body.bg-refresh #notifDropdown,
+        body.bg-refresh #notifDropdown *,
+        body.bg-refresh #cvy-confirm,
+        body.bg-refresh #cvy-confirm *,
+        body.bg-refresh #incident-view-modal,
+        body.bg-refresh #incident-view-modal *,
+        body.bg-refresh .ia-incident-alert,
+        body.bg-refresh .ia-incident-alert *,
         body.bg-refresh #crumble-toasts,
         body.bg-refresh #crumble-toasts *{
             animation-duration:  revert !important;
@@ -7423,7 +7443,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.99.2 · 16 Sep 2026 · date range stays put';
+        const BUILD_VERSION = 'v2.99.3 · 16 Sep 2026 · no flicker on open surfaces';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
