@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.99.6 · 16 Sep 2026 · refresh leaves menus alone';
+        const BUILD_VERSION = 'v2.100.0 · 16 Sep 2026 · conversations open instantly';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -24272,17 +24272,33 @@ ${(() => {
                 if (which === 'chat') { loadPeople(); chatPoll(); }
             }
 
+            // The directory and group list are remembered too, so the panel is
+            // populated the instant it opens after a reload and the network only
+            // ever refines what is already on screen.
+            const PEOPLE_KEY = 'crumble_chat_people_v1';
+            function rememberPeople(){
+                try { localStorage.setItem(PEOPLE_KEY, JSON.stringify({ people: chat.people, groups: chat.groups, me: chat.me })); } catch(e){}
+            }
+            (function recallPeople(){
+                try {
+                    const saved = JSON.parse(localStorage.getItem(PEOPLE_KEY) || 'null');
+                    if (saved && Array.isArray(saved.people) && saved.people.length) {
+                        chat.people = saved.people; chat.groups = saved.groups || []; chat.me = saved.me || '';
+                    }
+                } catch(e){}
+            })();
             async function loadPeople(){
+                renderPeople();                                    // whatever we already have, now
                 if (!chat.loaded) {
                     const res = await chatApi('chat_people');
-                    if (res && res.status === 'success') { chat.people = res.people || []; chat.me = res.me || ''; chat.loaded = true; }
+                    if (res && res.status === 'success') { chat.people = res.people || []; chat.me = res.me || ''; chat.loaded = true; rememberPeople(); }
                 }
                 loadGroups();
                 renderPeople();
             }
             async function loadGroups(){
                 const res = await chatApi('group_list');
-                if (res && res.status === 'success') { chat.groups = res.groups || []; renderPeople(); }
+                if (res && res.status === 'success') { chat.groups = res.groups || []; rememberPeople(); renderPeople(); }
             }
             // A conversation is either an email or "g:<id>", so one function
             // opens both and one list shows both.
@@ -24362,6 +24378,50 @@ ${(() => {
                 el.innerHTML = html;
             }
 
+            /* ── conversations kept on the device ────────────────────────────
+               Opening a thread used to show "Loading…" for a second and a
+               half while the whole conversation was fetched again. WhatsApp
+               never does that for a conversation you have already read: it
+               keeps it on the phone and shows it at once. So does this now.
+               Each thread's recent messages are kept in memory and in
+               localStorage, painted instantly on open, and then quietly
+               confirmed against the server. New messages arriving on the
+               poll are filed into the cache as they come, so a conversation
+               left for an hour reopens current, not stale. ──────────────── */
+            const ThreadCache = (function(){
+                const KEY = 'crumble_chat_threads_v1', MAX_PER = 80, MAX_THREADS = 30;
+                let map = {};
+                try { map = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch(e){ map = {}; }
+                let saveT = null;
+                function save(){
+                    clearTimeout(saveT);
+                    saveT = setTimeout(() => {
+                        try {
+                            // Keep the most recently touched threads, drop the rest.
+                            const keys = Object.keys(map).sort((a,b) => (map[b].t||0) - (map[a].t||0)).slice(0, MAX_THREADS);
+                            const slim = {}; keys.forEach(k => slim[k] = map[k]);
+                            map = slim;
+                            localStorage.setItem(KEY, JSON.stringify(map));
+                        } catch(e){}
+                    }, 400);
+                }
+                function get(peer){ return (map[peer] && Array.isArray(map[peer].m)) ? map[peer].m : null; }
+                function set(peer, msgs){
+                    map[peer] = { t: Date.now(), m: (msgs || []).slice(-MAX_PER) };
+                    save();
+                }
+                function add(peer, msg){
+                    if (!msg || msg.id == null) return;
+                    const cur = get(peer) || [];
+                    if (cur.some(x => x.id === msg.id)) return;
+                    cur.push(msg);
+                    cur.sort((a,b) => a.id - b.id);
+                    set(peer, cur);
+                }
+                function patch(peer, fn){ const cur = get(peer); if (!cur) return; fn(cur); set(peer, cur); }
+                return { get, set, add, patch };
+            })();
+
             async function openThread(email){
                 const grp = isGroupPeer(email) ? groupById(email) : null;
                 const p = grp ? null : chat.people.find(x => x.email === email);
@@ -24380,13 +24440,32 @@ ${(() => {
                 $('vc-thread-sub').onclick = grp ? () => VoiceCall.groupInfo() : null;
                 $('vc-thread-sub').style.cursor = grp ? 'pointer' : '';
                 if (grp) loadMembers(email);
-                $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
+                const cached = ThreadCache.get(email);
+                if (cached && cached.length) {
+                    // Instantly, from what we already hold.
+                    renderThread(cached, true);
+                } else {
+                    $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
+                }
                 showTab('chat');
-                const res = await chatApi('chat_history', { peer: email });
-                if (res && res.status === 'success') renderThread(res.messages || [], true);
-                await chatApi('chat_mark_read', { peer: email });
+                // Mark read straight away -- the badge should clear the moment the
+                // conversation is on screen, not after the network answers.
                 chat.unread[email] = 0;
                 paintUnread();
+                chatApi('chat_mark_read', { peer: email });
+                // Then confirm against the server. If we painted from cache and the
+                // server agrees, nothing visible changes. If it has more, or we had
+                // nothing, it fills in. If the thread changed under us (a message
+                // deleted, a group we were removed from), the server's copy wins.
+                const res = await chatApi('chat_history', { peer: email });
+                if (chat.peer !== email) return;             // they moved on while we waited
+                if (res && res.status === 'success') {
+                    const msgs = res.messages || [];
+                    const same = cached && cached.length === msgs.length &&
+                                 cached.every((m, i) => m.id === msgs[i].id && m.readAt === msgs[i].readAt && m.deliveredAt === msgs[i].deliveredAt);
+                    if (!same) renderThread(msgs, true);
+                    ThreadCache.set(email, msgs);
+                }
             }
 
             function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); chat.peer = null; showTab('chat'); renderPeople(); }
@@ -24833,6 +24912,9 @@ ${(() => {
             function paintReceipts(list){
                 const box = $('vc-thread-msgs');
                 if (!box || !list || !list.length) return;
+                if (chat.peer) ThreadCache.patch(chat.peer, cur => {
+                    for (const r of list) { const m = cur.find(x => x.id === r.id); if (m) { m.deliveredAt = r.deliveredAt; m.readAt = r.readAt; } }
+                });
                 for (const r of list) {
                     const el = box.querySelector('.vc-msg[data-id="' + r.id + '"] .vc-tick-slot');
                     if (el) el.innerHTML = tickFor({ mine: true, deliveredAt: r.deliveredAt, readAt: r.readAt });
@@ -24869,8 +24951,10 @@ ${(() => {
                 btn.disabled = false;
                 if (res && res.status === 'success') {
                     clearAttachment();
-                    renderThread([{ id: res.id, at: res.at, body: res.body, mine: true,
-                                    kind: res.kind || 'text', file: res.file || null }]);
+                    const sent = { id: res.id, at: res.at, body: res.body, mine: true,
+                                   kind: res.kind || 'text', file: res.file || null, from: chat.me, to: chat.peer };
+                    ThreadCache.add(chat.peer, sent);
+                    renderThread([sent]);
                     chat.last[chat.peer] = { at: res.at, mine: true,
                         body: res.body || (res.kind === 'audio' ? 'Voice note' : res.kind === 'image' ? 'Photo' : 'Attachment') };
                     if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
@@ -24961,6 +25045,10 @@ ${(() => {
                 if (typeof res.sinceId === 'number') chat.sinceId = res.sinceId;
                 const fresh = res.messages || [];
                 const keyOf = m => m.group ? ('g:' + m.group) : (m.mine ? m.to : m.from);
+                // Every arriving message is filed into its conversation's cache,
+                // whether or not that conversation is open, so reopening it later
+                // paints current content instantly.
+                for (const m of fresh) ThreadCache.add(keyOf(m), m);
                 for (const m of fresh) {
                     chat.last[keyOf(m)] = { at: m.at, mine: m.mine, who: m.group ? (m.fromName || '') : '',
                         body: m.body || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo' : m.kind === 'file' ? 'Attachment' : '') };
