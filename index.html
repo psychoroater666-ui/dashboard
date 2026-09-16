@@ -3562,10 +3562,10 @@
         .bp-card { padding:18px 22px; }
         .fc-card { padding:18px 22px; border-left:3px solid #DC2626; }
         .blink-card { padding:18px 22px; }
-        /* ── Overview: Blink section ── */
+        /* ── Overview: Blink section (compact) ── */
         .bk { --bk-brand:#010197; --bk-soft:rgba(1,1,151,.06); --bk-red:#DC2626; --bk-red-t:#B91C1C; --bk-green:#059669; }
         body.dark-theme .bk { --bk-brand:#64D0FF; --bk-soft:rgba(100,208,255,.12); --bk-red:#F87171; --bk-red-t:#F87171; --bk-green:#34D399; }
-        .bk-hd { display:flex; align-items:center; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+        .bk-hd { display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
         .bk-hd h3 { margin:0; font-size:0.78rem; font-weight:800; letter-spacing:.4px; color:var(--text-main); }
         .bk-hd h3 i { color:var(--bk-brand); margin-right:7px; }
         .bk-fresh { margin-left:auto; font-size:0.72rem; color:var(--text-muted); display:inline-flex; align-items:center; gap:6px; }
@@ -3573,72 +3573,110 @@
         .bk-live.off { background:var(--bk-red); }
         .bk-open { font-size:0.76rem; font-weight:700; color:var(--bk-brand); text-decoration:none; }
         .bk-open:hover, .bk-open:focus-visible { text-decoration:underline; }
-        .bk-att { border:1px solid var(--border-color); border-left:4px solid var(--bk-red); border-radius:12px; padding:2px 16px; margin-bottom:14px; }
-        .bk-att-h { margin:10px 0 2px; font-size:0.74rem; font-weight:800; color:var(--bk-red-t); }
-        .bk-row { display:grid; grid-template-columns:86px minmax(120px,190px) 1fr auto; gap:14px; align-items:center; padding:9px 0; border-top:1px solid var(--border-color); font-size:0.8rem; color:var(--text-main); }
-        .bk-att-h + .bk-row { border-top:0; }
-        .bk-sev { font-size:0.62rem; font-weight:800; padding:3px 8px; border-radius:20px; justify-self:start; letter-spacing:.3px; }
+        .bk .bad { color:var(--bk-red-t); }
+        .bk-strip { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); border:1px solid var(--border-color); border-radius:12px; overflow:hidden; }
+        .bk-cell { padding:11px 14px; border-left:1px solid var(--border-color); min-width:0; }
+        .bk-cell:first-child { border-left:0; }
+        .bk-cl { font-size:0.66rem; font-weight:700; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .bk-cv { font-size:1.35rem; font-weight:800; letter-spacing:-.4px; line-height:1.15; margin-top:4px; color:var(--text-main); font-variant-numeric:tabular-nums; }
+        .bk-cv small { font-size:0.72rem; font-weight:700; color:var(--text-muted); letter-spacing:0; margin-left:1px; }
+        .bk-cv.bad { color:var(--bk-red-t); }
+        .bk-cs { font-size:0.66rem; color:var(--text-muted); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-height:14px; }
+        .bk-mbar { display:flex; height:5px; border-radius:3px; overflow:hidden; background:var(--border-color); margin-top:7px; }
+        .bk-mbar .s1 { background:var(--bk-brand); } .bk-mbar .s2 { background:#3B5BDB; }
+        .bk-mbar .s3 { background:#64D0FF; } .bk-mbar .s4 { background:var(--text-muted); }
+        body.dark-theme .bk-mbar .s3 { background:rgba(100,208,255,.45); }
+        .bk-issues { margin-top:10px; border:1px solid var(--border-color); border-left:3px solid var(--bk-red); border-radius:10px; padding:2px 14px; }
+        .bk-row { display:grid; grid-template-columns:62px minmax(110px,170px) 1fr auto; gap:12px; align-items:center; padding:7px 0; border-top:1px solid var(--border-color); font-size:0.76rem; color:var(--text-main); }
+        .bk-row:first-child { border-top:0; }
+        .bk-sev { font-size:0.6rem; font-weight:800; padding:2px 7px; border-radius:20px; justify-self:start; text-transform:uppercase; letter-spacing:.3px; }
         .bk-sev.c { background:rgba(220,38,38,.10); color:var(--bk-red-t); }
         .bk-sev.h { background:var(--bk-soft); color:var(--bk-brand); }
-        .bk-who { font-weight:700; }
-        .bk-owner { color:var(--text-muted); font-size:0.72rem; text-align:right; white-space:nowrap; }
-        .bk-clear { display:flex; align-items:center; gap:10px; padding:11px 14px; margin-bottom:14px; border:1px solid var(--border-color); border-radius:12px; font-size:0.8rem; color:var(--text-muted); }
-        .bk-clear i { color:var(--bk-green); }
-        .bk-grid { display:grid; grid-template-columns:1.05fr 1.1fr 1.15fr .85fr; gap:14px; }
-        .bk-p { border:1px solid var(--border-color); border-radius:12px; padding:14px 16px; min-width:0; }
-        .bk-ph { display:flex; justify-content:space-between; gap:8px; margin-bottom:12px; font-size:0.72rem; font-weight:800; color:var(--text-muted); }
-        .bk-ph span { font-weight:600; }
-        .bk-trio { display:flex; gap:20px; flex-wrap:wrap; margin-bottom:6px; }
-        .bk-big { font-size:1.65rem; font-weight:800; letter-spacing:-.6px; line-height:1; color:var(--text-main); }
-        .bk-big.bad { color:var(--bk-red-t); }
-        .bk-big.muted { color:var(--text-muted); }
-        .bk-small { font-size:0.7rem; color:var(--text-muted); margin-top:4px; }
-        .bk-dots { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px 12px; margin-top:10px; }
-        .bk-dot { display:flex; align-items:center; gap:7px; font-size:0.72rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .bk-dot i { width:8px; height:8px; border-radius:50%; background:var(--bk-green); flex-shrink:0; }
-        .bk-dot.off { color:var(--bk-red-t); font-weight:700; }
-        .bk-dot.off i { background:var(--bk-red); }
-        .bk-dot.cl, .bk-dot.nd { color:var(--text-muted); }
-        .bk-dot.cl i { background:var(--text-muted); }
-        .bk-dot.nd i { background:transparent; border:1.5px solid var(--text-muted); }
-        .bk-split { display:flex; height:8px; border-radius:5px; overflow:hidden; margin:12px 0 8px; background:var(--border-color); }
-        .bk-split .s1, .bk-legend i.s1 { background:var(--bk-brand); }
-        .bk-split .s2, .bk-legend i.s2 { background:#3B5BDB; }
-        .bk-split .s3, .bk-legend i.s3 { background:#64D0FF; }
-        .bk-split .s4, .bk-legend i.s4 { background:var(--text-muted); }
-        body.dark-theme .bk-split .s3, body.dark-theme .bk-legend i.s3 { background:rgba(100,208,255,.45); }
-        .bk-legend { display:grid; grid-template-columns:1fr 1fr; gap:5px 10px; font-size:0.72rem; color:var(--text-muted); }
-        .bk-legend b { color:var(--text-main); font-weight:700; }
-        .bk-legend i { display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:6px; }
-        .bk-kv { display:flex; justify-content:space-between; gap:10px; font-size:0.78rem; padding:7px 0; border-top:1px solid var(--border-color); }
-        .bk-ph + .bk-kv { border-top:0; }
-        .bk-kv span { color:var(--text-muted); min-width:0; overflow:hidden; text-overflow:ellipsis; }
-        .bk-kv b { font-weight:700; color:var(--text-main); white-space:nowrap; }
-        .bk-kv b.bad { color:var(--bk-red-t); }
-        .bk-kv b.dash { color:var(--text-muted); font-weight:600; }
-        .bk-kv .bk-item { color:var(--text-main); font-weight:700; margin-right:4px; }
-        .bk-ok { display:flex; gap:8px; align-items:flex-start; font-size:0.8rem; color:var(--text-main); line-height:1.45; }
-        .bk-ok i { color:var(--bk-green); margin-top:3px; }
-        .bk-note { font-size:0.72rem; color:var(--text-muted); margin-top:12px; line-height:1.5; }
-        .bk-pc { margin-top:14px; border:1px solid var(--border-color); border-radius:12px; padding:12px 16px; display:grid; grid-template-columns:210px repeat(3,minmax(0,1fr)); gap:22px; align-items:center; }
-        .bk-pct { font-size:0.72rem; font-weight:800; color:var(--text-muted); }
-        .bk-pct small { display:block; font-weight:500; margin-top:3px; font-size:0.66rem; }
-        .bk-stepl { display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; font-size:0.76rem; color:var(--text-main); }
-        .bk-stepl b { font-weight:800; }
-        .bk-stepl b.bad { color:var(--bk-red-t); }
-        .bk-track { height:6px; border-radius:4px; background:var(--border-color); overflow:hidden; }
-        .bk-track div { height:100%; background:var(--bk-brand); border-radius:4px; }
-        .bk-track div.z { background:var(--bk-red); }
-        .bk-of { font-size:0.64rem; color:var(--text-muted); margin-top:4px; }
-        @media (max-width:1180px){ .bk-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        .bk-who { font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .bk-what { min-width:0; }
+        .bk-owner { color:var(--text-muted); font-size:0.7rem; text-align:right; white-space:nowrap; }
+        .bk-more { display:block; margin:2px 0 6px; padding:3px 0; border:0; background:none; font:700 0.72rem 'Inter',sans-serif; color:var(--bk-brand); cursor:pointer; }
+        .bk-more:hover, .bk-more:focus-visible { text-decoration:underline; }
+        .bk-steps { display:flex; align-items:center; gap:22px; margin-top:10px; flex-wrap:wrap; font-size:0.72rem; color:var(--text-muted); }
+        .bk-stl { font-weight:700; }
+        .bk-m { display:flex; align-items:center; gap:8px; color:var(--text-main); }
+        .bk-m b { font-weight:800; min-width:30px; }
+        .bk-track { width:86px; height:5px; border-radius:3px; background:var(--border-color); overflow:hidden; }
+        .bk-track i { display:block; height:100%; background:var(--bk-brand); border-radius:3px; }
+        .bk-track i.z { background:var(--bk-red); }
+        .bk-untr { margin-left:auto; font-size:0.66rem; }
+        @media (max-width:1280px){ .bk-strip { grid-template-columns:repeat(4,minmax(0,1fr)); } .bk-cell:nth-child(5) { border-left:0; } .bk-cell:nth-child(n+5) { border-top:1px solid var(--border-color); } }
         @media (max-width:820px){
-            .bk-grid { grid-template-columns:1fr; }
-            .bk-row { grid-template-columns:auto 1fr; gap:4px 10px; }
-            .bk-row .bk-what { grid-column:1 / -1; }
-            .bk-row .bk-owner { grid-column:1 / -1; text-align:left; }
-            .bk-pc { grid-template-columns:1fr; gap:12px; }
+            .bk-strip { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .bk-cell { border-left:0; border-top:1px solid var(--border-color); }
+            .bk-cell:nth-child(-n+2) { border-top:0; }
+            .bk-cell:nth-child(even) { border-left:1px solid var(--border-color); }
+            .bk-row { grid-template-columns:auto 1fr; gap:3px 10px; }
+            .bk-row .bk-what, .bk-row .bk-owner { grid-column:1 / -1; text-align:left; }
+            .bk-steps { flex-direction:column; align-items:stretch; gap:8px; }
+            .bk-m { justify-content:space-between; } .bk-track { flex:1; width:auto; }
+            .bk-untr { margin-left:0; }
             .bk-fresh { margin-left:0; order:3; width:100%; }
             .bk-open { margin-left:auto; }
+        }
+        /* ═══════════ OVERVIEW: five zones ═══════════ */
+        .ov-jump { position:sticky; top:-20px; z-index:30; display:flex; align-items:center; gap:8px; margin:-20px -28px 0; padding:12px 28px 10px;
+                   background:var(--bg-light); border-bottom:1px solid var(--border-color); overflow-x:auto; scrollbar-width:none; }
+        .ov-jump::-webkit-scrollbar { display:none; }
+        .ov-jump a { flex-shrink:0; font-size:0.76rem; font-weight:700; color:var(--text-muted); text-decoration:none; padding:6px 13px; border-radius:20px;
+                     border:1px solid var(--border-color); background:var(--white); transition:color .15s, border-color .15s, background .15s; }
+        .ov-jump a:hover { color:var(--text-main); }
+        .ov-jump a:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
+        .ov-jump a.on { color:#010197; border-color:#010197; background:rgba(1,1,151,.06); }
+        body.dark-theme .ov-jump a.on { color:#64D0FF; border-color:#64D0FF; background:rgba(100,208,255,.12); }
+        .ov-cnt { display:inline-block; margin-left:7px; min-width:18px; padding:0 6px; border-radius:10px; background:#DC2626; color:#fff; font-size:0.64rem; line-height:17px; text-align:center; }
+        .ov-zone { display:flex; flex-direction:column; gap:16px; scroll-margin-top:64px; }
+        .ov-zone[hidden], .ov-jump a[hidden] { display:none !important; }
+        .ov-zh { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-top:4px; }
+        .ov-zh h2 { margin:0; font-size:1.05rem; font-weight:800; letter-spacing:-.2px; color:var(--text-main); }
+        .ov-zh p { margin:0; font-size:0.78rem; color:var(--text-muted); }
+        .ov-row { display:grid; gap:16px; align-items:start; }
+        #ovz-trends .ov-row, .ov-r2n { align-items:stretch; }
+        .ov-r2n { grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); }
+        .ov-row > * { min-width:0; }
+        .ov-r2  { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .ov-r2w { grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); }
+        .ov-r3  { grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); }
+        .ov-r3w { grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); }
+        #ovz-trends .ov-r3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+        .ov-needs #exec-needs-attention { max-height:360px; overflow-y:auto; }
+        .ov-incmon #exec-incident-monitor { max-height:250px !important; }
+        .ov-chmix > div:nth-child(2) { grid-template-columns:130px 1fr !important; gap:14px !important; }
+        .ov-chmix .chart-container { height:150px !important; }
+        /* rankings: one card, six tabs */
+        .ov-rank { padding:18px 22px; }
+        .ov-rank-hd { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
+        .ov-rank-hd h3 { margin:0; font-size:0.78rem; }
+        .ov-tabs { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; max-width:100%; }
+        .ov-tabs::-webkit-scrollbar { display:none; }
+        .ov-tab { flex-shrink:0; font:700 0.72rem 'Inter',sans-serif; padding:6px 11px; border-radius:8px; cursor:pointer;
+                  color:var(--text-muted); background:transparent; border:1px solid var(--border-color); }
+        .ov-tab:hover { color:var(--text-main); }
+        .ov-tab:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
+        .ov-tab.on { color:#010197; border-color:#010197; background:rgba(1,1,151,.06); }
+        body.dark-theme .ov-tab.on { color:#64D0FF; border-color:#64D0FF; background:rgba(100,208,255,.12); }
+        .ov-rank .rank-card.ov-rank-pane { display:none; border:0 !important; box-shadow:none !important; background:transparent !important; padding:6px 0 0 !important; margin:0 !important; }
+        .ov-rank .rank-card.ov-rank-pane.on { display:block; }
+        .ov-rank .ov-rank-pane > div:first-child { justify-content:flex-end !important; margin-bottom:6px !important; }
+        .ov-rank .ov-rank-pane > div:first-child > div:first-child { display:none; }
+        .ov-rank .ov-rank-pane > div:nth-child(2) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:32px; }
+        @media (max-width:1180px){
+            .ov-r3, .ov-r3w, #ovz-trends .ov-r3 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .ov-r3 > :first-child, .ov-r3w > :first-child { grid-column:1 / -1; }
+            .ov-r2w { grid-template-columns:minmax(0,1fr); }
+        }
+        @media (max-width:820px){
+            .ov-jump { top:-12px; margin:-12px -12px 0; padding:10px 12px 8px; }
+            .ov-zone { gap:12px; scroll-margin-top:56px; }
+            .ov-row, .ov-r2, .ov-r2w, .ov-r2n, .ov-r3, .ov-r3w, #ovz-trends .ov-r3 { grid-template-columns:minmax(0,1fr); gap:12px; }
+            .ov-r3 > :first-child, .ov-r3w > :first-child { grid-column:auto; }
+            .ov-rank .ov-rank-pane > div:nth-child(2) { grid-template-columns:minmax(0,1fr); }
+            .ov-needs #exec-needs-attention { max-height:none; }
         }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
@@ -6006,8 +6044,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 <!-- SUB-MODE: OVERVIEW -->
                 <div id="exec-mode-overview" class="exec-mode-container active">
-                    
-                    <div class="kpi-grid">
+                    <nav class="ov-jump" id="ov-jump" aria-label="Overview sections">
+                        <a href="#ovz-now" data-z="ovz-now" class="on">Right now<span class="ov-cnt" id="ov-now-count" hidden></span></a>
+                        <a href="#ovz-why" data-z="ovz-why">Why it is happening</a>
+                        <a href="#ovz-trends" data-z="ovz-trends">Trends</a>
+                        <a href="#ovz-branches" data-z="ovz-branches">Branches and people</a>
+                        <a href="#ovz-voice" data-z="ovz-voice">Customer voice</a>
+                    </nav>
+
+                    <section class="ov-zone" id="ovz-now" aria-labelledby="ovz-now-t">
+                        <div class="ov-zh"><h2 id="ovz-now-t">Right now</h2><p>What is happening today, and what needs someone's attention.</p></div>
+<div class="kpi-grid">
                         <div class="kpi-card" onclick="app.navigate('submissions')">
                             <div class="kpi-title">Total Submissions</div>
                             <div class="kpi-icon-wrapper icon-green"><i class="fas fa-file-alt"></i></div>
@@ -6045,10 +6092,26 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <div class="trend-indicator trend-neutral" id="rate-worst" style="color:var(--text-main);">--</div>
                         </div>
                     </div>
-
-                    <!-- LIVE MONITOR + TREND side by side, zero gap -->
-                    <div style="display:grid; grid-template-columns: 1fr 1.7fr; gap: 18px;">
-                        <div class="card" style="padding:20px;">
+                        <div class="card sla-card" id="sla-card">
+                        <div class="sla-left">
+                            <span class="sla-eyebrow"><span class="sla-dot"></span> Live queue</span>
+                            <div id="sla-tile"></div>
+                        </div>
+                        <div class="sla-rules">
+                            <div><span>Review</span><b>3 min</b></div>
+                            <div><span>Close</span><b>15 min</b></div>
+                            <small>measured from arrival · last 24h</small>
+                        </div>
+                    </div>
+                        <div class="ov-row ov-r2n">
+<div class="ov-needs card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:12px;">
+                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3><span class="text-xs text-muted" style="font-size:0.66rem;">live · not affected by the date filter</span><h3 style="display:none;"></h3>
+                                <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
+                            </div>
+                            <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
+<div class="ov-incmon card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:14px;">
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
                                 <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
@@ -6056,14 +6119,32 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <div class="chart-container" style="height:110px;margin-bottom:12px;"><canvas id="execIncByFormChart"></canvas></div>
                             <div id="exec-incident-monitor" style="max-height:330px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
-
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:12px;">
-                                <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3><span class="text-xs text-muted" style="font-size:0.66rem;">live · not affected by the date filter</span><h3 style="display:none;"></h3>
-                                <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
-                            </div>
-                            <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
+<div class="card blink-card bk" id="blink-card" style="display:none;">
+                        <div class="bk-hd"><h3><i class="fas fa-store"></i>BLINK</h3>
+                            <span class="bk-fresh" id="blink-sub"></span>
+                            <a href="#" class="bk-open" onclick="app.navigate('orders'); return false;">Open Blink tab</a></div>
+                        <div id="blink-body"></div>
+                    </div>
+<div class="card fc-card" id="forecast-card" style="display:none;">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-bolt" style="color:#DC2626;margin-right:6px;"></i>HEADING FOR TROUBLE</h3><span class="text-xs text-muted" id="fc-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="fc-body"></div>
+                    </div>
+                    </section>
+
+                    <section class="ov-zone" id="ovz-why" aria-labelledby="ovz-why-t">
+                        <div class="ov-zh"><h2 id="ovz-why-t">Why it is happening</h2><p>The patterns behind today's complaints.</p></div>
+                        <div class="ov-row ov-r2">
+<div class="card radar-card" id="radar-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-satellite-dish" style="color:#DC2626;margin-right:6px;"></i>EMERGING ISSUES</h3><span class="text-xs text-muted" id="radar-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="radar-body"></div>
+                    </div>
+<div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">TOP COMPLAINT REASONS</h3><span class="text-xs text-muted" style="font-size:0.68rem;">verified only · this period vs previous</span></div>
+                            <div id="exec-top-reasons"></div>
+                        </div>
+                        </div>
+                        <div class="ov-row ov-r3w">
 <div class="card" style="padding:20px;">
                             <div class="section-header peak-head">
                                 <div class="peak-head-text">
@@ -6079,6 +6160,23 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
 <div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:12px;">
+                                <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#010197;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
+                                <button class="btn-link" onclick="app.navigate('complaints')" style="font-size:0.72rem;">View all →</button>
+                            </div>
+                            <div id="exec-repeat-risk"></div>
+                        </div>
+<div class="card churn-card" id="churn-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#010197;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="churn-body"></div>
+                    </div>
+                        </div>
+                    </section>
+
+                    <section class="ov-zone" id="ovz-trends" aria-labelledby="ovz-trends-t">
+                        <div class="ov-zh"><h2 id="ovz-trends-t">Trends</h2><p>Whether service is getting better or worse.</p></div>
+                        <div class="ov-row ov-r2w">
+<div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom: 8px;">
                                 <h3 style="font-size:0.78rem;">SUBMISSIONS & INCIDENTS TREND</h3>
                                 <select class="select-input" style="padding: 5px 26px 5px 12px; font-size: 0.72rem; border-radius: 6px; box-shadow: none; border: 1px solid var(--border-color); background-color: var(--white); font-weight: 600; color: var(--text-main);">
@@ -6088,175 +6186,70 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             </div>
                             <div class="chart-container" style="height: 230px;"><canvas id="execTrendChart"></canvas></div>
                         </div>
-                    </div>
-
-                    <!-- Live queue pressure: what is waiting right now -->
-                    <div class="card sla-card" id="sla-card">
-                        <div class="sla-left">
-                            <span class="sla-eyebrow"><span class="sla-dot"></span> Live queue</span>
-                            <div id="sla-tile"></div>
-                        </div>
-                        <div class="sla-rules">
-                            <div><span>Review</span><b>3 min</b></div>
-                            <div><span>Close</span><b>15 min</b></div>
-                            <small>measured from arrival · last 24h</small>
-                        </div>
-                    </div>
-
-                    <!-- Live from the POS: which branches are trading, what is out of stock -->
-                    <div class="card blink-card bk" id="blink-card" style="display:none;">
-                        <div class="bk-hd"><h3><i class="fas fa-store"></i>BLINK</h3>
-                            <span class="bk-fresh" id="blink-sub"></span>
-                            <a href="#" class="bk-open" onclick="app.navigate('orders'); return false;">Open Blink tab</a></div>
-                        <div id="blink-body"></div>
-                    </div>
-
-                    <!-- Forecast: which branch is on course to breach its limit today -->
-                    <div class="card fc-card" id="forecast-card" style="display:none;">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-bolt" style="color:#DC2626;margin-right:6px;"></i>HEADING FOR TROUBLE</h3><span class="text-xs text-muted" id="fc-sub" style="font-size:0.68rem;"></span></div>
-                        <div id="fc-body"></div>
-                    </div>
-
-                    <!-- Capacity: the volume at which each branch starts failing -->
-                    <div class="card bp-card" id="bp-card">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-gauge-high" style="color:#010197;margin-right:6px;"></i>BRANCH BREAKING POINT</h3><span class="text-xs text-muted" id="bp-sub" style="font-size:0.68rem;"></span></div>
-                        <div id="bp-body"></div>
-                    </div>
-
-                    <!-- Silent churn: regulars who stopped coming and never said why -->
-                    <div class="card churn-card" id="churn-card">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#010197;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
-                        <div id="churn-body"></div>
-                    </div>
-
-                    <!-- Pattern detection: what is abnormal for THIS branch today -->
-                    <div class="card radar-card" id="radar-card">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-satellite-dish" style="color:#DC2626;margin-right:6px;"></i>EMERGING ISSUES</h3><span class="text-xs text-muted" id="radar-sub" style="font-size:0.68rem;"></span></div>
-                        <div id="radar-body"></div>
-                    </div>
-
-                    <!-- Like-for-like: a Saturday only makes sense against a Saturday -->
-                    <div class="card sdlw-card" id="sdlw-card">
+<div class="card sdlw-card" id="sdlw-card">
                         <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;">SAME DAY LAST WEEK</h3><span class="text-xs text-muted" id="sdlw-sub" style="font-size:0.68rem;"></span></div>
                         <div id="sdlw-body"></div>
                     </div>
-
-                    <!-- What is actually breaking + regional rollup -->
-                    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;">
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">TOP COMPLAINT REASONS</h3><span class="text-xs text-muted" style="font-size:0.68rem;">verified only · this period vs previous</span></div>
-                            <div id="exec-top-reasons"></div>
                         </div>
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
-                            <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
+                        <div class="ov-row ov-r3">
+<div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">INCIDENT RATE TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execRateTrendChart"></canvas></div>
                         </div>
-                    </div>
-
-                    <!-- Needs Attention Today + repeat-complainer risk — the
-                         two "act on this now" signals, side by side. -->
-                    <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;">
-                        <!-- moved to top -->
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:12px;">
-                                <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#010197;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
-                                <button class="btn-link" onclick="app.navigate('complaints')" style="font-size:0.72rem;">View all →</button>
-                            </div>
-                            <div id="exec-repeat-risk"></div>
+<div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RESOLUTION SPEED TREND</h3></div>
+                            <div class="chart-container" style="height:180px;"><canvas id="execResSpeedChart"></canvas></div>
                         </div>
 <div class="card" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">VERIFIED VS FAKE TREND</h3></div>
                             <div class="chart-container" style="height:180px;"><canvas id="execVerFakeChart"></canvas></div>
                         </div>
-                    </div>
-
-                    <!-- Health trends — the ratios that actually say whether
-                         things are improving, not just raw volume -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">INCIDENT RATE TREND</h3></div>
-                            <div class="chart-container" style="height:180px;"><canvas id="execRateTrendChart"></canvas></div>
                         </div>
-                        <div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">RESOLUTION SPEED TREND</h3></div>
-                            <div class="chart-container" style="height:180px;"><canvas id="execResSpeedChart"></canvas></div>
+                    </section>
+
+                    <section class="ov-zone" id="ovz-branches" aria-labelledby="ovz-branches-t">
+                        <div class="ov-zh"><h2 id="ovz-branches-t">Branches and people</h2><p>Where performance differs, and who is responsible.</p></div>
+<div class="card" style="padding: 22px 24px;">
+                        <div class="section-header" style="margin-bottom: 18px;">
+                            <h3>BRANCH PERFORMANCE</h3>
+                            <span class="text-xs text-muted" style="font-weight:600;">Sorted by incident rate — best first</span>
                         </div>
-                        <!-- moved beside Repeat Complainers -->
-                        <!-- SOCIAL SENTIMENT SNAPSHOT removed -->
+                        <!-- Branch KPI Cards -->
+                        <div class="branch-cards-grid" id="branch-cards-container">
+                            <!-- Filled by JS -->
+                        </div>
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; text-align:center;">
+                            <button class="btn-link" onclick="app.navigate('branches')" style="font-size:0.78rem;">View full detail for all branches →</button>
+                        </div>
                     </div>
-
-                    <!-- Sentiment Trend — weekly average Smile Score, so a
-                         slow drift in how customers feel shows up on its own
-                         line instead of being buried inside daily noise. -->
-                    <!-- SENTIMENT TREND removed -->
-
-                    <!-- Staff & Location Rankings — BM/City/Region on one row,
-                         OM/SOM/HOP (each an aggregate across the branches they
-                         oversee) on the next. Each card's metric is switchable
-                         between Smile Score and Incident Rate independently. -->
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="bm"></div>
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="city"></div>
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="region"></div>
+                        <div class="ov-row ov-r3w">
+<div class="card bp-card" id="bp-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-gauge-high" style="color:#010197;margin-right:6px;"></i>BRANCH BREAKING POINT</h3><span class="text-xs text-muted" id="bp-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="bp-body"></div>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="om"></div>
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="som"></div>
-                        <div class="card rank-card" style="padding:20px;" data-rank-kind="hop"></div>
-                    </div>
-
-                    <!-- Channel mix — how submission volume splits across Dine In / Delivery / Call Center -->
-                    <div class="card" style="padding:20px;">
+<div class="card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">REGIONAL ROLLUP</h3><span class="text-xs text-muted" style="font-weight:600;">North / South / Central</span></div>
+                            <div class="chart-container" style="height:200px;"><canvas id="execRegionalChart"></canvas></div>
+                        </div>
+<div class="ov-chmix card" style="padding:20px;">
                         <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">CHANNEL MIX</h3></div>
                         <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;">
                             <div class="chart-container" style="height:200px;"><canvas id="execChannelMixChart"></canvas></div>
                             <div id="exec-channel-mix-legend" style="display:flex;flex-direction:column;gap:10px;"></div>
                         </div>
                     </div>
-
-                    <!-- EXECUTIVE SUMMARY horizontal strip -->
-                    <!-- Executive Summary removed -->
-
-                    <!-- FORM PERFORMANCE — 3 form cards: Delivery, Dine In, Call Center -->
-                    <div class="card" data-hidden-section="form-performance" style="display:none;"" style="padding: 20px 24px;">
-                        <div class="section-header" style="margin-bottom: 18px;">
-                            <h3>FORM PERFORMANCE</h3>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <div style="display:flex; align-items:center; gap:6px; background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; padding:5px 12px;">
-                                    <i class="fas fa-calendar-alt" style="color:var(--text-muted); font-size:0.75rem;"></i>
-                                    <select id="form-month-filter" class="form-month-select" onchange="app.renderFormPerf()">
-                                        <option value="all">All Time</option>
-                                        <option value="1">January</option>
-                                        <option value="2">February</option>
-                                        <option value="3">March</option>
-                                        <option value="4">April</option>
-                                        <option value="5">May</option>
-                                        <option value="6">June</option>
-                                        <option value="7">July</option>
-                                        <option value="8">August</option>
-                                        <option value="9">September</option>
-                                        <option value="10">October</option>
-                                        <option value="11">November</option>
-                                        <option value="12">December</option>
-                                    </select>
-                                </div>
+                        </div>
+<div class="card ov-rank" id="ov-rank-card">
+                            <div class="ov-rank-hd"><h3>RANKINGS</h3>
+                                <div class="ov-tabs" role="tablist"><button type="button" role="tab" class="ov-tab on" data-rank-tab="bm" aria-selected="true" onclick="ovRankTab('bm')">Branch managers</button><button type="button" role="tab" class="ov-tab" data-rank-tab="city" aria-selected="false" onclick="ovRankTab('city')">Cities</button><button type="button" role="tab" class="ov-tab" data-rank-tab="region" aria-selected="false" onclick="ovRankTab('region')">Regions</button><button type="button" role="tab" class="ov-tab" data-rank-tab="om" aria-selected="false" onclick="ovRankTab('om')">Ops managers</button><button type="button" role="tab" class="ov-tab" data-rank-tab="som" aria-selected="false" onclick="ovRankTab('som')">Senior ops</button><button type="button" role="tab" class="ov-tab" data-rank-tab="hop" aria-selected="false" onclick="ovRankTab('hop')">Heads of ops</button></div>
                             </div>
+                            <div class="ov-rank-pane on card rank-card" style="padding:20px;" data-rank-kind="bm"></div><div class="ov-rank-pane card rank-card" style="padding:20px;" data-rank-kind="city"></div><div class="ov-rank-pane card rank-card" style="padding:20px;" data-rank-kind="region"></div><div class="ov-rank-pane card rank-card" style="padding:20px;" data-rank-kind="om"></div><div class="ov-rank-pane card rank-card" style="padding:20px;" data-rank-kind="som"></div><div class="ov-rank-pane card rank-card" style="padding:20px;" data-rank-kind="hop"></div>
                         </div>
-                        <div class="form-perf-grid" id="exec-forms-grid-v2">
-                            <!-- Filled by JS -->
-                        </div>
-                    </div>
+                    </section>
 
-                    <!-- Hidden old form grid for channel doughnut compat -->
-                    <div style="display:none;">
-                        <div id="exec-forms-grid"></div>
-                        <canvas id="channelDoughnut"></canvas>
-                        <div id="doughnut-total"></div>
-                        <table id="channel-legend-table"><thead><tr></tr></thead><tbody></tbody></table>
-                    </div>
-
-                    <!-- ══════════ VOICE OF CUSTOMER ══════════ -->
-                    <div class="card collapsible-card" id="voc-card" style="display:none;padding:0;overflow:hidden;">
+                    <section class="ov-zone" id="ovz-voice" aria-labelledby="ovz-voice-t">
+                        <div class="ov-zh"><h2 id="ovz-voice-t">Customer voice</h2><p>What customers praise, complain about and suggest.</p></div>
+<div class="card collapsible-card" id="voc-card" style="display:none;padding:0;overflow:hidden;">
                         <!-- Header — click to expand/collapse -->
                         <div class="collapse-header" onclick="toggleSection('voc-card')" style="padding:18px 24px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border-bottom:0px solid var(--border-color);transition:border-bottom .3s;">
                             <div style="display:flex;align-items:center;gap:12px;">
@@ -6360,28 +6353,42 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             </div><!-- end padding wrapper -->
                         </div><!-- end collapse-body -->
                     </div>
-                    <!-- ══════════ END VOICE OF CUSTOMER ══════════ -->
-
-                    <!-- AI Insights removed from Overview -->
-                    <!-- ══════════ END AI INSIGHTS ══════════ -->
-
-                    <!-- BRANCH PERFORMANCE — cards only now (the table underneath
-                         used to just repeat the exact same 6 branches and metrics
-                         the cards above already show; the full detailed list with
-                         all branches lives on the dedicated Branches tab). -->
-                    <div class="card" style="padding: 22px 24px;">
+<div class="card" data-hidden-section="form-performance" style="display:none;"" style="padding: 20px 24px;">
                         <div class="section-header" style="margin-bottom: 18px;">
-                            <h3>BRANCH PERFORMANCE</h3>
-                            <span class="text-xs text-muted" style="font-weight:600;">Sorted by incident rate — best first</span>
+                            <h3>FORM PERFORMANCE</h3>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div style="display:flex; align-items:center; gap:6px; background:var(--bg-light); border:1px solid var(--border-color); border-radius:8px; padding:5px 12px;">
+                                    <i class="fas fa-calendar-alt" style="color:var(--text-muted); font-size:0.75rem;"></i>
+                                    <select id="form-month-filter" class="form-month-select" onchange="app.renderFormPerf()">
+                                        <option value="all">All Time</option>
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3">March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <!-- Branch KPI Cards -->
-                        <div class="branch-cards-grid" id="branch-cards-container">
+                        <div class="form-perf-grid" id="exec-forms-grid-v2">
                             <!-- Filled by JS -->
                         </div>
-                        <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 14px; text-align:center;">
-                            <button class="btn-link" onclick="app.navigate('branches')" style="font-size:0.78rem;">View full detail for all branches →</button>
-                        </div>
                     </div>
+<div style="display:none;">
+                        <div id="exec-forms-grid"></div>
+                        <canvas id="channelDoughnut"></canvas>
+                        <div id="doughnut-total"></div>
+                        <table id="channel-legend-table"><thead><tr></tr></thead><tbody></tbody></table>
+                    </div>
+                    </section>
+
                 </div>
 
                 <!-- SUB-MODE: BRANCH COMPARISON (modern) -->
@@ -7533,7 +7540,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.107.0 · 16 Sep 2026 · Overview Blink section';
+        const BUILD_VERSION = 'v2.108.0 · 16 Sep 2026 · Overview in five zones, compact Blink';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12666,45 +12673,39 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // with that branch's known breaking point and says who will cross it,
             // when, and what happened the last times they did. Plain arithmetic —
             // current pace, measured threshold, historical outcome. No model.
-            // The Overview's Blink section. Everything the POS says, in one
-            // place: what needs action first, then branches, today's orders,
-            // order speed, stock, and whether branches use Blink's steps.
-            // Read from the Worker; branch status and orders are refreshed at
-            // most once a minute, order speed every five, whatever the
-            // dashboard's own refresh rate. Hidden until Blink is configured.
+            // The Overview's Blink section, kept compact: one row of key
+            // figures, the few problems that need someone, and whether
+            // branches use Blink's steps. Detail lives in the Blink tab.
+            // Branch status and orders refresh at most once a minute, order
+            // speed every five, whatever the dashboard's own refresh rate.
             async renderBlinkLive() {
                 const card = document.getElementById('blink-card'), host = document.getElementById('blink-body'), sub = document.getElementById('blink-sub');
                 if (!card || !host) return;
-                const C = this._bk || (this._bk = { st: null, ov: null, tm: null, tSt: 0, tOv: 0, tTm: 0 });
+                const C = this._bk || (this._bk = { st: null, ov: null, tm: null, tSt: 0, tOv: 0, tTm: 0, all: false });
                 const now = Date.now(), jobs = [];
                 if (now - C.tSt > 55000) { C.tSt = now; jobs.push(apiCall('blink_status', {}).then(r => { if (r && r.status === 'success') C.st = r; }).catch(() => {})); }
                 if (now - C.tOv > 55000) { C.tOv = now; jobs.push(apiCall('blink_overview', {}).then(r => { if (r && r.status === 'success') C.ov = r; }).catch(() => {})); }
                 if (now - C.tTm > 300000) { C.tTm = now; jobs.push(apiCall('blink_timing', { days: 7 }).then(r => { if (r && r.status === 'success') C.tm = r; }).catch(() => {})); }
                 if (jobs.length) await Promise.all(jobs);
                 const d = C.st, ov = C.ov, tm = C.tm;
-                if (!d || (!(d.branches || []).length && !d.stale && !(d.noData || []).length)) { card.style.display = 'none'; return; }
+                if (!d || (!(d.branches || []).length && !d.stale && !(d.noData || []).length)) { card.style.display = 'none'; window._bkAttn = 0; return; }
                 card.style.display = '';
 
                 const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                 const ago = m => m == null ? '' : m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
-                const mm = v => v == null ? null : v + ' min';
+                const num = n => Number(n || 0).toLocaleString('en-US');
                 const branches = d.branches || [];
                 const scopeName = branches.length === 1 && !(d.noData || []).length ? branches[0].name : 'All branches';
+                const late = d.stale || d.lastPoll == null || d.lastPoll > 10;
+                if (sub) sub.uiHTML = late
+                    ? `<span class="bk-live off"></span>Branch status not refreshed${d.lastPoll != null ? ' for ' + esc2(ago(d.lastPoll)) : ''}`
+                    : `<span class="bk-live"></span>Live from the POS, updated ${esc2(d.lastPoll < 1 ? 'just now' : ago(d.lastPoll) + ' ago')}`;
 
-                // freshness line in the header
-                if (sub) {
-                    const late = d.stale || d.lastPoll == null || d.lastPoll > 10;
-                    sub.uiHTML = late
-                        ? `<span class="bk-live off"></span>Branch status not refreshed${d.lastPoll != null ? ' for ' + esc2(ago(d.lastPoll)) : ''}`
-                        : `<span class="bk-live"></span>Live from the POS, updated ${esc2(d.lastPoll < 1 ? 'just now' : ago(d.lastPoll) + ' ago')}`;
-                }
-
-                // ── what needs action, most serious first ──
+                // ── problems, most serious first ──
                 const att = [];
                 const offline = branches.filter(b => b.offlineMinutes != null);
                 offline.forEach(b => att.push({ sev: 'c', who: b.name, owner: 'Area Manager',
                     what: `Closed in Blink for ${ago(b.offlineMinutes)} inside its trading hours${b.hours ? ' (' + b.hours + ')' : ''}.${b.subDown ? ' Out-of-radius delivery also off.' : ''}` }));
-                const stuck = (ov && ov.stuck) || [];
                 const chName = c => {
                     const u = String(c || '').toUpperCase();
                     if (/CALL/.test(u)) return 'Call-in order';
@@ -12715,12 +12716,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if (/QR/.test(u)) return 'QR order';
                     return 'Order';
                 };
+                const stuck = (ov && ov.stuck) || [];
                 stuck.slice(0, 3).forEach(o => att.push({ sev: 'c', who: o.branch || 'Unknown branch',
                     owner: /CALL/i.test(o.channel) ? 'Call Center / Branch' : 'Branch Manager',
                     what: `${chName(o.channel)} ${o.order} not accepted after ${o.minutes} min.` }));
                 if (ov && ov.stuckCount > 3) att.push({ sev: 'c', who: 'Several branches', owner: 'Call Center', what: `${ov.stuckCount - 3} more orders not accepted after 15 min.` });
-                if (d.stale || (d.lastPoll != null && d.lastPoll > 10)) att.push({ sev: 'h', who: 'Blink connection', owner: 'Sentinel admin',
-                    what: 'Branch status has stopped refreshing, so open and closed states below may be out of date.' });
+                if (late) att.push({ sev: 'h', who: 'Blink connection', owner: 'Sentinel admin',
+                    what: 'Branch status has stopped refreshing, so open and closed states may be out of date.' });
                 else if ((d.noData || []).length) att.push({ sev: 'h', who: d.noData.length === 1 ? d.noData[0] : d.noData.length + ' branches', owner: 'Sentinel admin',
                     what: `No live reading from Blink${d.noData.length > 1 ? ' for ' + d.noData.join(', ') : ''}.` });
                 const oosBy = {};
@@ -12731,94 +12733,74 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         what: list.length === 1 ? `${list[0].item} out of stock for ${ago(longest)}.` : `${list.length} items out of stock, the longest for ${ago(longest)}.` });
                 });
                 const med = (tm && tm.median) || {};
-                const slowFp = (tm && med.handover != null) ? (tm.branches || []).filter(b => b.handover != null && b.handover >= Math.max(10, med.handover * 2)) : [];
-                slowFp.slice(0, 2).forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager',
-                    what: `Foodpanda handover ${b.handover} min, ${(b.handover / Math.max(1, med.handover)).toFixed(1)}× the network median of ${med.handover} min.` }));
-                const slowOwn = tm ? (tm.branches || []).filter(b => b.total != null && b.total >= 60) : [];
-                slowOwn.slice(0, 2).forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager',
-                    what: `Our riders take ${b.total} min door to door (median).` }));
+                const tb = (tm && tm.branches) || [];
+                if (med.handover != null) tb.filter(b => b.handover != null && b.handover >= Math.max(10, med.handover * 2)).slice(0, 2)
+                    .forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager',
+                        what: `Foodpanda handover ${b.handover} min, ${(b.handover / Math.max(1, med.handover)).toFixed(1)}× the network median of ${med.handover} min.` }));
+                tb.filter(b => b.total != null && b.total >= 60).slice(0, 2)
+                    .forEach(b => att.push({ sev: 'h', who: b.branch, owner: 'Branch Manager', what: `Our riders take ${b.total} min door to door (median).` }));
                 const st = (ov && ov.steps) || {};
-                if (st.ready && st.ready.of >= 10 && st.ready.pct != null && st.ready.pct < 50) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
-                    what: st.ready.pct === 0 ? 'No order marked Ready in Blink today, so kitchen time cannot be measured.'
-                                             : `Ready pressed on only ${st.ready.pct}% of orders, so kitchen time is incomplete.` });
-                if (st.dispatched && st.dispatched.of >= 10 && st.dispatched.pct != null && st.dispatched.pct < 50) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
+                const stepGap = (s, text) => s && s.of >= 10 && s.pct != null && s.pct < 50;
+                if (stepGap(st.ready)) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
+                    what: st.ready.pct === 0 ? 'No order marked Ready in Blink today, so kitchen time cannot be measured.' : `Ready pressed on only ${st.ready.pct}% of orders, so kitchen time is incomplete.` });
+                if (stepGap(st.dispatched)) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
                     what: `Dispatched pressed on only ${st.dispatched.pct}% of our riders' orders, so road time is incomplete.` });
                 if (st.delivered && st.delivered.of >= 10 && st.delivered.pct != null && st.delivered.pct < 60) att.push({ sev: 'h', who: scopeName, owner: 'Operations',
                     what: `Only ${st.delivered.pct}% of orders older than 90 min are closed as delivered in Blink.` });
+                window._bkAttn = att.filter(a => a.sev === 'c').length;
 
-                const sevLabel = { c: 'CRITICAL', h: 'HIGH' };
-                const attHtml = att.length
-                    ? `<div class="bk-att"><div class="bk-att-h">Needs action now (${att.length})</div>
-                        ${att.map(a => `<div class="bk-row"><span class="bk-sev ${a.sev}">${sevLabel[a.sev]}</span>
-                            <b class="bk-who">${esc2(a.who)}</b><span class="bk-what">${esc2(a.what)}</span><span class="bk-owner">${esc2(a.owner)}</span></div>`).join('')}</div>`
-                    : `<div class="bk-clear"><i class="fas fa-circle-check"></i>Nothing needs action. Every branch is trading and orders are moving.</div>`;
-
-                // ── Branches panel ──
+                // ── key figures, one row ──
                 const closed = branches.filter(b => b.open === 0 && b.offlineMinutes == null);
                 const open = branches.filter(b => b.open === 1);
-                const dotOrder = offline.concat(closed, open, branches.filter(b => b.open !== 0 && b.open !== 1));
-                const dots = dotOrder.map(b => {
-                    const cls = b.offlineMinutes != null ? 'off' : b.open === 0 ? 'cl' : b.open === 1 ? '' : 'nd';
-                    return `<div class="bk-dot ${cls}" title="${esc2(b.hours || '')}"><i></i>${esc2(b.name)}</div>`;
-                }).concat((d.noData || []).map(n => `<div class="bk-dot nd" title="no live reading"><i></i>${esc2(n)}</div>`)).join('');
-                const big = (n, label, cls) => `<div><div class="bk-big ${cls || ''}">${n}</div><div class="bk-small">${label}</div></div>`;
-                const pBranches = `<div class="bk-p"><div class="bk-ph">Branches<span>live status</span></div>
-                    <div class="bk-trio">${big(open.length, 'open')}${big(offline.length, 'offline in hours', offline.length ? 'bad' : '')}${big(closed.length, 'closed', 'muted')}${(d.noData || []).length ? big(d.noData.length, 'no data', 'muted') : ''}</div>
-                    <div class="bk-dots">${dots}</div></div>`;
-
-                // ── Orders today ──
-                let pOrders;
+                const total = branches.length + (d.noData || []).length;
+                const cell = (label, value, subHtml, cls, title) => `<div class="bk-cell"${title ? ` title="${esc2(title)}"` : ''}>
+                    <div class="bk-cl">${label}</div><div class="bk-cv ${cls || ''}">${value}</div><div class="bk-cs">${subHtml || ''}</div></div>`;
+                const brSub = offline.length
+                    ? `<span class="bad">${offline.length} offline</span>${closed.length ? ', ' + closed.length + ' closed' : ''}`
+                    : closed.length ? closed.length + ' closed' : (d.noData || []).length ? d.noData.length + ' no data' : 'all trading';
+                const brTitle = offline.map(b => b.name + ': offline ' + ago(b.offlineMinutes)).concat(closed.map(b => b.name + ': closed')).join('\n');
+                let ordersCell = cell('Orders today', '—', 'not available yet');
+                let progCell = cell('In progress', '—', '');
+                let stuckCell = cell('Not accepted 15+ min', '—', '');
                 if (ov) {
                     const ch = ov.channels || {}, tot = Math.max(1, (ch.foodpanda || 0) + (ch.app || 0) + (ch.callin || 0) + (ch.pickup || 0));
                     const seg = [['foodpanda', 'Foodpanda', 's1'], ['app', 'App and website', 's2'], ['callin', 'Call-in', 's3'], ['pickup', 'Pickup', 's4']];
-                    pOrders = `<div class="bk-p"><div class="bk-ph">Orders today<span>since 10:00</span></div>
-                        <div class="bk-trio">${big(ov.placed || 0, 'placed')}${big(ov.inProgress || 0, 'in progress')}${big(ov.stuckCount || 0, 'not accepted over 15 min', ov.stuckCount ? 'bad' : '')}</div>
-                        <div class="bk-split">${seg.map(s => `<div class="${s[2]}" style="width:${((ch[s[0]] || 0) / tot * 100).toFixed(1)}%"></div>`).join('')}</div>
-                        <div class="bk-legend">${seg.map(s => `<div><i class="${s[2]}"></i>${s[1]} <b>${ch[s[0]] || 0}</b></div>`).join('')}</div></div>`;
-                } else {
-                    pOrders = `<div class="bk-p"><div class="bk-ph">Orders today</div><div class="bk-note">Order figures are not available yet.</div></div>`;
+                    const splitTitle = seg.map(s => s[1] + ': ' + num(ch[s[0]])).join('\n');
+                    ordersCell = cell('Orders today', num(ov.placed),
+                        `<div class="bk-mbar">${seg.map(s => `<i class="${s[2]}" style="width:${((ch[s[0]] || 0) / tot * 100).toFixed(1)}%"></i>`).join('')}</div>`,
+                        '', splitTitle);
+                    progCell = cell('In progress', num(ov.inProgress), ov.untracked ? `of ${num(ov.tracked)} tracked` : 'since 10:00');
+                    stuckCell = cell('Not accepted 15+ min', num(ov.stuckCount), ov.stuckCount ? '<span class="bad">needs a call</span>' : 'none waiting', ov.stuckCount ? 'bad' : '');
                 }
-
-                // ── Order speed ──
-                const kv = (label, val, fallback, bad) => `<div class="bk-kv"><span>${label}</span><b class="${val == null ? 'dash' : bad ? 'bad' : ''}">${esc2(val == null ? fallback : val)}</b></div>`;
-                let slowest = null;
-                if (tm) {
-                    const bs = tm.branches || [];
-                    const byTotal = bs.filter(b => b.total != null).sort((a, b) => b.total - a.total)[0];
-                    const byHand = bs.filter(b => b.handover != null).sort((a, b) => b.handover - a.handover)[0];
-                    if (byTotal) slowest = { text: byTotal.branch + ', ' + byTotal.total + ' min door to door', bad: byTotal.total >= 60 };
-                    else if (byHand) slowest = { text: byHand.branch + ', ' + byHand.handover + ' min handover', bad: slowFp.some(b => b.branch === byHand.branch) };
-                }
-                const pSpeed = `<div class="bk-p"><div class="bk-ph">Order speed<span>median, 7 days</span></div>
-                    ${kv('Foodpanda handover', mm(med.handover), 'waiting for data')}
-                    ${kv('Pickup, placed to collected', mm(med.pickup), 'waiting for data')}
-                    ${kv('Our riders, door to door', mm(med.total), 'waiting for data')}
-                    ${kv('Kitchen, placed to ready', mm(med.prep), 'not recorded')}
-                    ${kv('Slowest branch', slowest ? slowest.text : null, 'not enough orders', slowest && slowest.bad)}</div>`;
-
-                // ── Stock ──
                 const oos = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0));
-                const pStock = `<div class="bk-p"><div class="bk-ph">Stock${oos.length ? `<span>${oos.length} out</span>` : ''}</div>
-                    ${oos.length
-                        ? oos.slice(0, 5).map(i => `<div class="bk-kv"><span><b class="bk-item">${esc2(i.item)}</b> ${esc2(i.branch)}</span><b class="${(i.outMinutes || 0) >= 120 ? 'bad' : ''}">${esc2(ago(i.outMinutes))}</b></div>`).join('')
-                          + (oos.length > 5 ? `<div class="bk-note">and ${oos.length - 5} more in the Blink tab.</div>` : '')
-                        : `<div class="bk-ok"><i class="fas fa-check"></i><span>Nothing is out of stock${scopeName === 'All branches' ? ' at any branch' : ''}.</span></div>
-                           <div class="bk-note">An item appears here as soon as Blink marks it unavailable, with how long it has been off.</div>`}</div>`;
+                const strip = `<div class="bk-strip">
+                    ${cell('Branches open', `${open.length}<small>/${total}</small>`, brSub, '', brTitle)}
+                    ${ordersCell}${progCell}${stuckCell}
+                    ${cell('Foodpanda handover', med.handover != null ? med.handover + '<small> min</small>' : '—', 'median, 7 days')}
+                    ${cell('Our riders', med.total != null ? med.total + '<small> min</small>' : '—', med.total != null ? 'door to door' : 'waiting for data')}
+                    ${cell('Out of stock', oos.length, oos.length ? esc2(oos[0].item) + ', ' + esc2(ago(oos[0].outMinutes)) : 'nothing out', oos.length ? 'bad' : '',
+                        oos.map(i => i.item + ' (' + i.branch + '): ' + ago(i.outMinutes)).join('\n'))}
+                </div>`;
 
-                // ── Are branches using Blink fully? ──
+                // ── problems list, three at a time ──
+                const sevLabel = { c: 'Critical', h: 'High' };
+                const shown = C.all ? att : att.slice(0, 3);
+                const issues = att.length ? `<div class="bk-issues">
+                    ${shown.map(a => `<div class="bk-row"><span class="bk-sev ${a.sev}">${sevLabel[a.sev]}</span><b class="bk-who">${esc2(a.who)}</b><span class="bk-what">${esc2(a.what)}</span><span class="bk-owner">${esc2(a.owner)}</span></div>`).join('')}
+                    ${att.length > 3 ? `<button type="button" class="bk-more" onclick="app._bk.all=!app._bk.all;app.renderBlinkLive()">${C.all ? 'Show fewer' : 'Show ' + (att.length - 3) + ' more'}</button>` : ''}
+                </div>` : '';
+
+                // ── steps, one line ──
                 const meter = (label, s) => {
-                    const p = s && s.pct != null ? s.pct : null;
-                    const bad = p != null && p < 50;
-                    return `<div><div class="bk-stepl"><span>${label}</span><b class="${bad ? 'bad' : ''}">${p == null ? '—' : p + '%'}</b></div>
-                        <div class="bk-track"><div class="${bad ? 'z' : ''}" style="width:${p == null ? 0 : Math.max(p, 2)}%"></div></div>
-                        <div class="bk-of">${s && s.of ? 'of ' + s.of + ' orders' : 'no orders to measure yet'}</div></div>`;
+                    const p = s && s.pct != null ? s.pct : null, bad = p != null && p < 50;
+                    return `<div class="bk-m" title="${s && s.of ? 'of ' + s.of + ' orders' : 'no orders to measure yet'}"><span>${label}</span>
+                        <div class="bk-track"><i class="${bad ? 'z' : ''}" style="width:${p == null ? 0 : Math.max(p, 2)}%"></i></div><b class="${bad ? 'bad' : ''}">${p == null ? '—' : p + '%'}</b></div>`;
                 };
-                const steps = ov ? `<div class="bk-pc"><div class="bk-pct">Are branches using Blink fully?<small>share of today's orders with each step pressed</small></div>
-                    ${meter('Ready pressed', st.ready)}
-                    ${meter('Dispatched pressed, our riders', st.dispatched)}
-                    ${meter('Closed as delivered', st.delivered)}</div>` : '';
+                const steps = ov ? `<div class="bk-steps"><span class="bk-stl">Steps pressed in Blink today</span>
+                    ${meter('Ready', st.ready)}${meter('Dispatched', st.dispatched)}${meter('Delivered', st.delivered)}
+                    ${ov.untracked ? `<span class="bk-untr">${num(ov.untracked)} earlier orders have no status history</span>` : ''}</div>` : '';
 
-                host.uiHTML = attHtml + `<div class="bk-grid">${pBranches}${pOrders}${pSpeed}${pStock}</div>` + steps;
+                host.uiHTML = strip + issues + steps;
             },
 
             renderForecast() {
@@ -22951,7 +22933,7 @@ ${(() => {
         (function(){
             const MQ = window.matchMedia('(max-width: 820px)');
             // Stay open on phones: the short signal cards and the live queue.
-            const KEEP_OPEN_IDS = new Set(['sla-card', 'bp-card', 'churn-card', 'radar-card']);
+            const KEEP_OPEN_IDS = new Set(['sla-card', 'bp-card', 'churn-card', 'radar-card', 'blink-card']);
             const KEEP_OPEN_TITLES = new Set(['NEEDS ATTENTION TODAY']);
             const STORE = 'crumble_m_fold';
             let saved = {};
@@ -23034,6 +23016,67 @@ ${(() => {
         })();
 
 
+
+        // ═══════════════════════════════════════════════════════════════════
+        // OVERVIEW ZONES — jump links that follow the scroll, the "Right now"
+        // count, and the ranking tabs. Presentation only.
+        // ═══════════════════════════════════════════════════════════════════
+        function ovRankTab(kind){
+            document.querySelectorAll('#ov-rank-card .ov-tab').forEach(b => {
+                const on = b.dataset.rankTab === kind;
+                b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+            });
+            document.querySelectorAll('#ov-rank-card .ov-rank-pane').forEach(p => p.classList.toggle('on', p.dataset.rankKind === kind));
+        }
+        (function(){
+            function start(){
+                const nav = document.getElementById('ov-jump'); if(!nav) return;
+                const links = [...nav.querySelectorAll('a[data-z]')];
+                const scroller = document.getElementById('mainScroll');
+                nav.addEventListener('click', e => {
+                    const a = e.target.closest('a[data-z]'); if(!a) return;
+                    e.preventDefault();
+                    const z = document.getElementById(a.dataset.z); if(!z) return;
+                    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                    z.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+                    setOn(a.dataset.z);
+                });
+                function setOn(id){ links.forEach(l => l.classList.toggle('on', l.dataset.z === id)); }
+                // the zone whose top has most recently passed under the nav is the current one
+                function track(){
+                    // zones land 64px below the scroller top (scroll-margin-top); allow for that
+                    const top = nav.getBoundingClientRect().bottom + 32;
+                    const live = links.filter(l => !l.hidden);
+                    if(!live.length) return;
+                    let cur = live[0].dataset.z;
+                    live.forEach(l => { const z = document.getElementById(l.dataset.z); if(z && !z.hidden && z.getBoundingClientRect().top <= top) cur = l.dataset.z; });
+                    const atEnd = scroller && scroller.scrollTop > 0 && scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
+                    setOn(atEnd ? live[live.length - 1].dataset.z : cur);
+                }
+                let raf = 0;
+                (scroller || window).addEventListener('scroll', () => { if(!raf) raf = requestAnimationFrame(() => { raf = 0; track(); }); }, { passive: true });
+                // "Right now" count: today's unresolved incidents on the panel + critical Blink problems
+                function count(){
+                    const el = document.getElementById('ov-now-count'); if(!el) return;
+                    const inc = document.querySelectorAll('#exec-needs-attention [onclick^="app.openIncidentFromStableKey"]').length;
+                    const n = inc + (window._bkAttn || 0);
+                    el.hidden = !n; el.textContent = n > 99 ? '99+' : String(n);
+                }
+                // a zone with nothing visible in it (e.g. Customer voice before
+                // the AI feed arrives) is hidden, and so is its jump link
+                function empties(){
+                    links.forEach(l => {
+                        const z = document.getElementById(l.dataset.z); if(!z) return;
+                        const body = [...z.children].filter(c => !c.classList.contains('ov-zh'));
+                        const shown = body.some(c => getComputedStyle(c).display !== 'none');
+                        z.hidden = !shown; l.hidden = !shown;
+                    });
+                }
+                function tick(){ count(); try { empties(); } catch(e){} }
+                tick(); setInterval(tick, 4000);
+            }
+            if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+        })();
         // ═══════════════════════════════════════════════════════════════════
         // INSTALLABLE APP — Crumble Sentinel. Registers the service worker
         // (sw.js, which only provides an offline page) and offers "Install app"
