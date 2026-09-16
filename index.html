@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.103.0 · 16 Sep 2026 · owner settings complete';
+        const BUILD_VERSION = 'v2.104.0 · 16 Sep 2026 · audit trail usable';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9562,6 +9562,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <span style="${hint}">Leave everything unticked to alert for all branches, which is the usual setting.</span></div>
                 </div>`,
               status: `<div id="os-status" style="font-size:.8rem;color:var(--text-muted);">Checking…</div>`,
+              audit: `<div style="display:grid;gap:14px;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+                        <label style="display:grid;gap:4px;"><span style="${lbl()}">From</span>
+                            <input type="date" id="os-af" value="${new Date(Date.now()-6*86400000).toISOString().slice(0,10)}" style="${inp}width:auto;"></label>
+                        <label style="display:grid;gap:4px;"><span style="${lbl()}">To</span>
+                            <input type="date" id="os-at" value="${new Date().toISOString().slice(0,10)}" style="${inp}width:auto;"></label>
+                        <label style="display:grid;gap:4px;flex:1;min-width:160px;"><span style="${lbl()}">Person</span>
+                            <select id="os-aw" style="${inp}"><option value="">Everyone</option></select></label>
+                        <button class="fb-btn sm" onclick="loadAudit()">Show</button>
+                        <button class="fb-btn sm" onclick="exportAudit()" title="Download what is on screen"><i class="fas fa-download"></i> CSV</button>
+                    </div>
+                    <div id="os-flags"></div>
+                    <div id="os-audit" style="max-height:38vh;overflow:auto;border:1px solid var(--border-color);border-radius:10px;">
+                        <div style="padding:16px;font-size:.78rem;color:var(--text-muted);">Loading…</div>
+                    </div>
+                </div>`,
               team: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Message everyone</span>
                         <textarea id="os-bc" rows="4" maxlength="2000" placeholder="Goes to every active teammate as a direct message from you."
@@ -9586,7 +9602,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;">
-                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;">
@@ -9597,6 +9613,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             el.onclick = e => { if(e.target === el) el.remove(); };
             document.body.appendChild(el);
             if(tab === 'status') loadSystemStatus();
+            if(tab === 'audit'){ loadAudit(); loadAuditFlags(); }
         }
 
         /** Each integration in one line: working, or what is wrong. */
@@ -9628,6 +9645,76 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
               + row('Saves reaching the sheet', !q.stuck, q.stuck ? (q.stuck + ' stuck, ' + q.pending + ' waiting') : (q.pending + ' waiting'),
                     q.stuck ? 'A stuck save never reaches the spreadsheet until it is retried.' : '')
               + row('Quiet hours', null, res.quietNow ? 'On right now — phones are silent' : 'Not active right now', '');
+        }
+
+        /* ── the audit trail ──────────────────────────────────────────────
+           Recorded all along; this is the part that lets somebody read it. */
+        let _auditRows = [];
+        // Its own escaper: the esc() nearby belongs to _exportCSV and is not in
+        // scope here. A name that is in scope somewhere else is the easiest way
+        // to ship a ReferenceError that only fires when a panel is opened.
+        const _aesc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        async function loadAudit(){
+            const box = document.getElementById('os-audit'); if(!box) return;
+            box.innerHTML = '<div style="padding:16px;font-size:.78rem;color:var(--text-muted);">Loading…</div>';
+            const res = await apiCall('audit_query', {
+                from: document.getElementById('os-af').value,
+                to:   document.getElementById('os-at').value,
+                actor: document.getElementById('os-aw').value,
+                limit: 2000
+            }).catch(() => null);
+            if(!res || res.status !== 'success'){
+                box.innerHTML = '<div style="padding:16px;font-size:.78rem;color:#DC2626;">' + ((res && res.message) || 'Could not read the audit trail.') + '</div>';
+                return;
+            }
+            _auditRows = res.rows || [];
+            // Keep whoever is selected, refill the list of people.
+            const sel = document.getElementById('os-aw');
+            if(sel && res.people){
+                const cur = sel.value;
+                sel.innerHTML = '<option value="">Everyone</option>' + res.people.map(p =>
+                    `<option value="${String(p.actor).replace(/"/g,'&quot;')}" ${p.actor===cur?'selected':''}>${_aesc(p.actor)} (${p.n})</option>`).join('');
+            }
+            if(!_auditRows.length){ box.innerHTML = '<div style="padding:16px;font-size:.78rem;color:var(--text-muted);">Nothing recorded in that window.</div>'; return; }
+            const when = t => { const d = new Date(t); return isNaN(d) ? String(t).slice(0,16) : d.toLocaleString(); };
+            box.innerHTML = _auditRows.map(r => `<div style="display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border-color);font-size:.74rem;">
+                    <span style="color:var(--text-muted);white-space:nowrap;">${_aesc(when(r.at))}</span>
+                    <span style="font-weight:700;color:var(--text-main);white-space:nowrap;">${_aesc(r.actor || '—')}</span>
+                    <span style="color:var(--text-main);">${_aesc(r.action)}</span>
+                    <span style="color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_aesc(r.target || '')}</span>
+                    ${r.result && r.result !== 'ok' ? `<span style="color:#DC2626;font-weight:700;">${_aesc(r.result)}</span>` : ''}
+                </div>`).join('');
+        }
+
+        /** The short list worth a second look. Not accusations. */
+        async function loadAuditFlags(){
+            const box = document.getElementById('os-flags'); if(!box) return;
+            const res = await apiCall('audit_flags', {}).catch(() => null);
+            if(!res || res.status !== 'success' || !(res.flags || []).length){ box.innerHTML = ''; return; }
+            const icon = { fake:'fa-flag', user:'fa-user-pen', voucher:'fa-ticket', denied:'fa-ban' };
+            box.innerHTML = `<div style="border:1px solid var(--border-color);border-radius:10px;padding:10px 12px;background:var(--bg-light);">
+                    <div style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Worth a look · last 7 days</div>
+                    ${res.flags.slice(0,12).map(f => `<div style="display:flex;gap:8px;align-items:baseline;font-size:.74rem;padding:3px 0;">
+                        <i class="fas ${icon[f.kind]||'fa-circle-info'}" style="color:var(--text-muted);width:14px;"></i>
+                        <span style="font-weight:700;">${_aesc(f.what)}</span>
+                        <span style="color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_aesc(f.why || '')}${f.actor ? ' · ' + _aesc(f.actor) : ''}</span>
+                    </div>`).join('')}
+                </div>`;
+        }
+
+        /** Out of the database, which is currently its only copy. */
+        function exportAudit(){
+            if(!_auditRows.length){ UI.toast('Nothing to export — show a range first.', 'warning'); return; }
+            const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+            const csv = ['When,Who,Role,Action,Target,Detail,Result']
+                .concat(_auditRows.map(r => [r.at, r.actor, r.role, r.action, r.target, r.detail, r.result].map(q).join(',')))
+                .join('\r\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }));
+            a.download = 'crumble-audit-' + document.getElementById('os-af').value + '-to-' + document.getElementById('os-at').value + '.csv';
+            document.body.appendChild(a); a.click();
+            setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+            UI.toast('Exported ' + _auditRows.length + ' entries.', 'success');
         }
 
         async function sendBroadcast(){
