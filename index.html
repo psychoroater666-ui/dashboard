@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.106.3 · 16 Sep 2026 · order timings say which Blink statuses they cannot read';
+        const BUILD_VERSION = 'v2.106.4 · 16 Sep 2026 · order timings split: own riders, Foodpanda handover, pickup';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -23678,26 +23678,41 @@ ${(() => {
                     timingHtml = `<div class="card" style="padding:14px 18px;margin-bottom:14px;font-size:0.76rem;color:var(--text-muted);">
                         No delivery timings yet. They are built from Blink's status changes — accepted, ready, dispatched, delivered — so they appear once those webhooks have been arriving for a while.${unknownNote}</div>`;
                 } else if(tm && tm.status === 'success'){
-                    const m = tm.median || {};
+                    const m = tm.median || {}, sl = tm.slowest || {}, cn = tm.counts || {};
                     const stat = (label, val, sub) => `<div class="ord-stat"><div class="ord-stat-l">${label}</div>
                         <div class="ord-stat-v">${mm(val)}</div><div class="ord-stat-s">${sub}</div></div>`;
+                    const rowLabel = (t, n) => `<div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin:12px 0 6px;">${t}${n != null ? ' · ' + n + ' orders' : ''}</div>`;
+                    const parts = b => [
+                        b.prep != null ? 'kitchen ' + mm(b.prep) : '',
+                        b.road != null ? 'road ' + mm(b.road) : '',
+                        b.handover != null ? 'Foodpanda handover ' + mm(b.handover) : '',
+                        b.pickup != null ? 'pickup ' + mm(b.pickup) : ''
+                    ].filter(Boolean).join(' · ') || 'no completed timings yet';
                     timingHtml = `<div class="card" style="padding:16px 18px;margin-bottom:14px;">
                         <div class="section-header" style="margin-bottom:2px;"><h3>How long orders take</h3></div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:4px;">
                             Median over ${tm.days} days, from Blink's own status changes. Medians rather than averages, so one order stuck behind a closed road does not move the number.
                             ${tm.noDelivery ? ' · <b>' + tm.noDelivery + '</b> never reported delivered' : ''}</div>
+                        ${rowLabel('Our riders', cn.own)}
                         <div class="ord-stats" style="display:flex;gap:10px;flex-wrap:wrap;">
-                            ${stat('Kitchen', m.prep, 'placed → ready')}
+                            ${stat('Kitchen', m.prep, 'placed → ready (all orders)')}
                             ${stat('On the road', m.road, 'dispatched → delivered')}
                             ${stat('Door to door', m.total, 'placed → delivered')}
-                            ${stat('Slowest 10%', (tm.slowest || {}).total, 'door to door')}
+                            ${stat('Slowest 10%', sl.total, 'door to door')}
                         </div>
+                        ${rowLabel('Foodpanda and pickup', (cn.fp || 0) + (cn.pickup || 0))}
+                        <div class="ord-stats" style="display:flex;gap:10px;flex-wrap:wrap;">
+                            ${stat('Foodpanda handover', m.handover, 'placed → collected by Foodpanda rider')}
+                            ${stat('Slowest 10%', sl.handover, 'Foodpanda handover')}
+                            ${stat('Pickup', m.pickup, 'placed → collected by customer')}
+                        </div>
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:8px;">Foodpanda's own delivery time is not visible to Blink: its "delivered" is the moment Foodpanda's rider takes the order.</div>
                         ${(tm.branches || []).length ? `<div style="margin-top:12px;">
-                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Slowest branches, door to door</div>
+                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Branches, slowest first</div>
                             ${tm.branches.slice(0, 8).map(b => `<div style="display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border-color);font-size:0.76rem;">
                                 <span style="font-weight:700;min-width:130px;">${esc2(b.branch)}</span>
-                                <span style="color:var(--text-muted);flex:1;">kitchen ${mm(b.prep)} · road ${mm(b.road)}</span>
-                                <span style="font-weight:800;">${mm(b.total)}</span>
+                                <span style="color:var(--text-muted);flex:1;">${esc2(parts(b))}</span>
+                                <span style="font-weight:800;" title="door to door, our riders">${b.total != null ? mm(b.total) : ''}</span>
                             </div>`).join('')}</div>` : ''}
                         ${unknownNote}
                     </div>`;
