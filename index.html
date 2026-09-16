@@ -5466,6 +5466,119 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 border-left: 3px solid var(--status-good, #059669) !important;
                 font-size: 0.78rem !important; line-height: 1.55 !important;
             }
+
+            /* ── the floating controls, as one object ──────────────────────
+               Filter and refresh were two loose shapes — a solid pill beside a
+               hairline circle — landing on top of the assistant orb. They are
+               now a single glass bar holding both, and the orb moves up to sit
+               clear of it instead of fighting for the same corner. */
+            #mfilter .mf-row {
+                position: fixed !important; left: 50% !important; transform: translateX(-50%);
+                bottom: calc(64px + env(safe-area-inset-bottom)); z-index: 6500;
+                display: inline-flex !important; align-items: center !important;
+                width: auto !important; max-width: calc(100% - 26px);
+                gap: 0 !important; padding: 4px 5px 4px 7px !important; border-radius: 26px !important;
+                background: rgba(1,1,151,.93) !important;
+                -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+                border: 1px solid rgba(255,255,255,.16) !important;
+                box-shadow: 0 14px 36px rgba(1,1,151,.5), 0 2px 8px rgba(0,0,0,.28) !important;
+            }
+            #mfilter .mf-open {
+                flex: 0 1 auto !important; height: 38px !important; padding: 0 6px 0 8px !important;
+                gap: 9px !important; border: none !important; background: transparent !important;
+                box-shadow: none !important; color: #fff !important;
+                font-size: 0.78rem !important; font-weight: 700 !important;
+            }
+            #mfilter .mf-open i { opacity: .75; font-size: 0.86rem; }
+            #mfilter .mf-open .mf-sum { color: #fff !important; }
+            #mfilter .mf-open em {
+                font-style: normal; font-size: 0.68rem; font-weight: 800; letter-spacing: .3px;
+                color: #fff; background: rgba(255,255,255,.18); border-radius: 14px; padding: 5px 11px;
+            }
+            #mfilter .mf-row > :not(.mf-open) {
+                width: 36px !important; height: 36px !important; flex: 0 0 36px !important;
+                margin-left: 3px; border: none !important; border-radius: 50% !important;
+                background: rgba(255,255,255,.15) !important; color: #fff !important;
+                box-shadow: none !important; font-size: 0.82rem !important;
+            }
+            /* the orb steps above the bar rather than sitting on it */
+            .ai-bubble { bottom: calc(118px + env(safe-area-inset-bottom)) !important; }
+
+            /* ── bottom bar: tinted squircles ──────────────────────────────
+               Each tab carries a quiet colour of its own, and the one you are
+               on fills. Red stays on Incidents, where red already means what it
+               means everywhere else in Sentinel. */
+            #mnav { padding: 5px 6px calc(5px + env(safe-area-inset-bottom)) !important; }
+            .mnav-item { height: 50px !important; gap: 3px !important;
+                         font-size: 0.6rem !important; letter-spacing: .2px !important; }
+            .mnav-item i {
+                font-size: 0.86rem !important; width: 34px !important; height: 30px !important;
+                line-height: 30px !important; border-radius: 11px !important;
+                background: rgba(148,163,184,.14) !important; color: var(--text-muted) !important;
+            }
+            .mnav-item[data-go="executive"] i { background: rgba(100,208,255,.14) !important; color: #3B9FD8 !important; }
+            .mnav-item[data-go="incidents"] i { background: rgba(220,38,38,.14) !important; color: #DC2626 !important; }
+            .mnav-item[data-go="social"] i    { background: rgba(59,91,219,.14) !important; color: #3B5BDB !important; }
+            .mnav-item[data-go="complaints"] i{ background: rgba(180,83,9,.14) !important; color: #B45309 !important; }
+            body.dark-theme .mnav-item[data-go="executive"] i { color: #64D0FF !important; }
+            body.dark-theme .mnav-item[data-go="incidents"] i { color: #F87171 !important; }
+            body.dark-theme .mnav-item[data-go="social"] i    { color: #93B4FF !important; }
+            body.dark-theme .mnav-item[data-go="complaints"] i{ color: #FBBF24 !important; }
+            /* the tab you are on fills, whichever it is */
+            .mnav-item.on i { background: #010197 !important; color: #fff !important; }
+            body.dark-theme .mnav-item.on i { background: #64D0FF !important; color: #04121C !important; }
+
+            /* ── the filter shrinks as you scroll ──────────────────────────
+               Full pill at the top of the page. Once you are past the first
+               screen it collapses to a round button under the assistant orb,
+               so nothing sits over a card while you read. Scroll back up and
+               it returns, refresh and all. */
+            #mfilter .mf-row {
+                position: static !important; transform: none !important;
+                width: auto !important; max-width: none !important;
+                display: flex !important; gap: 8px !important; padding: 0 !important;
+                background: transparent !important; border: none !important;
+                box-shadow: none !important; border-radius: 0 !important;
+            }
+            #mfilter .mf-open {
+                flex: 1 1 auto !important; height: 44px !important; padding: 0 14px !important;
+                gap: 10px !important; border-radius: 14px !important;
+                border: 1.5px solid var(--border-color) !important; background: var(--white) !important;
+                color: var(--text-main) !important; box-shadow: none !important;
+                font-size: 0.82rem !important; font-weight: 600 !important;
+            }
+            #mfilter .mf-open em {
+                font-style: normal; font-size: 0.7rem; font-weight: 800; letter-spacing: .3px;
+                color: #010197; background: rgba(1,1,151,.08); border-radius: 14px; padding: 5px 11px;
+            }
+            body.dark-theme #mfilter .mf-open em { color: #64D0FF; background: rgba(100,208,255,.13); }
+            #mfilter .mf-row > :not(.mf-open) {
+                width: 44px !important; height: 44px !important; flex: 0 0 44px !important;
+                border-radius: 14px !important; margin: 0 !important;
+                border: 1.5px solid var(--border-color) !important; background: var(--white) !important;
+                color: var(--text-main) !important; box-shadow: none !important;
+            }
+            /* collapsed */
+            body.mf-mini #mfilter .mf-row {
+                position: fixed !important; right: 14px !important; left: auto !important;
+                bottom: calc(66px + env(safe-area-inset-bottom)) !important; z-index: 6500;
+                width: 46px !important; gap: 0 !important;
+            }
+            body.mf-mini #mfilter .mf-open {
+                width: 46px !important; height: 46px !important; flex: 0 0 46px !important;
+                padding: 0 !important; justify-content: center !important; border-radius: 50% !important;
+                border: 1px solid rgba(255,255,255,.16) !important; background: #010197 !important;
+                color: #fff !important; box-shadow: 0 10px 26px rgba(1,1,151,.45) !important;
+            }
+            body.mf-mini #mfilter .mf-open i { font-size: 1rem; opacity: 1; }
+            body.mf-mini #mfilter .mf-open .mf-sum,
+            body.mf-mini #mfilter .mf-open em,
+            body.mf-mini #mfilter .mf-row > :not(.mf-open) { display: none !important; }
+            /* orb sits above the collapsed button */
+            body.mf-mini .ai-bubble { bottom: calc(122px + env(safe-area-inset-bottom)) !important; }
+            .ai-bubble { transition: bottom .25s cubic-bezier(.16,1,.3,1); }
+
+            .content-scroll { padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important; }
         }
         </style>
 </head>
@@ -7257,7 +7370,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.98.0 · 16 Sep 2026 · mobile scroll feed';
+        const BUILD_VERSION = 'v2.99.0 · 16 Sep 2026 · tab icons + scroll filter';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -21905,7 +22018,9 @@ ${(() => {
         // this only gives them a place a thumb can reach.
         // ═══════════════════════════════════════════════════════════════════
         (function(){
-            const ICON = { executive:'fa-chart-pie', social:'fa-tower-broadcast', complaints:'fa-layer-group', incidents:'fa-triangle-exclamation',
+            // A broadcast tower did not say "Social" and stacked layers did not
+            // say "Complaints". Bars, a hashtag and a speech bubble do.
+            const ICON = { executive:'fa-chart-simple', social:'fa-hashtag', complaints:'fa-comment-dots', incidents:'fa-triangle-exclamation',
                 'incident-analytics':'fa-chart-line', submissions:'fa-inbox', rewards:'fa-gift', resolution:'fa-circle-check', branches:'fa-store',
                 insights:'fa-lightbulb', data:'fa-table', 'form-builder':'fa-pen-ruler', actions:'fa-list-check', 'form-analytics':'fa-chart-column', activity:'fa-clock-rotate-left' };
             const LABEL = { executive:'Overview', 'incident-analytics':'Analytics', 'form-builder':'Forms', 'form-analytics':'Form stats' };
@@ -21941,7 +22056,7 @@ ${(() => {
                 if(key !== sig){
                     sig = key;
                     bar.innerHTML = prim.slice(0, 4).map(l => btn(l, 'mnav-item')).join('')
-                        + (rest.length ? `<button type="button" class="mnav-item" data-more="1"><i class="fas fa-grip"></i><span>More</span></button>` : '');
+                        + (rest.length ? `<button type="button" class="mnav-item" data-more="1"><i class="fas fa-ellipsis"></i><span>More</span></button>` : '');
                     sheet.querySelector('.mnav-grid').innerHTML = rest.map(l => btn(l, 'mnav-tile')).join('');
                 }
                 bar.querySelectorAll('[data-go]').forEach(b => b.classList.toggle('on', b.dataset.go === view));
@@ -22575,6 +22690,24 @@ ${(() => {
             return { refresh: schedule, toggle: toggle, close: close };
         })();
 
+
+        // ── Mobile: collapse the filter pill once you scroll ────────────────
+        // The only script in the mobile pass. It adds and removes one class on
+        // <body>; every visual consequence of it is in the stylesheet, and it
+        // does nothing above 820px because no rule reads the class there.
+        (function(){
+            const sc = document.querySelector('.content-scroll');
+            if (!sc) return;
+            let queued = false;
+            sc.addEventListener('scroll', function(){
+                if (queued) return;
+                queued = true;
+                requestAnimationFrame(function(){
+                    queued = false;
+                    document.body.classList.toggle('mf-mini', sc.scrollTop > 130);
+                });
+            }, { passive: true });
+        })();
 
         // ── Chat media: voice notes and the photo lightbox ──────────────────
         // The browser's own <audio controls> widget is grey, a different size
