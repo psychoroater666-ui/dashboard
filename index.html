@@ -1863,7 +1863,17 @@
         body.no-anim *,body.no-anim .view.active > *,body.no-anim .kpi-grid > .kpi-card,body.no-anim .branch-cards-grid > .branch-kpi-card,body.no-anim .ai-suite-grid > .ai-tile,body.no-anim .form-perf-grid > .form-perf-card,body.no-anim .sl-mention-card,body.no-anim .sl-kpi { animation:none !important; transition:none !important; }
 
         /* bg-refresh: nuclear suppressor — kills every animation during silent background refresh */
-        body.bg-refresh *, body.bg-refresh *::before, body.bg-refresh *::after {
+        /* Scoped to the content area -- the only part a background refresh
+           re-renders. It used to be `body.bg-refresh *`: every open menu and
+           panel on the page had its animation duration yanked to zero and
+           back on each refresh, and changing an animation's duration makes it
+           replay. With refreshes seconds apart, the profile menu, the More
+           menu and the call panel re-ran their fade-in constantly. The
+           exemption list below tried to undo it with `revert`, which resets
+           to the browser default rather than to the element's own value, and
+           so changed the duration all the same. Not reaching them at all is
+           the only version that leaves them alone. */
+        body.bg-refresh #mainScroll *, body.bg-refresh #mainScroll *::before, body.bg-refresh #mainScroll *::after {
             animation-duration:        0.001ms !important;
             animation-delay:           0ms     !important;
             animation-iteration-count: 1       !important;
@@ -2595,7 +2605,7 @@
         }
         /* During a silent repaint nothing transitions either — no colour
            fades, no width tweens on bars, no chart draw-in. */
-        body.bg-refresh, body.bg-refresh *{
+        body.bg-refresh #mainScroll, body.bg-refresh #mainScroll *{
             transition: none !important;
             animation: none !important;
         }
@@ -7443,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.99.5 · 16 Sep 2026 · steady menus';
+        const BUILD_VERSION = 'v2.99.6 · 16 Sep 2026 · refresh leaves menus alone';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
