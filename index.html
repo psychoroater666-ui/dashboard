@@ -7443,7 +7443,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.99.3 · 16 Sep 2026 · no flicker on open surfaces';
+        const BUILD_VERSION = 'v2.99.4 · 16 Sep 2026 · steady message list';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -24316,7 +24316,7 @@ ${(() => {
                     if (lb) return 1;
                     return String(a.name || '').localeCompare(String(b.name || ''));
                 });
-                el.innerHTML = newBtn + groupRows + sorted.map(p => {
+                const html = newBtn + groupRows + sorted.map(p => {
                     const n = chat.unread[p.email] || 0;
                     const last = chat.last[p.email];
                     const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
@@ -24333,6 +24333,13 @@ ${(() => {
                         </div>
                     </div>`;
                 }).join('');
+                // Only touch the DOM when something actually changed. The poll
+                // calls this every two seconds while the list is open, and
+                // rebuilding identical markup each time redrew every avatar
+                // and badge -- the flicker on the Messages list.
+                if(el.__lastHtml === html) return;
+                el.__lastHtml = html;
+                el.innerHTML = html;
             }
 
             async function openThread(email){
