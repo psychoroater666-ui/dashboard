@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.106.1 · 16 Sep 2026 · Blink tab shows status without orders';
+        const BUILD_VERSION = 'v2.106.2 · 16 Sep 2026 · a stale position repairs itself';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7882,6 +7882,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
                     if(res.settings) applyOwnerSettings(res.settings);
                     for(const k in res.tabs) apply(k, res.tabs[k]);
+                    // Tell the server how many rows we actually hold, not only
+                    // the position we think we are at. When the two disagree the
+                    // position is fiction and the server re-sends in full.
+                    try {
+                        for(const k in DataFeed.tabs){
+                            const t = DataFeed.tabs[k];
+                            if(t && t.state && t.objRows) t.state.held = t.objRows.length;
+                        }
+                    } catch(e){}
                     try {
                         const changedTabs = Object.entries(res.tabs).filter(([k,v]) => v.mode !== 'unchanged').map(([k,v]) => k + ':' + v.mode + (v.rows ? '(' + v.rows.length + ')' : ''));
                         console.info('[sync] ' + (forceFull ? 'FULL' : 'quick') + ' · ' + (Date.now() - _t0) + ' ms · served_by ' + (res.served_by || '?') + (res.d1_reason ? ' (D1 skipped: ' + res.d1_reason + ')' : '') + ' · changed: ' + (changedTabs.join(' ') || 'nothing') + (window.__forceFullNext ? ' · NEXT WILL BE FULL' : ''));
