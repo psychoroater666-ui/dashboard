@@ -5777,7 +5777,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
-                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
+                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Blink</span>
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
@@ -7453,7 +7453,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.105.1 · 16 Sep 2026 · recovery shown with the actions';
+        const BUILD_VERSION = 'v2.106.0 · 16 Sep 2026 · Blink tab, focused overview';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12609,15 +12609,30 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
                     </div>`;
                 };
-                const ordered = offline.concat(closed.filter(b => b.offlineMinutes == null)).concat(open);
-                const oosList = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0)).slice(0, 12);
+                // Overview shows only what is WRONG. The full branch list lives
+                // in the Blink tab -- twenty branches all reading "open" is
+                // twenty lines telling you nothing, and it buried the one line
+                // that mattered. A branch closed inside its own trading hours
+                // is the exception worth a place on the front page.
+                const ordered = offline;
+                if (!offline.length && !(d.outOfStock || []).length) {
+                    if (sub) sub.textContent = open.length + ' open · ' + closed.length + ' closed · nothing needs attention';
+                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--text-muted);font-size:0.82rem;">
+                        <i class="fas fa-circle-check" style="color:#059669;"></i>
+                        Every branch is trading as expected and nothing is out of stock.
+                        <a href="#" onclick="app.navigate('orders'); return false;" style="margin-left:auto;font-size:0.74rem;font-weight:700;color:var(--accent-blue);">Open Blink →</a></div>`;
+                    return;
+                }
+                const oosList = (d.outOfStock || []).slice().sort((a, b) => (b.outMinutes || 0) - (a.outMinutes || 0)).slice(0, 8);
                 host.uiHTML = ordered.map(chip).join('')
                   + (oosList.length ? `<div style="margin-top:12px;"><div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Out of stock right now</div>`
                       + oosList.map(i => `<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:0.76rem;">
                             <span style="color:var(--text-main);"><b>${esc2(i.item)}</b> <span style="color:var(--text-muted);">· ${esc2(i.branch)}</span></span>
                             <span style="color:${(i.outMinutes || 0) > 120 ? '#DC2626' : 'var(--text-muted)'};white-space:nowrap;">${ago(i.outMinutes)}</span></div>`).join('')
                       + ((d.outOfStock || []).length > 12 ? `<div style="font-size:0.68rem;color:var(--text-muted);padding-top:4px;">and ${(d.outOfStock || []).length - 12} more</div>` : '') + '</div>'
-                    : `<div style="font-size:0.74rem;color:var(--text-muted);padding-top:8px;">Nothing out of stock.</div>`);
+                    : `<div style="font-size:0.74rem;color:var(--text-muted);padding-top:8px;">Nothing out of stock.</div>`)
+                  + `<div style="padding-top:10px;text-align:right;"><a href="#" onclick="app.navigate('orders'); return false;"
+                        style="font-size:0.74rem;font-weight:700;color:var(--accent-blue);">All branches and order times in Blink →</a></div>`;
             },
 
             renderForecast() {
@@ -23602,6 +23617,77 @@ ${(() => {
             }
             // exposed for the inline handlers in the rendered markup
             window.ORD_setQuery = function(v){ _q = String(v || '').trim(); render(true); };
+            /** Branch status, stock, and how long orders take -- the whole
+             *  Blink picture, in the tab named after it. The Overview keeps
+             *  only the exceptions so it stays a front page rather than a
+             *  list of twenty branches all reading "open". */
+            async function renderBlinkTabStatus(){
+                const host = document.getElementById('blink-tab-status'); if(!host) return;
+                const esc2 = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const ago = m => m == null ? '' : m < 1 ? 'just now' : m < 60 ? m + ' min' : Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+                const mm = v => v == null ? '—' : v + ' min';
+                const [st, tm] = await Promise.all([
+                    apiCall('blink_status', {}).catch(() => null),
+                    apiCall('blink_timing', { days: 7 }).catch(() => null)
+                ]);
+
+                let statusHtml = '';
+                if(st && st.status === 'success' && (st.branches || []).length){
+                    const open = st.branches.filter(b => b.open === 1), closed = st.branches.filter(b => b.open === 0);
+                    const offline = closed.filter(b => b.offlineMinutes != null);
+                    const ordered = offline.concat(closed.filter(b => b.offlineMinutes == null)).concat(open);
+                    const oosBy = {};
+                    (st.outOfStock || []).forEach(i => (oosBy[i.branch] = oosBy[i.branch] || []).push(i));
+                    statusHtml = `<div class="card" style="padding:16px 18px;margin-bottom:14px;">
+                        <div class="section-header" style="margin-bottom:2px;"><h3>Branches</h3></div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">
+                            ${open.length} open · ${closed.length} closed${offline.length ? ' · <b style="color:#DC2626;">' + offline.length + ' closed inside their own hours</b>' : ''} · live from Blink</div>
+                        ${ordered.map(b => {
+                            const col = b.offlineMinutes != null ? '#DC2626' : b.open === 1 ? '#059669' : '#64748B';
+                            const label = b.offlineMinutes != null ? 'OFFLINE ' + ago(b.offlineMinutes) : b.open === 1 ? 'open' : b.open === 0 ? 'closed' : 'unknown';
+                            const oos = oosBy[b.name] || [];
+                            return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-color);">
+                                <span style="width:9px;height:9px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+                                <span style="font-size:0.82rem;font-weight:700;min-width:130px;">${esc2(b.name)}</span>
+                                <span style="font-size:0.68rem;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:.3px;">${esc2(label)}</span>
+                                <span style="font-size:0.7rem;color:var(--text-muted);">${esc2(b.hours || '')}</span>
+                                ${b.subDown ? '<span style="font-size:0.62rem;font-weight:800;color:#010197;background:rgba(1,1,151,.08);border-radius:20px;padding:2px 8px;">out-of-radius delivery down</span>' : ''}
+                                <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
+                            </div>`; }).join('')}
+                    </div>`;
+                }
+
+                let timingHtml = '';
+                if(tm && tm.status === 'success'){
+                    const m = tm.median || {};
+                    const stat = (label, val, sub) => `<div class="ord-stat"><div class="ord-stat-l">${label}</div>
+                        <div class="ord-stat-v">${mm(val)}</div><div class="ord-stat-s">${sub}</div></div>`;
+                    timingHtml = `<div class="card" style="padding:16px 18px;margin-bottom:14px;">
+                        <div class="section-header" style="margin-bottom:2px;"><h3>How long orders take</h3></div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:10px;">
+                            Median over ${tm.days} days, from Blink's own status changes. Medians rather than averages, so one order stuck behind a closed road does not move the number.
+                            ${tm.noDelivery ? ' · <b>' + tm.noDelivery + '</b> never reported delivered' : ''}</div>
+                        <div class="ord-stats" style="display:flex;gap:10px;flex-wrap:wrap;">
+                            ${stat('Kitchen', m.prep, 'placed → ready')}
+                            ${stat('On the road', m.road, 'dispatched → delivered')}
+                            ${stat('Door to door', m.total, 'placed → delivered')}
+                            ${stat('Slowest 10%', (tm.slowest || {}).total, 'door to door')}
+                        </div>
+                        ${(tm.branches || []).length ? `<div style="margin-top:12px;">
+                            <div style="font-size:0.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;">Slowest branches, door to door</div>
+                            ${tm.branches.slice(0, 8).map(b => `<div style="display:flex;gap:10px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border-color);font-size:0.76rem;">
+                                <span style="font-weight:700;min-width:130px;">${esc2(b.branch)}</span>
+                                <span style="color:var(--text-muted);flex:1;">kitchen ${mm(b.prep)} · road ${mm(b.road)}</span>
+                                <span style="font-weight:800;">${mm(b.total)}</span>
+                            </div>`).join('')}</div>` : ''}
+                    </div>`;
+                } else {
+                    timingHtml = `<div class="card" style="padding:14px 18px;margin-bottom:14px;font-size:0.76rem;color:var(--text-muted);">
+                        No delivery timings yet. They are built from Blink's status changes — accepted, ready, dispatched, delivered — so they appear once those webhooks have been arriving for a while.</div>`;
+                }
+                host.innerHTML = statusHtml + timingHtml;
+            }
+
             window.ORD_setRange = function(v){ _range = v; render(); };
 
             // Who ordered often and then complained -- a different, more useful
@@ -23669,6 +23755,10 @@ ${(() => {
                 }
 
                 root.uiHTML = ''
+                // Everything Blink knows, in the tab named after it: which
+                // branches are trading, what is out of stock, and how long
+                // orders are taking. The Overview keeps only the exceptions.
+                + '<div id="blink-tab-status"></div>'
                 + '<div class="card" style="padding:16px 18px;">'
                 +   '<div class="ord-head-row">'
                 +     '<div><div class="section-header" style="margin-bottom:0;"><h3>Orders</h3></div>'
@@ -23738,6 +23828,7 @@ ${(() => {
                     var el = document.getElementById('ord-q');
                     if (el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
                 }
+                setTimeout(renderBlinkTabStatus, 0);
             }
 
             return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen, render: render };
