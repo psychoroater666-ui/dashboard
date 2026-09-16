@@ -1,3 +1,26 @@
+        async function saveOwnerSettings(tab){
+            const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+            const payload = {};
+            if(tab === 'alerts'){
+                payload.quietStart = parseInt(document.getElementById('os-qs').value, 10);
+                payload.quietEnd   = parseInt(document.getElementById('os-qe').value, 10);
+                payload.alertBranches = Array.from(document.querySelectorAll('.os-branch:checked')).map(i => i.value);
+            } else {
+                payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
+                payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
+                payload.currentDrop       = document.getElementById('os-drop').value.trim();
+            }
+            const res = await apiCall('settings_set', payload).catch(() => null);
+            if(!res || res.status !== 'success'){
+                if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
+                UI.toast((res && res.message) || 'Could not save the settings.', 'error');
+                return;
+            }
+            const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
+            UI.toast('Saved — every device picks this up within a few seconds.', 'success');
+            applyOwnerSettings(res.settings);
+        }
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7453,7 +7476,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.102.0 · 16 Sep 2026 · call form tells the truth';
+        const BUILD_VERSION = 'v2.103.0 · 16 Sep 2026 · owner settings complete';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9485,62 +9508,154 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         /* ── Owner settings ────────────────────────────────────────────────
            Three rules, changed here instead of by asking for a new build. */
-        function openOwnerSettings(){
+        function openOwnerSettings(tab){
             try { document.getElementById('dp-menu').style.display = 'none'; } catch(e){}
             const st = window.OwnerSettings || {};
-            const hours = Array.from({length:13}, (_,h) => `<option value="${h}" ${h===st.businessDayStart?'selected':''}>${h === 0 ? 'Midnight (calendar days)' : (h + ':00')}</option>`).join('');
+            tab = tab || 'rules';
+            const hours = (sel) => Array.from({length:13}, (_,h) => `<option value="${h}" ${h===sel?'selected':''}>${h === 0 ? 'Midnight (calendar days)' : (h + ':00')}</option>`).join('');
+            const h24 = (sel) => Array.from({length:24}, (_,h) => `<option value="${h}" ${h===sel?'selected':''}>${String(h).padStart(2,'0')}:00</option>`).join('');
             const ratings = [1,2,3,4].map(r => `<option value="${r}" ${r===st.incidentMaxRating?'selected':''}>${r} star${r>1?'s':''} or below</option>`).join('');
+            // The branch list the Call Centre form already uses, flattened. Falls
+            // back to whatever branches actually appear in the data, so a branch
+            // opened since this file was written is still listed.
+            let branches = [];
+            try { branches = Object.values(CS_CITIES).flat(); } catch(e){}
+            if(!branches.length){
+                try { branches = Array.from(new Set((rawData.submissions || []).map(r => r.branch).filter(Boolean))); } catch(e){}
+            }
+            branches = Array.from(new Set(branches)).sort();
+            const picked = (st.alertBranches || []).map(b => String(b).toLowerCase());
+            const branchBoxes = branches.map(b => `<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;font-size:.78rem;cursor:pointer;">
+                    <input type="checkbox" class="os-branch" value="${String(b).replace(/"/g,'&quot;')}" ${picked.indexOf(String(b).toLowerCase())!==-1?'checked':''} style="width:15px;height:15px;">
+                    <span>${String(b)}</span></label>`).join('');
+
+            const lbl = t => `font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);`;
+            const inp = `padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);width:100%;`;
+            const hint = `font-size:.7rem;color:var(--text-muted);`;
+
+            const tabBtn = (k, t) => `<button class="os-tab" data-tab="${k}" onclick="openOwnerSettings('${k}')"
+                style="border:none;background:${tab===k?'var(--brand-accent)':'transparent'};color:${tab===k?'#fff':'var(--text-muted)'};
+                       font:700 .74rem 'Inter',sans-serif;padding:7px 13px;border-radius:8px;cursor:pointer;">${t}</button>`;
+
+            const panes = {
+              rules: `<div style="display:grid;gap:18px;">
+                    <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
+                        <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
+                        <span style="${hint}">Anything before this hour counts as the previous day. Branches trade past midnight, so a 1 AM order belongs to the day before. Changing this re-dates everything and reloads.</span></label>
+                    <label style="display:grid;gap:6px;"><span style="${lbl()}">A rating counts as an incident at</span>
+                        <select id="os-rating" style="${inp}">${ratings}</select>
+                        <span style="${hint}">Applies on every screen immediately.</span></label>
+                    <label style="display:grid;gap:6px;"><span style="${lbl()}">This month's drop</span>
+                        <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie" style="${inp}">
+                        <span style="${hint}">Stamped on every monthly-drop response so months stay comparable, and used as the button label on the dine-in QR screen.</span></label>
+                </div>`,
+              alerts: `<div style="display:grid;gap:18px;">
+                    <div style="display:grid;gap:6px;"><span style="${lbl()}">Quiet hours</span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <select id="os-qs" style="${inp}">${h24(st.quietStart||0)}</select>
+                            <span style="color:var(--text-muted);font-size:.8rem;">to</span>
+                            <select id="os-qe" style="${inp}">${h24(st.quietEnd||0)}</select>
+                        </div>
+                        <span style="${hint}">No phone is buzzed between these hours. Cases still land and still wait in the morning list — this only decides whether someone is woken. Set both to the same hour to switch quiet hours off. Incoming calls always ring.</span></div>
+                    <div style="display:grid;gap:6px;"><span style="${lbl()}">Alert for these branches only</span>
+                        <div style="max-height:30vh;overflow:auto;border:1px solid var(--border-color);border-radius:10px;padding:8px 10px;">${branchBoxes || '<span style="' + hint + '">No branches found.</span>'}</div>
+                        <span style="${hint}">Leave everything unticked to alert for all branches, which is the usual setting.</span></div>
+                </div>`,
+              status: `<div id="os-status" style="font-size:.8rem;color:var(--text-muted);">Checking…</div>`,
+              team: `<div style="display:grid;gap:18px;">
+                    <label style="display:grid;gap:6px;"><span style="${lbl()}">Message everyone</span>
+                        <textarea id="os-bc" rows="4" maxlength="2000" placeholder="Goes to every active teammate as a direct message from you."
+                                  style="${inp}resize:vertical;"></textarea>
+                        <span style="${hint}">Sent one-to-one, not as a group — so anyone replying answers you alone. They get a phone alert too, unless it is quiet hours.</span></label>
+                    <button class="fb-btn sm" id="os-bc-send" onclick="sendBroadcast()" style="justify-self:start;">Send to everyone</button>
+                    <div style="border-top:1px solid var(--border-color);padding-top:16px;display:grid;gap:6px;">
+                        <span style="${lbl()}">This device</span>
+                        <span style="${hint}">Clears what this browser has remembered — conversations, the teammate list, channels and filters. Nothing on the server changes, and nothing is lost: it all loads again. Use it if this device is showing something stale.</span>
+                        <button class="fb-btn sm" onclick="resetThisDevice()" style="justify-self:start;color:#DC2626;">Reset this device</button>
+                    </div>
+                </div>`
+            };
+
             const old = document.getElementById('owner-settings-modal'); if(old) old.remove();
             const el = document.createElement('div');
             el.className = 'ia-overlay is-open'; el.id = 'owner-settings-modal'; el.style.display = 'flex';
-            el.innerHTML = `<div class="ia-card" style="max-width:520px;">
+            el.innerHTML = `<div class="ia-card" style="max-width:560px;">
                 <div class="ia-header">
                     <div><div class="ia-title">Owner settings</div>
-                    <div class="ia-sub">Apply to every device the moment you save.</div></div>
+                    <div class="ia-sub">Rules apply to every device the moment you save.</div></div>
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
-                <div style="padding:18px 22px;display:grid;gap:18px;">
-                    <label style="display:grid;gap:6px;">
-                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Trading day starts at</span>
-                        <select id="os-hour" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">${hours}</select>
-                        <span style="font-size:.7rem;color:var(--text-muted);">Anything before this hour counts as the previous day. Branches trade until 1:30 AM, so a 1 AM order belongs to the day before. Changing this re-dates every row and reloads the dashboard.</span>
-                    </label>
-                    <label style="display:grid;gap:6px;">
-                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">A rating counts as an incident at</span>
-                        <select id="os-rating" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">${ratings}</select>
-                        <span style="font-size:.7rem;color:var(--text-muted);">Takes effect immediately on every screen. Lower it to focus the Call Centre on the worst cases.</span>
-                    </label>
-                    <label style="display:grid;gap:6px;">
-                        <span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">This month's drop</span>
-                        <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie"
-                               style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);">
-                        <span style="font-size:.7rem;color:var(--text-muted);">Stamped on every monthly-drop response so months stay comparable, and shown as the button label on the dine-in QR screen.</span>
-                    </label>
+                <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;">
+                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('team','Team &amp; device')}
                 </div>
-                <div style="display:flex;justify-content:flex-end;gap:8px;padding:0 22px 20px;">
-                    <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Cancel</button>
-                    <button class="fb-btn sm primary" id="os-save" onclick="saveOwnerSettings()" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>
+                <div style="padding:16px 22px 4px;">${panes[tab]}</div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;">
+                    <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
+                    ${(tab === 'rules' || tab === 'alerts') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
             document.body.appendChild(el);
+            if(tab === 'status') loadSystemStatus();
         }
-        async function saveOwnerSettings(){
-            const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
-            const payload = {
-                businessDayStart: parseInt(document.getElementById('os-hour').value, 10),
-                incidentMaxRating: parseInt(document.getElementById('os-rating').value, 10),
-                currentDrop: document.getElementById('os-drop').value.trim()
-            };
-            const res = await apiCall('settings_set', payload).catch(() => null);
-            if(!res || res.status !== 'success'){
-                if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
-                UI.toast((res && res.message) || 'Could not save the settings.', 'error');
-                return;
-            }
-            const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
-            UI.toast('Settings saved — every device will pick them up within a few seconds.', 'success');
-            applyOwnerSettings(res.settings);
+
+        /** Each integration in one line: working, or what is wrong. */
+        async function loadSystemStatus(){
+            const box = document.getElementById('os-status'); if(!box) return;
+            const res = await apiCall('system_status', {}).catch(() => null);
+            if(!res || res.status !== 'success'){ box.innerHTML = '<span style="color:#DC2626;">Could not read the system status.</span>'; return; }
+            const row = (name, ok, main, sub) => `<div style="display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border-color);">
+                    <span style="flex-shrink:0;width:9px;height:9px;border-radius:50%;margin-top:5px;background:${ok === null ? '#CBD5E1' : ok ? '#059669' : '#DC2626'};"></span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font:800 .78rem 'Inter',sans-serif;color:var(--text-main);">${name}</div>
+                        <div style="font-size:.74rem;color:var(--text-muted);">${main}</div>
+                        ${sub ? `<div style="font-size:.68rem;color:var(--text-muted);opacity:.85;margin-top:2px;">${sub}</div>` : ''}
+                    </div></div>`;
+            const ago = m => m === null ? 'never' : m < 2 ? 'just now' : m + ' min ago';
+            const esc2 = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            const c = res.cron || {}, m = res.mirror || {}, b = res.blink || {}, w = res.whatsapp || {}, q = res.queue || {};
+            box.innerHTML =
+                row('Background jobs', c.minutesAgo !== null && c.minutesAgo <= 3, 'Last ran ' + ago(c.minutesAgo),
+                    /fail|error/i.test(c.detail || '') ? esc2(c.detail) : '')
+              + row('Spreadsheet mirror', m.minutesAgo !== null && m.minutesAgo <= 5, 'Last ran ' + ago(m.minutesAgo),
+                    /fail|error|refused/i.test(m.detail || '') ? esc2(m.detail) : '')
+              + row('Blink POS', b.branches > 0, b.branches ? (b.branches + ' branches, ' + b.offline + ' offline · polled ' + ago(b.minutesAgo)) : 'No branch data',
+                    /fail|error/i.test(b.detail || '') ? esc2(b.detail) : '')
+              + row('WhatsApp (Conviyo)', w.configured && w.webhook && !(w.sent && w.failed === w.sent),
+                    !w.configured ? 'API key not set' : !w.webhook ? 'Webhook secret not set'
+                      : (w.sent + ' sent today, ' + w.failed + ' failed, ' + w.replied + ' replied'),
+                    w.lastError ? 'Last failure: ' + esc2(w.lastError) : '')
+              + row('Saves reaching the sheet', !q.stuck, q.stuck ? (q.stuck + ' stuck, ' + q.pending + ' waiting') : (q.pending + ' waiting'),
+                    q.stuck ? 'A stuck save never reaches the spreadsheet until it is retried.' : '')
+              + row('Quiet hours', null, res.quietNow ? 'On right now — phones are silent' : 'Not active right now', '');
+        }
+
+        async function sendBroadcast(){
+            const ta = document.getElementById('os-bc'); const btn = document.getElementById('os-bc-send');
+            const body = String(ta && ta.value || '').trim();
+            if(!body){ UI.toast('Write the message first.', 'warning'); return; }
+            if(!confirm('Send this to every active teammate?\n\nThey each get it as a direct message from you.')) return;
+            if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+            const res = await apiCall('broadcast_send', { body }).catch(() => null);
+            if(btn){ btn.disabled = false; btn.textContent = 'Send to everyone'; }
+            if(res && res.status === 'success'){
+                if(ta) ta.value = '';
+                UI.toast('Sent to ' + res.sent + ' teammate' + (res.sent === 1 ? '' : 's') + '.', 'success');
+            } else UI.toast((res && res.message) || 'Could not send.', 'error');
+        }
+
+        /** Clear what this browser remembers. Server data is untouched. */
+        function resetThisDevice(){
+            if(!confirm('Clear this device\u2019s saved copies?\n\nConversations, the teammate list, channels and filters will reload from the server. Nothing is deleted anywhere else.')) return;
+            try {
+                ['crumble_chat_threads_v1','crumble_chat_people_v1','crumble_channels_v1','crumble_users_cache',
+                 'crumble_drop_v1'].forEach(k => localStorage.removeItem(k));
+                // Anything else this dashboard put there, but never another site's.
+                Object.keys(localStorage).filter(k => /^crumble[_-]/i.test(k)).forEach(k => localStorage.removeItem(k));
+                sessionStorage.clear();
+            } catch(e){}
+            UI.toast('Cleared — reloading.', 'success');
+            setTimeout(() => location.reload(), 700);
         }
 
         function submissionsManualRefresh() {
