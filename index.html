@@ -7677,7 +7677,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.112.0 · 17 Sep 2026 · Access review: AI for all, review capability, several branches per user, Owner-only alert settings';
+        const BUILD_VERSION = 'v2.112.2 · 17 Sep 2026 · deltas by id';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8019,7 +8019,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // "Unchanged" is only true if we really do hold what we claim.
                     const exp = (res.state && typeof res.state.total === 'number') ? res.state.total : null;
                     const scoped0 = !!(window.__dataScope && (String(window.__dataScope.branch || 'All') !== 'All' || String(window.__dataScope.region || 'All') !== 'All'));
-                    if(exp !== null && !scoped0 && t.complete !== false && t.rows.length && t.rows.length < exp){
+                    const idTracked0 = !!(res.state && res.state.lastId != null);
+                    if(exp !== null && !scoped0 && !idTracked0 && t.complete !== false && t.rows.length && t.rows.length < exp){
                         console.warn('[DataFeed] ' + key + ': holding ' + t.rows.length + ' rows but state claims ' + exp + ' — resyncing');
                         t.state = null; t.rows = []; t.objRows = []; window.__forceFullNext = true;
                         try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
@@ -8037,7 +8038,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const expect = (res.state && typeof res.state.total === 'number') ? res.state.total : null;
                     const willHave = t.rows.length + ((res.rows && res.rows.length) || 0);
                     const scoped = !!(window.__dataScope && (String(window.__dataScope.branch || 'All') !== 'All' || String(window.__dataScope.region || 'All') !== 'All'));
-                    if(expect !== null && !scoped && willHave !== expect){
+                    // Only a COMPLETE tab can be checked by count. This dashboard
+                    // holds the newest window of a big tab and walks older history
+                    // in the background; until that walk finishes, "rows held +
+                    // delta" can never equal the server's total, and this check
+                    // threw the whole tab away and re-downloaded it on every new
+                    // submission -- which restarted the history walk, which never
+                    // finished under real traffic. That was "loading previous data"
+                    // every time a case landed, and the repaint under every modal.
+                    // The server already verified the delta against the client's
+                    // tail row; the delta is trustworthy whatever the count says.
+                    // An id-tracked delta was verified by the server against the
+                    // newest id we hold; a count can disagree with it (a row
+                    // removed behind us) and still be right. Never resync on one.
+                    const idTracked = !!(res.state && res.state.lastId != null);
+                    if(expect !== null && !scoped && t.complete && !idTracked && willHave !== expect){
                         console.warn('[DataFeed] ' + key + ': would hold ' + willHave + ' but server says ' + expect + ' — forcing a full resync');
                         t.state = null; t.rows = []; t.objRows = []; window.__forceFullNext = true;
                         try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
