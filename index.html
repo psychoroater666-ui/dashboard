@@ -7725,7 +7725,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.113.0 · 17 Sep 2026 · Monthly Drop tab, product filters in Submissions & Incidents, drop history';
+        const BUILD_VERSION = 'v2.113.1 · 17 Sep 2026 · Drop filter hidden until data exists; loading banner stays under dialogs';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8582,7 +8582,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             let el = all[0] || null;
             if(!el){
                 el = document.createElement('div'); el.id = 'partial-data-banner';
-                el.style.cssText = 'position:sticky;top:0;z-index:9998;background:rgba(1,1,151,.06);border-bottom:1px solid rgba(1,1,151,.16);color:var(--accent-blue);font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
+                el.style.cssText = 'position:sticky;top:0;z-index:40;background:rgba(1,1,151,.06);border-bottom:1px solid rgba(1,1,151,.16);color:var(--accent-blue);font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
                 el.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:0.72rem;"></i> Still loading earlier data \u2014 totals shown below are incomplete.';
                 const host = document.querySelector('.content-scroll') || document.body;
                 host.insertBefore(el, host.firstChild);
@@ -10866,6 +10866,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             (rawData.submissions || []).forEach(s => { if(s._drop && s.product && permBranchOK(s.branch)) { if(!last[s.product] || s.date > last[s.product]) last[s.product] = s.date; } });
             return Object.keys(last).sort((a, b) => String(last[b]).localeCompare(String(last[a])));
         }
+        /** Show or hide a filter select that MultiSelect has enhanced: the
+         *  visible control is the .ms-wrap sibling; the select itself must
+         *  stay display:none or both appear. */
+        function filterVisible(id, on){
+            const sel = document.getElementById(id); if(!sel) return;
+            const wrap = sel.nextElementSibling && sel.nextElementSibling.classList && sel.nextElementSibling.classList.contains('ms-wrap') ? sel.nextElementSibling : null;
+            if(wrap) { wrap.style.display = on ? '' : 'none'; sel.style.display = 'none'; }
+            else sel.style.display = on ? '' : 'none';
+            if(!on && sel.value !== 'all'){ sel.value = 'all'; try { MultiSelect.refresh(id); } catch(e){} }
+        }
         window.MD = (function(){
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             // Columns that are not questions about the product.
@@ -12714,8 +12724,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(pf){
                     const prods = dropProducts();
                     UI.syncSelect(pf, prods, true);
-                    pf.style.display = prods.length ? '' : 'none';
-                    const nav = document.getElementById('nav-monthlydrop'); if(nav) nav.style.display = prods.length ? '' : 'none';
+                    filterVisible('filter-product', prods.length > 0);
+                    const nav = document.getElementById('nav-monthlydrop'); if(nav && (nav.style.display === 'none') === (prods.length > 0)) nav.style.display = prods.length ? '' : 'none';
                 }
             },
 
@@ -14317,7 +14327,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // v2.113.0: Monthly Drop product, only when drop incidents exist
                 { const pf = document.getElementById('inc-product-filter');
                   if(pf){ const prods = [...new Set(incs.filter(i => i._drop && i.product).map(i => i.product))].sort();
-                          UI.syncSelect(pf, prods, true); pf.style.display = prods.length ? '' : 'none'; } }
+                          UI.syncSelect(pf, prods, true); filterVisible('inc-product-filter', prods.length > 0); } }
 
                 this.filterIncidents();
             },
