@@ -7661,7 +7661,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.111.1 · 17 Sep 2026 · Send a case card to any room or person; records and the Discussion box follow it';
+        const BUILD_VERSION = 'v2.111.4 · 17 Sep 2026 · Help: no mention of deleting submissions';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22025,12 +22025,14 @@ ${(() => {
                 reportanalyst: 'You can see every branch, export data, escalate complaints to Ops, handle rewards and build forms. Resolving incidents is done by the Call Center.',
                 callcenter:    'You handle the live queue: log complaints, resolve incidents, and verify customer reward codes on the phone.',
                 manager:       'You see your own branch only, and can export its data. Resolving incidents is handled centrally by the Call Center.',
-                viewer:        'You have read-only access to the dashboards.'
+                viewer:        'You have read-only access to the dashboards, and can message and call your teammates.'
             };
             function abilities(){
                 const A = [];
                 A.push(['fa-chart-line', 'See the dashboards', 'Overview, Complaints, Incidents, Submissions, Branches and Social Listening' + (PERM.branch && PERM.branch !== 'All' ? ' for ' + esc(PERM.branch) + '.' : ' across every branch.')]);
                 if(can('write')) A.push(['fa-clipboard-check', 'Work the incident queue', 'Open an incident, mark it Valid, Fake or Customer Not Responding, add remarks and close it. Your name is recorded against the decision.']);
+                A.push(['fa-comments', 'Message and call teammates', 'The phone icon at the top opens Messages: one-to-one chats, group rooms, photos, voice notes and calls. Messages reach your phone when the dashboard is closed, once Phone alerts are on.']);
+                if(can('write')) A.push(['fa-paper-plane', 'Send a case to a room', 'On any incident, <b>Send to a room</b> posts the case card to a branch room, a group or a person. Their replies and your review and closure appear in that room and in the incident\u2019s Discussion box.']);
                 if(can('write')) A.push(['fa-headset', 'Log complaints', 'Add a complaint that arrived by phone or another channel with Create Submission, on the Incidents tab.']);
                 if(can('reward')) A.push(['fa-ticket', 'Handle rewards', 'Search a customer code on the Rewards tab, confirm it is unused, and mark it used. You can also search by phone number to tell a customer how many stamps they have.']);
                 if(can('action')) A.push(['fa-clipboard-list', 'Log what we did about a problem', 'On a flagged issue, press <b>Log an action</b>. The dashboard records the current rate, watches it, and later tells you whether the fix worked, came back, or changed nothing \u2014 on the <b>Actions</b> tab.']);
@@ -22038,6 +22040,9 @@ ${(() => {
                 if(can('ask')) A.push(['fa-robot', 'Ask the assistant', 'The AI button, bottom right. It answers only from the figures currently on screen — change the date range or filters to widen a question.']);
                 if(can('export')) A.push(['fa-file-arrow-down', 'Export data', 'Download the filtered data as CSV from the tabs that offer it.']);
                 if(can('forms')) A.push(['fa-pen-ruler', 'Form Builder', 'Edit the customer feedback forms and publish changes. Dine-In is a custom page and is not editable here.']);
+                if(['owner', 'admin'].indexOf(roleKey(PERM.role)) !== -1) A.push(['fa-store', 'Branch & region rooms', 'In Messages, <b>Branch &amp; region rooms</b> creates one room per branch and per region from Manage Users, and keeps who is in each one up to date. Run it again after adding or moving a user.']);
+                if(['admin', 'reportanalyst'].indexOf(roleKey(PERM.role)) !== -1) A.push(['fa-chart-line', 'Impact report', 'From your profile menu: what the team\u2019s work has changed over time.']);
+                if(roleKey(PERM.role) === 'owner') A.push(['fa-sliders', 'Owner settings', 'From your profile menu: quiet hours, which branches ring alerts, pausing alerts or WhatsApp, the business-day start hour, the rating that counts as an incident, and the current Monthly Drop product. Also the impact report.']);
                 if(can('users')) A.push(['fa-users-gear', 'Manage users', 'Add, edit or disable accounts and set their role and branch.']);
                 if(can('audit')) A.push(['fa-list-check', 'Activity trail', 'Every action taken in the dashboard, by whom and when.']);
                 return A;
@@ -22047,7 +22052,8 @@ ${(() => {
                 ['Close an incident', 'within 15 minutes of reviewing it', 'Past 15 minutes the case turns red and the alert rings again.'],
                 ['Verified vs Fake', 'judged by the agent', 'Verified means a real complaint. Fake means it is not genuine — fakes are excluded from complaint analysis. Not Responding means the customer could not be reached.'],
                 ['Submissions', '100 per branch per day is the target', 'Under 80 is treated as a collection problem, not a quiet day.'],
-                ['Positive feedback', '98% is the target', 'Below 95% is critical.']
+                ['Positive feedback', '98% is the target', 'Below 95% is critical.'],
+                ['Case discussions', 'in Sentinel, not WhatsApp', 'Anything about a complaint goes through Send to a room, so the details, the conversation and what was done stay with the case.']
             ];
             // Some answers only make sense for people who have the feature.
             const FAQ_ACTIONS = [
@@ -22066,13 +22072,16 @@ ${(() => {
             //   'alerts'  roles that hear incident alerts (Call Center, Report Analyst)
             //   'branch'  accounts limited to one branch
             //   'doer'    anyone who can change something
+            //   'rooms'   Owner and Admin (branch & region rooms)
+            //   'impact'  Admin and Report Analyst (the impact report)
+            //   'owner'   the Owner only
+            //   'notbranch' accounts that see every branch
             //   otherwise a capability: 'write', 'escalate', 'reward', 'ask',
             //   'export', 'action', 'users', 'audit', 'forms'
             const FAQ_GROUPS = [
-                { title: "Actions", icon: "fa-list-check", items: FAQ_ACTIONS.map(([q, a]) => [q, a, 'action']) },
                 { title: "Incidents & alerts", icon: "fa-triangle-exclamation", items: [
                     ["What counts as an incident?",
-                     "Any submission rated 3 or below. That is automatic — nobody creates incidents by hand. A 4 or 5 star submission is never an incident, even if the comment is negative.",
+                     "Any submission rated at or below the incident threshold, which is 3 stars unless the Owner has changed it. That is automatic — nobody creates incidents by hand. A 4 or 5 star submission is never an incident, even if the comment is negative.",
                      "all"],
                     ["What is the difference between Verified, Fake and Not Responding?",
                      "Verified means a real complaint you have confirmed. Fake means it is not genuine — a test entry, a duplicate, or someone abusing the form. Not Responding means the complaint may be real but the customer could not be reached. Only fakes are excluded from the complaint analysis; verified and not-yet-reviewed cases are counted.",
@@ -22095,6 +22104,9 @@ ${(() => {
                     ["How do I get alerts on my phone when the dashboard is closed?",
                      "Install the app first, then open your profile menu and tap Phone alerts. You will be asked to allow notifications once. After that you are told about new incidents, cases past the review or close limit, and new social mentions \u2014 for your branches only. Turn it off from the same place. On an iPhone this works only inside the installed app.",
                      "all"],
+                    ["Why did my phone not buzz for a new case or message?",
+                     "Check three things: Phone alerts is switched on in your profile menu on that phone; on an iPhone, the dashboard is installed to the Home Screen (iPhones only allow alerts for installed apps); and it is not within the quiet hours or a pause the Owner has set, which silence alerts and messages alike. If all three are fine, report it with the time.",
+                     "all"],
                     ["Desktop alerts say \"blocked\" — how do I turn them on?",
                      "The browser was told not to show alerts from the dashboard, and it will not ask again by itself. Click the icon just left of the address bar (usually a lock), open Notifications, choose Allow, then reload the page. The Desktop alerts switch in your profile menu will then work.",
                      "alerts"],
@@ -22104,9 +22116,62 @@ ${(() => {
                     ["The customer does not answer or the number is wrong — what do I do?",
                      "Try once more, then mark the case Not Responding — not Fake, because the complaint may still be real. If there is a WhatsApp number, send the Could not reach message so the customer can reply when they are free.",
                      "write"],
+                    ["What is \"Send to a room\" on an incident?",
+                     "It posts the case card \u2014 branch, issue, customer, phone and order \u2014 into a room or to a person you choose, so the branch or a manager can act on it without anyone retyping the details. The room then shows Open case, Call customer and WhatsApp buttons. When the case is reviewed or closed, a one-line note appears in that room by itself.",
+                     "write"],
+                    ["What does \"Not sent to anyone yet\" in the Discussion box mean?",
+                     "Only that nobody has sent this case to a room. It says nothing about whether the case is resolved \u2014 that is the status badge and the timeline above. Most cases never need a discussion. Once the card has been sent, the box shows where, and the last few lines said about it.",
+                     "write"],
+                    ["Can I add something to a case after it is closed?",
+                     "Yes. A closed incident has Follow-up notes: add what changed since \u2014 a refund issued, a callback done. Notes are added to the history; the closure itself is not changed.",
+                     "write"],
+                    ["How should I handle a test submission?",
+                     "Mark it Fake with the remark \"test\". Fakes are left out of complaint numbers, patterns and the daily report. When testing the forms, use a number that is not a real customer\u2019s.",
+                     "owner"],
+                    ["I got an alert but cannot find the case \u2014 why?",
+                     "Rarely, a submission is accepted on arrival and then refused by the form\u2019s limits a moment later (for example the same phone number sending too many in a day). The refused one does not appear, but an alert may already have gone out. If the case is not on the Incidents tab after a refresh, it was refused \u2014 nothing to do. If it happens with a real customer, report it with the time and branch.",
+                     "alerts"],
+                    ["Why does a customer say the form would not accept their feedback?",
+                     "Each form accepts a limited number of submissions from one phone number and one device in a day, to stop abuse and duplicate rewards. A customer who has already submitted today may be refused. Take their complaint by phone with Create Submission instead.",
+                     "write"],
                     ["I closed a case by mistake — can I undo it?",
                      "Not from the dashboard. Raise it with your CX lead, with the branch and time. It is corrected on the backend so the change itself is recorded. Reward codes are the same: marking one used cannot be undone.",
                      "write"]
+                ] },
+                { title: "Messages & calls", icon: "fa-comments", items: [
+                    ["Where are Messages?",
+                     "The phone icon at the top of the page. It opens a panel on the right with two tabs: Messages for chats and rooms, Call for voice calls. On a phone it fills the screen. Minimise keeps it in the corner with your unread count.",
+                     "all"],
+                    ["Why use Messages instead of WhatsApp?",
+                     "Everything about a complaint stays with the complaint. A case sent to a room carries its details, the call and WhatsApp buttons, and a record of what was done, and the incident shows the conversation. Nothing has to be retyped, and nothing is lost in a busy group.",
+                     "all"],
+                    ["What do the clock, one tick and two ticks mean?",
+                     "Clock: sending. One tick: delivered to Sentinel. Two ticks: the other person has read it. In a room, open the room details to see who has read it.",
+                     "all"],
+                    ["A message says \"Not sent \u00b7 tap to retry\" \u2014 what happened?",
+                     "The connection dropped before it was saved. Nothing was lost: tap the line to send it again. If it keeps failing, check your internet connection.",
+                     "all"],
+                    ["What does the green dot on a person mean?",
+                     "They have the dashboard open right now, even if it is behind another tab, so a call will reach them. No dot means they are away; a message still reaches their phone if Phone alerts is on.",
+                     "all"],
+                    ["What is the red \"new messages\" line?",
+                     "It marks where you stopped reading. Everything below it arrived while you were away.",
+                     "all"],
+                    ["Can I send photos and voice notes?",
+                     "Yes: the paperclip for a photo or file, the microphone for a voice note. A photo of a wrong item or a redelivery is worth sending into the room where the case was posted.",
+                     "all"],
+                    ["How do I make a group?",
+                     "In Messages, press New group, name it and pick the people. Anyone in a group can add someone; only the person who created it can remove people. Anyone can leave.",
+                     "all"],
+                    ["What are the Branch and Region rooms?",
+                     "One room for each branch and each region, made from the user list: everyone assigned to that branch or region, plus the people who look after all branches. Use them the way you would use a branch WhatsApp group.",
+                     "all"],
+                    ["Someone new is missing from a branch room \u2014 how do I fix it?",
+                     "Check their branch and region in Manage Users, then open Messages and press Branch & region rooms. It adds and removes people to match the user list, so someone moved to another branch leaves the old room.",
+                     "rooms"],
+                    ["How do I call a teammate?",
+                     "Open Call and pick someone who is online, or press the phone icon inside a chat. If nobody is listed, nobody has the dashboard open at the moment.",
+                     "all"]
                 ] },
                 { title: "Social Listening", icon: "fa-tower-broadcast", items: [
                     ["What do \"Confirmed PK\", \"Likely PK\", \"Verify Brand\" and \"No KW match\" mean?",
@@ -22125,6 +22190,15 @@ ${(() => {
                 { title: "Numbers, dates & live data", icon: "fa-chart-simple", items: [
                     ["What does the date filter actually control?",
                      "The analysis cards — totals, comparisons, complaint reasons, branch performance. It does not control the live queue (Needs Attention Today) or the alert sound, which are always about right now.",
+                     "all"],
+                    ["Why does a 2 AM submission count as yesterday?",
+                     "The business day runs from the opening hour (9 AM unless the Owner has changed it) to the same hour the next morning, so late-night orders stay with the day they belong to. A submission at 2 AM on Tuesday is part of Monday. That is intended, not a mistake.",
+                     "all"],
+                    ["What do Overview, Compare, Trend and Breakdown do?",
+                     "Four ways of looking at the same dates and filters. Overview is the current picture; Compare puts two periods or branches side by side; Trend shows how things moved day by day; Breakdown splits the numbers by branch, channel or reason.",
+                     "all"],
+                    ["Why do some Overview cards shrink to a single line?",
+                     "A card with nothing to report \u2014 no emerging issues, nobody at risk, nothing unresolved \u2014 collapses to a one-line strip so it does not leave an empty box. It opens up again as soon as there is something to show.",
                      "all"],
                     ["What does \"vs prev\" compare against?",
                      "The same number of days immediately before your selected range — the last 7 days against the 7 before them, a single day against the day before. When the range includes today, the earlier day is cut off at the same time of day, so a half-finished day is never compared with a full one.",
@@ -22154,7 +22228,7 @@ ${(() => {
                      "The connection to our backend was briefly interrupted, so the dashboard is holding the last confirmed figures rather than showing incomplete ones. It restores itself automatically. Nothing is lost, and anything you saved was saved.",
                      "all"],
                     ["Why does a status take a moment to appear on someone else's screen?",
-                     "Your own screen updates instantly. Other people see it on their next refresh, which is at most 15 seconds. If it takes longer than that, report it.",
+                     "Your own screen updates instantly. Other people normally see it within two or three seconds. If it has not appeared after a minute, report it with the case code and the time.",
                      "all"]
                 ] },
                 { title: "Customers & rewards", icon: "fa-gift", items: [
@@ -22168,6 +22242,7 @@ ${(() => {
                      "No. Customers only ever see the feedback form and their own stamp card. Everything in the dashboard is internal.",
                      "all"]
                 ] },
+                { title: "Actions", icon: "fa-list-check", items: FAQ_ACTIONS.map(([q, a]) => [q, a, 'action']) },
                 { title: "Using the dashboard", icon: "fa-laptop", items: [
                     ["How do I log a complaint that came in by phone?",
                      "On the Incidents tab, press Create Submission. It asks one thing at a time: the rating, the customer's order number and contact details, branch and city, where they ordered from, and what went well or wrong. A rating of 3 or below becomes an incident as soon as it is submitted.",
@@ -22178,6 +22253,12 @@ ${(() => {
                     ["Why do I only see my own branch?",
                      "Your account is set to one branch, so every tab, filter and number shows that branch only. Incidents at your branch are resolved centrally by the Call Center.",
                      "branch"],
+                    ["What is the Blink tab?",
+                     "Live orders from the tills (Blink): which branches are open, orders in progress and waiting, Foodpanda handover times and anything out of stock. Branches that look wrong are flagged with who should act. It is read-only, and a branch account sees only its own branch.",
+                     "all"],
+                    ["A branch shows as closed in Blink during trading hours \u2014 what do I do?",
+                     "Call the branch: it usually means the till is offline or the branch has switched off ordering. The flag names who should act, typically the Area Manager.",
+                     "notbranch"],
                     ["How do I export data?",
                      "Tabs that support it have a download button. It saves the data you are looking at as a CSV, using your current dates and filters.",
                      "export"],
@@ -22191,7 +22272,10 @@ ${(() => {
                      "Open your profile menu and tap Install app. On an iPhone, open the dashboard in Safari, tap Share, then Add to Home Screen. It opens full screen with the Crumble Sentinel icon and updates by itself whenever the dashboard does.",
                      "all"],
                     ["Why does the dashboard look slow on my machine?",
-                     "Close other browser tabs you are not using, keep the date range narrow rather than All, and restart Chrome once a shift. If it is still slow, report which tab you were on and what you were doing.",
+                     "Close other browser tabs you are not using, keep the date range narrow rather than All, and restart Chrome once a shift. If the screen pauses when a new case arrives or when you open one, report which tab was open, the time, and which computer it was \u2014 that pause can be measured and fixed.",
+                     "all"],
+                    ["Where can I see which version I am on?",
+                     "At the bottom of your profile menu: Sentinel Version. After an update, reload the page and check it has changed. Mention the version when you report a problem.",
                      "all"],
                     ["How do I sign in as a different account?",
                      "Sign out from this menu. You will be returned to the login page and can choose the other account. If it signs you straight back in, use a private window.",
@@ -22213,6 +22297,18 @@ ${(() => {
                     ["What does Form Analytics show?",
                      "Everyone who opened a customer form, not only those who finished it. Completion rate is the share who submitted; drop-off shows the question where people most often stopped, which is the one to shorten or fix first. The daily trend shows whether a change to a form made a difference.",
                      "users"],
+                    ["What can I change in Owner settings?",
+                     "Alerts: quiet hours, which branches ring alerts, and switches to pause alerts or WhatsApp messages. Rules: the hour the business day starts, the highest rating that counts as an incident, and the product for the current Monthly Drop. Changes apply to everyone without a new version of the dashboard.",
+                     "owner"],
+                    ["Do quiet hours silence messages too?",
+                     "Yes. Quiet hours and Pause alerts stop phone alerts for incidents and for Messages. If branches trade late, keep quiet hours outside trading time or the late shift will not be told about new cases.",
+                     "owner"],
+                    ["What is the System tab for?",
+                     "Whether the background jobs are healthy: the minute job, the copy from the spreadsheet, saves waiting and form submissions held back. Open it first when numbers look stuck.",
+                     "owner"],
+                    ["What is the Impact report?",
+                     "A summary of what the team\u2019s work has changed: complaints handled, how fast, and whether logged actions reduced the problem they were aimed at. Open it from your profile menu.",
+                     "impact"],
                     ["What does the Activity trail record?",
                      "Who did what and when — incidents resolved, complaints logged, escalations and reward redemptions — including anything the server refused, such as someone trying an action their role does not allow.",
                      "audit"]
@@ -22224,6 +22320,10 @@ ${(() => {
                 if(who === 'alerts') return typeof _slaHears === 'function' ? _slaHears() : false;
                 if(who === 'branch') return !!(PERM.branch && PERM.branch !== 'All');
                 if(who === 'doer') return ['write', 'escalate', 'reward', 'action', 'forms', 'users'].some(c => can(c));
+                if(who === 'rooms') return ['owner', 'admin'].indexOf(roleKey(PERM.role)) !== -1;
+                if(who === 'impact') return ['admin', 'reportanalyst'].indexOf(roleKey(PERM.role)) !== -1;
+                if(who === 'owner') return false;           // the Owner returned true above
+                if(who === 'notbranch') return !(PERM.branch && PERM.branch !== 'All');
                 return can(who);
             }
             // ── The Help window ─────────────────────────────────────────────
