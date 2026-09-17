@@ -2644,22 +2644,6 @@
         body.bg-refresh #submission-detail-modal *,
         body.bg-refresh #users-modal,
         body.bg-refresh #users-modal *,
-        /* v2.112.0: branch picker in Manage Users */
-        .ufb.off { opacity: .5; pointer-events: none; }
-        .ufb-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 42px; padding: 6px 8px; border: 1.5px solid var(--border-color); border-radius: 9px; background: var(--white); cursor: text; }
-        .ufb-chips:focus-within { border-color: #010197; }
-        .ufb-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(1,1,151,.08); color: #010197; font-size: .76rem; font-weight: 700; border-radius: 14px; padding: 4px 6px 4px 10px; }
-        body.dark-theme .ufb-chip { background: rgba(100,208,255,.14); color: #64D0FF; }
-        .ufb-chip button { width: 16px; height: 16px; border-radius: 50%; border: 0; background: rgba(1,1,151,.15); color: inherit; font-size: .62rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-        .ufb-chips input { flex: 1; min-width: 90px; border: 0; outline: 0; background: transparent; font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); }
-        .ufb-all { font-size: .78rem; color: var(--text-muted); padding: 2px 4px; }
-        .ufb-list { border: 1px solid var(--border-color); border-radius: 10px; margin-top: 6px; max-height: 170px; overflow-y: auto; background: var(--white); }
-        .ufb-grp { font-size: .6rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px 3px; display: flex; justify-content: space-between; }
-        .ufb-grp a { color: #010197; text-transform: none; letter-spacing: 0; font-weight: 700; cursor: pointer; }
-        body.dark-theme .ufb-grp a { color: #64D0FF; }
-        .ufb-opt { display: flex; align-items: center; gap: 10px; padding: 7px 12px; font-size: .8rem; cursor: pointer; color: var(--text-main); }
-        .ufb-opt:hover { background: var(--bg-light); }
-        .ufb-opt input { width: 15px; height: 15px; margin: 0; accent-color: #010197; }
         body.bg-refresh #user-form-modal,
         body.bg-refresh #user-form-modal *,
         /* The surfaces added since that list was written, and the ones that
@@ -2689,6 +2673,22 @@
             transition-duration: revert !important;
             transition-delay:    revert !important;
         }
+        /* v2.112.0: branch picker in Manage Users */
+        .ufb.off { opacity: .5; pointer-events: none; }
+        .ufb-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 42px; padding: 6px 8px; border: 1.5px solid var(--border-color); border-radius: 9px; background: var(--white); cursor: text; }
+        .ufb-chips:focus-within { border-color: #010197; }
+        .ufb-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(1,1,151,.08); color: #010197; font-size: .76rem; font-weight: 700; border-radius: 14px; padding: 4px 6px 4px 10px; }
+        body.dark-theme .ufb-chip { background: rgba(100,208,255,.14); color: #64D0FF; }
+        .ufb-chip button { width: 16px; height: 16px; border-radius: 50%; border: 0; background: rgba(1,1,151,.15); color: inherit; font-size: .62rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .ufb-chips input { flex: 1; min-width: 90px; border: 0; outline: 0; background: transparent; font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); }
+        .ufb-all { font-size: .78rem; color: var(--text-muted); padding: 2px 4px; }
+        .ufb-list { border: 1px solid var(--border-color); border-radius: 10px; margin-top: 6px; max-height: 170px; overflow-y: auto; background: var(--white); }
+        .ufb-grp { font-size: .6rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px 3px; display: flex; justify-content: space-between; }
+        .ufb-grp a { color: #010197; text-transform: none; letter-spacing: 0; font-weight: 700; cursor: pointer; }
+        body.dark-theme .ufb-grp a { color: #64D0FF; }
+        .ufb-opt { display: flex; align-items: center; gap: 10px; padding: 7px 12px; font-size: .8rem; cursor: pointer; color: var(--text-main); }
+        .ufb-opt:hover { background: var(--bg-light); }
+        .ufb-opt input { width: 15px; height: 15px; margin: 0; accent-color: #010197; }
         /* (removed) re-applying the dialog entrance under bg-refresh made an open modal replay its pop-in on every background repaint */
         body.bg-refresh .crumble-toast{ animation: crumbleToastIn .3s var(--ease-out) both !important; }
 
@@ -7677,7 +7677,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.112.2 · 17 Sep 2026 · deltas by id';
+        const BUILD_VERSION = 'v2.112.3 · 18 Sep 2026 · modal fade fix';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
