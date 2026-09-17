@@ -5434,6 +5434,34 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         .vc-newline { flex-shrink: 0; display: flex; align-items: center; gap: 8px; margin: 10px 0 4px;
                       font-size: .62rem; font-weight: 800; letter-spacing: .3px; color: #DC2626; }
         .vc-newline::before, .vc-newline::after { content: ""; flex: 1; height: 1px; background: #DC2626; opacity: .35; }
+        /* v2.111.0: case rooms — the case card, action records, the action bar */
+        .vc-case { align-self: stretch; flex-shrink: 0; margin: 8px 0 4px; background: var(--white); border: 1px solid var(--border-color);
+                   border-left: 3px solid #DC2626; border-radius: 12px; padding: 10px 12px; cursor: pointer; font-size: .74rem; color: var(--text-muted); }
+        .vc-case:hover { background: var(--bg-light); }
+        .vc-case b { display: block; font-size: .8rem; color: var(--text-main); margin-bottom: 2px; }
+        .vc-case.closed { border-left-color: #059669; }
+        .vc-case .vc-case-open { float: right; color: var(--brand-accent); font-weight: 800; font-size: .68rem; }
+        body.dark-theme .vc-case .vc-case-open { color: #64D0FF; }
+        .vc-sys { align-self: center; flex-shrink: 0; font-size: .64rem; color: var(--text-muted); background: var(--bg-light);
+                  border: 1px solid var(--border-color); padding: 3px 10px; border-radius: 12px; margin: 8px 0 2px; text-align: center; }
+        #vc-case-bar { display: none; flex-shrink: 0; gap: 6px; padding: 8px 12px 0; flex-wrap: wrap; }
+        #vc-case-bar.on { display: flex; }
+        #vc-case-bar a, #vc-case-bar button { flex: 1 1 auto; height: 32px; border-radius: 9px; border: 1px solid var(--border-color); background: var(--white);
+                   color: var(--text-main); font: 700 .7rem 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+        #vc-case-bar .primary { background: #010197; color: #fff; border-color: #010197; }
+        body.dark-theme #vc-case-bar .primary { background: #3B5BDB; border-color: #3B5BDB; }
+        .vc-chat-ava.kind-case { background: linear-gradient(145deg, #DC2626, #B91C1C); }
+        .vc-chat-ava.kind-branch { background: linear-gradient(145deg, #010197, #1B1BB5); }
+        .vc-chat-ava.kind-region { background: linear-gradient(145deg, #3B5BDB, #010197); }
+        /* the discussion box inside an incident */
+        .inc-discuss { margin-top: 14px; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 14px; background: var(--white); }
+        .inc-discuss-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+        .inc-discuss-head b { font-size: .78rem; }
+        .inc-discuss-list { display: flex; flex-direction: column; gap: 5px; }
+        .inc-discuss-line { font-size: .74rem; color: var(--text-main); line-height: 1.4; }
+        .inc-discuss-line span { color: var(--text-muted); font-size: .66rem; margin-left: 6px; }
+        .inc-discuss-line.sys { color: var(--text-muted); font-style: italic; }
+        .inc-discuss-empty { font-size: .74rem; color: var(--text-muted); }
         /* presence dot on avatars */
         .vc-chat-ava { position: relative; }
         .vc-chat-ava.online::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px;
@@ -7529,6 +7557,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <i class="fas fa-paperclip"></i><span id="vc-att-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
                     <button onclick="VoiceCall.clearAttachment()" title="Remove"><i class="fas fa-times"></i></button>
                 </div>
+                <div id="vc-case-bar"></div>
                 <div id="vc-composer">
                     <input type="file" id="vc-file-input" style="display:none;"
                            accept="image/*,audio/*,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
@@ -7614,7 +7643,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.110.1 · 17 Sep 2026 · Messages drawer; heartbeat reports hidden tabs so chat push reaches phones';
+        const BUILD_VERSION = 'v2.111.0 · 17 Sep 2026 · Case rooms: Discuss on an incident, case card + action records in chat, branch/region rooms';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10723,6 +10752,87 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             return `${inc.surveyForm || inc.form || ''}|${inc.branch || ''}|${ts}`;
         }
 
+        // ── v2.111.0: a conversation per incident ─────────────────────────
+        // "Discuss" opens the case's room (Worker v4.48 'case_thread'): the
+        // branch's people are already in it and the case card is its first
+        // message. Resolving or reviewing the case drops a one-line record
+        // into the same room, so the thread IS the case's timeline.
+        window.CaseChat = (function(){
+            const known = {};                              // stableKey -> 'g:<id>'
+            const boxes = {};                              // stableKey -> last html painted
+            async function call(action, payload){
+                try {
+                    const res = await fetch('/api/', { method: 'POST', headers: { 'content-type': 'application/json' },
+                        credentials: 'same-origin', redirect: 'follow', body: JSON.stringify(Object.assign({ action }, payload || {})) });
+                    const t = (await res.text()).trimStart();
+                    if (t.startsWith('<')) return null;
+                    return JSON.parse(t);
+                } catch(e){ return null; }
+            }
+            const findInc = key => (rawData.incidents || []).find(i => _incidentStableKey(i) === key);
+            function card(inc){
+                return { id: inc.id || '', branch: inc.branch || '', type: inc.complaintType || inc.agentCategory || 'Complaint',
+                         customer: _rawFieldExact(inc._raw, 'Name') || '', phone: _rawFieldExact(inc._raw, 'Phone Number') || '',
+                         order: inc.orderId || '', openedAt: _rawFieldExact(inc._raw, 'Created At') || inc.date || '',
+                         channel: inc.surveyForm || inc.form || '', status: inc.resolved ? 'closed' : 'open' };
+            }
+            async function find(key){
+                if (known[key]) return known[key];
+                const r = await call('case_thread', { caseKey: key, create: false });
+                if (r && r.status === 'success' && r.target) known[key] = r.target;
+                return known[key] || '';
+            }
+            async function discuss(key, btn){
+                const inc = findInc(key); if (!inc) return;
+                if (btn) { btn.disabled = true; }
+                const r = await call('case_thread', { caseKey: key, card: card(inc) });
+                if (btn) { btn.disabled = false; }
+                if (r && r.status === 'success' && r.target) {
+                    known[key] = r.target;
+                    try { app.closeIncidentDetailModal(); } catch(e){}
+                    try { window.VoiceCall.openConversation(r.target); } catch(e){}
+                } else { try { UI.toast((r && r.message) || 'Could not open the discussion.', 'error'); } catch(e){} }
+            }
+            // A one-line record in the room, if the case has one. Never blocks.
+            async function note(key, text){
+                try { const t = await find(key); if (t) call('chat_send', { to: t, body: text, kind: 'sys' }); } catch(e){}
+            }
+            // The "Discussion" box inside the incident: the last few lines.
+            async function paintBox(key){
+                const box = document.getElementById('case-discuss-' + cssKey(key)); if (!box) return;
+                const t = await find(key);
+                let html;
+                if (!t) html = '<div class="inc-discuss-empty">No discussion yet. Open one to bring the branch in — the case card goes with it.</div>';
+                else {
+                    const r = await call('chat_history', { peer: t });
+                    const msgs = (r && r.messages || []).filter(m => m.kind !== 'case').slice(-6);
+                    const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                    const when = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+                    html = msgs.length
+                        ? '<div class="inc-discuss-list">' + msgs.map(m => m.kind === 'sys'
+                            ? `<div class="inc-discuss-line sys">${esc(m.body)}<span>${esc(when(m.at))}</span></div>`
+                            : `<div class="inc-discuss-line"><b>${esc(m.mine ? 'You' : (m.fromName || m.from))}:</b> ${esc(m.body || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo' : 'Attachment'))}<span>${esc(when(m.at))}</span></div>`).join('') + '</div>'
+                        : '<div class="inc-discuss-empty">Room is open, nothing said yet.</div>';
+                }
+                const b2 = document.getElementById('case-discuss-' + cssKey(key)); if (!b2) return;
+                if (boxes[key] !== html) { boxes[key] = html; b2.innerHTML = html; }
+                const btn = b2.parentElement && b2.parentElement.querySelector('.inc-discuss-btn');
+                if (btn) btn.innerHTML = t ? '<i class="fas fa-comments"></i> Open discussion' : '<i class="fas fa-comments"></i> Discuss with branch';
+            }
+            const cssKey = k => String(k).replace(/[^a-z0-9]/gi, '_');
+            function html(inc){
+                if (!can('write')) return '';
+                const key = _incidentStableKey(inc), k = key.replace(/'/g, "\\'");
+                setTimeout(() => paintBox(key), 30);
+                return `<div class="inc-discuss">
+                    <div class="inc-discuss-head"><b><i class="fas fa-comments" style="color:#010197;margin-right:6px;"></i>Discussion</b>
+                        <button class="fb-btn sm primary inc-discuss-btn" onclick="CaseChat.discuss('${k}', this)"><i class="fas fa-comments"></i> Discuss with branch</button></div>
+                    <div id="case-discuss-${cssKey(key)}"><div class="inc-discuss-empty">Checking…</div></div>
+                </div>`;
+            }
+            return { discuss, note, find, html, paintBox, open: key => { try { app.openIncidentFromStableKey(key); } catch(e){} } };
+        })();
+
         // Shared "how long did that take" formatter for incident timelines —
         // e.g. "1m 24s", "17m 36s", "2h 5m" — used for both the review and
         // resolution duration labels so they read the same everywhere an
@@ -11483,6 +11593,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if(_incidentStableKey(inc) === stableKey) inc.reviewedAt = reviewedAt;
                 });
                 _protectIncidentReview(stableKey, reviewedAt);
+                try { CaseChat.note(stableKey, (PERM.name || PERM.email || 'Someone') + ' reviewed this case'); } catch(e){}
                 // Marking an incident reviewed changes the "unreviewed" counts
                 // and badges too, so the same full repaint applies.
                 _refreshAfterIncidentChange();
@@ -11574,6 +11685,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // status until a later poll.
             try { if(typeof app !== 'undefined' && app.closeIncidentDetailModal) app.closeIncidentDetailModal(); } catch(e){}
             _refreshAfterIncidentChange();
+            try { CaseChat.note(stableKey, (PERM.name || PERM.email || 'Someone') + (validity === 'not_responding' ? ' closed this case — customer not responding' : validity === 'fake' ? ' closed this case as fake' : ' resolved this case')); } catch(e){}
             try { UI.toast(validity === 'not_responding' ? 'Closed — customer not responding' : `Closed as ${validity === 'fake' ? 'Fake' : 'Valid'}`, 'success'); } catch(e){}
 
             const clientId = 'res_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -14241,7 +14353,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <button class="fb-btn sm primary" onclick="addIncidentFollowUp('${_incidentStableKey(inc).replace(/'/g, "\\'")}')">Add note</button>
                         </div>` : ''}
                     </div>` : '';
-                const waHtml = waButtons(inc);
+                const waHtml = waButtons(inc) + (window.CaseChat ? CaseChat.html(inc) : '');
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
@@ -14479,7 +14591,7 @@ ${(() => {
                             <button class="fb-btn sm primary" onclick="addIncidentFollowUp('${_incidentStableKey(inc).replace(/'/g, "\\'")}')">Add note</button>
                         </div>` : ''}
                     </div>` : '';
-                const waHtml = waButtons(inc);
+                const waHtml = waButtons(inc) + (window.CaseChat ? CaseChat.html(inc) : '');
                 const addCommentHtml = (!isClosed || needsRealDetermination) ? `
                     <div class="inc-add-comment-v2">
                         <div class="inc-add-comment-label-v2">${needsRealDetermination ? 'Update Determination' : 'Add Remarks'}</div>
@@ -25320,6 +25432,12 @@ ${(() => {
                         <div class="vc-chat-meta"><div class="vc-chat-name">New group</div>
                         <div class="vc-chat-sub">Message several people at once</div></div>
                     </div>`;
+                const canSync = (() => { try { return ['owner','admin'].indexOf(String(PERM.role || '').toLowerCase()) !== -1; } catch(e){ return false; } })();
+                const syncBtn = canSync ? `<div class="vc-chat-row" onclick="VoiceCall.syncGroups(this)">
+                        <div class="vc-chat-ava new"><i class="fas fa-rotate"></i></div>
+                        <div class="vc-chat-meta"><div class="vc-chat-name">Branch &amp; region rooms</div>
+                        <div class="vc-chat-sub">Create or update them from Manage Users</div></div>
+                    </div>` : '';
                 const groupRows = chat.groups.slice().sort((a,b) => {
                     const ua = chat.unread['g:' + a.id] || 0, ub = chat.unread['g:' + b.id] || 0;
                     if (ua !== ub) return ub - ua;
@@ -25333,8 +25451,10 @@ ${(() => {
                     const last = chat.last[key];
                     const sub = last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(last.body).slice(0, 40)
                               : g.members + ' members';
+                    const kind = g.kind || 'chat';
+                    const kIcon = kind === 'case' ? 'fa-clipboard-list' : kind === 'branch' ? 'fa-store' : kind === 'region' ? 'fa-map' : 'fa-user-group';
                     return `<div class="vc-chat-row${n ? ' has-unread' : ''}" onclick="VoiceCall.openThread('${key}')">
-                        <div class="vc-chat-ava grp"><i class="fas fa-user-group"></i></div>
+                        <div class="vc-chat-ava grp kind-${kind}"><i class="fas ${kIcon}"></i></div>
                         <div class="vc-chat-meta">
                             <div class="vc-chat-name">${chatEsc(g.name)}</div>
                             <div class="vc-chat-sub">${chatEsc(sub)}</div>
@@ -25355,7 +25475,7 @@ ${(() => {
                     if (lb) return 1;
                     return String(a.name || '').localeCompare(String(b.name || ''));
                 });
-                const html = newBtn + groupRows + sorted.map(p => {
+                const html = newBtn + syncBtn + groupRows + sorted.map(p => {
                     const n = chat.unread[p.email] || 0;
                     const last = chat.last[p.email];
                     const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
@@ -25431,6 +25551,7 @@ ${(() => {
                 chat.peer = email;
                 chat.peerName = grp ? grp.name : ((p && p.name) || email);
                 chat.threadIds = new Set();
+                chat.caseCard = null; paintCaseBar();
                 // A file picked for one person must not follow us into
                 // somebody else's conversation.
                 if (chat.rec) cancelVoice();
@@ -25472,6 +25593,7 @@ ${(() => {
                     ThreadCache.set(email, msgs);
                 }
                 paintPresence();
+                paintCaseBar();
             }
             /** A red "n new messages" line above the first message they have
              *  not seen, scrolled into view, so a busy manager lands where
@@ -25489,7 +25611,33 @@ ${(() => {
                 if (line) box.scrollTop = Math.max(0, line.offsetTop - box.offsetTop - 24);
             }
 
-            function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); chat.peer = null; showTab('chat'); renderPeople(); }
+            function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); chat.peer = null; chat.caseCard = null; paintCaseBar(); showTab('chat'); renderPeople(); }
+
+            // ── v2.111.0: the action bar of a case room ─────────────────────
+            // Open case goes to the full resolve flow (remarks, validity); the
+            // record of what was done comes back into this room by itself.
+            function paintCaseBar(){
+                const bar = $('vc-case-bar'); if (!bar) return;
+                const g = chat.peer && isGroupPeer(chat.peer) ? groupById(chat.peer) : null;
+                const c = (g && g.kind === 'case') ? (chat.caseCard || { key: g.ref }) : null;
+                if (!c) { bar.classList.remove('on'); bar.innerHTML = ''; return; }
+                const phone = String(c.phone || '').replace(/[^0-9+]/g, '');
+                const k = chatEsc(String(c.key || g.ref || '')).replace(/'/g, "\\'");
+                bar.innerHTML = `<button class="primary" onclick="CaseChat.open('${k}')"><i class="fas fa-clipboard-list"></i> Open case</button>`
+                    + (phone ? `<a href="tel:${chatEsc(phone)}"><i class="fas fa-phone"></i> Call customer</a>` : '')
+                    + (phone ? `<a href="https://wa.me/${chatEsc(phone.replace(/^0/, '92').replace(/^\+/, ''))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '');
+                bar.classList.add('on');
+            }
+            async function syncGroups(row){
+                if (row) row.style.opacity = '.5';
+                const r = await chatApi('group_sync');
+                if (row) row.style.opacity = '';
+                if (r && r.status === 'success') {
+                    const made = (r.groups || []).filter(g => g.created).length;
+                    try { UI.toast((r.groups || []).length + ' rooms in place' + (made ? ', ' + made + ' new' : ''), 'success'); } catch(e){}
+                    loadGroups();
+                } else { try { UI.toast((r && r.message) || 'Could not sync rooms.', 'error'); } catch(e){} }
+            }
 
             // ── who is online, shown in the chat list and thread header ─────
             // Same heartbeat the Call tab trusts (40 s window), so someone
@@ -25917,6 +26065,23 @@ ${(() => {
                     const day = chatDay(m.at);
                     let newDay = false;
                     if (day !== lastDay) { parts.push(`<div class="vc-msg-day">${chatEsc(day)}</div>`); lastDay = day; newDay = true; }
+                    // v2.111.0: a case room's first message is the case card, as
+                    // data; an action record is a centred line. Neither is a bubble.
+                    if (m.kind === 'case') {
+                        let c = null; try { c = JSON.parse(m.body || '{}'); } catch(e){}
+                        if (c && c.key) {
+                            chat.caseCard = c;
+                            const bits = [c.type, c.channel, c.customer, c.phone ? String(c.phone) : '', c.order ? 'order ' + c.order : '', c.openedAt ? 'opened ' + c.openedAt : ''].filter(Boolean);
+                            parts.push(`<div class="vc-case${c.status === 'closed' ? ' closed' : ''}" onclick="CaseChat.open('${chatEsc(c.key).replace(/'/g,"\\'")}')"><span class="vc-case-open">Open case →</span><b>Case · ${chatEsc(c.branch || '')}</b>${chatEsc(bits.join(' · '))}</div>`);
+                            lastFrom = '';
+                            continue;
+                        }
+                    }
+                    if (m.kind === 'sys') {
+                        parts.push(`<div class="vc-sys">${chatEsc(m.body || '')} · ${chatEsc(chatTime(m.at))}</div>`);
+                        lastFrom = '';
+                        continue;
+                    }
                     const text = m.body ? chatEsc(m.body).replace(/\n/g,'<br>') : '';
                     // In a group you need to know who said it; in a one-to-one
                     // it is obvious and the name is just noise.
@@ -26270,7 +26435,8 @@ ${(() => {
                 toggleVoice,
                 cancelVoice,
                 callCurrentThread,
-                retryMessage
+                retryMessage,
+                syncGroups
             };
 
             // Start listening for incoming calls, and announcing presence,
