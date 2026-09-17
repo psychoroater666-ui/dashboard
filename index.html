@@ -5594,7 +5594,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            readable. Both live on <body>, outside #mainScroll, so the refresh
            suppressor never touches them (rule 10). */
         #vc-bubble{
-            position: fixed; z-index: 9200; width: 56px; height: 56px; border-radius: 50%;
+            position: fixed; z-index: 9200; box-sizing: border-box; width: 56px; height: 56px; border-radius: 50%;
             padding: 3px; background: var(--white); cursor: grab; display: none;
             box-shadow: 0 10px 26px -6px rgba(16,24,40,.45), 0 2px 6px rgba(0,0,0,.16);
             touch-action: none; -webkit-user-select: none; user-select: none;
@@ -5651,6 +5651,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             #vc-modal-overlay.bubbled #vc-modal-header{ cursor: default; }
         }
+        /* v2.117.2: the little pointer joining the bubble to its card, the way
+           Messenger marks which head is open. Drawn as its own element because
+           the card clips its own overflow. */
+        #vc-arrow{ position: fixed; z-index: 9201; width: 0; height: 0; display: none;
+                   border-left: 8px solid transparent; border-right: 8px solid transparent; }
+        #vc-arrow.on{ display: block; }
+        #vc-arrow.up{ border-bottom: 9px solid #010197; }          /* card below the bubble: points up at it */
+        #vc-arrow.down{ border-top: 9px solid var(--white); filter: drop-shadow(0 1px 0 var(--border-color)); }
+        @media (max-width: 640px){ #vc-arrow{ display: none !important; } }
+
         /* the assistant orb only steps aside for the full drawer */
         body.vc-docked.vc-bubbled .ai-bubble{ opacity: 1 !important; pointer-events: auto !important; transform: none !important; }
 
@@ -5674,10 +5684,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         body.dark-theme .vc-case .vc-case-open { color: #64D0FF; }
         .vc-sys { align-self: center; flex-shrink: 0; font-size: .64rem; color: var(--text-muted); background: var(--bg-light);
                   border: 1px solid var(--border-color); padding: 3px 10px; border-radius: 12px; margin: 8px 0 2px; text-align: center; }
-        #vc-case-bar { display: none; flex-shrink: 0; gap: 6px; padding: 8px 12px 0; flex-wrap: wrap; }
+        /* v2.117.1: the row sat flush against the composer, and the first
+           button -- carrying a branch name -- squeezed the other two. The long
+           label truncates instead of pushing, and the row has room beneath. */
+        #vc-case-bar { display: none; flex-shrink: 0; gap: 6px; padding: 8px 12px 10px; flex-wrap: wrap; align-items: center; }
         #vc-case-bar.on { display: flex; }
-        #vc-case-bar a, #vc-case-bar button { flex: 1 1 auto; height: 32px; border-radius: 9px; border: 1px solid var(--border-color); background: var(--white);
+        #vc-case-bar a, #vc-case-bar button { flex: 0 1 auto; min-width: 0; height: 32px; padding: 0 11px; border-radius: 9px;
+                   border: 1px solid var(--border-color); background: var(--white); overflow: hidden;
                    color: var(--text-main); font: 700 .7rem 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
+        #vc-case-bar .primary { flex: 1 1 130px; }
+        #vc-case-bar i { flex: none; font-size: .72rem; }
+        #vc-case-bar .cb-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #vc-case-bar .primary { background: #010197; color: #fff; border-color: #010197; }
         body.dark-theme #vc-case-bar .primary { background: #3B5BDB; border-color: #3B5BDB; }
         .vc-chat-ava.kind-case { background: linear-gradient(145deg, #DC2626, #B91C1C); }
@@ -7812,6 +7829,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         <span class="vb-n"></span><span class="vb-t">0:00</span>
     </div>
     <div id="vc-bin"><i class="fas fa-trash"></i></div>
+    <div id="vc-arrow"></div>
 
     <div id="vc-modal-overlay">
         <div id="vc-modal" role="dialog" aria-label="Voice Call">
@@ -7967,7 +7985,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.117.0 · 18 Sep 2026 · minimise to a movable chat bubble';
+        const BUILD_VERSION = 'v2.117.2 · 18 Sep 2026 · pointer joining the bubble to its card';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -26015,29 +26033,67 @@ ${(() => {
                     if (open) placePanel();
                 }
                 function save(){ try { localStorage.setItem(KEY, JSON.stringify(pos)); } catch(e){} }
+                /* v2.117.1: the card hangs off the bubble and the two move as
+                   one, the way a Messenger chat head does. Its edge lines up
+                   with the bubble's edge, and it flips above the bubble only
+                   when there is no room below it. */
+                const GAP = 10;
+                function panelBox(){
+                    const m = $('vc-modal');
+                    return { w: (m && m.offsetWidth) || 336, h: (m && m.offsetHeight) || Math.min(440, window.innerHeight - 120) };
+                }
                 function placePanel(){
                     const m = $('vc-modal'); if (!m || window.innerWidth <= 640) return;
-                    const w = 336, h = Math.min(440, window.innerHeight - 120);
-                    const rightSide = pos.x > window.innerWidth / 2;
-                    let left = rightSide ? pos.x + SIZE - w : pos.x;
-                    let top = pos.y + SIZE + 10;
-                    if (top + h > window.innerHeight - 12) top = Math.max(64, pos.y - h - 10);
+                    const box = panelBox(), w = box.w, h = box.h;
+                    const rightSide = pos.x + SIZE / 2 > window.innerWidth / 2;
+                    let left = rightSide ? (pos.x + SIZE - w) : pos.x;             // edges flush with the bubble
+                    let top = pos.y + SIZE + GAP;
+                    if (top + h > window.innerHeight - 12) top = pos.y - h - GAP;  // no room below: hang it above
                     m.style.left = Math.max(12, Math.min(left, window.innerWidth - w - 12)) + 'px';
-                    m.style.top = top + 'px';
+                    m.style.top = Math.max(60, Math.min(top, window.innerHeight - h - 12)) + 'px';
+                    placeArrow();
+                }
+                /* The pointer sits under the middle of the bubble, on whichever
+                   edge of the card faces it. */
+                function placeArrow(){
+                    const a = $('vc-arrow'), m = $('vc-modal');
+                    if (!a) return;
+                    if (!open || !m || window.innerWidth <= 640) { a.classList.remove('on'); return; }
+                    const r = m.getBoundingClientRect();
+                    const below = r.top > pos.y;                       // card hangs under the bubble
+                    a.classList.remove('up', 'down');
+                    a.classList.add('on', below ? 'up' : 'down');
+                    a.style.left = (pos.x + SIZE / 2 - 8) + 'px';
+                    a.style.top = (below ? r.top - 9 : r.bottom) + 'px';
+                }
+                /* The reverse: the card was dragged, so the bubble goes with it
+                   and stays on the same corner. */
+                function followPanel(){
+                    const m = $('vc-modal'); if (!m || window.innerWidth <= 640) return;
+                    const r = m.getBoundingClientRect();
+                    const rightSide = r.left + r.width / 2 > window.innerWidth / 2;
+                    const above = r.top > SIZE + GAP + 60;
+                    pos = clamp({ x: rightSide ? r.right - SIZE : r.left,
+                                  y: above ? r.top - SIZE - GAP : r.bottom + GAP });
+                    const b = el();
+                    if (b) { b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px'; }
+                    placeArrow();
                 }
                 function show(){
                     const b = el(); if (!b) return;
                     b.classList.add('on'); place(); paint();
                 }
-                function hide(){ const b = el(); if (b) b.classList.remove('on'); }
+                function hide(){ const b = el(); if (b) b.classList.remove('on');
+                                 const a = $('vc-arrow'); if (a) a.classList.remove('on'); }
                 function isOn(){ const b = el(); return !!b && b.classList.contains('on'); }
                 function setOpen(on){
                     open = !!on;
+                    if (!on) { const a = $('vc-arrow'); if (a) a.classList.remove('on'); }
                     const ov = $('vc-modal-overlay'), m = $('vc-modal');
                     document.body.classList.toggle('vc-bubbled', open);
                     if (ov) ov.classList.toggle('bubbled', open);
                     if (m && !open) { m.style.left = ''; m.style.top = ''; }
-                    if (open) placePanel();
+                    if (open) requestAnimationFrame(placePanel);
                 }
                 function paint(){
                     const b = el(); if (!b) return;
@@ -26067,6 +26123,7 @@ ${(() => {
                         if (Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3) moved = true;
                         pos = clamp({ x: nx, y: ny });
                         b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px';
+                        if (open) placePanel();                  // the card comes along
                         bin().classList.toggle('hot', overBin());
                         if (e.cancelable) e.preventDefault();
                     };
@@ -26118,7 +26175,8 @@ ${(() => {
                     });
                     window.addEventListener('resize', () => { pos = clamp(pos || defaultPos()); place(); });
                 }
-                return { bind, show, hide, isOn, setOpen, paint, ping, place, isOpen: () => open };
+                function savePos(){ save(); }
+                return { bind, show, hide, isOn, setOpen, paint, ping, place, placePanel, followPanel, savePos, isOpen: () => open };
             })();
 
             /* Panel-header drag: in bubble mode the card moves with its header. */
@@ -26135,9 +26193,10 @@ ${(() => {
                         const w = m.offsetWidth, ht = m.offsetHeight;
                         m.style.left = Math.max(8, Math.min(ev.clientX - dx, window.innerWidth - w - 8)) + 'px';
                         m.style.top = Math.max(60, Math.min(ev.clientY - dy, window.innerHeight - ht - 8)) + 'px';
+                        try { Bubble.followPanel(); } catch(e){}      // the bubble rides along
                         ev.preventDefault();
                     };
-                    const up = () => { on = false; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    const up = () => { on = false; try { Bubble.savePos(); } catch(e){} document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
                     document.addEventListener('mousemove', move);
                     document.addEventListener('mouseup', up);
                     e.preventDefault();
@@ -26465,9 +26524,9 @@ ${(() => {
                 if (!c || !c.key) { bar.classList.remove('on'); bar.innerHTML = ''; return; }
                 const phone = String(c.phone || '').replace(/[^0-9+]/g, '');
                 const k = chatEsc(String(c.key || '')).replace(/'/g, "\\'");
-                bar.innerHTML = `<button class="primary" onclick="CaseChat.open('${k}')"><i class="fas fa-clipboard-list"></i> Open case${c.branch ? ' · ' + chatEsc(String(c.branch)) : ''}</button>`
-                    + (phone ? `<a href="tel:${chatEsc(phone)}"><i class="fas fa-phone"></i> Call customer</a>` : '')
-                    + (phone ? `<a href="https://wa.me/${chatEsc(phone.replace(/^0/, '92').replace(/^\+/, ''))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '');
+                bar.innerHTML = `<button class="primary" onclick="CaseChat.open('${k}')" title="Open case${c.branch ? ' · ' + chatEsc(String(c.branch)) : ''}"><i class="fas fa-clipboard-list"></i><span class="cb-txt">Open case${c.branch ? ' · ' + chatEsc(String(c.branch)) : ''}</span></button>`
+                    + (phone ? `<a href="tel:${chatEsc(phone)}" title="Call the customer"><i class="fas fa-phone"></i><span class="cb-txt">Call</span></a>` : '')
+                    + (phone ? `<a href="https://wa.me/${chatEsc(phone.replace(/^0/, '92').replace(/^\+/, ''))}" target="_blank" rel="noopener" title="WhatsApp the customer"><i class="fab fa-whatsapp"></i><span class="cb-txt">WhatsApp</span></a>` : '');
                 bar.classList.add('on');
             }
             // ── v2.111.1: post a case card into a room or chat of my choosing ──
