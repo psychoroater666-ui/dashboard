@@ -5546,6 +5546,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             /* ── views as chips, on their own row under the wordmark ──── */
             .header { flex-wrap: wrap !important; height: auto !important; }
+            /* Profile menu on phone (v2.109.1): the menu lives inside .header,
+               whose z-index:100 caps everything in it, so the filter bar
+               below the header painted over the menu's top rows. While the
+               menu is open the header outranks the page; nothing else is
+               open at the same time. */
+            .header:has(#dp-menu[style*="display: block"]) { z-index: 7200 !important; }
             #topNav {
                 display: flex !important; flex: 1 1 100% !important; order: 3 !important;
                 gap: 6px !important; overflow-x: auto !important; padding: 0 0 9px !important;
@@ -7583,7 +7589,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.109.0 · 17 Sep 2026 · Overview cards pack by content, empty cards become strips';
+        const BUILD_VERSION = 'v2.109.1 · 17 Sep 2026 · Overview cards pack by content; phone profile menu above filter bar';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
