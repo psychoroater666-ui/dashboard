@@ -3639,6 +3639,31 @@
         #ovz-trends .ov-row, .ov-r2n { align-items:stretch; }
         .ov-r2n { grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); }
         .ov-row > * { min-width:0; }
+        /* OVERVIEW FLOW (v2.109.0) — cards sort themselves by content. A card
+           with nothing to report (.ov-empty-msg in its body) becomes a one-line
+           strip at the top of the zone; cards with data stack in two columns,
+           each column only as tall as its own content, so a short card never
+           sits beside a tall one with dead space under it. ovArrange() moves
+           the nodes; nothing here computes numbers. */
+        .ov-flow { display:flex; flex-direction:column; gap:16px; }
+        .ov-strips { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 16px; }
+        .ov-strips:empty { display:none; }
+        .ov-cols { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:16px; align-items:start; }
+        .ov-cols.ov-one { grid-template-columns:minmax(0,1fr); }
+        .ov-cols.ov-none { display:none; }
+        .ov-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+        .ov-col:empty { display:none; }
+        .ov-flow .card { min-width:0; }
+        .card.ov-strip { padding:10px 16px !important; display:flex; align-items:center; gap:12px; }
+        .card.ov-strip > .section-header { display:contents; }
+        .card.ov-strip h3 { margin:0; white-space:nowrap; flex:none; order:1; }
+        .card.ov-strip > .section-header .text-xs { display:none; }
+        .card.ov-strip .btn-link { flex:none; order:3; }
+        .card.ov-strip > [id] { flex:1 1 auto; min-width:0; order:2; display:flex !important; flex-direction:row !important; align-items:center; justify-content:flex-end; max-height:none !important; overflow:visible !important; }
+        .ov-strips > .card:only-child { grid-column:1 / -1; }
+        .card.ov-strip h3 > span:first-child { background:var(--status-good) !important; animation:none !important; }
+        .card.ov-strip .ov-empty-msg { padding:0 !important; text-align:right !important; font-size:0.76rem !important; line-height:1.4; display:flex; align-items:center; gap:8px; }
+        .card.ov-strip .ov-empty-msg i { font-size:0.8rem; }
         .ov-r2  { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .ov-r2w { grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); }
         .ov-r3  { grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,1fr); }
@@ -3677,6 +3702,13 @@
             .ov-r3 > :first-child, .ov-r3w > :first-child { grid-column:auto; }
             .ov-rank .ov-rank-pane > div:nth-child(2) { grid-template-columns:minmax(0,1fr); }
             .ov-needs #exec-needs-attention { max-height:none; }
+
+            .ov-flow, .ov-col { gap:12px; }
+            .ov-strips, .ov-cols, .ov-cols.ov-one { grid-template-columns:minmax(0,1fr); gap:12px; }
+            .card.ov-strip { flex-wrap:wrap; gap:6px 12px; }
+            .card.ov-strip > [id] { flex-basis:100%; order:4; justify-content:flex-start; }
+            .card.ov-strip .btn-link { margin-left:auto; }
+            .card.ov-strip .ov-empty-msg { text-align:left !important; }
         }
         /* daily verdict strip */
         /* The verdict reads as a line of text, not a boxed alert: no border, a
@@ -6103,21 +6135,27 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <small>measured from arrival · last 24h</small>
                         </div>
                     </div>
-                        <div class="ov-row ov-r2n">
-<div class="ov-needs card" style="padding:20px;">
+                        <div class="ov-flow" id="ovf-now">
+                        <div class="ov-strips"></div>
+                        <div class="ov-cols">
+                        <div class="ov-col">
+<div class="ov-needs card" data-ovcol="0" data-ovord="1" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:12px;">
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>NEEDS ATTENTION TODAY</h3><span class="text-xs text-muted" style="font-size:0.66rem;">live · not affected by the date filter</span><h3 style="display:none;"></h3>
                                 <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                             </div>
                             <div id="exec-needs-attention" style="display:flex; flex-direction:column; gap:8px;"></div>
                         </div>
-<div class="ov-incmon card" style="padding:20px;">
+                        </div>
+                        <div class="ov-col">
+<div class="ov-incmon card" data-ovcol="1" data-ovord="1" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:14px;">
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
                                 <button class="btn-link" onclick="app.navigate('incidents')" style="font-size:0.72rem;">View all →</button>
                             </div>
                             <div class="chart-container" style="height:110px;margin-bottom:12px;"><canvas id="execIncByFormChart"></canvas></div>
                             <div id="exec-incident-monitor" style="max-height:330px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;"></div>
+                        </div>
                         </div>
                         </div>
 <div class="card blink-card bk" id="blink-card" style="display:none;">
@@ -6134,18 +6172,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                     <section class="ov-zone" id="ovz-why" aria-labelledby="ovz-why-t">
                         <div class="ov-zh"><h2 id="ovz-why-t">Why it is happening</h2><p>The patterns behind today's complaints.</p></div>
-                        <div class="ov-row ov-r2">
-<div class="card radar-card" id="radar-card">
-                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-satellite-dish" style="color:#DC2626;margin-right:6px;"></i>EMERGING ISSUES</h3><span class="text-xs text-muted" id="radar-sub" style="font-size:0.68rem;"></span></div>
-                        <div id="radar-body"></div>
-                    </div>
-<div class="card" style="padding:20px;">
-                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">TOP COMPLAINT REASONS</h3><span class="text-xs text-muted" style="font-size:0.68rem;">verified only · this period vs previous</span></div>
-                            <div id="exec-top-reasons"></div>
-                        </div>
-                        </div>
-                        <div class="ov-row ov-r3w">
-<div class="card" style="padding:20px;">
+                        <div class="ov-flow" id="ovf-why">
+                        <div class="ov-strips"></div>
+                        <div class="ov-cols">
+                        <div class="ov-col">
+<div class="card ov-hour-card" data-ovcol="0" data-ovord="1" style="padding:20px;">
                             <div class="section-header peak-head">
                                 <div class="peak-head-text">
                                     <h3 style="font-size:0.78rem;" id="exec-hour-title">SUBMISSIONS &amp; COMPLAINTS BY HOUR</h3>
@@ -6159,17 +6190,29 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <div class="chart-container" style="height:210px;"><canvas id="execPeakHoursChart"></canvas></div>
                             <div id="exec-hour-verdict" style="margin-top:10px;"></div>
                         </div>
-<div class="card" style="padding:20px;">
+<div class="card radar-card" data-ovcol="0" data-ovord="2" id="radar-card">
+                        <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-satellite-dish" style="color:#DC2626;margin-right:6px;"></i>EMERGING ISSUES</h3><span class="text-xs text-muted" id="radar-sub" style="font-size:0.68rem;"></span></div>
+                        <div id="radar-body"></div>
+                    </div>
+                        </div>
+                        <div class="ov-col">
+<div class="card ov-reasons-card" data-ovcol="1" data-ovord="1" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;">TOP COMPLAINT REASONS</h3><span class="text-xs text-muted" style="font-size:0.68rem;">verified only · this period vs previous</span></div>
+                            <div id="exec-top-reasons"></div>
+                        </div>
+<div class="card ov-repeat-card" data-ovcol="1" data-ovord="2" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:12px;">
                                 <h3 style="font-size:0.78rem;"><i class="fas fa-clock-rotate-left" style="color:#010197;margin-right:7px;"></i>REPEAT COMPLAINERS</h3>
                                 <button class="btn-link" onclick="app.navigate('complaints')" style="font-size:0.72rem;">View all →</button>
                             </div>
                             <div id="exec-repeat-risk"></div>
                         </div>
-<div class="card churn-card" id="churn-card">
+<div class="card churn-card" data-ovcol="1" data-ovord="3" id="churn-card">
                         <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#010197;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
                         <div id="churn-body"></div>
                     </div>
+                        </div>
+                        </div>
                         </div>
                     </section>
 
@@ -7540,7 +7583,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.108.1 · 17 Sep 2026 · orders only on Blink, clicks paint first';
+        const BUILD_VERSION = 'v2.109.0 · 17 Sep 2026 · Overview cards pack by content, empty cards become strips';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12976,7 +13019,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const silentOnes = risks.filter(r => !r.everComplained);
                 if(sub) sub.textContent = risks.length ? risks.length + ' regulars gone quiet' : 'none';
                 if(!risks.length){
-                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No regular customer has stopped coming unexpectedly.</div>`;
+                    host.uiHTML = `<div class="ov-empty-msg" style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No regular customer has stopped coming unexpectedly.</div>`;
                     return;
                 }
                 host.uiHTML = risks.slice(0, 5).map(r => {
@@ -13028,7 +13071,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                   .sort((a, b) => (b.n * Math.min(b.ratio, 20)) - (a.n * Math.min(a.ratio, 20))).slice(0, 5);
                 if(sub) sub.textContent = alerts.length ? alerts.length + ' above normal' : 'nothing unusual';
                 if(!alerts.length){
-                    host.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;">
+                    host.uiHTML = `<div class="ov-empty-msg" style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;">
                         <i class="fas fa-circle-check" style="color:#059669;"></i> No complaint type is running above its normal rate at any branch today.</div>`;
                     return;
                 }
@@ -13101,7 +13144,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         m[t] = m[t] || { n:0, b:{} }; m[t].n++; m[t].b[i.branch] = (m[t].b[i.branch] || 0) + 1; }); return m; };
                 const now = tally(p1), prev = tally(p2);
                 const rows = Object.keys(now).sort((a,b) => now[b].n - now[a].n).slice(0, 6);
-                if(!rows.length){ host.uiHTML = '<div style="text-align:center;padding:26px;color:var(--text-muted);font-size:0.8rem;">No classified complaints in this period.</div>'; return; }
+                if(!rows.length){ host.uiHTML = '<div class="ov-empty-msg" style="text-align:center;padding:26px;color:var(--text-muted);font-size:0.8rem;">No classified complaints in this period.</div>'; return; }
                 const peak = Math.max(...rows.map(t => now[t].n));
                 host.uiHTML = rows.map(t => {
                     const n = now[t].n, was = (prev[t] || {}).n || 0, d = n - was;
@@ -15390,11 +15433,11 @@ ${(() => {
                 const identified = Object.values(hist).reduce((n, c) => n + c.incidents.length, 0);
                 const repeatComplaints = repeats.reduce((n, c) => n + c.incidents.length, 0);
                 if(!identified){
-                    el.uiHTML = `<div style="text-align:center;padding:18px 8px;color:var(--text-muted);font-size:0.8rem;">No phone numbers on complaints in this period.</div>`;
+                    el.uiHTML = `<div class="ov-empty-msg" style="text-align:center;padding:18px 8px;color:var(--text-muted);font-size:0.8rem;">No phone numbers on complaints in this period.</div>`;
                     return;
                 }
                 if(!repeats.length){
-                    el.uiHTML = `<div style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No customer has complained more than once in this period.</div>`;
+                    el.uiHTML = `<div class="ov-empty-msg" style="display:flex;align-items:center;gap:10px;padding:14px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:#059669;"></i> No customer has complained more than once in this period.</div>`;
                     return;
                 }
                 const reasonOf = i => { try { const r2 = i.agentCategory && _resolveComplaintCategory(i.agentCategory); return r2 ? r2.title : (classifyComplaint(i) || {}).title || ''; } catch(e){ return ''; } };
@@ -15456,7 +15499,7 @@ ${(() => {
                 const top = todaysUnresolved.slice(0, 8);
 
                 if(!top.length){
-                    container.uiHTML = `<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>Nothing unresolved from today — all caught up.</div>`;
+                    container.uiHTML = `<div class="ov-empty-msg" style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;"><i class="fas fa-circle-check" style="color:#059669;margin-right:6px;"></i>Nothing unresolved from today — all caught up.</div>`;
                     return;
                 }
 
@@ -23046,6 +23089,45 @@ ${(() => {
         // OVERVIEW ZONES — jump links that follow the scroll, the "Right now"
         // count, and the ranking tabs. Presentation only.
         // ═══════════════════════════════════════════════════════════════════
+        // OVERVIEW FLOW (v2.109.0) — after a card body is redrawn, sort the
+        // zone's cards: a card whose body is an empty state (.ov-empty-msg)
+        // becomes a strip at the top; the rest stack in their column. Nodes
+        // are moved, never rebuilt, so charts and the uiHTML cache survive.
+        function ovArrange(){
+            document.querySelectorAll('.ov-flow').forEach(flow => {
+                const strips = flow.querySelector(':scope > .ov-strips'), wrap = flow.querySelector(':scope > .ov-cols');
+                const cols = wrap ? [...wrap.querySelectorAll(':scope > .ov-col')] : [];
+                if(!strips || cols.length < 2) return;
+                const cards = [...flow.querySelectorAll(':scope > .ov-strips > .card, :scope > .ov-cols > .ov-col > .card')];
+                const want = new Map();
+                cards.forEach(c => {
+                    const empty = !!c.querySelector('.ov-empty-msg');
+                    c.classList.toggle('ov-strip', empty);
+                    want.set(c, empty ? strips : cols[Math.min(+c.dataset.ovcol || 0, cols.length - 1)]);
+                });
+                const key = c => (+c.dataset.ovcol || 0) * 100 + (+c.dataset.ovord || 0);
+                [strips, ...cols].forEach(p => {
+                    const mine = cards.filter(c => want.get(c) === p).sort((a, b) => key(a) - key(b));
+                    mine.forEach((c, i) => { if(p.children[i] !== c) p.insertBefore(c, p.children[i] || null); });
+                });
+                const live = cols.filter(c => [...c.children].some(k => k.style.display !== 'none')).length;
+                wrap.classList.toggle('ov-one', live === 1);
+                wrap.classList.toggle('ov-none', live === 0);
+            });
+        }
+        (function(){
+            function start(){
+                let raf = 0;
+                const run = () => { if(!raf) raf = requestAnimationFrame(() => { raf = 0; try { ovArrange(); } catch(e){} }); };
+                ['exec-needs-attention', 'radar-body', 'churn-body', 'exec-repeat-risk', 'exec-top-reasons'].forEach(id => {
+                    const el = document.getElementById(id); if(!el) return;
+                    try { new MutationObserver(run).observe(el, { childList: true }); } catch(e){}
+                });
+                run();
+                window.ovArrangeSoon = run;
+            }
+            if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+        })();
         function ovRankTab(kind){
             document.querySelectorAll('#ov-rank-card .ov-tab').forEach(b => {
                 const on = b.dataset.rankTab === kind;
@@ -23097,7 +23179,7 @@ ${(() => {
                         z.hidden = !shown; l.hidden = !shown;
                     });
                 }
-                function tick(){ count(); try { empties(); } catch(e){} }
+                function tick(){ count(); try { if(window.ovArrangeSoon) window.ovArrangeSoon(); empties(); } catch(e){} }
                 tick(); setInterval(tick, 4000);
             }
             if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
