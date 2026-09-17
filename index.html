@@ -5628,6 +5628,68 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             transition: background .15s;
         }
         .vc-branch-row:last-child { border-bottom: none; }
+
+        /* ── v2.115.0: Contacts (was the Call tab) ─────────────────────────── */
+        #vc-modal #vc-branch-list{ max-height: none; padding: 0; flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+        #vc-status-bar:empty{ display: none !important; }
+        #vc-ct-tools{ position: sticky; top: 0; z-index: 2; background: var(--white); padding: 10px 12px 8px; }
+        #vc-ct-search{ display: flex; align-items: center; gap: 8px; background: var(--bg-light); border: 1.5px solid var(--border-color); border-radius: 12px; padding: 0 12px; color: var(--text-muted); transition: border-color .18s; }
+        #vc-ct-search:focus-within{ border-color: #010197; }
+        body.dark-theme #vc-ct-search:focus-within{ border-color: #64D0FF; }
+        #vc-ct-search input{ flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 10px 0; font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); }
+        #vc-ct-chips{ display: flex; gap: 7px; padding-top: 9px; overflow-x: auto; scrollbar-width: none; }
+        #vc-ct-chips::-webkit-scrollbar{ display: none; }
+        .vc-ct-chip{ flex: none; font: 800 .68rem 'Inter', sans-serif; padding: 6px 11px; border-radius: 999px; border: 1.5px solid var(--border-color); color: var(--text-muted); background: var(--white); cursor: pointer; white-space: nowrap; -webkit-user-select: none; user-select: none; }
+        .vc-ct-chip:hover{ border-color: #010197; color: #010197; }
+        body.dark-theme .vc-ct-chip:hover{ border-color: #64D0FF; color: #64D0FF; }
+        .vc-ct-chip.on, .vc-ct-chip.on:hover{ background: #010197; border-color: #010197; color: #fff; }
+        .vc-ct-chip .d{ display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #16A34A; margin-right: 5px; }
+        #vc-ct-body{ padding: 0 8px 14px; }
+        .vc-ct-grp{ font: 800 .6rem 'Inter', sans-serif; letter-spacing: .7px; text-transform: uppercase; color: var(--text-muted); padding: 12px 8px 5px; display: flex; gap: 7px; align-items: center; }
+        .vc-ct-grp span{ background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 8px; padding: 1px 6px; font-size: .58rem; letter-spacing: 0; }
+        .vc-ct-row{ display: flex; align-items: center; gap: 11px; padding: 8px; border-radius: 12px; cursor: pointer; transition: background .15s; }
+        .vc-ct-row:hover{ background: var(--bg-light); }
+        .vc-ct-ava{ position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg,#010197,#3B5BDB); color: #fff; font: 800 .74rem 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; }
+        .vc-ct-ava::after{ content: ""; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; box-sizing: border-box; border-radius: 50%; background: #94A3B8; border: 2.5px solid var(--white); }
+        .vc-ct-ava.online::after{ background: #16A34A; }
+        .vc-ct-meta{ flex: 1; min-width: 0; }
+        .vc-ct-name{ font: 700 .86rem 'Inter', sans-serif; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vc-ct-sub{ font-size: .7rem; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vc-ct-sub .on{ color: #16A34A; font-weight: 800; }
+        .vc-ct-tag{ font: 800 .57rem 'Inter', sans-serif; letter-spacing: .3px; text-transform: uppercase; color: #010197; background: rgba(1,1,151,.08); border-radius: 5px; padding: 1px 5px; margin-right: 5px; }
+        body.dark-theme .vc-ct-tag{ color: #64D0FF; background: rgba(100,208,255,.14); }
+        .vc-ct-acts{ display: flex; gap: 7px; flex: none; }
+        .vc-ct-btn{ width: 34px; height: 34px; border-radius: 11px; border: 1.5px solid var(--border-color); background: var(--white); color: #010197; font-size: .78rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform .12s, background .15s, border-color .15s; }
+        body.dark-theme .vc-ct-btn{ color: #64D0FF; }
+        .vc-ct-btn:hover{ transform: translateY(-1px); border-color: #010197; }
+        .vc-ct-btn.msg, body.dark-theme .vc-ct-btn.msg{ background: #010197; border-color: #010197; color: #fff; }
+        .vc-ct-btn:disabled{ opacity: .38; cursor: not-allowed; transform: none; }
+        .vc-ct-empty{ padding: 34px 20px; text-align: center; color: var(--text-muted); font-size: .82rem; }
+
+        /* ── v2.115.0: reply to a message ──────────────────────────────────── */
+        .vc-msg{ position: relative; }
+        .vc-reply-btn{ position: absolute; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--white); color: var(--text-muted); font-size: .62rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .15s; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+        .vc-msg.them .vc-reply-btn{ right: -34px; }
+        .vc-msg.mine .vc-reply-btn{ left: -34px; }
+        .vc-msg:hover .vc-reply-btn, .vc-reply-btn:focus-visible{ opacity: 1; }
+        .vc-msg.pending .vc-reply-btn, .vc-msg.failed .vc-reply-btn{ display: none; }
+        @media (hover: none){ .vc-reply-btn{ opacity: .55; } }
+        .vc-quote{ display: block; border-left: 3px solid #64D0FF; border-radius: 6px; padding: 4px 8px; margin: 0 0 5px; font-size: .74rem; line-height: 1.35; overflow: hidden; }
+        .vc-quote b{ display: block; font-size: .68rem; font-weight: 800; }
+        .vc-quote span{ display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: .85; }
+        .vc-msg.them .vc-quote{ background: rgba(1,1,151,.06); border-left-color: #010197; }
+        .vc-msg.them .vc-quote b{ color: #010197; }
+        body.dark-theme .vc-msg.them .vc-quote{ background: rgba(100,208,255,.09); border-left-color: #64D0FF; }
+        body.dark-theme .vc-msg.them .vc-quote b{ color: #64D0FF; }
+        .vc-msg.mine .vc-quote{ background: rgba(255,255,255,.16); }
+        #vc-reply-bar{ display: none; flex-shrink: 0; align-items: center; gap: 10px; padding: 8px 14px; border-top: 1px solid var(--border-color); background: var(--bg-light); }
+        #vc-reply-bar.on{ display: flex; }
+        #vc-reply-bar .rb-line{ flex: none; width: 3px; align-self: stretch; border-radius: 3px; background: linear-gradient(#010197,#64D0FF); }
+        #vc-reply-bar .rb-main{ flex: 1; min-width: 0; font-size: .74rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #vc-reply-bar .rb-main b{ display: block; font-size: .68rem; font-weight: 800; color: #010197; }
+        body.dark-theme #vc-reply-bar .rb-main b{ color: #64D0FF; }
+        #vc-reply-bar button{ flex: none; width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; }
+        #vc-reply-bar button:hover{ background: var(--border-color); }
         .vc-branch-row:hover { background: var(--bg-light); }
         .vc-branch-info { display: flex; flex-direction: column; }
         .vc-branch-name { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
@@ -7636,11 +7698,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             </div>
 
             <div id="vc-tabs">
-                <button id="vc-tab-call" class="active" onclick="VoiceCall.showTab('call')"><i class="fas fa-phone"></i> Call</button>
+                <button id="vc-tab-call" class="active" onclick="VoiceCall.showTab('call')"><i class="fas fa-address-book"></i> Contacts</button>
                 <button id="vc-tab-chat" onclick="VoiceCall.showTab('chat')"><i class="fas fa-comment"></i> Messages <span class="vc-tab-count" id="vc-tab-unread"></span></button>
             </div>
 
-            <div id="vc-status-bar">Select a branch to start a call</div>
+            <div id="vc-status-bar"></div>
 
             <!-- Messages: who to talk to -->
             <div id="vc-chat-people"></div>
@@ -7677,6 +7739,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button onclick="VoiceCall.clearAttachment()" title="Remove"><i class="fas fa-times"></i></button>
                 </div>
                 <div id="vc-case-bar"></div>
+                <div id="vc-reply-bar"><div class="rb-line"></div><div class="rb-main"><b id="vc-reply-who"></b><span id="vc-reply-text"></span></div><button onclick="VoiceCall.cancelReply()" title="Cancel reply"><i class="fas fa-times"></i></button></div>
                 <div id="vc-composer">
                     <div id="vc-mention" role="listbox" aria-label="Mention someone"></div>
                     <input type="file" id="vc-file-input" style="display:none;"
@@ -7765,7 +7828,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.114.2 · 18 Sep 2026 · message chime at full level';
+        const BUILD_VERSION = 'v2.115.0 · 18 Sep 2026 · Contacts tab, reply to a message';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25493,10 +25556,11 @@ ${(() => {
             function hideIncomingBanner(){ VcSfx.stop(); $('vc-incoming-banner').classList.remove('visible'); const f = $('vc-fab'); if (f) f.classList.remove('vc-ringing'); }
 
             function disableBranchButtons(){
-                document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = true; b.classList.add('busy'); });
+                document.querySelectorAll('.vc-call-btn, .vc-ct-btn.call').forEach(b => { b.disabled = true; b.classList.add('busy'); });
             }
             function enableBranchButtons(){
                 document.querySelectorAll('.vc-call-btn').forEach(b => { b.disabled = false; b.classList.remove('busy'); });
+                try { Contacts.paint(); } catch(e){}
             }
 
             // ── Presence heartbeat ───────────────────────────────────────────
@@ -25527,45 +25591,147 @@ ${(() => {
             let dirPollInterval = null;
             const dirEsc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-            async function renderDirectory(){
-                const list = $('vc-branch-list');
-                if (!list) return;
-                const res = await signal({ type: 'who' });
-                if (!res || res.status !== 'success' || !Array.isArray(res.people)) {
-                    list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--text-muted);font-size:0.82rem;">
-                        <i class="fas fa-triangle-exclamation" style="font-size:1.3rem;opacity:.35;display:block;margin-bottom:10px;"></i>
-                        Couldn't check who's online. Try again in a moment.
-                    </div>`;
-                    return;
+            /* ── v2.115.0: Contacts ─────────────────────────────────────────
+               The Call tab listed only whoever was online, as a flat list with
+               one button. It is now the team's address book: everyone, who is
+               here now and when the rest were last here, searchable, with a
+               message and a call button on each row. The tab keeps its
+               internal name 'call' so nothing that opens it had to change.
+               "Last seen" arrives from Worker v4.55; on an older Worker the
+               line reads "Offline" and nothing else differs. */
+            const Contacts = (() => {
+                let online = new Set(), seen = {}, q = '', filter = 'all', okOnce = false, failed = false;
+                const lc = v => String(v || '').toLowerCase();
+                const ROLE_ORDER = ['owner', 'admin', 'callcenter', 'reportanalyst', 'manager', 'viewer'];
+                const ROLE_GROUP = { owner: 'Management', admin: 'Management', callcenter: 'Call Center',
+                                     reportanalyst: 'Report Analysts', manager: 'Branch managers', viewer: 'Viewers' };
+                const ROLE_TAG = { owner: 'Owner', admin: 'Admin', callcenter: 'Call Center', reportanalyst: 'Analyst', manager: 'Manager', viewer: 'Viewer' };
+                const rk = r => lc(r).replace(/[^a-z]/g, '');
+                const groupOf = p => ROLE_GROUP[rk(p.role)] || 'Others';
+                const branchesOf = p => String(p.branch || 'All').split(',').map(b => b.trim()).filter(b => b && lc(b) !== 'all');
+                function scopeOf(p){
+                    const bs = branchesOf(p);
+                    if (bs.length) return bs.length > 2 ? bs.slice(0, 2).join(', ') + ' +' + (bs.length - 2) : bs.join(', ');
+                    return (p.region && lc(p.region) !== 'all') ? p.region + ' region' : 'All branches';
                 }
-                if (!res.people.length){
-                    list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--text-muted);font-size:0.82rem;">
-                        <i class="fas fa-phone-slash" style="font-size:1.3rem;opacity:.35;display:block;margin-bottom:10px;"></i>
-                        No one is available to call right now.
-                    </div>`;
-                    return;
+                function seenText(p){
+                    if (online.has(lc(p.email))) return 'Online now';
+                    const v = seen[lc(p.email)];
+                    if (!v) return 'Offline';
+                    const d = new Date(v); if (isNaN(d)) return 'Offline';
+                    const m = Math.round((Date.now() - d) / 60000);
+                    if (m < 2) return 'Last seen just now';
+                    if (m < 60) return 'Last seen ' + m + ' min ago';
+                    if (m < 1440) return 'Last seen ' + Math.round(m / 60) + ' h ago';
+                    if (m < 2880) return 'Last seen yesterday';
+                    if (m < 10080) return 'Last seen ' + Math.round(m / 1440) + ' d ago';
+                    return 'Last seen ' + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
                 }
-                const dirHtml = res.people.map(p => {
-                    const name  = p.name || p.email;
-                    const scope = (p.branch && p.branch !== 'All') ? p.branch
-                                : (p.region && p.region !== 'All') ? p.region + ' Region' : 'All branches';
-                    return `
-                    <div class="vc-branch-row">
-                        <div class="vc-branch-info">
-                            <span class="vc-branch-name">${dirEsc(name)}</span>
-                            <span class="vc-branch-region">${dirEsc(p.role || 'Team')} · ${dirEsc(scope)}</span>
-                        </div>
-                        <button class="vc-call-btn ${st.inCall ? 'busy' : ''}" ${st.inCall ? 'disabled' : ''}
-                            onclick="VoiceCall.startCall('${String(p.email).replace(/'/g,"\\'")}','${String(name).replace(/'/g,"\\'")}')"
-                            title="Call ${dirEsc(name)}">
-                            <i class="fas fa-phone"></i> Call
-                        </button>
-                    </div>`;
-                }).join('');
-                // Redrawn every six seconds while the panel is open; only when
-                // someone's presence actually changed is it worth repainting.
-                if (list.__lastHtml !== dirHtml) { list.__lastHtml = dirHtml; list.innerHTML = dirHtml; }
-            }
+                function ensure(){
+                    const list = $('vc-branch-list');
+                    if (!list) return null;
+                    if (!$('vc-ct-body')) {
+                        list.innerHTML = '<div id="vc-ct-tools"><div id="vc-ct-search"><i class="fas fa-magnifying-glass" style="font-size:.74rem"></i>'
+                            + '<input id="vc-ct-q" type="text" autocomplete="off" placeholder="Search name, role or branch"></div>'
+                            + '<div id="vc-ct-chips"></div></div><div id="vc-ct-body"></div>';
+                        list.__lastHtml = null;
+                        $('vc-ct-q').value = q;
+                        $('vc-ct-q').addEventListener('input', e => { q = lc(e.target.value).trim(); paint(); });
+                        $('vc-ct-chips').addEventListener('click', e => {
+                            const c = e.target.closest('.vc-ct-chip'); if (!c) return;
+                            filter = c.dataset.f || 'all'; paint();
+                        });
+                        $('vc-ct-body').addEventListener('click', e => {
+                            const row = e.target.closest('.vc-ct-row'); if (!row) return;
+                            const email = row.dataset.email, name = row.dataset.name;
+                            const btn = e.target.closest('.vc-ct-btn');
+                            if (btn && btn.classList.contains('call')) { if (!btn.disabled) startCall(email, name); return; }
+                            showTab('chat'); openThread(email);
+                        });
+                    }
+                    return list;
+                }
+                function everyone(extra){
+                    const me = lc(chat.me);
+                    const byEmail = {};
+                    (chat.people || []).forEach(p => { byEmail[lc(p.email)] = p; });
+                    // Someone online whom the directory has not caught up with yet.
+                    (extra || []).forEach(p => { if (p && p.email && !byEmail[lc(p.email)]) byEmail[lc(p.email)] = p; });
+                    return Object.keys(byEmail).filter(e => e !== me).map(e => byEmail[e]);
+                }
+                let lastExtra = [];
+                function paint(){
+                    if (!ensure()) return;
+                    const all = everyone(lastExtra);
+                    const isOn = p => online.has(lc(p.email));
+                    // chips: All, Online, the roles present, then the branches present
+                    const roles = [], branches = [];
+                    all.forEach(p => { const g = groupOf(p); if (roles.indexOf(g) === -1) roles.push(g);
+                                       branchesOf(p).forEach(b => { if (branches.indexOf(b) === -1) branches.push(b); }); });
+                    roles.sort((x, y) => ROLE_ORDER.findIndex(r => ROLE_GROUP[r] === x) - ROLE_ORDER.findIndex(r => ROLE_GROUP[r] === y));
+                    branches.sort();
+                    const nOn = all.filter(isOn).length;
+                    const chip = (f, label) => `<div class="vc-ct-chip${filter === f ? ' on' : ''}" data-f="${chatEsc(f)}">${label}</div>`;
+                    const chipsHtml = chip('all', 'All') + chip('online', '<span class="d"></span>Online ' + nOn)
+                        + roles.map(r => chip('r:' + r, chatEsc(r))).join('') + branches.map(b => chip('b:' + b, chatEsc(b))).join('');
+                    const chips = $('vc-ct-chips');
+                    if (chips.__lastHtml !== chipsHtml) { chips.__lastHtml = chipsHtml; chips.innerHTML = chipsHtml; }
+
+                    let shown = all.filter(p => {
+                        if (filter === 'online' && !isOn(p)) return false;
+                        if (filter.indexOf('r:') === 0 && groupOf(p) !== filter.slice(2)) return false;
+                        if (filter.indexOf('b:') === 0 && branchesOf(p).indexOf(filter.slice(2)) === -1) return false;
+                        if (q) { const hay = lc([p.name, p.email, p.role, p.branch, p.region, groupOf(p)].join(' ')); if (hay.indexOf(q) === -1) return false; }
+                        return true;
+                    });
+                    const byName = (x, y) => String(x.name || '').localeCompare(String(y.name || ''));
+                    const row = p => {
+                        const on = isOn(p), name = p.name || p.email, st8 = seenText(p);
+                        return `<div class="vc-ct-row" data-email="${chatEsc(p.email)}" data-name="${chatEsc(name)}">
+                            <div class="vc-ct-ava${on ? ' online' : ''}">${chatEsc(chatInitials(name))}</div>
+                            <div class="vc-ct-meta"><div class="vc-ct-name">${chatEsc(name)}</div>
+                                <div class="vc-ct-sub"><span class="vc-ct-tag">${chatEsc(ROLE_TAG[rk(p.role)] || p.role || 'Team')}</span>${chatEsc(scopeOf(p))} · <span class="${on ? 'on' : ''}">${chatEsc(st8)}</span></div></div>
+                            <div class="vc-ct-acts">
+                                <button class="vc-ct-btn msg" title="Message ${chatEsc(name)}"><i class="fas fa-comment"></i></button>
+                                <button class="vc-ct-btn call" ${(!on || st.inCall) ? 'disabled' : ''} title="${on ? 'Call ' + chatEsc(name) : 'Offline — send a message instead'}"><i class="fas fa-phone"></i></button>
+                            </div></div>`;
+                    };
+                    const head = (t, n) => `<div class="vc-ct-grp">${chatEsc(t)} <span>${n}</span></div>`;
+                    let html = '';
+                    const onNow = shown.filter(isOn).sort(byName);
+                    if (onNow.length) html += head('Online now', onNow.length) + onNow.map(row).join('');
+                    const rest = shown.filter(p => !isOn(p));
+                    const groups = {};
+                    rest.forEach(p => { (groups[groupOf(p)] = groups[groupOf(p)] || []).push(p); });
+                    Object.keys(groups).sort((x, y) => {
+                        const ix = ROLE_ORDER.findIndex(r => ROLE_GROUP[r] === x), iy = ROLE_ORDER.findIndex(r => ROLE_GROUP[r] === y);
+                        return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy);
+                    }).forEach(g => {
+                        // most recently seen first, then by name
+                        const list = groups[g].sort((x, y) => String(seen[lc(y.email)] || '').localeCompare(String(seen[lc(x.email)] || '')) || byName(x, y));
+                        html += head(g, list.length) + list.map(row).join('');
+                    });
+                    if (!html) html = `<div class="vc-ct-empty"><i class="fas ${failed && !okOnce ? 'fa-triangle-exclamation' : 'fa-user-slash'}" style="font-size:1.3rem;opacity:.35;display:block;margin-bottom:10px;"></i>${
+                        failed && !okOnce ? "Couldn't load the team. Try again in a moment." : (q || filter !== 'all' ? 'Nobody matches that.' : 'No teammates yet.')}</div>`;
+                    const body = $('vc-ct-body');
+                    if (body.__lastHtml !== html) { body.__lastHtml = html; body.innerHTML = html; }
+                }
+                async function refresh(){
+                    if (!ensure()) return;
+                    paint();                                        // whatever is known, at once
+                    if (!chat.loaded) { try { await loadPeople(); } catch(e){} }
+                    const res = await signal({ type: 'who' });
+                    if (res && res.status === 'success' && Array.isArray(res.people)) {
+                        okOnce = true; failed = false;
+                        online = new Set(res.people.map(p => lc(p.email)));
+                        lastExtra = res.people;
+                        if (res.seen && typeof res.seen === 'object') { const n = {}; for (const k in res.seen) n[lc(k)] = res.seen[k]; seen = n; }
+                    } else failed = true;
+                    paint();
+                }
+                return { refresh, paint };
+            })();
+            async function renderDirectory(){ return Contacts.refresh(); }
             function startDirectoryPoll(){
                 renderDirectory();
                 if (dirPollInterval) clearInterval(dirPollInterval);
@@ -25701,9 +25867,9 @@ ${(() => {
                 chat.tab = which;
                 $('vc-tab-call').classList.toggle('active', which === 'call');
                 $('vc-tab-chat').classList.toggle('active', which === 'chat');
-                $('vc-modal-title').textContent = which === 'call' ? 'Call a Teammate' : 'Messages';
+                $('vc-modal-title').textContent = which === 'call' ? (st.inCall ? 'On a call' : 'Team') : 'Messages';
                 const hIcon = $('vc-modal-icon');
-                if (hIcon) hIcon.className = which === 'call' ? 'fas fa-phone' : 'fas fa-comment-dots';
+                if (hIcon) hIcon.className = which === 'call' ? (st.inCall ? 'fas fa-phone' : 'fas fa-user-group') : 'fas fa-comment-dots';
                 const inThread = which === 'chat' && chat.peer;
                 $('vc-branch-list').style.display = (which === 'call' && !st.inCall) ? '' : 'none';
                 $('vc-status-bar').style.display  = which === 'call' ? '' : 'none';
@@ -25775,7 +25941,7 @@ ${(() => {
                     const key = 'g:' + g.id;
                     const n = chat.unread[key] || 0;
                     const last = chat.last[key];
-                    const sub = last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(last.body).slice(0, 40)
+                    const sub = last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(chatPlain(last.body)).slice(0, 40)
                               : g.members + ' members';
                     const kind = g.kind || 'chat';
                     const kIcon = kind === 'case' ? 'fa-clipboard-list' : kind === 'branch' ? 'fa-store' : kind === 'region' ? 'fa-map' : 'fa-user-group';
@@ -25804,7 +25970,7 @@ ${(() => {
                 const html = newBtn + syncBtn + groupRows + sorted.map(p => {
                     const n = chat.unread[p.email] || 0;
                     const last = chat.last[p.email];
-                    const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
+                    const sub = last ? (last.mine ? 'You: ' : '') + String(chatPlain(last.body)).slice(0, 44)
                               : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch);
                     return `<div class="vc-chat-row${n ? ' has-unread' : ''}" data-email="${chatEsc(String(p.email).toLowerCase())}" onclick="VoiceCall.openThread('${String(p.email).replace(/'/g,"\\'")}')">
                         <div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name))}</div>
@@ -25873,6 +26039,7 @@ ${(() => {
 
             async function openThread(email){
                 try { if (MsgToast.keyNow() === email) MsgToast.hide(); } catch(e){}
+                try { cancelReply(); } catch(e){}
                 const grp = isGroupPeer(email) ? groupById(email) : null;
                 const p = grp ? null : chat.people.find(x => x.email === email);
                 chat.peer = email;
@@ -25938,7 +26105,7 @@ ${(() => {
                 if (line) box.scrollTop = Math.max(0, line.offsetTop - box.offsetTop - 24);
             }
 
-            function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); chat.peer = null; chat.caseCard = null; paintCaseBar(); showTab('chat'); renderPeople(); }
+            function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); try { cancelReply(); } catch(e){} chat.peer = null; chat.caseCard = null; paintCaseBar(); showTab('chat'); renderPeople(); }
 
             // ── v2.111.0: the action bar of a case room ─────────────────────
             // Open case goes to the full resolve flow (remarks, validity); the
@@ -26487,7 +26654,11 @@ ${(() => {
                         lastFrom = '';
                         continue;
                     }
-                    const text = m.body ? Mention.mark(chatEsc(m.body)).replace(/\n/g,'<br>') : '';
+                    const parts2 = chatSplitQuote(m.body);
+                    const quoteHtml = parts2.quote ? `<span class="vc-quote"><b>${chatEsc(parts2.quote.who)}</b><span>${chatEsc(parts2.quote.text)}</span></span>` : '';
+                    const text = quoteHtml + (parts2.text ? Mention.mark(chatEsc(parts2.text)).replace(/\n/g,'<br>') : '');
+                    const rName = m.mine ? 'You' : (m.fromName || (isGroupPeer(chat.peer) ? memberName(m.from) : chat.peerName) || 'them');
+                    const rText = parts2.text || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo' : m.kind === 'file' ? 'Attachment' : '');
                     // In a group you need to know who said it; in a one-to-one
                     // it is obvious and the name is just noise.
                     const who = (!m.mine && isGroupPeer(chat.peer))
@@ -26501,8 +26672,8 @@ ${(() => {
                     const fromKey = m.mine ? 'me' : String(m.from || 'them');
                     const grouped = (!newDay && !hasFile && fromKey === lastFrom) ? ' grouped' : '';
                     lastFrom = hasFile ? '' : fromKey;
-                    const media = m.kind === 'image' ? (text ? ' has-media' : ' has-media media-only') : '';
-                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}${m.pending ? ' pending' : ''}" data-id="${m.id}">${who}${attachmentHtml(m)}${text}`
+                    const media = m.kind === 'image' ? (text ? ' has-media' : ' has-media media-only') : '';  // text includes any quote
+                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}${m.pending ? ' pending' : ''}" data-id="${m.id}" data-rn="${chatEsc(rName)}" data-rt="${chatEsc(String(rText).slice(0, 120))}">${who}${attachmentHtml(m)}${text}<button type="button" class="vc-reply-btn" title="Reply"><i class="fas fa-reply"></i></button>`
                              + `<span class="vc-msg-time">${chatEsc(chatTime(m.at))}<span class="vc-tick-slot">${tickFor(m)}</span></span></div>`);
                 }
                 box.dataset.lastDay = lastDay;
@@ -26643,8 +26814,43 @@ ${(() => {
                 return { onInput, onKey, close, mark, mentionsMe, isOpen: () => open };
             })();
 
+            /* ── v2.115.0: reply to a message ───────────────────────────────
+               A reply is ordinary text with one leading line --
+               "↪ Name: what they said" -- so the Worker stores and pushes it
+               like any other message, and it is recognised when it is drawn.
+               Lists and alerts show only what the person actually wrote. */
+            const QUOTE = '\u21AA ';
+            function chatSplitQuote(body){
+                const t = String(body == null ? '' : body);
+                if (t.indexOf(QUOTE) !== 0) return { quote: null, text: t };
+                const nl = t.indexOf('\n');
+                const first = (nl === -1 ? t : t.slice(0, nl)).slice(QUOTE.length);
+                const c = first.indexOf(': ');
+                if (c < 1) return { quote: null, text: t };
+                return { quote: { who: first.slice(0, c), text: first.slice(c + 2) }, text: nl === -1 ? '' : t.slice(nl + 1) };
+            }
+            const chatPlain = body => { const p = chatSplitQuote(body); return p.quote ? (p.text || 'Replied') : p.text; };
+            function startReply(who, text){
+                chat.replyTo = { who: String(who || '').slice(0, 40), text: String(text || '').replace(/\s+/g, ' ').trim().slice(0, 90) };
+                $('vc-reply-who').textContent = 'Replying to ' + chat.replyTo.who;
+                $('vc-reply-text').textContent = chat.replyTo.text;
+                $('vc-reply-bar').classList.add('on');
+                const i = $('vc-composer-input'); if (i) i.focus();
+            }
+            function cancelReply(){
+                chat.replyTo = null;
+                const b = $('vc-reply-bar'); if (b) b.classList.remove('on');
+            }
+            document.addEventListener('click', e => {
+                const b = e.target.closest && e.target.closest('#vc-thread-msgs .vc-reply-btn');
+                if (!b) return;
+                const m = b.closest('.vc-msg'); if (!m) return;
+                startReply(m.dataset.rn, m.dataset.rt);
+            });
+
             function composerKey(e){
                 if (Mention.onKey(e)) return;
+                if (e.key === 'Escape' && chat.replyTo) { e.preventDefault(); e.stopPropagation(); cancelReply(); return; }
                 // Enter sends, Shift+Enter makes a new line -- what people expect.
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
             }
@@ -26668,6 +26874,8 @@ ${(() => {
                     body = String(input.value || '').trim();
                     att = chat.pending || null;
                     if ((!body && !att) || !peer) return;
+                    if (chat.replyTo && body) body = QUOTE + chat.replyTo.who + ': ' + chat.replyTo.text + '\n' + body;
+                    cancelReply();
                     input.value = ''; composerGrow(input);
                 }
                 if (!peer) return;
@@ -26747,7 +26955,7 @@ ${(() => {
                         key, n,
                         name: grp ? grp.name : ((person && person.name) || key),
                         group: !!grp,
-                        text: last ? ((last.who ? last.who + ': ' : '') + String(last.body || '')).slice(0, 60) : 'New message',
+                        text: last ? ((last.who ? last.who + ': ' : '') + String(chatPlain(last.body) || '')).slice(0, 60) : 'New message',
                         at: last ? last.at : ''
                     });
                 }
@@ -26820,7 +27028,7 @@ ${(() => {
                     });
                 }
                 function textOf(m){
-                    return String(m.body || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo'
+                    return String(chatPlain(m.body) || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo'
                          : m.kind === 'file' ? 'Attachment' : m.kind === 'case' ? 'Shared a case' : 'New message')).slice(0, 180);
                 }
                 function build(){
@@ -26868,7 +27076,7 @@ ${(() => {
                     if (grp) ini.innerHTML = '<i class="fas fa-user-group"></i>'; else ini.textContent = chatInitials(name);
                     el.querySelector('.mt-name').textContent = name;
                     const role = el.querySelector('.mt-role');
-                    let hitMe = false; try { hitMe = !!grp && Mention.mentionsMe(m.body); } catch(e){}
+                    let hitMe = false; try { hitMe = !!grp && Mention.mentionsMe(chatPlain(m.body)); } catch(e){}
                     const roleText = hitMe ? 'Mentioned you' : (grp ? 'Group' : String((person && person.role) || ''));
                     role.textContent = roleText; role.style.display = roleText ? '' : 'none';
                     role.classList.toggle('mention', hitMe);
@@ -27009,7 +27217,7 @@ ${(() => {
                     startDirectoryPoll();
                     setPanelOpen(true);
                     st.panelOpen = true;
-                    if (!st.inCall) setStatus('Select someone to call', '');
+                    if (!st.inCall) setStatus('', '');
                 },
                 closePanel() {
                     if (st.inCall) return; // don't close during a live call
@@ -27018,6 +27226,7 @@ ${(() => {
                     stopDirectoryPoll();
                 },
                 testMessageAlert(){ try { MsgToast.demo(); } catch(e){} },
+                cancelReply,
                 mentionInput(ta){ try { Mention.onInput(ta); } catch(e){} },
                 mentionBlur(){ setTimeout(() => { try { Mention.close(); } catch(e){} }, 160); },
                 toggleMinimise,
