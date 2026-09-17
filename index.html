@@ -5586,6 +5586,74 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         /* minimised: a pill in the corner, still showing who you were talking to */
         #vc-modal.vc-min { width: 300px; height: auto; align-self: flex-end; margin: 0 20px 20px 0;
                            border-radius: 18px; border-left: 0; box-shadow: 0 18px 44px rgba(15,23,42,.28); }
+
+        /* ── v2.117.0: minimised = a bubble you can throw anywhere ──────────
+           Minimising used to leave a 300px bar pinned in the corner: a shrunk
+           window, still in the way. It is now a Messenger-style bubble, and
+           the panel reopens beside it at a size that leaves the dashboard
+           readable. Both live on <body>, outside #mainScroll, so the refresh
+           suppressor never touches them (rule 10). */
+        #vc-bubble{
+            position: fixed; z-index: 9200; width: 56px; height: 56px; border-radius: 50%;
+            padding: 3px; background: var(--white); cursor: grab; display: none;
+            box-shadow: 0 10px 26px -6px rgba(16,24,40,.45), 0 2px 6px rgba(0,0,0,.16);
+            touch-action: none; -webkit-user-select: none; user-select: none;
+        }
+        #vc-bubble.on{ display: block; }
+        #vc-bubble.dragging{ cursor: grabbing; transition: none; }
+        #vc-bubble:not(.dragging){ transition: left .26s cubic-bezier(.16,1,.3,1), top .26s cubic-bezier(.16,1,.3,1), transform .16s; }
+        #vc-bubble:active{ transform: scale(.96); }
+        #vc-bubble .vb-in{
+            width: 100%; height: 100%; border-radius: 50%; color: #fff; font-size: 1.05rem;
+            background: linear-gradient(140deg, #1B1BB5, #010197);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #vc-bubble .vb-n{
+            position: absolute; top: -4px; right: -4px; min-width: 21px; height: 21px; padding: 0 6px;
+            border-radius: 11px; background: #DC2626; color: #fff; border: 2.5px solid var(--bg-light);
+            font: 800 .64rem/16px 'Inter', sans-serif; display: none; align-items: center; justify-content: center;
+        }
+        #vc-bubble.has-n .vb-n{ display: flex; }
+        #vc-bubble.in-call .vb-in{ background: linear-gradient(140deg, #EF4444, #B91C1C); }
+        #vc-bubble .vb-t{
+            position: absolute; left: 50%; transform: translateX(-50%); bottom: -9px; display: none;
+            padding: 1px 7px; border-radius: 9px; background: #B91C1C; color: #fff;
+            font: 800 .6rem/15px 'Inter', sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap;
+            border: 2px solid var(--bg-light);
+        }
+        #vc-bubble.in-call .vb-t{ display: block; }
+        #vc-bubble.ping{ animation: vcBubblePing .6s cubic-bezier(.16,1,.3,1) 1; }
+        @keyframes vcBubblePing{ 0%{ transform: scale(1);} 35%{ transform: scale(1.16);} 70%{ transform: scale(.97);} 100%{ transform: scale(1);} }
+        /* the bin you drop it on to put it away */
+        #vc-bin{
+            position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) scale(.85); z-index: 9199;
+            width: 66px; height: 66px; border-radius: 50%; display: none; align-items: center; justify-content: center;
+            background: rgba(220,38,38,.12); border: 2px dashed rgba(220,38,38,.55); color: #DC2626; font-size: 1.1rem;
+            opacity: 0; transition: opacity .2s, transform .2s, background .2s;
+            -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+        }
+        #vc-bin.on{ display: flex; opacity: 1; transform: translateX(-50%) scale(1); }
+        #vc-bin.hot{ background: rgba(220,38,38,.9); border-style: solid; border-color: #B91C1C; color: #fff; transform: translateX(-50%) scale(1.14); }
+        /* the panel in bubble mode: a card beside the bubble, not a full drawer */
+        #vc-modal-overlay.bubbled{ align-items: flex-start; justify-content: flex-start; pointer-events: none; }
+        #vc-modal-overlay.bubbled #vc-modal{
+            position: fixed; width: 336px; max-width: calc(100vw - 24px); height: 440px; max-height: calc(100vh - 120px);
+            border-radius: 18px; border: 1px solid var(--border-color); overflow: hidden;
+            box-shadow: 0 24px 54px -14px rgba(16,24,40,.34), 0 4px 14px rgba(0,0,0,.10);
+        }
+        #vc-modal-overlay.bubbled #vc-modal-header{ cursor: move; }
+        #vc-modal-overlay.bubbled #vc-expand-btn{ display: flex; }
+        #vc-expand-btn{ display: none; }
+        @media (max-width: 640px){
+            #vc-modal-overlay.bubbled #vc-modal{
+                left: 10px !important; right: 10px !important; width: auto; top: auto !important;
+                bottom: calc(14px + env(safe-area-inset-bottom)); height: min(66vh, 460px);
+            }
+            #vc-modal-overlay.bubbled #vc-modal-header{ cursor: default; }
+        }
+        /* the assistant orb only steps aside for the full drawer */
+        body.vc-docked.vc-bubbled .ai-bubble{ opacity: 1 !important; pointer-events: auto !important; transform: none !important; }
+
         /* messages: sending / failed states */
         .vc-msg.pending { opacity: .82; }
         .vc-msg.failed { opacity: .55; }
@@ -6243,7 +6311,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             </script>
             <div class="header-controls">
                 <div style="position:relative;">
-                    <button class="btn-icon" id="vc-fab" onclick="VoiceCall.openPanel()" data-tip="Call a teammate" title="Call a Teammate">
+                    <button class="btn-icon" id="vc-fab" onclick="VoiceCall.openPanel()" data-tip="Messages and calls" title="Messages and calls">
                         <i class="fas fa-phone"></i>
                         <span class="vc-badge" id="vc-fab-badge"></span>
                     </button>
@@ -7739,15 +7807,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
     </div>
 
     <!-- Call panel modal -->
+    <div id="vc-bubble" title="Messages — drag to move">
+        <div class="vb-in"><i class="fas fa-comment"></i></div>
+        <span class="vb-n"></span><span class="vb-t">0:00</span>
+    </div>
+    <div id="vc-bin"><i class="fas fa-trash"></i></div>
+
     <div id="vc-modal-overlay">
         <div id="vc-modal" role="dialog" aria-label="Voice Call">
 
             <div id="vc-modal-header" onclick="VoiceCall.expandIfMinimised()">
-                <h3><span class="vc-head-ic"><i class="fas fa-phone" id="vc-modal-icon"></i></span><span id="vc-modal-title">Call a Teammate</span></h3>
+                <h3><span class="vc-head-ic"><i class="fas fa-user-group" id="vc-modal-icon"></i></span><span id="vc-modal-title">Team</span></h3>
                 <span id="vc-head-btns">
                     <button class="vc-close-btn" id="vc-find-btn" onclick="event.stopPropagation(); VoiceCall.toggleFind()" title="Search conversations"><i class="fas fa-magnifying-glass"></i></button>
                     <button class="vc-close-btn pri" id="vc-new-btn" onclick="event.stopPropagation(); VoiceCall.toggleNewMenu()" title="New conversation"><i class="fas fa-comment-medical"></i></button>
-                    <button class="vc-close-btn" id="vc-min-btn" onclick="event.stopPropagation(); VoiceCall.toggleMinimise()" title="Minimise"><i class="fas fa-minus"></i></button>
+                    <button class="vc-close-btn" id="vc-expand-btn" onclick="event.stopPropagation(); VoiceCall.expandFull()" title="Open the full panel"><i class="fas fa-up-right-and-down-left-from-center"></i></button>
+                    <button class="vc-close-btn" id="vc-min-btn" onclick="event.stopPropagation(); VoiceCall.toggleMinimise()" title="Minimise to a bubble"><i class="fas fa-minus"></i></button>
                     <button class="vc-close-btn" onclick="event.stopPropagation(); VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
                 </span>
             </div>
@@ -7892,7 +7967,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.116.0 · 18 Sep 2026 · one Messages list: unread first, pins, filters';
+        const BUILD_VERSION = 'v2.117.0 · 18 Sep 2026 · minimise to a movable chat bubble';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25909,22 +25984,180 @@ ${(() => {
                 if (ov) ov.classList.toggle('open', !!on);
                 document.body.classList.toggle('vc-docked', !!on);
                 if (!on) { const m = $('vc-modal'); if (m) m.classList.remove('vc-min'); }
+                if (!on) { try { Bubble.setOpen(false); } catch(e){} }
             }
+            /* ── v2.117.0: the bubble ───────────────────────────────────────
+               Minimise parks the whole panel as a round bubble that can be
+               dragged anywhere and snaps to the nearest edge; its place is
+               remembered per device. Clicking it opens the panel beside it as
+               a card rather than the full-height drawer, so the dashboard
+               stays readable. Dropping the bubble on the bin puts it away
+               entirely -- Messages is still on the phone icon in the header. */
+            const Bubble = (() => {
+                const KEY = 'crumble_chat_bubble_v1', SIZE = 56, PAD = 16;
+                let pos = null, open = false, dragging = false, moved = false;
+                try { pos = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch(e){}
+                const el = () => $('vc-bubble');
+                const bin = () => $('vc-bin');
+                function defaultPos(){
+                    // top right, below the filter row -- clear of Refresh and
+                    // the view toggles, and clear of the assistant orb.
+                    return { x: window.innerWidth - SIZE - 20, y: 112 };
+                }
+                function clamp(p){
+                    return { x: Math.max(PAD, Math.min(p.x, window.innerWidth - SIZE - PAD)),
+                             y: Math.max(64, Math.min(p.y, window.innerHeight - SIZE - PAD)) };
+                }
+                function place(){
+                    const b = el(); if (!b) return;
+                    pos = clamp(pos || defaultPos());
+                    b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px';
+                    if (open) placePanel();
+                }
+                function save(){ try { localStorage.setItem(KEY, JSON.stringify(pos)); } catch(e){} }
+                function placePanel(){
+                    const m = $('vc-modal'); if (!m || window.innerWidth <= 640) return;
+                    const w = 336, h = Math.min(440, window.innerHeight - 120);
+                    const rightSide = pos.x > window.innerWidth / 2;
+                    let left = rightSide ? pos.x + SIZE - w : pos.x;
+                    let top = pos.y + SIZE + 10;
+                    if (top + h > window.innerHeight - 12) top = Math.max(64, pos.y - h - 10);
+                    m.style.left = Math.max(12, Math.min(left, window.innerWidth - w - 12)) + 'px';
+                    m.style.top = top + 'px';
+                }
+                function show(){
+                    const b = el(); if (!b) return;
+                    b.classList.add('on'); place(); paint();
+                }
+                function hide(){ const b = el(); if (b) b.classList.remove('on'); }
+                function isOn(){ const b = el(); return !!b && b.classList.contains('on'); }
+                function setOpen(on){
+                    open = !!on;
+                    const ov = $('vc-modal-overlay'), m = $('vc-modal');
+                    document.body.classList.toggle('vc-bubbled', open);
+                    if (ov) ov.classList.toggle('bubbled', open);
+                    if (m && !open) { m.style.left = ''; m.style.top = ''; }
+                    if (open) placePanel();
+                }
+                function paint(){
+                    const b = el(); if (!b) return;
+                    let n = 0; try { n = chatUnreadTotal(); } catch(e){}
+                    b.classList.toggle('has-n', n > 0);
+                    const tag = b.querySelector('.vb-n');
+                    if (tag) tag.textContent = n > 9 ? '9+' : String(n || '');
+                    b.classList.toggle('in-call', !!st.inCall);
+                    const t = b.querySelector('.vb-t'), src = $('vc-timer');
+                    if (t && src && st.inCall) t.textContent = src.textContent || '0:00';
+                }
+                function ping(){
+                    const b = el(); if (!b || !b.classList.contains('on')) return;
+                    b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping');
+                }
+                // drag, mouse and touch alike
+                function startDrag(ev){
+                    const b = el(); if (!b) return;
+                    const pt = ev.touches ? ev.touches[0] : ev;
+                    const dx = pt.clientX - pos.x, dy = pt.clientY - pos.y;
+                    dragging = true; moved = false;
+                    b.classList.add('dragging');
+                    bin().classList.add('on');
+                    const move = e => {
+                        const p = e.touches ? e.touches[0] : e;
+                        const nx = p.clientX - dx, ny = p.clientY - dy;
+                        if (Math.abs(nx - pos.x) > 3 || Math.abs(ny - pos.y) > 3) moved = true;
+                        pos = clamp({ x: nx, y: ny });
+                        b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px';
+                        bin().classList.toggle('hot', overBin());
+                        if (e.cancelable) e.preventDefault();
+                    };
+                    const up = () => {
+                        document.removeEventListener('mousemove', move);
+                        document.removeEventListener('mouseup', up);
+                        document.removeEventListener('touchmove', move);
+                        document.removeEventListener('touchend', up);
+                        dragging = false;
+                        b.classList.remove('dragging');
+                        const drop = overBin();
+                        bin().classList.remove('on', 'hot');
+                        if (drop) { put_away(); return; }
+                        // snap to the nearer side, so it never floats mid-screen
+                        pos = clamp({ x: (pos.x + SIZE / 2 < window.innerWidth / 2) ? PAD : window.innerWidth - SIZE - PAD, y: pos.y });
+                        b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px';
+                        save();
+                        if (open) setTimeout(placePanel, 270);
+                    };
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', up);
+                    document.addEventListener('touchmove', move, { passive: false });
+                    document.addEventListener('touchend', up);
+                    if (ev.cancelable) ev.preventDefault();
+                }
+                function overBin(){
+                    const r = bin().getBoundingClientRect();
+                    const cx = pos.x + SIZE / 2, cy = pos.y + SIZE / 2;
+                    // Forgiving: a fast drag rarely lands dead centre, and the
+                    // whole strip along the bottom of the screen counts.
+                    return Math.hypot(cx - (r.left + r.width / 2), cy - (r.top + r.height / 2)) < 96;
+                }
+                function put_away(){
+                    hide(); setOpen(false);
+                    setPanelOpen(false); st.panelOpen = false;
+                    try { stopDirectoryPoll(); } catch(e){}
+                    try { UI.toast('Messages put away — the phone icon brings it back', 'info'); } catch(e){}
+                }
+                function bind(){
+                    const b = el(); if (!b || b.__bound) return;
+                    b.__bound = true;
+                    pos = clamp(pos || defaultPos());
+                    b.style.left = pos.x + 'px'; b.style.top = pos.y + 'px';
+                    b.addEventListener('mousedown', startDrag);
+                    b.addEventListener('touchstart', startDrag, { passive: false });
+                    b.addEventListener('click', () => {
+                        if (moved) { moved = false; return; }     // a drag is not a click
+                        VoiceCall.openPanel(true);
+                    });
+                    window.addEventListener('resize', () => { pos = clamp(pos || defaultPos()); place(); });
+                }
+                return { bind, show, hide, isOn, setOpen, paint, ping, place, isOpen: () => open };
+            })();
+
+            /* Panel-header drag: in bubble mode the card moves with its header. */
+            (function(){
+                let on = false, dx = 0, dy = 0;
+                document.addEventListener('mousedown', e => {
+                    const h = e.target.closest && e.target.closest('#vc-modal-header');
+                    if (!h || e.target.closest('button')) return;
+                    const ov = $('vc-modal-overlay');
+                    if (!ov || !ov.classList.contains('bubbled') || window.innerWidth <= 640) return;
+                    const m = $('vc-modal'), r = m.getBoundingClientRect();
+                    dx = e.clientX - r.left; dy = e.clientY - r.top; on = true;
+                    const move = ev => {
+                        const w = m.offsetWidth, ht = m.offsetHeight;
+                        m.style.left = Math.max(8, Math.min(ev.clientX - dx, window.innerWidth - w - 8)) + 'px';
+                        m.style.top = Math.max(60, Math.min(ev.clientY - dy, window.innerHeight - ht - 8)) + 'px';
+                        ev.preventDefault();
+                    };
+                    const up = () => { on = false; document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', up);
+                    e.preventDefault();
+                })
+            })();
+
             function toggleMinimise(){
-                const m = $('vc-modal');
-                if (!m) return;
-                const min = m.classList.toggle('vc-min');
-                // Minimised, the header is all you can see -- so it should say
-                // who you were talking to, not just "Messages".
-                const t = $('vc-modal-title');
-                if (!t) return;
-                t.textContent = (min && chat.tab === 'chat' && chat.peer)
-                    ? (chat.peerName || 'Messages')
-                    : (chat.tab === 'call' ? 'Call a Teammate' : 'Messages');
+                // Minimise no longer shrinks the window -- it parks the whole
+                // panel as the bubble.
+                setPanelOpen(false); st.panelOpen = false;
+                Bubble.setOpen(false);
+                Bubble.show();
+                try { stopDirectoryPoll(); } catch(e){}
             }
-            function expandIfMinimised(){
-                const m = $('vc-modal');
-                if (m && m.classList.contains('vc-min')) toggleMinimise();
+            function expandIfMinimised(){ /* nothing is minimised in place any more */ }
+            function expandFull(){
+                Bubble.setOpen(false);
+                Bubble.hide();
+                setPanelOpen(true); st.panelOpen = true;
+                try { startDirectoryPoll(); } catch(e){}
             }
 
             function showTab(which){
@@ -27110,6 +27343,7 @@ ${(() => {
                 if (tab) { tab.textContent = total || ''; tab.style.display = total ? 'inline-block' : 'none'; }
                 // Same badge the incoming call uses, so one dot means "something
                 // is waiting for you" wherever it comes from.
+                try { Bubble.paint(); } catch(e){}
                 const b = $('vc-fab-badge');
                 if (b) {
                     // v2.113.0: a number, not a dot. An incoming call with nothing
@@ -27209,6 +27443,7 @@ ${(() => {
                     if (!inc.length || incidentUp()) return;
                     const last = inc[inc.length - 1];
                     show(last, keyOf(last), inc.length);
+                    try { Bubble.ping(); } catch(e){}
                     if (!st.inCall && !st.callId && now - lastSound > 3000){
                         lastSound = now;
                         try { VcSfx.message(); } catch(e){}
@@ -27327,8 +27562,11 @@ ${(() => {
             // ── Public API ────────────────────────────────────────────────────
             window.VoiceCall = {
                 state: st,
-                openPanel() {
+                openPanel(fromBubble) {
                     startDirectoryPoll();
+                    // From the bubble it opens as a card beside it; from the
+                    // header icon it opens as the full drawer, as before.
+                    try { Bubble.bind(); Bubble.setOpen(!!fromBubble); if (fromBubble) Bubble.show(); else Bubble.hide(); } catch(e){}
                     setPanelOpen(true);
                     st.panelOpen = true;
                     if (!st.inCall) setStatus('', '');
@@ -27337,10 +27575,11 @@ ${(() => {
                     if (st.inCall) return; // don't close during a live call
                     setPanelOpen(false);
                     st.panelOpen = false;
+                    try { Bubble.setOpen(false); Bubble.hide(); } catch(e){}
                     stopDirectoryPoll();
                 },
                 testMessageAlert(){ try { MsgToast.demo(); } catch(e){} },
-                cancelReply, toggleFind, toggleNewMenu, setChatFilter, togglePin,
+                cancelReply, toggleFind, toggleNewMenu, setChatFilter, togglePin, expandFull,
                 mentionInput(ta){ try { Mention.onInput(ta); } catch(e){} },
                 mentionBlur(){ setTimeout(() => { try { Mention.close(); } catch(e){} }, 160); },
                 toggleMinimise,
