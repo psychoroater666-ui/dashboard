@@ -5398,22 +5398,46 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            the dashboard stays readable and clickable, and clicking away no
            longer closes it. The overlay itself is click-through; only the panel
            takes pointer events. */
+        /* v2.110.0: the docked 380x480 box showed one and a half messages
+           and a photo filled it. Messages are now a full-height drawer on
+           the right (420px); the dashboard stays readable beside it. */
         #vc-modal-overlay {
             display: none; position: fixed; inset: 0; background: transparent;
             pointer-events: none; z-index: 8600;
-            align-items: flex-end; justify-content: flex-end; padding: 0 20px 20px;
+            align-items: stretch; justify-content: flex-end; padding: 0;
         }
         #vc-modal-overlay.open { display: flex; }
         #vc-modal {
-            pointer-events: auto; background: var(--white); border-radius: 18px;
-            width: 380px; max-width: calc(100vw - 40px); max-height: calc(100vh - 84px);
+            pointer-events: auto; background: var(--white); border-radius: 0;
+            width: 420px; max-width: 100vw; height: 100%; max-height: none;
             display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif;
-            box-shadow: 0 26px 70px rgba(15,23,42,.3), 0 0 0 1px var(--border-color);
+            border-left: 1px solid var(--border-color);
+            box-shadow: -18px 0 44px rgba(15,23,42,.16);
             animation: vcDockIn .26s cubic-bezier(.16,1,.3,1) both;
         }
-        @keyframes vcDockIn { from { opacity: 0; transform: translateY(20px) scale(.97); } to { opacity: 1; transform: none; } }
-        /* minimised: the header alone, still showing who you were talking to */
-        #vc-modal.vc-min { width: 300px; }
+        @keyframes vcDockIn { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+        /* the thread and the people list fill whatever height is left */
+        #vc-thread-msgs { height: auto !important; flex: 1 1 auto !important; min-height: 0 !important; }
+        #vc-chat-people.visible { max-height: none !important; flex: 1 1 auto; min-height: 0; }
+        #vc-chat-thread.visible { flex: 1 1 auto; }
+        #vc-branch-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        /* minimised: a pill in the corner, still showing who you were talking to */
+        #vc-modal.vc-min { width: 300px; height: auto; align-self: flex-end; margin: 0 20px 20px 0;
+                           border-radius: 18px; border-left: 0; box-shadow: 0 18px 44px rgba(15,23,42,.28); }
+        /* messages: sending / failed states */
+        .vc-msg.pending { opacity: .82; }
+        .vc-msg.failed { opacity: .55; }
+        .vc-retry { align-self: flex-end; flex-shrink: 0; font-size: .66rem; font-weight: 800; color: #DC2626;
+                    cursor: pointer; margin: 2px 4px 0 0; }
+        .vc-retry:hover { text-decoration: underline; }
+        /* "n new messages" line where you left off */
+        .vc-newline { flex-shrink: 0; display: flex; align-items: center; gap: 8px; margin: 10px 0 4px;
+                      font-size: .62rem; font-weight: 800; letter-spacing: .3px; color: #DC2626; }
+        .vc-newline::before, .vc-newline::after { content: ""; flex: 1; height: 1px; background: #DC2626; opacity: .35; }
+        /* presence dot on avatars */
+        .vc-chat-ava { position: relative; }
+        .vc-chat-ava.online::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px;
+                                     border-radius: 50%; background: #059669; border: 2px solid var(--white); }
         #vc-modal.vc-min > *:not(#vc-modal-header) { display: none !important; }
         #vc-modal.vc-min #vc-modal-header { cursor: pointer; }
         #vc-min-btn i { transition: transform .2s; }
@@ -5424,8 +5448,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         /* on a phone a floating window is useless -- it stays a full-width sheet */
         @media (max-width: 640px) {
             #vc-modal-overlay { padding: 0; }
-            #vc-modal { width: 100%; max-width: none; max-height: 92vh; border-radius: 18px 18px 0 0; }
-            #vc-modal.vc-min { width: 100%; }
+            #vc-modal { width: 100%; max-width: none; height: 100%; max-height: none; border-radius: 0; border-left: 0; }
+            #vc-modal.vc-min { width: auto; max-width: calc(100% - 24px); margin: 0 12px calc(78px + env(safe-area-inset-bottom)) 0; }
+            #vc-composer { padding-bottom: calc(12px + env(safe-area-inset-bottom)) !important; }
         }
         #vc-modal-header {
             background: linear-gradient(135deg, #010197 0%, #1B1BB5 58%, #3B5BDB 135%); color: #fff;
@@ -7589,7 +7614,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.109.1 · 17 Sep 2026 · Overview cards pack by content; phone profile menu above filter bar';
+        const BUILD_VERSION = 'v2.110.0 · 17 Sep 2026 · Messages as a full-height drawer, instant send with retry, new-message line, presence';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25047,7 +25072,13 @@ ${(() => {
             function startPresenceHeartbeat(){
                 if (presenceTimer) return;              // never stack intervals
                 signal({ type: 'presence' });
-                presenceTimer = setInterval(() => { if (!document.hidden) signal({ type: 'presence' }); }, PRESENCE_MS);
+                // v2.110.0: the heartbeat no longer stops while the tab is hidden
+                // -- a manager reading WhatsApp for a minute went "unavailable"
+                // and the call button gave up on them. One tiny request per 20 s.
+                presenceTimer = setInterval(() => signal({ type: 'presence' }), PRESENCE_MS);
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) { signal({ type: 'presence' }); try { chatPoll(); } catch(e){} }
+                });
             }
 
             // ── Directory of who's online right now ──────────────────────────
@@ -25236,7 +25267,7 @@ ${(() => {
                 $('vc-status-bar').style.display  = which === 'call' ? '' : 'none';
                 $('vc-chat-people').classList.toggle('visible', which === 'chat' && !inThread);
                 $('vc-chat-thread').classList.toggle('visible', !!inThread);
-                if (which === 'chat') { loadPeople(); chatPoll(); }
+                if (which === 'chat') { loadPeople(); chatPoll(); startOnlineWatch(); }
             }
 
             // The directory and group list are remembered too, so the panel is
@@ -25324,8 +25355,8 @@ ${(() => {
                     const last = chat.last[p.email];
                     const sub = last ? (last.mine ? 'You: ' : '') + String(last.body).slice(0, 44)
                               : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch);
-                    return `<div class="vc-chat-row${n ? ' has-unread' : ''}" onclick="VoiceCall.openThread('${String(p.email).replace(/'/g,"\\'")}')">
-                        <div class="vc-chat-ava">${chatEsc(chatInitials(p.name))}</div>
+                    return `<div class="vc-chat-row${n ? ' has-unread' : ''}" data-email="${chatEsc(String(p.email).toLowerCase())}" onclick="VoiceCall.openThread('${String(p.email).replace(/'/g,"\\'")}')">
+                        <div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name))}</div>
                         <div class="vc-chat-meta">
                             <div class="vc-chat-name">${chatEsc(p.name)}</div>
                             <div class="vc-chat-sub">${chatEsc(sub)}</div>
@@ -25400,6 +25431,7 @@ ${(() => {
                 if (chat.rec) cancelVoice();
                 clearAttachment();
                 $('vc-thread-name').textContent = chat.peerName;
+                delete $('vc-thread-sub').dataset.base;
                 $('vc-thread-sub').textContent = grp ? (grp.members + ' members · tap for details')
                                                : (p ? (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch) : '');
                 $('vc-thread-ava').textContent = grp ? '' : chatInitials(chat.peerName);
@@ -25408,9 +25440,10 @@ ${(() => {
                 $('vc-thread-sub').style.cursor = grp ? 'pointer' : '';
                 if (grp) loadMembers(email);
                 const cached = ThreadCache.get(email);
+                const unreadN = chat.unread[email] || 0;   // where they left off
                 if (cached && cached.length) {
                     // Instantly, from what we already hold.
-                    renderThread(cached, true);
+                    renderThread(cached, true); markNewLine(unreadN);
                 } else {
                     $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
                 }
@@ -25430,12 +25463,62 @@ ${(() => {
                     const msgs = res.messages || [];
                     const same = cached && cached.length === msgs.length &&
                                  cached.every((m, i) => m.id === msgs[i].id && m.readAt === msgs[i].readAt && m.deliveredAt === msgs[i].deliveredAt);
-                    if (!same) renderThread(msgs, true);
+                    if (!same) { renderThread(msgs, true); markNewLine(unreadN); }
                     ThreadCache.set(email, msgs);
                 }
+                paintPresence();
+            }
+            /** A red "n new messages" line above the first message they have
+             *  not seen, scrolled into view, so a busy manager lands where
+             *  the conversation moved on without them. */
+            function markNewLine(n){
+                const box = $('vc-thread-msgs');
+                if (!box) return;
+                const old = box.querySelector('.vc-newline'); if (old) old.remove();
+                if (!n) return;
+                const theirs = box.querySelectorAll('.vc-msg.them');
+                const first = theirs[Math.max(0, theirs.length - n)];
+                if (!first) return;
+                first.insertAdjacentHTML('beforebegin', '<div class="vc-newline">' + n + ' new message' + (n === 1 ? '' : 's') + '</div>');
+                const line = box.querySelector('.vc-newline');
+                if (line) box.scrollTop = Math.max(0, line.offsetTop - box.offsetTop - 24);
             }
 
             function closeThread(){ if (chat.rec) cancelVoice(); clearAttachment(); chat.peer = null; showTab('chat'); renderPeople(); }
+
+            // ── who is online, shown in the chat list and thread header ─────
+            // Same heartbeat the Call tab trusts (40 s window), so someone
+            // who just messaged you can never read as unavailable.
+            chat.online = new Set();
+            let onlineTimer = null;
+            async function refreshOnline(){
+                if (!st.panelOpen) return;
+                const res = await signal({ type: 'who' });
+                if (!res || res.status !== 'success' || !Array.isArray(res.people)) return;
+                const next = new Set(res.people.map(p => String(p.email || '').toLowerCase()));
+                const changed = next.size !== chat.online.size || [...next].some(e => !chat.online.has(e));
+                chat.online = next;
+                if (changed) paintPresence();
+            }
+            function startOnlineWatch(){
+                if (onlineTimer) return;
+                refreshOnline();
+                onlineTimer = setInterval(refreshOnline, 20000);
+            }
+            function paintPresence(){
+                const on = e => chat.online.has(String(e || '').toLowerCase());
+                document.querySelectorAll('#vc-chat-people .vc-chat-row[data-email]').forEach(r => {
+                    const a = r.querySelector('.vc-chat-ava'); if (a) a.classList.toggle('online', on(r.dataset.email));
+                });
+                const sub = $('vc-thread-sub'), ava = $('vc-thread-ava');
+                if (sub && chat.peer && !isGroupPeer(chat.peer)) {
+                    const base = sub.dataset.base || sub.textContent;
+                    sub.dataset.base = base;
+                    const isOn = on(chat.peer);
+                    sub.textContent = base + (isOn ? ' · online' : '');
+                    if (ava) ava.classList.toggle('online', isOn);
+                } else if (sub) { delete sub.dataset.base; if (ava) ava.classList.remove('online'); }
+            }
 
             // ── attachments, voice notes, typing and receipts ──────────────
             // A file never travels through the message itself: it is uploaded
@@ -25746,6 +25829,8 @@ ${(() => {
                 if (!m.mine) return '';
                 // A group has many recipients, so one pair of ticks cannot
                 // speak for all of them -- the read-by line below does.
+                if (m.failed) return '<i class="fas fa-circle-exclamation vc-tick" style="color:#FCA5A5;"></i>';
+                if (m.pending) return '<i class="fas fa-clock vc-tick"></i>';
                 if (isGroupPeer(chat.peer)) return '';
                 if (m.readAt) return '<i class="fas fa-check-double vc-tick seen"></i>';
                 if (m.deliveredAt) return '<i class="fas fa-check-double vc-tick"></i>';
@@ -25842,7 +25927,7 @@ ${(() => {
                     const grouped = (!newDay && !hasFile && fromKey === lastFrom) ? ' grouped' : '';
                     lastFrom = hasFile ? '' : fromKey;
                     const media = m.kind === 'image' ? (text ? ' has-media' : ' has-media media-only') : '';
-                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}" data-id="${m.id}">${who}${attachmentHtml(m)}${text}`
+                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}${m.pending ? ' pending' : ''}" data-id="${m.id}">${who}${attachmentHtml(m)}${text}`
                              + `<span class="vc-msg-time">${chatEsc(chatTime(m.at))}<span class="vc-tick-slot">${tickFor(m)}</span></span></div>`);
                 }
                 box.dataset.lastDay = lastDay;
@@ -25906,25 +25991,69 @@ ${(() => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
             }
 
-            async function sendMessage(){
+            // v2.110.0: a text message is drawn the instant Enter is pressed,
+            // with a clock; the tick replaces it when the server confirms. A
+            // refused one stays in place, faded, with "Not sent · tap to retry"
+            // -- nothing typed is ever lost. Attachments still wait for the
+            // upload, since there is nothing to draw until it has a file key.
+            const outbox = {};                        // tmp id -> { body, att, peer }
+            async function sendMessage(retryId){
                 const input = $('vc-composer-input');
-                const body = String(input.value || '').trim();
-                const att = chat.pending || null;
-                if ((!body && !att) || !chat.peer) return;
+                let body, att, peer = chat.peer;
+                if (retryId && outbox[retryId]) {
+                    ({ body, att, peer } = outbox[retryId]);
+                    delete outbox[retryId];
+                    const old = $('vc-thread-msgs') && $('vc-thread-msgs').querySelector('.vc-msg[data-id="' + retryId + '"]');
+                    if (old) { const r = old.nextElementSibling; if (r && r.classList.contains('vc-retry')) r.remove(); old.remove(); }
+                    chat.threadIds.delete(retryId);
+                } else {
+                    body = String(input.value || '').trim();
+                    att = chat.pending || null;
+                    if ((!body && !att) || !peer) return;
+                    input.value = ''; composerGrow(input);
+                }
+                if (!peer) return;
                 const btn = $('vc-send-btn');
-                input.value = ''; composerGrow(input);
-                btn.disabled = true;
-                const res = await chatApi('chat_send', { to: chat.peer, body, attachment: att });
+                const optimistic = !att && peer === chat.peer;
+                let tmp = null;
+                if (optimistic) {
+                    tmp = 'tmp-' + Date.now() + '-' + Math.floor(Math.random() * 1e4);
+                    outbox[tmp] = { body, att, peer };
+                    renderThread([{ id: tmp, at: new Date().toISOString(), body, mine: true, kind: 'text', file: null,
+                                    from: chat.me, to: peer, pending: true }]);
+                } else {
+                    btn.disabled = true;
+                }
+                const res = await chatApi('chat_send', { to: peer, body, attachment: att });
                 btn.disabled = false;
+                const box = $('vc-thread-msgs');
+                const el = tmp && box ? box.querySelector('.vc-msg[data-id="' + tmp + '"]') : null;
                 if (res && res.status === 'success') {
-                    clearAttachment();
+                    if (!optimistic) clearAttachment();
+                    if (tmp) delete outbox[tmp];
                     const sent = { id: res.id, at: res.at, body: res.body, mine: true,
-                                   kind: res.kind || 'text', file: res.file || null, from: chat.me, to: chat.peer };
-                    ThreadCache.add(chat.peer, sent);
-                    renderThread([sent]);
-                    chat.last[chat.peer] = { at: res.at, mine: true,
+                                   kind: res.kind || 'text', file: res.file || null, from: chat.me, to: peer };
+                    ThreadCache.add(peer, sent);
+                    if (el && chat.peer === peer) {
+                        // Same bubble, now confirmed: swap the clock for the tick
+                        // and the id for the real one. Nothing is redrawn.
+                        chat.threadIds.delete(tmp); chat.threadIds.add(sent.id);
+                        el.dataset.id = String(sent.id); el.classList.remove('pending');
+                        const t = el.querySelector('.vc-msg-time');
+                        if (t) t.innerHTML = chatEsc(chatTime(sent.at)) + '<span class="vc-tick-slot">' + tickFor(sent) + '</span>';
+                    } else if (chat.peer === peer) {
+                        renderThread([sent]);
+                    }
+                    chat.last[peer] = { at: res.at, mine: true,
                         body: res.body || (res.kind === 'audio' ? 'Voice note' : res.kind === 'image' ? 'Photo' : 'Attachment') };
                     if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
+                    try { signal({ type: 'presence' }); } catch(e){}   // sending is proof you are here
+                } else if (el) {
+                    el.classList.remove('pending'); el.classList.add('failed');
+                    const slot = el.querySelector('.vc-tick-slot');
+                    if (slot) slot.innerHTML = tickFor({ mine: true, failed: true });
+                    el.insertAdjacentHTML('afterend', '<div class="vc-retry" onclick="VoiceCall.retryMessage(\'' + tmp + '\')">Not sent · tap to retry</div>');
+                    box.scrollTop = box.scrollHeight;
                 } else {
                     // Put it back rather than losing what they typed. The
                     // attachment stays attached for the same reason.
@@ -25932,6 +26061,7 @@ ${(() => {
                     setStatus((res && res.message) || 'Message could not be sent', 'error');
                 }
             }
+            function retryMessage(id){ sendMessage(id); }
 
             function chatUnreadTotal(){
                 let total = 0;
@@ -26022,7 +26152,11 @@ ${(() => {
                 }
                 // Anything for the conversation on screen goes straight in.
                 if (chat.peer) {
-                    const forThread = fresh.filter(m => keyOf(m) === chat.peer);
+                    // A message of mine still waiting for its confirmation is
+                    // already on screen as a pending bubble; the poll must not
+                    // draw it a second time.
+                    const inFlight = m => m.mine && Object.values(outbox).some(o => o.peer === chat.peer && o.body === m.body);
+                    const forThread = fresh.filter(m => keyOf(m) === chat.peer && !inFlight(m));
                     if (forThread.length) {
                         renderThread(forThread);
                         await chatApi('chat_mark_read', { peer: chat.peer });
@@ -26042,8 +26176,10 @@ ${(() => {
                 // Every two seconds with a conversation open: a typing dot that
                 // arrives five seconds late is worse than none at all. Slower in
                 // the background, where only the unread badge matters.
+                let hiddenTicks = 0;
                 chat.pollTimer = setInterval(() => {
-                    if (document.hidden) return;
+                    // Hidden tab: keep the unread badge honest, every 6 s instead of 2.
+                    if (document.hidden) { if (++hiddenTicks % 3) return; } else hiddenTicks = 0;
                     // After a failed poll, stand back for a while. Two seconds
                     // is right when things are working and exactly wrong when
                     // they are not -- it turns one problem into thirty requests
@@ -26128,7 +26264,8 @@ ${(() => {
                 clearAttachment,
                 toggleVoice,
                 cancelVoice,
-                callCurrentThread
+                callCurrentThread,
+                retryMessage
             };
 
             // Start listening for incoming calls, and announcing presence,
