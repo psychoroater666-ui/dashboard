@@ -5218,6 +5218,59 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         .vc-chat-row.has-unread .vc-chat-name { font-weight: 800; }
         .vc-chat-row.has-unread .vc-chat-sub { color: var(--text-main); font-weight: 600; }
 
+
+        /* ── v2.116.0: one Messages list, sorted by what needs attention ────
+           Groups used to be a fixed block above people, so a room last used
+           on the 15th sat above a message from a minute ago -- and with 20
+           branch rooms synced that only gets worse. Now everything is one
+           list: unread first, then most recent. The two setup rows moved to
+           the header button, which gives the list its space back. */
+        #vc-head-btns{ display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+        #vc-modal-header .vc-close-btn.on{ background: rgba(255,255,255,.34); }
+        #vc-modal-header .vc-close-btn.pri{ background: #64D0FF; color: #010197; }
+        #vc-modal-header .vc-close-btn.pri:hover{ background: #7ad8ff; }
+        #vc-new-menu{ position: absolute; right: 12px; top: 54px; z-index: 30; display: none; min-width: 232px; padding: 6px;
+            background: var(--white); border: 1px solid var(--border-color); border-radius: 14px;
+            box-shadow: 0 16px 40px -12px rgba(1,1,151,.34), 0 3px 12px rgba(0,0,0,.10); }
+        #vc-new-menu.open{ display: block; }
+        #vc-new-menu button{ display: flex; align-items: center; gap: 11px; width: 100%; border: 0; background: transparent;
+            padding: 9px 10px; border-radius: 10px; cursor: pointer; text-align: left; color: var(--text-main); font: 700 .82rem 'Inter', sans-serif; }
+        #vc-new-menu button:hover{ background: var(--bg-light); }
+        #vc-new-menu button i{ width: 30px; height: 30px; flex: none; border-radius: 10px; background: rgba(1,1,151,.08); color: #010197;
+            display: flex; align-items: center; justify-content: center; font-size: .78rem; }
+        body.dark-theme #vc-new-menu button i{ background: rgba(100,208,255,.14); color: #64D0FF; }
+        #vc-new-menu span{ display: block; font-size: .68rem; font-weight: 600; color: var(--text-muted); margin-top: 1px; }
+        #vc-chat-tools{ padding: 9px 12px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; display: none; }
+        #vc-chat-tools.on{ display: block; }
+        #vc-chat-find{ display: none; align-items: center; gap: 8px; margin-bottom: 8px; padding: 0 12px;
+            background: var(--bg-light); border: 1.5px solid var(--border-color); border-radius: 12px; color: var(--text-muted); }
+        #vc-chat-tools.finding #vc-chat-find{ display: flex; }
+        #vc-chat-find input{ flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 9px 0;
+            font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); }
+        #vc-chat-chips{ display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+        #vc-chat-chips::-webkit-scrollbar{ display: none; }
+        .vc-mchip{ flex: none; display: flex; align-items: center; gap: 5px; font: 800 .68rem 'Inter', sans-serif; padding: 6px 11px;
+            border-radius: 999px; border: 1.5px solid var(--border-color); color: var(--text-muted); background: var(--white);
+            cursor: pointer; white-space: nowrap; -webkit-user-select: none; user-select: none; }
+        .vc-mchip:hover{ border-color: #010197; color: #010197; }
+        body.dark-theme .vc-mchip:hover{ border-color: #64D0FF; color: #64D0FF; }
+        .vc-mchip.on, .vc-mchip.on:hover{ background: #010197; border-color: #010197; color: #fff; }
+        .vc-mchip b{ background: #DC2626; color: #fff; border-radius: 8px; padding: 0 5px; font-size: .6rem; }
+        .vc-chat-sep{ font: 800 .58rem 'Inter', sans-serif; letter-spacing: .7px; text-transform: uppercase;
+            color: var(--text-muted); padding: 12px 11px 4px; }
+        .vc-chat-row.has-unread{ background: rgba(1,1,151,.045); }
+        body.dark-theme .vc-chat-row.has-unread{ background: rgba(100,208,255,.06); }
+        .vc-chat-row.has-unread .vc-chat-when{ color: #010197; font-weight: 800; }
+        body.dark-theme .vc-chat-row.has-unread .vc-chat-when{ color: #64D0FF; }
+        .vc-chat-name .vc-pin{ font-size: .6rem; color: var(--text-muted); margin-left: 6px; transform: rotate(35deg); display: inline-block; }
+        .vc-pin-btn{ flex: none; width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent;
+            color: var(--text-muted); font-size: .64rem; cursor: pointer; opacity: 0; transition: opacity .15s, background .15s; }
+        .vc-chat-row:hover .vc-pin-btn{ opacity: 1; }
+        .vc-pin-btn:hover{ background: var(--border-color); color: var(--text-main); }
+        .vc-chat-row.pinned .vc-pin-btn{ opacity: 1; color: #010197; }
+        body.dark-theme .vc-chat-row.pinned .vc-pin-btn{ color: #64D0FF; }
+        @media (hover: none){ .vc-pin-btn{ opacity: .5; } }
+
         /* thread header */
         #vc-thread-head {
             display: flex; align-items: center; gap: 11px; padding: 10px 14px;
@@ -7691,10 +7744,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             <div id="vc-modal-header" onclick="VoiceCall.expandIfMinimised()">
                 <h3><span class="vc-head-ic"><i class="fas fa-phone" id="vc-modal-icon"></i></span><span id="vc-modal-title">Call a Teammate</span></h3>
-                <span style="display:flex;align-items:center;gap:7px;flex-shrink:0;">
+                <span id="vc-head-btns">
+                    <button class="vc-close-btn" id="vc-find-btn" onclick="event.stopPropagation(); VoiceCall.toggleFind()" title="Search conversations"><i class="fas fa-magnifying-glass"></i></button>
+                    <button class="vc-close-btn pri" id="vc-new-btn" onclick="event.stopPropagation(); VoiceCall.toggleNewMenu()" title="New conversation"><i class="fas fa-comment-medical"></i></button>
                     <button class="vc-close-btn" id="vc-min-btn" onclick="event.stopPropagation(); VoiceCall.toggleMinimise()" title="Minimise"><i class="fas fa-minus"></i></button>
                     <button class="vc-close-btn" onclick="event.stopPropagation(); VoiceCall.closePanel()" title="Close"><i class="fas fa-xmark"></i></button>
                 </span>
+            </div>
+
+            <div id="vc-new-menu">
+                <button type="button" onclick="VoiceCall.newGroup(); VoiceCall.toggleNewMenu(false)"><i class="fas fa-user-group"></i><span style="color:var(--text-main);font-size:.82rem;font-weight:700;">New group<span>Message several people at once</span></span></button>
+                <button type="button" id="vc-sync-rooms" onclick="VoiceCall.syncGroups(this); VoiceCall.toggleNewMenu(false)"><i class="fas fa-rotate"></i><span style="color:var(--text-main);font-size:.82rem;font-weight:700;">Branch &amp; region rooms<span>Create or update them from Manage Users</span></span></button>
             </div>
 
             <div id="vc-tabs">
@@ -7705,6 +7765,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             <div id="vc-status-bar"></div>
 
             <!-- Messages: who to talk to -->
+            <div id="vc-chat-tools">
+                <div id="vc-chat-find"><i class="fas fa-magnifying-glass" style="font-size:.74rem"></i><input id="vc-chat-q" type="text" autocomplete="off" placeholder="Search conversations"></div>
+                <div id="vc-chat-chips"></div>
+            </div>
             <div id="vc-chat-people"></div>
 
             <!-- v2.111.1: "send this case to…" — pick a room or a person -->
@@ -7828,7 +7892,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.115.0 · 18 Sep 2026 · Contacts tab, reply to a message';
+        const BUILD_VERSION = 'v2.116.0 · 18 Sep 2026 · one Messages list: unread first, pins, filters';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25874,6 +25938,8 @@ ${(() => {
                 $('vc-branch-list').style.display = (which === 'call' && !st.inCall) ? '' : 'none';
                 $('vc-status-bar').style.display  = which === 'call' ? '' : 'none';
                 $('vc-chat-people').classList.toggle('visible', which === 'chat' && !inThread);
+                const tools = $('vc-chat-tools'); if (tools) tools.classList.toggle('on', which === 'chat' && !inThread);
+                if (which !== 'chat') { try { toggleNewMenu(false); } catch(e){} }
                 if (which !== 'chat' || inThread) { $('vc-pick').classList.remove('visible'); pick = null; }
                 $('vc-chat-thread').classList.toggle('visible', !!inThread);
                 if (which === 'chat') { loadPeople(); chatPoll(); startOnlineWatch(); }
@@ -25912,86 +25978,134 @@ ${(() => {
             const isGroupPeer = t => String(t || '').indexOf('g:') === 0;
             function groupById(id){ return chat.groups.find(g => 'g:' + g.id === id || g.id === id) || null; }
 
+            /* ── v2.116.0: one list, in the order that needs attention ─────
+               Pinned first, then unread, then most recent. Groups and people
+               are the same kind of thing here -- a conversation -- so they are
+               sorted together. A room nobody has written in yet is not a
+               conversation and is reachable from the new-conversation menu
+               instead of filling the list. */
+            const PIN_KEY = 'crumble_chat_pins_v1';
+            let chatPins = (() => { try { return JSON.parse(localStorage.getItem(PIN_KEY) || '[]') || []; } catch(e){ return []; } })();
+            let chatFilter = 'all', chatQuery = '';
+            function isPinned(k){ return chatPins.indexOf(k) !== -1; }
+            function togglePin(k){
+                const i = chatPins.indexOf(k);
+                if (i === -1) chatPins.unshift(k); else chatPins.splice(i, 1);
+                chatPins = chatPins.slice(0, 20);
+                try { localStorage.setItem(PIN_KEY, JSON.stringify(chatPins)); } catch(e){}
+                renderPeople();
+            }
+            function setChatFilter(f){ chatFilter = f || 'all'; renderPeople(); }
+            function toggleFind(on){
+                const t = $('vc-chat-tools'); if (!t) return;
+                const want = (on === undefined) ? !t.classList.contains('finding') : !!on;
+                t.classList.toggle('finding', want);
+                $('vc-find-btn').classList.toggle('on', want);
+                if (want) { const i = $('vc-chat-q'); if (i) setTimeout(() => i.focus(), 30); }
+                else { chatQuery = ''; const i = $('vc-chat-q'); if (i) i.value = ''; renderPeople(); }
+            }
+            function toggleNewMenu(on){
+                const m = $('vc-new-menu'); if (!m) return;
+                const want = (on === undefined) ? !m.classList.contains('open') : !!on;
+                m.classList.toggle('open', want);
+                $('vc-new-btn').classList.toggle('on', want);
+            }
+            document.addEventListener('click', e => {
+                const m = $('vc-new-menu');
+                if (m && m.classList.contains('open') && !e.target.closest('#vc-new-menu, #vc-new-btn')) toggleNewMenu(false);
+            });
+
             function renderPeople(){
                 const el = $('vc-chat-people');
                 if (!el) return;
-                if (!chat.people.length) {
+                const tools = $('vc-chat-tools');
+                if (tools) tools.classList.toggle('on', chat.tab === 'chat' && !chat.peer);
+                if (!chat.people.length && !chat.groups.length) {
                     el.innerHTML = '<div class="vc-chat-empty">No teammates to message yet.</div>';
+                    el.__lastHtml = null;
                     return;
                 }
-                const newBtn = `<div class="vc-chat-row vc-new-group" onclick="VoiceCall.newGroup()">
-                        <div class="vc-chat-ava new"><i class="fas fa-plus"></i></div>
-                        <div class="vc-chat-meta"><div class="vc-chat-name">New group</div>
-                        <div class="vc-chat-sub">Message several people at once</div></div>
-                    </div>`;
                 const canSync = (() => { try { return ['owner','admin'].indexOf(String(PERM.role || '').toLowerCase()) !== -1; } catch(e){ return false; } })();
-                const syncBtn = canSync ? `<div class="vc-chat-row" onclick="VoiceCall.syncGroups(this)">
-                        <div class="vc-chat-ava new"><i class="fas fa-rotate"></i></div>
-                        <div class="vc-chat-meta"><div class="vc-chat-name">Branch &amp; region rooms</div>
-                        <div class="vc-chat-sub">Create or update them from Manage Users</div></div>
-                    </div>` : '';
-                const groupRows = chat.groups.slice().sort((a,b) => {
-                    const ua = chat.unread['g:' + a.id] || 0, ub = chat.unread['g:' + b.id] || 0;
-                    if (ua !== ub) return ub - ua;
-                    const la = chat.last['g:' + a.id], lb = chat.last['g:' + b.id];
-                    if (la && lb) return String(lb.at).localeCompare(String(la.at));
-                    if (la) return -1; if (lb) return 1;
-                    return String(a.name || '').localeCompare(String(b.name || ''));
-                }).map(g => {
-                    const key = 'g:' + g.id;
-                    const n = chat.unread[key] || 0;
-                    const last = chat.last[key];
-                    const sub = last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(chatPlain(last.body)).slice(0, 40)
-                              : g.members + ' members';
+                const sync = $('vc-sync-rooms'); if (sync) sync.style.display = canSync ? '' : 'none';
+
+                // Every conversation, as one kind of thing.
+                const items = [];
+                chat.groups.forEach(g => {
+                    const key = 'g:' + g.id, last = chat.last[key];
+                    // A room nobody has written in is not a conversation yet.
+                    if (!last && !chat.unread[key] && !isPinned(key)) return;
                     const kind = g.kind || 'chat';
-                    const kIcon = kind === 'case' ? 'fa-clipboard-list' : kind === 'branch' ? 'fa-store' : kind === 'region' ? 'fa-map' : 'fa-user-group';
-                    return `<div class="vc-chat-row${n ? ' has-unread' : ''}" onclick="VoiceCall.openThread('${key}')">
-                        <div class="vc-chat-ava grp kind-${kind}"><i class="fas ${kIcon}"></i></div>
-                        <div class="vc-chat-meta">
-                            <div class="vc-chat-name">${chatEsc(g.name)}</div>
-                            <div class="vc-chat-sub">${chatEsc(sub)}</div>
-                        </div>
-                        <div class="vc-chat-right">
-                            ${last ? `<span class="vc-chat-when">${chatEsc(chatWhen(last.at))}</span>` : ''}
-                            ${n ? `<span class="vc-chat-unread">${n}</span>` : ''}
-                        </div>
-                    </div>`;
-                }).join('');
-                // Anyone with unread messages first, then most recent conversation.
-                const sorted = chat.people.slice().sort((a,b) => {
-                    const ua = chat.unread[a.email] || 0, ub = chat.unread[b.email] || 0;
-                    if (ua !== ub) return ub - ua;
-                    const la = chat.last[a.email], lb = chat.last[b.email];
-                    if (la && lb) return String(lb.at).localeCompare(String(la.at));
-                    if (la) return -1;
-                    if (lb) return 1;
-                    return String(a.name || '').localeCompare(String(b.name || ''));
+                    items.push({ key, group: true, name: g.name || 'Group',
+                        ava: `<div class="vc-chat-ava grp kind-${kind}"><i class="fas ${kind === 'case' ? 'fa-clipboard-list' : kind === 'branch' ? 'fa-store' : kind === 'region' ? 'fa-map' : 'fa-user-group'}"></i></div>`,
+                        sub: last ? (last.mine ? 'You: ' : (last.who ? last.who + ': ' : '')) + String(chatPlain(last.body)).slice(0, 44) : g.members + ' members',
+                        at: last ? last.at : '', n: chat.unread[key] || 0, hay: String(g.name || '') });
                 });
-                const html = newBtn + syncBtn + groupRows + sorted.map(p => {
-                    const n = chat.unread[p.email] || 0;
-                    const last = chat.last[p.email];
-                    const sub = last ? (last.mine ? 'You: ' : '') + String(chatPlain(last.body)).slice(0, 44)
-                              : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch);
-                    return `<div class="vc-chat-row${n ? ' has-unread' : ''}" data-email="${chatEsc(String(p.email).toLowerCase())}" onclick="VoiceCall.openThread('${String(p.email).replace(/'/g,"\\'")}')">
-                        <div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name))}</div>
+                chat.people.forEach(p => {
+                    const key = p.email, last = chat.last[key];
+                    items.push({ key, group: false, name: p.name || key,
+                        ava: `<div class="vc-chat-ava${chat.online && chat.online.has(String(key).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name || key))}</div>`,
+                        sub: last ? (last.mine ? 'You: ' : '') + String(chatPlain(last.body)).slice(0, 44)
+                                  : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch),
+                        at: last ? last.at : '', n: chat.unread[key] || 0,
+                        hay: [p.name, p.email, p.role, p.branch].join(' ') });
+                });
+
+                const unreadTotal = items.reduce((t, i) => t + i.n, 0);
+                const q = String(chatQuery || '').toLowerCase();
+                let shown = items.filter(i => {
+                    if (chatFilter === 'unread' && !i.n) return false;
+                    if (chatFilter === 'groups' && !i.group) return false;
+                    if (chatFilter === 'people' && i.group) return false;
+                    if (q && String(i.hay).toLowerCase().indexOf(q) === -1) return false;
+                    return true;
+                });
+                // unread first, then whoever spoke last, then a name
+                const order = (a, b) => (b.n > 0) - (a.n > 0)
+                    || String(b.at || '').localeCompare(String(a.at || ''))
+                    || String(a.name || '').localeCompare(String(b.name || ''));
+                const pinned = shown.filter(i => isPinned(i.key)).sort(order);
+                const rest = shown.filter(i => !isPinned(i.key)).sort(order);
+
+                const chip = (f, label, n) => `<div class="vc-mchip${chatFilter === f ? ' on' : ''}" data-f="${f}">${label}${n ? '<b>' + n + '</b>' : ''}</div>`;
+                const chipsHtml = chip('all', 'All') + chip('unread', 'Unread', unreadTotal) + chip('groups', 'Groups') + chip('people', 'People');
+                const chips = $('vc-chat-chips');
+                if (chips && chips.__lastHtml !== chipsHtml) { chips.__lastHtml = chipsHtml; chips.innerHTML = chipsHtml; }
+
+                const row = i => `<div class="vc-chat-row${i.n ? ' has-unread' : ''}${isPinned(i.key) ? ' pinned' : ''}" data-key="${chatEsc(i.key)}"${i.group ? '' : ` data-email="${chatEsc(String(i.key).toLowerCase())}"`}>
+                        ${i.ava}
                         <div class="vc-chat-meta">
-                            <div class="vc-chat-name">${chatEsc(p.name)}</div>
-                            <div class="vc-chat-sub">${chatEsc(sub)}</div>
+                            <div class="vc-chat-name">${chatEsc(i.name)}${isPinned(i.key) ? '<i class="fas fa-thumbtack vc-pin"></i>' : ''}</div>
+                            <div class="vc-chat-sub">${chatEsc(i.sub)}</div>
                         </div>
+                        <button class="vc-pin-btn" data-pin="${chatEsc(i.key)}" title="${isPinned(i.key) ? 'Unpin' : 'Pin to the top'}"><i class="fas fa-thumbtack"></i></button>
                         <div class="vc-chat-right">
-                            ${last ? `<span class="vc-chat-when">${chatEsc(chatWhen(last.at))}</span>` : ''}
-                            ${n ? `<span class="vc-chat-unread">${n}</span>` : ''}
+                            ${i.at ? `<span class="vc-chat-when">${chatEsc(chatWhen(i.at))}</span>` : ''}
+                            ${i.n ? `<span class="vc-chat-unread">${i.n}</span>` : ''}
                         </div>
                     </div>`;
-                }).join('');
-                // Only touch the DOM when something actually changed. The poll
-                // calls this every two seconds while the list is open, and
-                // rebuilding identical markup each time redrew every avatar
-                // and badge -- the flicker on the Messages list.
-                if(el.__lastHtml === html) return;
+                let html = '';
+                if (pinned.length) html += '<div class="vc-chat-sep">Pinned</div>' + pinned.map(row).join('');
+                if (rest.length) html += (pinned.length ? '<div class="vc-chat-sep">Recent</div>' : '') + rest.map(row).join('');
+                if (!html) html = `<div class="vc-chat-empty">${q ? 'No conversation matches that.' : chatFilter === 'unread' ? 'Nothing unread.' : 'No conversations yet.'}</div>`;
+                // Only touch the DOM when something actually changed: the poll
+                // calls this every two seconds, and rebuilding identical markup
+                // redrew every avatar and badge -- the flicker on this list.
+                if (el.__lastHtml === html) return;
                 el.__lastHtml = html;
                 el.innerHTML = html;
             }
+            document.addEventListener('click', e => {
+                const pin = e.target.closest && e.target.closest('#vc-chat-people .vc-pin-btn');
+                if (pin) { e.stopPropagation(); togglePin(pin.dataset.pin); return; }
+                const row = e.target.closest && e.target.closest('#vc-chat-people .vc-chat-row');
+                if (row && row.dataset.key) openThread(row.dataset.key);
+                const c = e.target.closest && e.target.closest('#vc-chat-chips .vc-mchip');
+                if (c) setChatFilter(c.dataset.f);
+            });
+            document.addEventListener('input', e => {
+                if (e.target && e.target.id === 'vc-chat-q') { chatQuery = String(e.target.value || '').trim(); renderPeople(); }
+            });
+
 
             /* ── conversations kept on the device ────────────────────────────
                Opening a thread used to show "Loading…" for a second and a
@@ -27226,7 +27340,7 @@ ${(() => {
                     stopDirectoryPoll();
                 },
                 testMessageAlert(){ try { MsgToast.demo(); } catch(e){} },
-                cancelReply,
+                cancelReply, toggleFind, toggleNewMenu, setChatFilter, togglePin,
                 mentionInput(ta){ try { Mention.onInput(ta); } catch(e){} },
                 mentionBlur(){ setTimeout(() => { try { Mention.close(); } catch(e){} }, 160); },
                 toggleMinimise,
