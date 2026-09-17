@@ -2749,6 +2749,32 @@
         }
         @media (prefers-reduced-motion: reduce){ #msg-toast{ transition: opacity .15s linear; transform: none; } }
 
+
+        /* ── v2.114.0: @mentions in group chats ───────────────────────────── */
+        #vc-composer{ position: relative; }
+        #vc-mention{
+            position: absolute; left: 12px; right: 12px; bottom: calc(100% + 6px); z-index: 5; display: none;
+            max-height: 232px; overflow-y: auto; overscroll-behavior: contain; padding: 5px;
+            background: var(--white); border: 1px solid var(--border-color); border-radius: 14px;
+            box-shadow: 0 -10px 34px -10px rgba(1,1,151,.28), 0 2px 10px rgba(0,0,0,.08);
+        }
+        #vc-mention.open{ display: block; }
+        #vc-mention .vm-head{ font-size: .58rem; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); padding: 6px 9px 4px; }
+        #vc-mention .vm-opt{ display: flex; align-items: center; gap: 10px; padding: 7px 9px; border-radius: 10px; cursor: pointer; }
+        #vc-mention .vm-opt.on, #vc-mention .vm-opt:hover{ background: rgba(1,1,151,.07); }
+        body.dark-theme #vc-mention .vm-opt.on, body.dark-theme #vc-mention .vm-opt:hover{ background: rgba(100,208,255,.10); }
+        #vc-mention .vm-ava{ flex: none; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#010197,#3B5BDB); color: #fff; font-size: .66rem; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        #vc-mention .vm-name{ font-size: .8rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #vc-mention .vm-sub{ font-size: .64rem; color: var(--text-muted); }
+        .vc-mention-tag{ font-weight: 800; border-radius: 5px; padding: 0 3px; }
+        .vc-msg.them .vc-mention-tag{ color: #010197; background: rgba(1,1,151,.09); }
+        body.dark-theme .vc-msg.them .vc-mention-tag{ color: #64D0FF; background: rgba(100,208,255,.14); }
+        .vc-msg.mine .vc-mention-tag{ color: #fff; background: rgba(255,255,255,.2); }
+        .vc-msg.them .vc-mention-tag.me{ color: #fff; background: #010197; }
+        body.dark-theme .vc-msg.them .vc-mention-tag.me{ color: #010197; background: #64D0FF; }
+        #msg-toast .mt-role.mention{ color: #fff; background: #010197; }
+        body.dark-theme #msg-toast .mt-role.mention{ color: #010197; background: #64D0FF; }
+
         /* Cards keep their own layer so a hover lift can't force the whole
            column to repaint. */
         .kpi-card, .branch-kpi-card, .ai-tile, .form-perf-card{
@@ -7652,6 +7678,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 </div>
                 <div id="vc-case-bar"></div>
                 <div id="vc-composer">
+                    <div id="vc-mention" role="listbox" aria-label="Mention someone"></div>
                     <input type="file" id="vc-file-input" style="display:none;"
                            accept="image/*,audio/*,application/pdf,text/plain,text/csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                            onchange="VoiceCall.pickFile(this)">
@@ -7659,7 +7686,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <button class="vc-attach-btn" id="vc-attach-btn" title="Attach a file"
                                 onclick="document.getElementById('vc-file-input').click()"><i class="fas fa-paperclip"></i></button>
                         <textarea id="vc-composer-input" rows="1" placeholder="Write a message…"
-                                  oninput="VoiceCall.composerGrow(this); VoiceCall.typingPing()"
+                                  oninput="VoiceCall.composerGrow(this); VoiceCall.typingPing(); VoiceCall.mentionInput(this)"
+                                  onblur="VoiceCall.mentionBlur()"
                                   onkeydown="VoiceCall.composerKey(event)"
                                   onpaste="VoiceCall.composerPaste(event)"></textarea>
                         <button class="vc-attach-btn" id="vc-mic-btn" title="Record a voice note"
@@ -7737,7 +7765,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.113.0 · 18 Sep 2026 · message card + unread number';
+        const BUILD_VERSION = 'v2.114.0 · 18 Sep 2026 · @mentions in group chats';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -26441,7 +26469,7 @@ ${(() => {
                         lastFrom = '';
                         continue;
                     }
-                    const text = m.body ? chatEsc(m.body).replace(/\n/g,'<br>') : '';
+                    const text = m.body ? Mention.mark(chatEsc(m.body)).replace(/\n/g,'<br>') : '';
                     // In a group you need to know who said it; in a one-to-one
                     // it is obvious and the name is just noise.
                     const who = (!m.mine && isGroupPeer(chat.peer))
@@ -26515,7 +26543,90 @@ ${(() => {
                 const has = !!(chat.pending || (input && String(input.value || '').trim()));
                 btn.classList.toggle('ready', has);
             }
+            /* ── v2.114.0: @mentions ────────────────────────────────────────
+               Group chats only. Typing @ lists the group's members; arrows and
+               Enter (or a tap) put the full name in. A mention is ordinary text
+               -- "@Full Name" -- so nothing changes on the Worker, old messages
+               stay valid, and a name is recognised when it is drawn, against
+               the people actually in the group. */
+            const Mention = (() => {
+                let open = false, items = [], idx = 0, start = -1;
+                const box = () => $('vc-mention');
+                const reEsc = t => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                function roster(){
+                    const me = String(chat.me || '').toLowerCase();
+                    const seen = {};
+                    return (chat.members[chat.peer] || []).map(m => {
+                        const p = chat.people.find(x => x.email === m.email) || {};
+                        return { email: m.email, name: m.name || p.name || m.email, role: p.role || '', branch: p.branch || '' };
+                    }).filter(m => m.name && String(m.email || '').toLowerCase() !== me && !seen[m.name] && (seen[m.name] = 1));
+                }
+                function close(){ if (!open) return; open = false; start = -1; const b = box(); if (b){ b.classList.remove('open'); b.innerHTML = ''; } }
+                function paint(){
+                    const b = box(); if (!b) return;
+                    const html = '<div class="vm-head">Mention</div>' + items.map((m, i) =>
+                        `<div class="vm-opt${i === idx ? ' on' : ''}" role="option" data-i="${i}"><div class="vm-ava">${chatEsc(chatInitials(m.name))}</div>`
+                        + `<div style="min-width:0"><div class="vm-name">${chatEsc(m.name)}</div>`
+                        + `<div class="vm-sub">${chatEsc([m.role, m.branch].filter(Boolean).join(' · '))}</div></div></div>`).join('');
+                    if (b.__lastHtml !== html){ b.innerHTML = html; b.__lastHtml = html; }
+                    b.classList.add('open');
+                    const on = b.querySelector('.vm-opt.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' });
+                }
+                function onInput(ta){
+                    if (!ta || !isGroupPeer(chat.peer)) return close();
+                    const caret = ta.selectionStart, before = ta.value.slice(0, caret);
+                    const m = before.match(/(^|\s)@([^\s@]{0,24})$/);
+                    if (!m) return close();
+                    const q = m[2].toLowerCase();
+                    items = roster().filter(p => !q || p.name.toLowerCase().split(/\s+/).some(w => w.indexOf(q) === 0) || p.name.toLowerCase().indexOf(q) === 0).slice(0, 8);
+                    if (!items.length) return close();
+                    start = caret - m[2].length - 1; idx = Math.min(idx, items.length - 1); if (!open) idx = 0; open = true;
+                    paint();
+                }
+                function pick(i){
+                    const ta = $('vc-composer-input'), p = items[i];
+                    if (!ta || !p || start < 0) return close();
+                    const caret = ta.selectionStart, ins = '@' + p.name + ' ';
+                    ta.value = ta.value.slice(0, start) + ins + ta.value.slice(caret);
+                    const at = start + ins.length;
+                    close(); ta.focus();
+                    try { ta.setSelectionRange(at, at); } catch(e){}
+                    composerGrow(ta);
+                }
+                function onKey(e){
+                    if (!open) return false;
+                    if (e.key === 'ArrowDown'){ idx = (idx + 1) % items.length; paint(); e.preventDefault(); return true; }
+                    if (e.key === 'ArrowUp'){ idx = (idx - 1 + items.length) % items.length; paint(); e.preventDefault(); return true; }
+                    if (e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); pick(idx); return true; }
+                    if (e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); close(); return true; }
+                    return false;
+                }
+                // mousedown, not click: the textarea must not lose focus first.
+                document.addEventListener('mousedown', e => {
+                    if (!open) return;
+                    const o = e.target.closest && e.target.closest('#vc-mention .vm-opt');
+                    if (o){ e.preventDefault(); pick(parseInt(o.dataset.i, 10) || 0); }
+                });
+                /** Escaped bubble text in, the same text with known names marked. */
+                function mark(html){
+                    if (!html || html.indexOf('@') === -1 || !isGroupPeer(chat.peer)) return html;
+                    const mine = String(myDisplayName() || '').toLowerCase();
+                    const names = (chat.members[chat.peer] || []).map(m => m.name).concat(chat.people.map(p => p.name))
+                        .filter(Boolean).filter((n, i, a) => a.indexOf(n) === i).sort((a, b) => b.length - a.length);
+                    if (!names.length) return html;
+                    const re = new RegExp('(^|[\\s>])@(' + names.map(n => reEsc(chatEsc(n))).join('|') + ')(?![\\w])', 'gi');
+                    return html.replace(re, (all, pre, n) => pre + '<span class="vc-mention-tag' + (n.toLowerCase() === chatEsc(mine).toLowerCase() ? ' me' : '') + '">@' + n + '</span>');
+                }
+                function mentionsMe(body){
+                    const mine = String(myDisplayName() || '').trim();
+                    if (!mine || mine === 'Someone' || !body) return false;
+                    return new RegExp('(^|\\s)@' + reEsc(mine) + '(?![\\w])', 'i').test(String(body));
+                }
+                return { onInput, onKey, close, mark, mentionsMe, isOpen: () => open };
+            })();
+
             function composerKey(e){
+                if (Mention.onKey(e)) return;
                 // Enter sends, Shift+Enter makes a new line -- what people expect.
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
             }
@@ -26739,8 +26850,10 @@ ${(() => {
                     if (grp) ini.innerHTML = '<i class="fas fa-user-group"></i>'; else ini.textContent = chatInitials(name);
                     el.querySelector('.mt-name').textContent = name;
                     const role = el.querySelector('.mt-role');
-                    const roleText = grp ? 'Group' : String((person && person.role) || '');
+                    let hitMe = false; try { hitMe = !!grp && Mention.mentionsMe(m.body); } catch(e){}
+                    const roleText = hitMe ? 'Mentioned you' : (grp ? 'Group' : String((person && person.role) || ''));
                     role.textContent = roleText; role.style.display = roleText ? '' : 'none';
+                    role.classList.toggle('mention', hitMe);
                     el.querySelector('.mt-text').textContent = (grp && m.fromName ? m.fromName + ': ' : '') + textOf(m);
                     const more = el.querySelector('.mt-more');
                     more.textContent = extra > 0 ? ('+' + extra + ' more message' + (extra === 1 ? '' : 's')) : '';
@@ -26761,7 +26874,19 @@ ${(() => {
                         try { VcSfx.message(); } catch(e){}
                     }
                 }
-                return { onPoll, hide, keyNow: () => key };
+                /* v2.113.1: see the card, the chime and the badge without a
+                   second person to message you. Nothing is sent or saved; the
+                   key is left empty so Reply simply closes it. */
+                function demo(){
+                    primed = true;
+                    show({ fromName: 'Sentinel test', body: 'This is what an incoming message looks like.',
+                           at: new Date().toISOString(), kind: '' }, '', 1);
+                    try { VcSfx.message(); } catch(e){}
+                    const b = $('vc-fab-badge');
+                    if (b){ b.textContent = '1'; b.classList.add('num'); b.style.display = 'block'; }
+                    setTimeout(() => { try { paintUnread(); } catch(e){} }, 8000);
+                }
+                return { onPoll, hide, demo, keyNow: () => key };
             })();
 
             async function chatPoll(){
@@ -26874,6 +26999,9 @@ ${(() => {
                     st.panelOpen = false;
                     stopDirectoryPoll();
                 },
+                testMessageAlert(){ try { MsgToast.demo(); } catch(e){} },
+                mentionInput(ta){ try { Mention.onInput(ta); } catch(e){} },
+                mentionBlur(){ setTimeout(() => { try { Mention.close(); } catch(e){} }, 160); },
                 toggleMinimise,
                 expandIfMinimised,
                 startCall,
