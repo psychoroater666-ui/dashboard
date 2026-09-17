@@ -7614,7 +7614,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.110.0 · 17 Sep 2026 · Messages as a full-height drawer, instant send with retry, new-message line, presence';
+        const BUILD_VERSION = 'v2.110.1 · 17 Sep 2026 · Messages drawer; heartbeat reports hidden tabs so chat push reaches phones';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25071,13 +25071,18 @@ ${(() => {
             let presenceTimer = null;
             function startPresenceHeartbeat(){
                 if (presenceTimer) return;              // never stack intervals
-                signal({ type: 'presence' });
                 // v2.110.0: the heartbeat no longer stops while the tab is hidden
                 // -- a manager reading WhatsApp for a minute went "unavailable"
                 // and the call button gave up on them. One tiny request per 20 s.
-                presenceTimer = setInterval(() => signal({ type: 'presence' }), PRESENCE_MS);
+                // v2.110.1: it says whether the tab is in front (Worker v4.47
+                // reads it): hidden means "reachable, but not looking", so a
+                // message to this person still pushes to their phone.
+                const beat = () => signal({ type: 'presence', hidden: !!document.hidden });
+                beat();
+                presenceTimer = setInterval(beat, PRESENCE_MS);
                 document.addEventListener('visibilitychange', () => {
-                    if (!document.hidden) { signal({ type: 'presence' }); try { chatPoll(); } catch(e){} }
+                    beat();                                   // both ways: looking again, or gone
+                    if (!document.hidden) { try { chatPoll(); } catch(e){} }
                 });
             }
 
@@ -26047,7 +26052,7 @@ ${(() => {
                     chat.last[peer] = { at: res.at, mine: true,
                         body: res.body || (res.kind === 'audio' ? 'Voice note' : res.kind === 'image' ? 'Photo' : 'Attachment') };
                     if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
-                    try { signal({ type: 'presence' }); } catch(e){}   // sending is proof you are here
+                    try { signal({ type: 'presence', hidden: !!document.hidden }); } catch(e){}   // sending is proof you are here
                 } else if (el) {
                     el.classList.remove('pending'); el.classList.add('failed');
                     const slot = el.querySelector('.vc-tick-slot');
