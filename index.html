@@ -7765,7 +7765,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.114.0 · 18 Sep 2026 · @mentions in group chats';
+        const BUILD_VERSION = 'v2.114.1 · 18 Sep 2026 · louder message chime';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25141,7 +25141,13 @@ ${(() => {
                     // v2.113.0: a message. Two soft marimba notes, G5 then C6,
                     // once. Never stopAll() here -- a message must not silence
                     // a ringing call.
-                    message(){ marimba(783.99, 0.00, 0.16); marimba(1046.5, 0.09, 0.16); },
+                    // v2.114.1: three times louder, and the pair is played twice --
+                    // on a busy floor one short note pair was simply not heard.
+                    // Peaks are kept under clipping: this path has no limiter.
+                    message(){
+                        marimba(783.99, 0.00, 0.50); marimba(1046.5, 0.09, 0.50);
+                        marimba(783.99, 0.34, 0.42); marimba(1046.5, 0.43, 0.42);
+                    },
                     connected(){ stopAll(); sweep(620, 940, 0.18, 0.13); },
                     ended(){     stopAll(); sweep(480, 320, 0.28, 0.11); },
                     declined(){  stopAll(); tone(320, 0, 0.18, 0.11); tone(280, 0.22, 0.3, 0.11); },
