@@ -5068,7 +5068,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         body.dark-theme #vc-tabs button.active { background: #3B5BDB; box-shadow: none; }
 
         /* people list */
-        #vc-chat-people, #vc-chat-thread { display: none; }
+        #vc-chat-people, #vc-chat-thread, #vc-pick { display: none; }
+        #vc-pick.visible { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+        #vc-pick-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px 8px; border-bottom: 1px solid var(--border-color); flex-shrink: 0; }
+        #vc-pick-head button { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--white); color: var(--text-main); cursor: pointer; }
+        #vc-pick-title { font-size: .86rem; font-weight: 800; color: var(--text-main); }
+        #vc-pick-search { margin: 10px 12px 4px; height: 38px; border: 1.5px solid var(--border-color); border-radius: 11px; padding: 0 12px;
+                          font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); background: var(--white); flex-shrink: 0; }
+        #vc-pick-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 4px 8px 12px; }
+        .vc-pick-grp { font-size: .62rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); padding: 10px 11px 4px; }
         #vc-chat-people.visible { display: block; }
         /* The panel is capped to the window height, so the message list is the
            part that gives: everything else keeps its size and the thread
@@ -7536,6 +7544,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             <!-- Messages: who to talk to -->
             <div id="vc-chat-people"></div>
 
+            <!-- v2.111.1: "send this case to…" — pick a room or a person -->
+            <div id="vc-pick">
+                <div id="vc-pick-head">
+                    <button onclick="VoiceCall.pickCancel()" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <div style="flex:1;min-width:0;"><div id="vc-pick-title">Send case to…</div><div class="vc-chat-sub" id="vc-pick-sub"></div></div>
+                </div>
+                <input id="vc-pick-search" type="search" placeholder="Search rooms and people" oninput="VoiceCall.pickFilter(this.value)">
+                <div id="vc-pick-list"></div>
+            </div>
+
             <!-- Messages: one conversation -->
             <div id="vc-chat-thread">
                 <div id="vc-thread-head">
@@ -7643,7 +7661,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.111.0 · 17 Sep 2026 · Case rooms: Discuss on an incident, case card + action records in chat, branch/region rooms';
+        const BUILD_VERSION = 'v2.111.1 · 17 Sep 2026 · Send a case card to any room or person; records and the Discussion box follow it';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10776,22 +10794,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                          order: inc.orderId || '', openedAt: _rawFieldExact(inc._raw, 'Created At') || inc.date || '',
                          channel: inc.surveyForm || inc.form || '', status: inc.resolved ? 'closed' : 'open' };
             }
+            const since = {};                              // stableKey -> id of the latest card
             async function find(key){
                 if (known[key]) return known[key];
-                const r = await call('case_thread', { caseKey: key, create: false });
-                if (r && r.status === 'success' && r.target) known[key] = r.target;
+                const r = await call('case_thread', { caseKey: key });
+                if (r && r.status === 'success' && r.target) { known[key] = r.target; since[key] = r.sinceId || 0; }
                 return known[key] || '';
             }
-            async function discuss(key, btn){
+            // v2.111.1: the sender picks the room (a branch room, a group, a
+            // person); the card is posted there and that is where the case's
+            // records and Discussion box follow.
+            async function discuss(key){
                 const inc = findInc(key); if (!inc) return;
-                if (btn) { btn.disabled = true; }
-                const r = await call('case_thread', { caseKey: key, card: card(inc) });
-                if (btn) { btn.disabled = false; }
-                if (r && r.status === 'success' && r.target) {
-                    known[key] = r.target;
-                    try { app.closeIncidentDetailModal(); } catch(e){}
-                    try { window.VoiceCall.openConversation(r.target); } catch(e){}
-                } else { try { UI.toast((r && r.message) || 'Could not open the discussion.', 'error'); } catch(e){} }
+                const c = card(inc); c.key = key;
+                try { app.closeIncidentDetailModal(); } catch(e){}
+                try { window.VoiceCall.pickTarget(c, target => { known[key] = target; delete boxes[key]; }); } catch(e){}
             }
             // A one-line record in the room, if the case has one. Never blocks.
             async function note(key, text){
@@ -10802,22 +10819,26 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const box = document.getElementById('case-discuss-' + cssKey(key)); if (!box) return;
                 const t = await find(key);
                 let html;
-                if (!t) html = '<div class="inc-discuss-empty">No discussion yet. Open one to bring the branch in — the case card goes with it.</div>';
+                if (!t) html = '<div class="inc-discuss-empty">Not sent to anyone yet. Pick a room or a person and the case card goes with it.</div>';
                 else {
                     const r = await call('chat_history', { peer: t });
-                    const msgs = (r && r.messages || []).filter(m => m.kind !== 'case').slice(-6);
+                    // Lines after the card was posted, and none of another case's cards.
+                    const msgs = (r && r.messages || []).filter(m => m.kind !== 'case' && (!since[key] || m.id > since[key])).slice(-6);
                     const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
                     const when = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
-                    html = msgs.length
+                    const where = (() => { try { const g = window.VoiceCall && VoiceCall.groupName ? VoiceCall.groupName(t) : ''; return g; } catch(e){ return ''; } })();
+                    html = (where ? `<div class="inc-discuss-empty" style="margin-bottom:6px;">In <b>${esc(where)}</b></div>` : '') + (msgs.length
                         ? '<div class="inc-discuss-list">' + msgs.map(m => m.kind === 'sys'
                             ? `<div class="inc-discuss-line sys">${esc(m.body)}<span>${esc(when(m.at))}</span></div>`
                             : `<div class="inc-discuss-line"><b>${esc(m.mine ? 'You' : (m.fromName || m.from))}:</b> ${esc(m.body || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo' : 'Attachment'))}<span>${esc(when(m.at))}</span></div>`).join('') + '</div>'
-                        : '<div class="inc-discuss-empty">Room is open, nothing said yet.</div>';
+                        : '<div class="inc-discuss-empty">Card sent, nothing said yet.</div>');
                 }
                 const b2 = document.getElementById('case-discuss-' + cssKey(key)); if (!b2) return;
                 if (boxes[key] !== html) { boxes[key] = html; b2.innerHTML = html; }
                 const btn = b2.parentElement && b2.parentElement.querySelector('.inc-discuss-btn');
-                if (btn) btn.innerHTML = t ? '<i class="fas fa-comments"></i> Open discussion' : '<i class="fas fa-comments"></i> Discuss with branch';
+                if (btn) btn.innerHTML = t ? '<i class="fas fa-paper-plane"></i> Send again' : '<i class="fas fa-paper-plane"></i> Send to a room';
+                const openBtn = b2.parentElement && b2.parentElement.querySelector('.inc-discuss-open');
+                if (openBtn) { openBtn.style.display = t ? '' : 'none'; openBtn.onclick = () => { try { window.VoiceCall.openConversation(t); } catch(e){} }; }
             }
             const cssKey = k => String(k).replace(/[^a-z0-9]/gi, '_');
             function html(inc){
@@ -10826,7 +10847,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 setTimeout(() => paintBox(key), 30);
                 return `<div class="inc-discuss">
                     <div class="inc-discuss-head"><b><i class="fas fa-comments" style="color:#010197;margin-right:6px;"></i>Discussion</b>
-                        <button class="fb-btn sm primary inc-discuss-btn" onclick="CaseChat.discuss('${k}', this)"><i class="fas fa-comments"></i> Discuss with branch</button></div>
+                        <span style="display:flex;gap:6px;"><button class="fb-btn sm inc-discuss-open" style="display:none;"><i class="fas fa-comments"></i> Open chat</button>
+                        <button class="fb-btn sm primary inc-discuss-btn" onclick="CaseChat.discuss('${k}')"><i class="fas fa-paper-plane"></i> Send to a room</button></span></div>
                     <div id="case-discuss-${cssKey(key)}"><div class="inc-discuss-empty">Checking…</div></div>
                 </div>`;
             }
@@ -25383,6 +25405,7 @@ ${(() => {
                 $('vc-branch-list').style.display = (which === 'call' && !st.inCall) ? '' : 'none';
                 $('vc-status-bar').style.display  = which === 'call' ? '' : 'none';
                 $('vc-chat-people').classList.toggle('visible', which === 'chat' && !inThread);
+                if (which !== 'chat' || inThread) { $('vc-pick').classList.remove('visible'); pick = null; }
                 $('vc-chat-thread').classList.toggle('visible', !!inThread);
                 if (which === 'chat') { loadPeople(); chatPoll(); startOnlineWatch(); }
             }
@@ -25618,16 +25641,76 @@ ${(() => {
             // record of what was done comes back into this room by itself.
             function paintCaseBar(){
                 const bar = $('vc-case-bar'); if (!bar) return;
-                const g = chat.peer && isGroupPeer(chat.peer) ? groupById(chat.peer) : null;
-                const c = (g && g.kind === 'case') ? (chat.caseCard || { key: g.ref }) : null;
-                if (!c) { bar.classList.remove('on'); bar.innerHTML = ''; return; }
+                // v2.111.1: any thread with a case card in it gets the bar, for
+                // the most recent card. Reset when the thread changes.
+                const c = chat.caseCard;
+                if (!c || !c.key) { bar.classList.remove('on'); bar.innerHTML = ''; return; }
                 const phone = String(c.phone || '').replace(/[^0-9+]/g, '');
-                const k = chatEsc(String(c.key || g.ref || '')).replace(/'/g, "\\'");
-                bar.innerHTML = `<button class="primary" onclick="CaseChat.open('${k}')"><i class="fas fa-clipboard-list"></i> Open case</button>`
+                const k = chatEsc(String(c.key || '')).replace(/'/g, "\\'");
+                bar.innerHTML = `<button class="primary" onclick="CaseChat.open('${k}')"><i class="fas fa-clipboard-list"></i> Open case${c.branch ? ' · ' + chatEsc(String(c.branch)) : ''}</button>`
                     + (phone ? `<a href="tel:${chatEsc(phone)}"><i class="fas fa-phone"></i> Call customer</a>` : '')
                     + (phone ? `<a href="https://wa.me/${chatEsc(phone.replace(/^0/, '92').replace(/^\+/, ''))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>` : '');
                 bar.classList.add('on');
             }
+            // ── v2.111.1: post a case card into a room or chat of my choosing ──
+            let pick = null;                              // { body, onDone }
+            function pickTarget(card, onDone){
+                pick = { body: JSON.stringify(card), onDone };
+                try { window.VoiceCall.openPanel(); } catch(e){}
+                chat.peer = null;
+                showTab('chat');
+                $('vc-pick-sub').textContent = 'Case · ' + [card.branch, card.type].filter(Boolean).join(' · ');
+                $('vc-pick-search').value = '';
+                $('vc-chat-people').classList.remove('visible');
+                $('vc-chat-thread').classList.remove('visible');
+                $('vc-pick').classList.add('visible');
+                pickFilter('');
+                setTimeout(() => { try { $('vc-pick-search').focus(); } catch(e){} }, 50);
+            }
+            function groupName(target){
+                if (isGroupPeer(target)) { const g = groupById(target); return g ? g.name : 'a room'; }
+                const p = chat.people.find(x => String(x.email).toLowerCase() === String(target).toLowerCase());
+                return p ? p.name : String(target);
+            }
+            function pickCancel(){ pick = null; $('vc-pick').classList.remove('visible'); showTab('chat'); }
+            function pickFilter(q){
+                const list = $('vc-pick-list'); if (!list) return;
+                const s = String(q || '').trim().toLowerCase();
+                const hit = t => !s || String(t || '').toLowerCase().indexOf(s) !== -1;
+                const kindIcon = k => k === 'case' ? 'fa-clipboard-list' : k === 'branch' ? 'fa-store' : k === 'region' ? 'fa-map' : 'fa-user-group';
+                const groups = chat.groups.filter(g => g.kind !== 'case' && hit(g.name)).sort((a, b) => {
+                    const ka = a.kind === 'branch' ? 0 : a.kind === 'region' ? 1 : 2, kb = b.kind === 'branch' ? 0 : b.kind === 'region' ? 1 : 2;
+                    return ka - kb || String(a.name).localeCompare(String(b.name));
+                });
+                const people = chat.people.filter(p => hit(p.name) || hit(p.branch) || hit(p.role)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+                const row = (key, ava, name, sub) => `<div class="vc-chat-row" onclick="VoiceCall.pickSend('${String(key).replace(/'/g, "\\'")}')">${ava}
+                        <div class="vc-chat-meta"><div class="vc-chat-name">${chatEsc(name)}</div><div class="vc-chat-sub">${chatEsc(sub)}</div></div></div>`;
+                let html = '';
+                if (groups.length) html += '<div class="vc-pick-grp">Rooms</div>' + groups.map(g =>
+                    row('g:' + g.id, `<div class="vc-chat-ava grp kind-${g.kind || 'chat'}"><i class="fas ${kindIcon(g.kind)}"></i></div>`, g.name, g.members + ' members')).join('');
+                if (people.length) html += '<div class="vc-pick-grp">People</div>' + people.map(p =>
+                    row(p.email, `<div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name))}</div>`,
+                        p.name, p.scope === 'all' ? p.role : p.role + ' · ' + p.branch)).join('');
+                list.innerHTML = html || '<div class="vc-chat-empty">Nothing matches.</div>';
+            }
+            async function pickSend(target){
+                if (!pick) return;
+                const body = pick.body, done = pick.onDone;
+                pick = null;
+                $('vc-pick').classList.remove('visible');
+                const res = await chatApi('chat_send', { to: target, body, kind: 'case' });
+                if (res && res.status === 'success') {
+                    const sent = { id: res.id, at: res.at, body: res.body, mine: true, kind: 'case', file: null, from: chat.me, to: target };
+                    ThreadCache.add(target, sent);
+                    if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
+                    try { if (done) done(target); } catch(e){}
+                    openThread(target);
+                } else {
+                    try { UI.toast((res && res.message) || 'Could not send the case card.', 'error'); } catch(e){}
+                    showTab('chat');
+                }
+            }
+
             async function syncGroups(row){
                 if (row) row.style.opacity = '.5';
                 const r = await chatApi('group_sync');
@@ -26070,7 +26153,7 @@ ${(() => {
                     if (m.kind === 'case') {
                         let c = null; try { c = JSON.parse(m.body || '{}'); } catch(e){}
                         if (c && c.key) {
-                            chat.caseCard = c;
+                            chat.caseCard = c; setTimeout(paintCaseBar, 0);
                             const bits = [c.type, c.channel, c.customer, c.phone ? String(c.phone) : '', c.order ? 'order ' + c.order : '', c.openedAt ? 'opened ' + c.openedAt : ''].filter(Boolean);
                             parts.push(`<div class="vc-case${c.status === 'closed' ? ' closed' : ''}" onclick="CaseChat.open('${chatEsc(c.key).replace(/'/g,"\\'")}')"><span class="vc-case-open">Open case →</span><b>Case · ${chatEsc(c.branch || '')}</b>${chatEsc(bits.join(' · '))}</div>`);
                             lastFrom = '';
@@ -26436,7 +26519,8 @@ ${(() => {
                 cancelVoice,
                 callCurrentThread,
                 retryMessage,
-                syncGroups
+                syncGroups,
+                pickTarget, pickCancel, pickFilter, pickSend, groupName
             };
 
             // Start listening for incoming calls, and announcing presence,
