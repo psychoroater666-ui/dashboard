@@ -7765,7 +7765,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.114.1 · 18 Sep 2026 · louder message chime';
+        const BUILD_VERSION = 'v2.114.2 · 18 Sep 2026 · message chime at full level';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -25026,7 +25026,16 @@ ${(() => {
                         ac = new AC();
                         master = ac.createGain();
                         master.gain.value = 0.9;
-                        master.connect(ac.destination);
+                        // v2.114.2: a limiter, the same one the incident alarm
+                        // uses, so the message chime can run at full level
+                        // without distorting. The call sounds sit far below its
+                        // threshold and pass through unchanged.
+                        try {
+                            const lim = ac.createDynamicsCompressor();
+                            lim.threshold.value = -6; lim.knee.value = 6; lim.ratio.value = 12;
+                            lim.attack.value = 0.003; lim.release.value = 0.12;
+                            master.connect(lim); lim.connect(ac.destination);
+                        } catch(e){ master.connect(ac.destination); }
                     }
                     if (ac.state === 'suspended') ac.resume().catch(() => {});
                     return ac;
@@ -25141,12 +25150,15 @@ ${(() => {
                     // v2.113.0: a message. Two soft marimba notes, G5 then C6,
                     // once. Never stopAll() here -- a message must not silence
                     // a ringing call.
-                    // v2.114.1: three times louder, and the pair is played twice --
-                    // on a busy floor one short note pair was simply not heard.
-                    // Peaks are kept under clipping: this path has no limiter.
+                    // v2.114.2: full level -- the same loudness as the incident
+                    // alarm, a different tune. Each marimba note now carries a
+                    // sustained sine body underneath it: a marimba alone decays
+                    // in a fraction of a second, and on a busy floor it is the
+                    // length of a sound, as much as its peak, that gets it heard.
                     message(){
-                        marimba(783.99, 0.00, 0.50); marimba(1046.5, 0.09, 0.50);
-                        marimba(783.99, 0.34, 0.42); marimba(1046.5, 0.43, 0.42);
+                        const note = (f, at, p) => { marimba(f, at, p); tone(f, at, 0.30, p * 0.45, 'sine'); };
+                        note(783.99, 0.00, 0.95); note(1046.5, 0.10, 0.95);
+                        note(783.99, 0.42, 0.90); note(1046.5, 0.52, 0.90);
                     },
                     connected(){ stopAll(); sweep(620, 940, 0.18, 0.13); },
                     ended(){     stopAll(); sweep(480, 320, 0.28, 0.11); },
