@@ -2644,6 +2644,46 @@
         body.bg-refresh #submission-detail-modal *,
         body.bg-refresh #users-modal,
         body.bg-refresh #users-modal *,
+        /* v2.113.0: Monthly Drop view */
+        .md-top { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+        .md-top h2 { margin:0; font-size:1.05rem; font-weight:800; color:var(--text-main); }
+        .md-top .md-sub { font-size:.76rem; color:var(--text-muted); }
+        .md-top select { background:var(--white); border:1.5px solid var(--border-color); border-radius:9px; padding:7px 30px 7px 12px; font:700 .8rem 'Inter',sans-serif; color:var(--text-main); }
+        .md-pill { font-size:.72rem; background:rgba(1,1,151,.08); color:#010197; border-radius:12px; padding:4px 10px; font-weight:700; }
+        body.dark-theme .md-pill { background:rgba(100,208,255,.14); color:#64D0FF; }
+        .md-kpis { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; margin-bottom:14px; }
+        .md-kpi { background:var(--white); border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; min-width:0; }
+        .md-kpi .l { font-size:.62rem; color:var(--text-muted); font-weight:700; letter-spacing:.3px; text-transform:uppercase; }
+        .md-kpi .v { font-size:1.4rem; font-weight:800; margin:4px 0; color:var(--text-main); }
+        .md-kpi .d { font-size:.66rem; color:var(--text-muted); }
+        .md-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:14px; }
+        .md-two { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:14px; margin-bottom:14px; }
+        .md-card { background:var(--white); border:1px solid var(--border-color); border-radius:12px; padding:16px 18px; min-width:0; }
+        .md-card h3 { margin:0 0 4px; font-size:.76rem; font-weight:800; letter-spacing:.3px; text-transform:uppercase; color:var(--text-main); }
+        .md-card .q { font-size:.7rem; color:var(--text-muted); margin-bottom:10px; }
+        .md-bar { display:flex; align-items:center; gap:8px; font-size:.76rem; margin:6px 0; color:var(--text-main); }
+        .md-bar span:first-child { width:110px; flex:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .md-bar i { flex:1; height:8px; background:var(--bg-light); border-radius:4px; overflow:hidden; display:block; }
+        .md-bar i b { display:block; height:100%; background:#010197; border-radius:4px; }
+        .md-bar i b.neg { background:#DC2626; }
+        .md-bar em { font-style:normal; width:64px; text-align:right; color:var(--text-muted); font-size:.7rem; flex:none; }
+        .md-big { font-size:1.6rem; font-weight:800; color:var(--text-main); }
+        .md-big small { font-size:.72rem; color:var(--text-muted); font-weight:600; margin-left:6px; }
+        .md-cm { border-top:1px solid var(--border-color); padding:8px 0; font-size:.76rem; color:var(--text-main); }
+        .md-cm b { font-size:.68rem; color:var(--text-muted); display:block; margin-bottom:2px; font-weight:700; }
+        .md-tbl { width:100%; border-collapse:collapse; font-size:.76rem; }
+        .md-tbl th { text-align:left; font-size:.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; padding:6px 8px; border-bottom:1px solid var(--border-color); }
+        .md-tbl td { padding:7px 8px; border-bottom:1px solid var(--border-color); color:var(--text-main); }
+        .md-tbl td.r, .md-tbl th.r { text-align:right; }
+        .md-good { color:#059669; } .md-bad { color:#DC2626; }
+        .md-more { font-size:.72rem; color:#010197; font-weight:700; cursor:pointer; margin-top:8px; display:inline-block; }
+        body.dark-theme .md-more { color:#64D0FF; }
+        .md-empty { padding:40px 20px; text-align:center; color:var(--text-muted); font-size:.82rem; }
+        @media (max-width: 820px) {
+            .md-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .md-grid, .md-two { grid-template-columns:minmax(0,1fr); }
+            .md-top select { flex:1 1 100%; }
+        }
         /* v2.112.0: branch picker in Manage Users */
         .ufb.off { opacity: .5; pointer-events: none; }
         .ufb-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 42px; padding: 6px 8px; border: 1.5px solid var(--border-color); border-radius: 9px; background: var(--white); cursor: text; }
@@ -6004,6 +6044,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <span class="topnav-link" data-view="submissions" onclick="app.navigate('submissions', this)">Submissions</span>
                 <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" data-view="branches" onclick="app.navigate('branches', this)">Branches</span>
+                <span class="topnav-link" data-view="monthlydrop" id="nav-monthlydrop" style="display:none;" onclick="app.navigate('monthlydrop', this)">Monthly Drop</span>
                 <span class="topnav-link" data-view="incident-analytics" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
@@ -6099,6 +6140,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 </select>
                 <select class="select-input" id="filter-channel" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px;">
                     <option value="all">All Channels</option>
+                </select>
+                <select class="select-input" id="filter-product" onchange="app.applyFilters()" style="font-size:0.82rem; padding: 7px 30px 7px 12px; display:none;" title="Monthly Drop product">
+                    <option value="all">All drops</option>
                 </select>
 
                 <!-- View mode toggles inline in filter bar -->
@@ -6798,6 +6842,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <select class="select-input" id="inc-chan-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
                             <option value="all">All channels</option>
                         </select>
+                        <select class="select-input" id="inc-product-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;display:none;" title="Monthly Drop product">
+                            <option value="all">All drops</option>
+                        </select>
                         <select class="select-input" id="inc-survey-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
                             <option value="all">All surveys</option>
                         </select>
@@ -7019,6 +7066,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             <!-- REWARDS -->
             <div id="view-rewards" class="view"><div id="rewards-root"></div></div>
+            <div id="view-monthlydrop" class="view"><div id="md-root"></div></div>
 
             <!-- ACTIVITY / AUDIT TRAIL (admin) -->
             <div id="view-system" class="view"><div id="system-root"></div></div>
@@ -7677,7 +7725,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.112.0 · 17 Sep 2026 · Access review: AI for all, review capability, several branches per user, Owner-only alert settings';
+        const BUILD_VERSION = 'v2.113.0 · 17 Sep 2026 · Monthly Drop tab, product filters in Submissions & Incidents, drop history';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -7781,7 +7829,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // answer arrives.
         let INCIDENT_MAX_RATING = 3;
         let NIGHT_SHIFT_CUTOFF_HOUR = 9;
-        window.OwnerSettings = { businessDayStart: 9, incidentMaxRating: 3, currentDrop: '' };
+        window.OwnerSettings = { businessDayStart: 9, incidentMaxRating: 3, currentDrop: '', dropHistory: [] };
+        // ── Monthly Drop helpers (v2.113.0) ───────────────────────────────
+        // Which product was running on a date, from the Owner's drop history;
+        // falls back to the current product. Used to label rows that arrived
+        // before product stamping existed.
+        function dropFor(day){
+            const st = window.OwnerSettings || {};
+            const hist = Array.isArray(st.dropHistory) ? st.dropHistory.slice().sort((a,b) => String(a.from).localeCompare(String(b.from))) : [];
+            const d = String(day || '').slice(0, 10);
+            let pick = '';
+            for(const h of hist){ if(h && h.product && (!d || String(h.from || '').slice(0, 10) <= d)) pick = h.product; }
+            return pick || st.currentDrop || '';
+        }
+        function isDropSource(src){ return !!(src && String(src.url || '') === 'form:monthlydrop'); }
+        function dropSurveyLabel(){ try { const c = ChannelReg.forms().find(x => x.dashKey === 'monthlydrop'); return c ? c.label : 'Monthly Drop'; } catch(e){ return 'Monthly Drop'; } }
+        function isDropRow(row){ return !!(row && row._drop); }
         /** Apply a settings object from the server. The rating threshold takes
          *  effect on the next repaint. The business-day boundary is stamped
          *  onto every row as it is parsed, so changing it means re-parsing --
@@ -8424,7 +8487,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         .map(([,v]) => String(v).trim())
                         .join(' ');
                     _ensure('branch',branch); _ensure('form',form); _ensure('channel',channel); _ensure('survey',src.form);
-                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore: rating || null, comment, _raw:r });
+                    const _drop = isDropSource(src);
+                    const product = _drop ? (String(_find(r,'product') || '').trim() || dropFor(dstr)) : (prod || '');
+                    out.subs.push({ id:`SUB-${out.subs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form, smileScore: rating || null, comment, product, _drop, _raw:r });
                     pushed++;
                     if(rating && rating <= INCIDENT_MAX_RATING){
                         const complaintType = prod || (src.form + ' Issue');
@@ -8443,7 +8508,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(verifiedRaw !== ''){ verified = _bool(verifiedRaw); caseStatus = verified ? 'verified' : 'fake'; }
                         else { caseStatus = classifyCaseValidity(rating, fullText, catVal, channel); verified = caseStatus === 'verified'; }
                         out.incs.push({ id:`INC-${out.incs.length+1}`, date:dstr, branch, form, channel, surveyForm:src.form,
-                            complaintType, verified, caseStatus, resolved, resolutionMins, product: prod || '—', smileScore:rating,
+                            complaintType, verified, caseStatus, resolved, resolutionMins, product: _drop ? product : (prod || '—'), _drop, smileScore:rating,
                             category: catVal,
                             orderId: _find(r,'order id') || _find(r,'order number') || ('ORD-'+out.incs.length),
                             note: comment, fullText, _raw:r });
@@ -9141,6 +9206,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             let branch  = (document.getElementById('filter-branch')||{}).value  || 'all';
             const channel = (document.getElementById('filter-channel')||{}).value || 'all';
             const survey  = (document.getElementById('filter-survey')||{}).value  || 'all';
+            const product = (document.getElementById('filter-product')||{}).value || 'all';
             if(PERM.region !== 'All') region = PERM.region;
             { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
             const _regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
@@ -9148,6 +9214,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 (region === 'all' || _regionOf(item.branch) === region) &&
                 (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch) &&
                 (channel === 'all' || item.channel === channel) &&
+                (product === 'all' || (item._drop && item.product === product)) &&
                 (survey === 'all' || item.surveyForm === survey)
             );
         }
@@ -9160,6 +9227,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             let branch  = (document.getElementById('filter-branch')||{}).value  || 'all';
             const channel = (document.getElementById('filter-channel')||{}).value || 'all';
             const survey  = (document.getElementById('filter-survey')||{}).value  || 'all';
+            const product = (document.getElementById('filter-product')||{}).value || 'all';
 
             // ── Enforce permissions — override filter values with locked ones ──
             if(PERM.region !== 'All') region = PERM.region;
@@ -9229,6 +9297,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     }
                     return (region === 'all' || _regionOf(item.branch) === region) &&
                            (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch) &&
+                           (product === 'all' || (item._drop && item.product === product)) &&
                            (channel === 'all' || item.channel === channel) &&
                            (survey === 'all' || item.surveyForm === survey);
                 });
@@ -10790,6 +10859,137 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             return `${inc.surveyForm || inc.form || ''}|${inc.branch || ''}|${ts}`;
         }
 
+        // ── v2.113.0: Monthly Drop ─────────────────────────────────────────
+        /** Distinct drop products seen, newest first (by latest submission). */
+        function dropProducts(){
+            const last = {};
+            (rawData.submissions || []).forEach(s => { if(s._drop && s.product && permBranchOK(s.branch)) { if(!last[s.product] || s.date > last[s.product]) last[s.product] = s.date; } });
+            return Object.keys(last).sort((a, b) => String(last[b]).localeCompare(String(last[a])));
+        }
+        window.MD = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            // Columns that are not questions about the product.
+            const SYS = new Set(['created at','created by','location','time taken','name','phone number','status','order id','order number','product',
+                                 'timestamp','submission id','client id','id','device','email','form','sheet row','ip','source','branch','region']);
+            const YES = new Set(['yes','y','true','definitely','absolutely','sure','of course']), NO = new Set(['no','n','false','never','not really']);
+            const st = { product: '', showAll: false };
+            const rows = () => (rawData.submissions || []).filter(s => s._drop && permBranchOK(s.branch));
+            const incRows = () => (rawData.incidents || []).filter(i => i._drop && permBranchOK(i.branch) && i.caseStatus !== 'fake');
+            const isRatingQ = k => /experience|rate|rating/.test(k) && !/appearance/.test(k);
+            function questions(list){
+                // Discover the month's questions from the answers actually present.
+                const cols = {};
+                list.forEach(s => Object.keys(s._raw || {}).forEach(k => {
+                    const key = String(k).toLowerCase().trim();
+                    if(SYS.has(key) || isRatingQ(key)) return;
+                    const v = s._raw[k]; if(v === null || v === undefined || String(v).trim() === '') return;
+                    (cols[key] = cols[key] || { key, label: k, vals: [] }).vals.push(String(v).trim());
+                }));
+                return Object.values(cols).map(c => {
+                    const nums = c.vals.map(Number);
+                    const numeric = nums.every(n => !isNaN(n)) && nums.every(n => n >= 0 && n <= 10);
+                    const parts = c.vals.flatMap(v => v.split(/\s*[,;|]\s*/).map(x => x.trim()).filter(Boolean));
+                    const distinct = new Set(parts.map(p => p.toLowerCase()));
+                    let type = 'text';
+                    const freeText = /comment|suggest|feedback|remark|tell us|anything else|why/.test(c.key);
+                    if(freeText) type = 'text';
+                    else if(numeric && distinct.size <= 11) type = 'scale';
+                    else if(distinct.size <= 12 && c.vals.length >= 3) type = 'choice';
+                    else if(distinct.size <= 12) type = 'choice';
+                    const isYesNo = type === 'choice' && [...distinct].every(d => YES.has(d) || NO.has(d));
+                    return Object.assign(c, { type, isYesNo, parts, n: c.vals.length });
+                }).filter(c => c.n >= 1);
+            }
+            const avg = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+            const pct = (n, d) => d ? Math.round(100 * n / d) : null;
+            const fmtDelta = (cur, prev, unit, good) => {
+                if(cur == null || prev == null) return '';
+                const d = cur - prev; if(Math.abs(d) < 0.005) return `<span>= same as last drop</span>`;
+                const up = d > 0, ok = good === 'up' ? up : !up;
+                return `<span class="${ok ? 'md-good' : 'md-bad'}">${up ? '\u25B2' : '\u25BC'} ${Math.abs(unit === '%' ? Math.round(d) : +d.toFixed(2))}${unit === '%' ? ' pts' : ''} vs ${unit === '%' ? Math.round(prev) + '%' : (+prev.toFixed(2))}</span>`;
+            };
+            function stats(list, incs){
+                const r = list.map(s => s.smileScore).filter(v => v);
+                const yesQ = q => { const y = q.parts.filter(p => YES.has(p.toLowerCase())).length; return pct(y, q.parts.length); };
+                const qs = questions(list);
+                const again = qs.find(q => q.isYesNo && /again|reorder|re-order|buy/.test(q.key));
+                const fresh = qs.find(q => q.isYesNo && /fresh/.test(q.key));
+                return { n: list.length, avg: avg(r), again: again ? yesQ(again) : null, fresh: fresh ? yesQ(fresh) : null, inc: incs.length, qs,
+                         first: list.reduce((m, s) => (!m || s.date < m) ? s.date : m, ''), branches: new Set(list.map(s => s.branch)).size, againQ: again, freshQ: fresh };
+            }
+            function render(){
+                const root = document.getElementById('md-root'); if(!root) return;
+                const all = rows();
+                const prods = dropProducts();
+                if(!prods.length){ root.innerHTML = '<div class="md-empty">No Monthly Drop submissions yet. Once the Monthly Drop form receives feedback, this page fills in by itself.</div>'; return; }
+                if(!st.product || prods.indexOf(st.product) === -1) st.product = prods[0];
+                const p = st.product, prev = prods[prods.indexOf(p) + 1] || '';
+                const cur = all.filter(s => s.product === p), curInc = incRows().filter(i => i.product === p);
+                const S = stats(cur, curInc), P = prev ? stats(all.filter(s => s.product === prev), incRows().filter(i => i.product === prev)) : null;
+                const month = d => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? '' : x.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }); };
+                const days = S.first ? Math.max(1, Math.round((Date.now() - new Date(S.first + 'T12:00:00')) / 86400000)) : 0;
+                const sel = `<select id="md-product" onchange="MD.pick(this.value)">${prods.map(x => `<option value="${esc(x)}"${x === p ? ' selected' : ''}>${esc(x)}${month(all.filter(s => s.product === x).reduce((m, s) => (!m || s.date > m) ? s.date : m, '')) ? ' \u00b7 ' + month(all.filter(s => s.product === x).reduce((m, s) => (!m || s.date > m) ? s.date : m, '')) : ''}</option>`).join('')}</select>`;
+                const head = `<div class="md-top"><h2>Monthly Drop</h2><span class="md-sub">How ${esc(p)} is landing.</span><span style="flex:1"></span>${sel}${prev ? `<span class="md-pill">vs ${esc(prev)}</span>` : ''}</div>`;
+                const incRate = pct(S.inc, S.n), incRatePrev = P ? pct(P.inc, P.n) : null;
+                const kpis = `<div class="md-kpis">
+                    <div class="md-kpi"><div class="l">Submissions</div><div class="v">${S.n}</div><div class="d">${P ? fmtDelta(S.n, P.n, '', 'up').replace(/vs [\d.]+/, 'vs ' + P.n) : (S.branches + ' branches')}</div></div>
+                    <div class="md-kpi"><div class="l">Average rating</div><div class="v">${S.avg == null ? '\u2014' : S.avg.toFixed(2)}</div><div class="d">${P ? fmtDelta(S.avg, P.avg, '', 'up') : 'out of 5'}</div></div>
+                    ${S.againQ ? `<div class="md-kpi"><div class="l">Would order again</div><div class="v">${S.again == null ? '\u2014' : S.again + '%'}</div><div class="d">${P && P.again != null ? fmtDelta(S.again, P.again, '%', 'up') : 'said yes'}</div></div>` : ''}
+                    <div class="md-kpi"><div class="l">Incidents (\u2264${INCIDENT_MAX_RATING}\u2605)</div><div class="v">${S.inc}</div><div class="d">${incRate == null ? '' : incRate + '% of submissions'}${incRatePrev != null ? ' \u00b7 ' + incRatePrev + '% last drop' : ''}</div></div>
+                    <div class="md-kpi"><div class="l">Days running</div><div class="v">${days}</div><div class="d">${S.first ? 'since ' + new Date(S.first + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''} \u00b7 ${S.branches} branch${S.branches === 1 ? '' : 'es'}</div></div>
+                </div>`;
+                // question cards
+                const cards = S.qs.filter(q => q.type !== 'text').map(q => {
+                    const counts = {}; q.parts.forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+                    let entries = Object.entries(counts);
+                    if(q.type === 'scale') entries.sort((a, b) => Number(b[0]) - Number(a[0])); else entries.sort((a, b) => b[1] - a[1]);
+                    const total = q.parts.length, max = Math.max(...entries.map(e => e[1]), 1);
+                    let big = '';
+                    if(q.type === 'scale'){ const a = avg(q.parts.map(Number)); big = `<div class="md-big">${a.toFixed(1)}<small>average${Number(entries[0][0]) <= 5 ? ' of 5' : ''}</small></div>`; }
+                    else if(q.isYesNo){ const y = q.parts.filter(v => YES.has(v.toLowerCase())).length; big = `<div class="md-big">${pct(y, total)}%<small>said yes</small></div>`; }
+                    const neg = v => (q.isYesNo && NO.has(v.toLowerCase())) || /^(nothing|none|no)$/i.test(v) || (q.type === 'scale' && Number(v) <= 2);
+                    const bars = entries.slice(0, 8).map(([v, n]) => `<div class="md-bar"><span title="${esc(v)}">${esc(q.type === 'scale' ? (v + (Number(v) === 1 ? ' star' : ' stars')) : v)}</span><i><b class="${neg(v) ? 'neg' : ''}" style="width:${Math.round(100 * n / max)}%"></b></i><em>${n} \u00b7 ${pct(n, total)}%</em></div>`).join('');
+                    let foot = '';
+                    if(q.isYesNo){
+                        const byB = {}; cur.forEach(s => { const v = String((s._raw || {})[q.label] || '').trim().toLowerCase(); if(!v) return; const b = byB[s.branch] = byB[s.branch] || { y: 0, n: 0 }; if(YES.has(v)) b.y++; b.n++; });
+                        const worst = Object.entries(byB).filter(([, b]) => b.n >= 3).map(([name, b]) => [name, pct(b.y, b.n)]).sort((a, b) => a[1] - b[1]).slice(0, 2);
+                        if(worst.length) foot = `<div class="q" style="margin-top:10px">Lowest: ${worst.map(([n, v]) => `<b>${esc(n)}</b> ${v}%`).join(' \u00b7 ')}</div>`;
+                    }
+                    return `<div class="md-card"><h3>${esc(q.label)}</h3><div class="q">${q.type === 'scale' ? 'scale' : q.isYesNo ? 'yes / no' : 'choice'} \u00b7 ${total} answer${total === 1 ? '' : 's'}</div>${big}${bars}${foot}</div>`;
+                }).join('');
+                // by branch
+                const byB = {};
+                cur.forEach(s => { const b = byB[s.branch] = byB[s.branch] || { n: 0, r: [], yes: {}, tot: {} }; b.n++; if(s.smileScore) b.r.push(s.smileScore);
+                    [S.freshQ, S.againQ].filter(Boolean).forEach(q => { const v = String((s._raw || {})[q.label] || '').trim().toLowerCase(); if(!v) return; b.tot[q.key] = (b.tot[q.key] || 0) + 1; if(YES.has(v)) b.yes[q.key] = (b.yes[q.key] || 0) + 1; }); });
+                curInc.forEach(i => { const b = byB[i.branch]; if(b) b.inc = (b.inc || 0) + 1; });
+                const yesCols = [S.freshQ, S.againQ].filter(Boolean);
+                const branchRows = Object.entries(byB).map(([name, b]) => ({ name, n: b.n, avg: avg(b.r), inc: b.inc || 0, yes: yesCols.map(q => pct(b.yes[q.key] || 0, b.tot[q.key] || 0)) }))
+                    .sort((a, b) => (a.avg == null ? 9 : a.avg) - (b.avg == null ? 9 : b.avg));
+                const shown = st.showAll ? branchRows : branchRows.slice(0, 8);
+                const short = q => (q.key.indexOf('fresh') !== -1 ? 'Fresh' : /again|reorder/.test(q.key) ? 'Reorder' : q.label.slice(0, 12));
+                const table = `<div class="md-card"><h3>By branch</h3><div class="q">${esc(p)} \u00b7 lowest rating first</div>
+                    <div style="overflow-x:auto;"><table class="md-tbl"><tr><th>Branch</th><th class="r">Subs</th><th class="r">Avg \u2605</th>${yesCols.map(q => `<th class="r">${esc(short(q))}</th>`).join('')}<th class="r">Incidents</th></tr>
+                    ${shown.map(b => `<tr><td>${esc(b.name)}</td><td class="r">${b.n}</td><td class="r ${b.avg != null && b.avg < 4 ? 'md-bad' : b.avg != null && b.avg >= 4.5 ? 'md-good' : ''}">${b.avg == null ? '\u2014' : b.avg.toFixed(1)}</td>${b.yes.map(v => `<td class="r">${v == null ? '\u2014' : v + '%'}</td>`).join('')}<td class="r">${b.inc}</td></tr>`).join('')}
+                    </table></div>${branchRows.length > 8 ? `<span class="md-more" onclick="MD.toggleAll()">${st.showAll ? 'Show fewer' : (branchRows.length - 8) + ' more branches \u2193'}</span>` : ''}</div>`;
+                // comments
+                const textQs = S.qs.filter(q => q.type === 'text');
+                const comments = [];
+                cur.forEach(s => textQs.forEach(q => { const v = String((s._raw || {})[q.label] || '').trim(); if(v.length > 1) comments.push({ v, r: s.smileScore || 0, b: s.branch, d: s.date }); }));
+                comments.sort((a, b) => (a.r || 9) - (b.r || 9) || String(b.d).localeCompare(String(a.d)));
+                const cshown = st.showAllC ? comments : comments.slice(0, 6);
+                const when = d => { const x = new Date(d + 'T12:00:00'); return isNaN(x) ? '' : x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); };
+                const cbox = `<div class="md-card"><h3>What customers wrote</h3><div class="q">${textQs.length ? esc(textQs.map(q => '\u201C' + q.label + '\u201D').join(', ')) + ' \u00b7 ' : ''}${comments.length} comment${comments.length === 1 ? '' : 's'} \u00b7 low ratings first</div>
+                    ${cshown.length ? cshown.map(c => `<div class="md-cm"><b>${c.r ? '\u2605 ' + c.r + ' \u00b7 ' : ''}${esc(c.b)} \u00b7 ${when(c.d)}</b>${esc(c.v)}</div>`).join('') : '<div class="q">No comments yet.</div>'}
+                    ${comments.length > 6 ? `<span class="md-more" onclick="MD.toggleAllC()">${st.showAllC ? 'Show fewer' : 'Show all ' + comments.length + ' \u2192'}</span>` : ''}</div>`;
+                const html = head + kpis + (cards ? `<div class="md-grid">${cards}</div>` : '') + `<div class="md-two">${table}${cbox}</div>`;
+                if(root.__lastHtml !== html){ root.__lastHtml = html; root.innerHTML = html; }
+            }
+            function pick(v){ st.product = v; st.showAll = false; st.showAllC = false; render(); }
+            function toggleAll(){ st.showAll = !st.showAll; render(); }
+            function toggleAllC(){ st.showAllC = !st.showAllC; render(); }
+            return { render, pick, toggleAll, toggleAllC };
+        })();
+
         // ── v2.111.0: a conversation per incident ─────────────────────────
         // "Discuss" opens the case's room (Worker v4.48 'case_thread'): the
         // branch's people are already in it and the case card is its first
@@ -12149,11 +12349,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(navEl) navEl.classList.add('active');
                         try { if(window.innerWidth <= 820 && navEl && navEl.scrollIntoView) navEl.scrollIntoView({ inline:'center', block:'nearest' }); } catch(e){}
 
-                        const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                        const titles = { monthlydrop:'Monthly Drop', executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'monthlydrop'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -12509,6 +12709,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     [...new Set(config.branches.map(b => b.region).filter(Boolean))].sort(), true);
                 UI.syncSelect(document.getElementById('filter-channel'),
                     [...new Set((rawData.submissions || []).map(s => s.channel).filter(Boolean))].sort(), true);
+                // v2.113.0: Monthly Drop products, shown only once a drop row exists.
+                const pf = document.getElementById('filter-product');
+                if(pf){
+                    const prods = dropProducts();
+                    UI.syncSelect(pf, prods, true);
+                    pf.style.display = prods.length ? '' : 'none';
+                    const nav = document.getElementById('nav-monthlydrop'); if(nav) nav.style.display = prods.length ? '' : 'none';
+                }
             },
 
             toggleSearch() {
@@ -12623,13 +12831,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 let activeEl = (elEvt && elEvt.classList) ? elEvt : Array.from(document.querySelectorAll('.topnav-link')).find(el => el.getAttribute('data-view') === viewId);
                 if(activeEl) activeEl.classList.add('active');
 
-                const titles = { executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
+                const titles = { monthlydrop:'Monthly Drop', executive:'Executive Dashboard', submissions:'Submissions Intelligence', incidents:'Incident Log', branches:'Branch Matrices', channels:'Channel Reports', forms:'Form Performance', products:'Product Quality', complaints:'Complaint Topography', resolution:'Resolution Track', insights:'Automated Insights', data:'Data & Logs', social:'Social Listening', 'form-builder':'Form Builder', activity:'Activity', system:'System health', orders:'Orders', rewards:'Rewards', 'form-analytics':'Form Analytics', actions:'Actions' };
                 const subEl = document.getElementById('pageSubtitle');
                 if(subEl) subEl.innerText = titles[viewId] || 'Dashboard Data';
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'monthlydrop'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -12741,6 +12949,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     return;
                 }
                 else if (state.currentView === 'actions') { ACTS.render(); return; }
+                else if (state.currentView === 'monthlydrop') { MD.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
@@ -14105,6 +14314,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // i.e. the ones your own agents logged themselves — to track
                 // that they're being closed out promptly.
                 UI.syncSelect(document.getElementById('inc-survey-filter'), Object.keys(bySurvey).sort(), true);
+                // v2.113.0: Monthly Drop product, only when drop incidents exist
+                { const pf = document.getElementById('inc-product-filter');
+                  if(pf){ const prods = [...new Set(incs.filter(i => i._drop && i.product).map(i => i.product))].sort();
+                          UI.syncSelect(pf, prods, true); pf.style.display = prods.length ? '' : 'none'; } }
 
                 this.filterIncidents();
             },
@@ -14116,7 +14329,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const cf = document.getElementById('inc-chan-filter')?.value || 'all';
                 const vf = document.getElementById('inc-valid-filter')?.value || 'all';
                 const sf = document.getElementById('inc-survey-filter')?.value || 'all';
+                const pf = document.getElementById('inc-product-filter')?.value || 'all';
                 const filtered = incs.filter(i => {
+                    if(pf !== 'all' && !(i._drop && i.product === pf)) return false;
                     const score = i.smileScore || i.rating || 0;
                     if(rf !== 'all' && String(score) !== rf) return false;
                     if(cf !== 'all' && (i.channel||'—') !== cf) return false;
@@ -22331,6 +22546,9 @@ ${(() => {
                     ["Why do I only see my own branches?",
                      "Your account is set to one or more branches, so every tab, filter and number shows those only. With several branches, the branch filter offers each of them and All my branches. Incidents at your branches are resolved centrally by the Call Center.",
                      "branch"],
+                    ["What is the Monthly Drop tab?",
+                     "Everything about the month's product: how many people rated it, the average, whether they would order it again, and the answers to each question on the Monthly Drop form, by branch and against the previous drop. The Submissions and Incidents tabs also get a product filter. The tab appears once the first Monthly Drop feedback arrives.",
+                     "all"],
                     ["What is the Blink tab?",
                      "Live orders from the tills (Blink): which branches are open, orders in progress and waiting, Foodpanda handover times and anything out of stock. Branches that look wrong are flagged with who should act. It is read-only, and a branch account sees only its own branch.",
                      "all"],
@@ -23210,8 +23428,8 @@ ${(() => {
             // say "Complaints". Bars, a hashtag and a speech bubble do.
             const ICON = { executive:'fa-chart-simple', social:'fa-hashtag', complaints:'fa-comment-dots', incidents:'fa-triangle-exclamation',
                 'incident-analytics':'fa-chart-line', submissions:'fa-inbox', rewards:'fa-gift', resolution:'fa-circle-check', branches:'fa-store',
-                insights:'fa-lightbulb', data:'fa-table', 'form-builder':'fa-pen-ruler', actions:'fa-list-check', 'form-analytics':'fa-chart-column', activity:'fa-clock-rotate-left' };
-            const LABEL = { executive:'Overview', 'incident-analytics':'Analytics', 'form-builder':'Forms', 'form-analytics':'Form stats' };
+                insights:'fa-lightbulb', data:'fa-table', 'form-builder':'fa-pen-ruler', actions:'fa-list-check', 'form-analytics':'fa-chart-column', activity:'fa-clock-rotate-left', monthlydrop:'fa-cookie-bite' };
+            const LABEL = { executive:'Overview', 'incident-analytics':'Analytics', 'form-builder':'Forms', 'form-analytics':'Form stats', monthlydrop:'Drop' };
             // The four tabs each role reaches for most; the rest live under More.
             const PRIMARY = {
                 callcenter:    ['incidents', 'social', 'executive', 'rewards'],
@@ -23722,7 +23940,7 @@ ${(() => {
         // back to scrolling (phones also have the bottom tab bar).
         window.NavBar = (function(){
             const GROUPS = [
-                { name: 'Analysis',      views: ['incident-analytics','form-analytics','insights','data'] },
+                { name: 'Analysis',      views: ['monthlydrop','incident-analytics','form-analytics','insights','data'] },
                 { name: 'Operations',    views: ['orders','actions','rewards'] },
                 { name: 'Setup & system',views: ['form-builder','activity','system'] }
             ];
@@ -23732,7 +23950,7 @@ ${(() => {
                 branches:'fa-store', 'incident-analytics':'fa-chart-line', 'form-analytics':'fa-chart-pie',
                 insights:'fa-lightbulb', data:'fa-database', orders:'fa-receipt', actions:'fa-list-check',
                 rewards:'fa-gift', 'form-builder':'fa-pen-to-square', activity:'fa-clock-rotate-left',
-                system:'fa-heart-pulse'
+                system:'fa-heart-pulse', monthlydrop:'fa-cookie-bite'
             };
             const BASE_PAD = 13;          // a tab's resting horizontal padding
             const MAX_PAD  = 26;          // and the widest it is allowed to grow to
