@@ -2644,6 +2644,22 @@
         body.bg-refresh #submission-detail-modal *,
         body.bg-refresh #users-modal,
         body.bg-refresh #users-modal *,
+        /* v2.112.0: branch picker in Manage Users */
+        .ufb.off { opacity: .5; pointer-events: none; }
+        .ufb-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 42px; padding: 6px 8px; border: 1.5px solid var(--border-color); border-radius: 9px; background: var(--white); cursor: text; }
+        .ufb-chips:focus-within { border-color: #010197; }
+        .ufb-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(1,1,151,.08); color: #010197; font-size: .76rem; font-weight: 700; border-radius: 14px; padding: 4px 6px 4px 10px; }
+        body.dark-theme .ufb-chip { background: rgba(100,208,255,.14); color: #64D0FF; }
+        .ufb-chip button { width: 16px; height: 16px; border-radius: 50%; border: 0; background: rgba(1,1,151,.15); color: inherit; font-size: .62rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .ufb-chips input { flex: 1; min-width: 90px; border: 0; outline: 0; background: transparent; font: 500 .8rem 'Inter', sans-serif; color: var(--text-main); }
+        .ufb-all { font-size: .78rem; color: var(--text-muted); padding: 2px 4px; }
+        .ufb-list { border: 1px solid var(--border-color); border-radius: 10px; margin-top: 6px; max-height: 170px; overflow-y: auto; background: var(--white); }
+        .ufb-grp { font-size: .6rem; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px 3px; display: flex; justify-content: space-between; }
+        .ufb-grp a { color: #010197; text-transform: none; letter-spacing: 0; font-weight: 700; cursor: pointer; }
+        body.dark-theme .ufb-grp a { color: #64D0FF; }
+        .ufb-opt { display: flex; align-items: center; gap: 10px; padding: 7px 12px; font-size: .8rem; cursor: pointer; color: var(--text-main); }
+        .ufb-opt:hover { background: var(--bg-light); }
+        .ufb-opt input { width: 15px; height: 15px; margin: 0; accent-color: #010197; }
         body.bg-refresh #user-form-modal,
         body.bg-refresh #user-form-modal *,
         /* The surfaces added since that list was written, and the ones that
@@ -7661,7 +7677,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.111.4 · 17 Sep 2026 · Help: no mention of deleting submissions';
+        const BUILD_VERSION = 'v2.112.0 · 17 Sep 2026 · Access review: AI for all, review capability, several branches per user, Owner-only alert settings';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9126,11 +9142,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const channel = (document.getElementById('filter-channel')||{}).value || 'all';
             const survey  = (document.getElementById('filter-survey')||{}).value  || 'all';
             if(PERM.region !== 'All') region = PERM.region;
-            if(PERM.branch !== 'All') branch = PERM.branch;
+            { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
             const _regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
             return (rawData.incidents || []).filter(item =>
                 (region === 'all' || _regionOf(item.branch) === region) &&
-                (branch === 'all' || item.branch === branch) &&
+                (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch) &&
                 (channel === 'all' || item.channel === channel) &&
                 (survey === 'all' || item.surveyForm === survey)
             );
@@ -9147,7 +9163,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             // ── Enforce permissions — override filter values with locked ones ──
             if(PERM.region !== 'All') region = PERM.region;
-            if(PERM.branch !== 'All') branch = PERM.branch;
+            { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
 
             const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
             const p2End = new Date(start); p2End.setDate(p2End.getDate() - 1);
@@ -9212,7 +9228,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(!isNaN(t) && businessOffsetMs(new Date(t)) > nowOffsetMs) return false;
                     }
                     return (region === 'all' || _regionOf(item.branch) === region) &&
-                           (branch === 'all' || item.branch === branch) &&
+                           (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch) &&
                            (channel === 'all' || item.channel === channel) &&
                            (survey === 'all' || item.surveyForm === survey);
                 });
@@ -10293,7 +10309,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                         <option value="Admin">Admin — view everything, no changes</option>
                                         <option value="Report Analyst">Report Analyst — view, export, build forms</option>
                                         <option value="Call Center">Call Center — view + handle submissions &amp; incidents</option>
-                                        <option value="Manager">Manager — one branch, view + export</option>
+                                        <option value="Manager">Manager — their branches, view + export</option>
                                         <option value="Viewer" selected>Viewer — read only</option>
                                     </select>
                                 </div>
@@ -10303,8 +10319,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 </div>
                             </div>
                             <div>
-                                <div class="ia-label" style="margin-bottom:5px;">Branch <span id="uf-branch-hint" style="text-transform:none;font-weight:500;color:var(--text-muted);"></span></div>
-                                <select id="uf-branch" style="width:100%;padding:9px 10px;border:1.5px solid var(--border-color);border-radius:9px;font-size:0.85rem;font-family:'Inter',sans-serif;background:var(--white);color:var(--text-main);"></select>
+                                <div class="ia-label" style="margin-bottom:5px;">Branches <span id="uf-branch-hint" style="text-transform:none;font-weight:500;color:var(--text-muted);"></span></div>
+                                <input type="hidden" id="uf-branch" value="All">
+                                <div id="uf-branch-pick" class="ufb">
+                                    <div class="ufb-chips" id="ufb-chips" onclick="document.getElementById('ufb-q').focus()"></div>
+                                    <div class="ufb-list" id="ufb-list"></div>
+                                </div>
                             </div>
                             <div>
                                 <div class="ia-label" style="margin-bottom:5px;">Account status</div>
@@ -11591,7 +11611,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // Fire-and-forget — this is background tracking, not something the
         // agent explicitly triggered, so no error alert on failure.
         function saveIncidentReview(stableKey){
-            if(!can('write')) return;   // read-only users viewing an incident must not mark it reviewed
+            if(!can('review')) return;   // read-only users viewing an incident must not mark it reviewed
             fetch(LIVE.slScriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -12149,7 +12169,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const bSelect = document.getElementById('filter-branch');
                     const _syncBranchOptions = () => {
                         const have = new Set(Array.from(bSelect.options).map(o => o.value));
-                        config.branches.forEach(b => { if(!have.has(b.name)) bSelect.add(new Option(b.name, b.name)); });
+                        config.branches.forEach(b => { if(!have.has(b.name) && permBranchOK(b.name)) bSelect.add(new Option(b.name, b.name)); });
                     };
 
                     // ── Instant paint from the last good snapshot ─────────
@@ -20005,13 +20025,23 @@ ${(() => {
         // to be attempted, so a read-only user gets a clear message instead of a
         // server error.
         const ROLE_CAPS = {
-            owner:         { read:true, export:true,  write:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true, reward:true, action:true },
-            admin:         { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false, action:false },
-            reportanalyst: { read:true, export:true,  write:false, forms:true,  users:false, audit:false, escalate:true, ask:true, reward:true, action:true },
-            callcenter:    { read:true, export:false, write:true,  forms:false, users:false, audit:false, escalate:false, ask:true, reward:true, action:false },
-            manager:       { read:true, export:true,  write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false, action:false },
-            viewer:        { read:true, export:false, write:false, forms:false, users:false, audit:false, escalate:false, ask:false, reward:false, action:false }
+            owner:         { read:true, export:true,  write:true,  review:true,  forms:true,  users:true,  audit:true,  escalate:true, ask:true, reward:true, action:true },
+            admin:         { read:true, export:false, write:false, review:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false, action:false },
+            reportanalyst: { read:true, export:true,  write:false, review:true,  forms:true,  users:false, audit:false, escalate:true, ask:true, reward:true, action:true },
+            callcenter:    { read:true, export:false, write:true,  review:true,  forms:false, users:false, audit:false, escalate:false, ask:true, reward:true, action:false },
+            manager:       { read:true, export:true,  write:false, review:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false, action:false },
+            viewer:        { read:true, export:false, write:false, review:false, forms:false, users:false, audit:false, escalate:false, ask:true, reward:false, action:false }
         };
+        // v2.112.0: a person may be assigned several branches ("Blue Area, F-11").
+        // null means every branch; otherwise the list, as written in Manage Users.
+        function permBranches(){
+            const raw = String(PERM.branch || 'All');
+            if(raw.trim().toLowerCase() === 'all') return null;
+            const out = raw.split(',').map(b => b.trim()).filter(b => b && b.toLowerCase() !== 'all');
+            return out.length ? out : null;
+        }
+        function permBranchOK(b){ const mine = permBranches(); return !mine || mine.some(x => x.toLowerCase() === String(b || '').trim().toLowerCase()); }
+        function permBranchLabel(){ const mine = permBranches(); return mine ? mine.join(', ') : 'All'; }
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
         function can(cap){
@@ -20144,11 +20174,16 @@ ${(() => {
 
             // ── Lock branch filter ──
             const branchEl = document.getElementById('filter-branch');
-            if(branchEl && PERM.branch !== 'All'){
-                // Wait for branch dropdown to be populated, then lock it
+            const myBranches = permBranches();
+            if(branchEl && myBranches){
+                // Wait for branch dropdown to be populated, then lock it: one
+                // branch locks the select; several keep it usable but pruned to
+                // theirs, with "All" meaning all of theirs.
                 setTimeout(() => {
-                    branchEl.value    = PERM.branch;
-                    branchEl.disabled = true;
+                    if(myBranches.length === 1){ branchEl.value = myBranches[0]; branchEl.disabled = true; return; }
+                    Array.from(branchEl.options).forEach(o => { if(o.value !== 'all' && !permBranchOK(o.value)) o.remove(); });
+                    const allOpt = Array.from(branchEl.options).find(o => o.value === 'all'); if(allOpt) allOpt.textContent = 'All my branches';
+                    branchEl.value = 'all'; branchEl.disabled = false;
                 }, 800);
             }
 
@@ -20506,7 +20541,9 @@ ${(() => {
                 return 'Last seen ' + d.toLocaleDateString();
             };
             wrap.innerHTML = users.map(u => {
-                const scope = (u.branch && u.branch !== 'All') ? u.branch : ((u.region && u.region !== 'All') ? u.region + ' region' : 'All branches');
+                const scope = (u.branch && u.branch !== 'All')
+                    ? String(u.branch).split(',').map(b => b.trim()).filter(Boolean).map(b => `<span style="display:inline-block;font-size:0.62rem;font-weight:700;background:rgba(1,1,151,.07);color:#010197;border-radius:10px;padding:1px 7px;margin:1px 3px 1px 0;">${b}</span>`).join('')
+                    : ((u.region && u.region !== 'All') ? u.region + ' region' : 'All branches');
                 const isSelf = (u.email||'').trim().toLowerCase() === (PERM.email||'').trim().toLowerCase();
                 const disabled = String(u.status||'active').toLowerCase() === 'disabled';
                 return `<div style="display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--border-color);${disabled?'opacity:.55;':''}">
@@ -20529,10 +20566,50 @@ ${(() => {
             }).join('');
         }
 
+        // ── v2.112.0: pick one or more branches for a user ─────────────────
+        // The hidden #uf-branch keeps the saved form: "All", or the names
+        // joined with ", " -- exactly what the Users sheet stores.
+        const UFB = (function(){
+            let picked = [], q = '', enabled = true;
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            function names(){ return config.branches.map(b => b.name).sort(); }
+            function regionOf(n){ const b = config.branches.find(x => x.name === n); return (b && b.region) || 'Other'; }
+            function init(raw){
+                const v = String(raw || 'All');
+                picked = v.trim().toLowerCase() === 'all' ? [] : v.split(',').map(b => b.trim()).filter(Boolean);
+                q = ''; render();
+            }
+            function value(){ return picked.length ? picked.join(', ') : 'All'; }
+            function setEnabled(on){ enabled = !!on; if(!on) picked = []; render(); }
+            function toggle(n){ const i = picked.indexOf(n); if(i === -1) picked.push(n); else picked.splice(i, 1); render(); }
+            function pickRegion(r){ names().filter(n => regionOf(n) === r && picked.indexOf(n) === -1).forEach(n => picked.push(n)); render(); }
+            function search(v){ q = String(v || ''); renderList(); }
+            function render(){
+                const chips = document.getElementById('ufb-chips'), hid = document.getElementById('uf-branch'), box = document.getElementById('uf-branch-pick');
+                if(!chips) return;
+                hid.value = value();
+                chips.innerHTML = (picked.length ? picked.map(n => `<span class="ufb-chip">${esc(n)}<button type="button" title="Remove" onclick="UFB.toggle('${esc(n).replace(/'/g, "\\'")}')">&#10005;</button></span>`).join('')
+                                                 : '<span class="ufb-all">All branches</span>')
+                                + `<input id="ufb-q" placeholder="${picked.length ? 'Add a branch…' : 'Type to narrow to one or more branches…'}" oninput="UFB.search(this.value)" value="${esc(q)}">`;
+                box.classList.toggle('off', !enabled);
+                renderList();
+            }
+            function renderList(){
+                const list = document.getElementById('ufb-list'); if(!list) return;
+                const s = q.trim().toLowerCase();
+                const groups = {};
+                names().filter(n => !s || n.toLowerCase().indexOf(s) !== -1).forEach(n => { (groups[regionOf(n)] = groups[regionOf(n)] || []).push(n); });
+                const order = ['North', 'Central', 'South', 'Other'].filter(r => groups[r]).concat(Object.keys(groups).filter(r => ['North','Central','South','Other'].indexOf(r) === -1));
+                list.innerHTML = order.map(r => `<div class="ufb-grp"><span>${esc(r)}</span><a onclick="UFB.pickRegion('${esc(r).replace(/'/g, "\\'")}')">Select all</a></div>`
+                    + groups[r].map(n => `<label class="ufb-opt"><input type="checkbox" ${picked.indexOf(n) !== -1 ? 'checked' : ''} onchange="UFB.toggle('${esc(n).replace(/'/g, "\\'")}')">${esc(n)}</label>`).join('')).join('')
+                    || '<div class="ufb-opt" style="color:var(--text-muted);">No branch matches.</div>';
+            }
+            return { init, value, setEnabled, toggle, pickRegion, search, render };
+        })();
         function openUserForm(user){
             document.getElementById('user-form-error').textContent = '';
             document.getElementById('uf-region').innerHTML = _regionOptionsHTML(user ? user.region : 'All');
-            document.getElementById('uf-branch').innerHTML = _branchOptionsHTML(user ? user.branch : 'All');
+            UFB.init(user ? user.branch : 'All');
             if(user){
                 document.getElementById('user-form-title').textContent = 'Edit User';
                 document.getElementById('uf-original-email').value = user.email || '';
@@ -20570,16 +20647,16 @@ ${(() => {
                 admin: 'Sees every dashboard across all branches. Cannot change data, export, or manage users or forms.',
                 reportanalyst: 'Sees everything, can export reports and build/edit customer forms. Cannot handle incidents, log submissions or manage users.',
                 callcenter: 'Sees everything and does the day-to-day work: logs Call Center submissions, reviews and resolves incidents, handles social mentions. Cannot export, manage users or edit forms.',
-                manager: 'Sees exactly one branch — its submissions, incidents and reports — and can export them. Cannot change anything.',
-                viewer: 'Can only look. Leave scope as All for company-wide read access, or narrow it to a region or branch.'
+                manager: 'Sees only the branches assigned above — one or several — with their submissions, incidents, reports and Blink, and can export them. Cannot change anything.',
+                viewer: 'Can only look. Leave scope as All for company-wide read access, or narrow it to a region or to one or more branches.'
             };
             hint.textContent = HINTS[k] || '';
             if(k === 'manager'){
-                region.value = 'All'; region.disabled = true; branch.disabled = false; bh.textContent = '(required)';
+                region.value = 'All'; region.disabled = true; UFB.setEnabled(true); bh.textContent = '(at least one)';
             } else if(k === 'viewer'){
-                region.disabled = false; branch.disabled = false; bh.textContent = '(optional)';
+                region.disabled = false; UFB.setEnabled(true); bh.textContent = '(optional)';
             } else {
-                region.value = 'All'; branch.value = 'All'; region.disabled = true; branch.disabled = true; bh.textContent = '';
+                region.value = 'All'; region.disabled = true; UFB.setEnabled(false); bh.textContent = '';
             }
         }
         function closeUserForm(){
@@ -20600,7 +20677,7 @@ ${(() => {
 
             if(!name){ errEl.textContent = 'Name is required.'; return; }
             if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ errEl.textContent = 'Enter a valid email.'; return; }
-            if(roleKey(role) === 'manager' && (!branch || branch === 'All')){ errEl.textContent = 'A Manager must be assigned to one branch.'; return; }
+            if(roleKey(role) === 'manager' && (!branch || branch === 'All')){ errEl.textContent = 'A Manager must be assigned to at least one branch.'; return; }
             const status = document.getElementById('uf-disabled').checked ? 'disabled' : 'active';
 
             const btn = document.getElementById('uf-save-btn');
@@ -22022,14 +22099,15 @@ ${(() => {
             const ROLE_SUMMARY = {
                 owner:         'You have full access: every branch, every action, plus user management, the activity trail and Form Builder.',
                 admin:         'You can see everything across every branch, but not change data. Resolving incidents and logging complaints are done by the Call Center.',
-                reportanalyst: 'You can see every branch, export data, escalate complaints to Ops, handle rewards and build forms. Resolving incidents is done by the Call Center.',
+                reportanalyst: 'You can see every branch, export data, escalate complaints to Ops, handle rewards, build forms, and mark a case reviewed when an alert rings. Closing cases is done by the Call Center.',
                 callcenter:    'You handle the live queue: log complaints, resolve incidents, and verify customer reward codes on the phone.',
-                manager:       'You see your own branch only, and can export its data. Resolving incidents is handled centrally by the Call Center.',
+                manager:       'You see your own branches only, and can export their data. Resolving incidents is handled centrally by the Call Center.',
                 viewer:        'You have read-only access to the dashboards, and can message and call your teammates.'
             };
             function abilities(){
                 const A = [];
                 A.push(['fa-chart-line', 'See the dashboards', 'Overview, Complaints, Incidents, Submissions, Branches and Social Listening' + (PERM.branch && PERM.branch !== 'All' ? ' for ' + esc(PERM.branch) + '.' : ' across every branch.')]);
+                if(!can('write') && can('review')) A.push(['fa-eye', 'Acknowledge an incident', 'When an alert rings, View &amp; acknowledge marks the case reviewed and stops the alert for everyone. Closing it is done by the Call Center.']);
                 if(can('write')) A.push(['fa-clipboard-check', 'Work the incident queue', 'Open an incident, mark it Valid, Fake or Customer Not Responding, add remarks and close it. Your name is recorded against the decision.']);
                 A.push(['fa-comments', 'Message and call teammates', 'The phone icon at the top opens Messages: one-to-one chats, group rooms, photos, voice notes and calls. Messages reach your phone when the dashboard is closed, once Phone alerts are on.']);
                 if(can('write')) A.push(['fa-paper-plane', 'Send a case to a room', 'On any incident, <b>Send to a room</b> posts the case card to a branch room, a group or a person. Their replies and your review and closure appear in that room and in the incident\u2019s Discussion box.']);
@@ -22248,10 +22326,10 @@ ${(() => {
                      "On the Incidents tab, press Create Submission. It asks one thing at a time: the rating, the customer's order number and contact details, branch and city, where they ordered from, and what went well or wrong. A rating of 3 or below becomes an incident as soon as it is submitted.",
                      "write"],
                     ["Why can I not see a tab or button that a colleague can?",
-                     "What you see depends on your role. Resolving incidents and logging complaints are for the Call Center and the Owner; escalating to Ops and the Actions tab are for Report Analysts and the Owner; exporting is for the Owner, Report Analysts and Managers. If your role looks wrong, ask the Owner to check it.",
+                     "What you see depends on your role. Resolving incidents and logging complaints are for the Call Center and the Owner; marking a case reviewed is also open to Report Analysts; escalating to Ops and the Actions tab are for Report Analysts and the Owner; the AI assistant is available to everyone; exporting is for the Owner, Report Analysts and Managers. If your role looks wrong, ask the Owner to check it.",
                      "all"],
-                    ["Why do I only see my own branch?",
-                     "Your account is set to one branch, so every tab, filter and number shows that branch only. Incidents at your branch are resolved centrally by the Call Center.",
+                    ["Why do I only see my own branches?",
+                     "Your account is set to one or more branches, so every tab, filter and number shows those only. With several branches, the branch filter offers each of them and All my branches. Incidents at your branches are resolved centrally by the Call Center.",
                      "branch"],
                     ["What is the Blink tab?",
                      "Live orders from the tills (Blink): which branches are open, orders in progress and waiting, Foodpanda handover times and anything out of stock. Branches that look wrong are flagged with who should act. It is read-only, and a branch account sees only its own branch.",
@@ -22292,7 +22370,7 @@ ${(() => {
                 ] },
                 { title: "Managing the dashboard", icon: "fa-user-shield", items: [
                     ["How do I add a user or change someone's role?",
-                     "Open Manage Users from your profile menu. Add User creates an account with a name, email and role, and a region or branch if they should only see part of the business. Edit an existing user to change their role or branch or switch the account off; delete removes it. Changes apply when that person next opens or refreshes the dashboard.",
+                     "Open Manage Users from your profile menu. Add User creates an account with a name, email and role, and a region or one or more branches if they should only see part of the business. Edit an existing user to change their role or branch or switch the account off; delete removes it. Changes apply when that person next opens or refreshes the dashboard.",
                      "users"],
                     ["What does Form Analytics show?",
                      "Everyone who opened a customer form, not only those who finished it. Completion rate is the share who submitted; drop-off shows the question where people most often stopped, which is the one to shorten or fix first. The daily trend shows whether a change to a form made a difference.",
@@ -22360,7 +22438,7 @@ ${(() => {
             }
             function accessPane(){
                 const role = roleKey(PERM.role);
-                const where = PERM.branch && PERM.branch !== 'All' ? ' \u00b7 ' + esc(PERM.branch) : '';
+                const where = permBranches() ? ' \u00b7 ' + esc(permBranchLabel()) : '';
                 return `<div class="hp-scroll">
                     <div class="hp-role"><span class="help-ic"><i class="fas fa-id-badge"></i></span><div><b>${esc(PERM.role || 'Viewer')}${where}</b><p>${esc(ROLE_SUMMARY[role] || ROLE_SUMMARY.viewer)}</p></div></div>
                     <div class="hp-cards">${abilities().map(([ic, t, d]) => `<div class="hp-card"><span class="help-ic"><i class="fas ${ic}"></i></span><div><b>${esc(t)}</b><span>${d}</span></div></div>`).join('')}</div>
