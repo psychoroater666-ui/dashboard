@@ -3442,7 +3442,9 @@
         body.no-write [onclick^="slSetResolutionBtn"],
         body.no-write [onclick^="slConfirmClose"],
         body.no-write [onclick^="slOpenClose"] { display:none !important; }
-        body.no-export .btn-export,
+        /* Paging and Refresh borrow the .btn-export look but export nothing --
+           they stay for every role (v2.112.4). */
+        body.no-export .btn-export:not(#submissions-prev-btn):not(#submissions-next-btn):not(#submissions-refresh-btn),
         body.no-export #submissions-export-card,
         body.no-export [onclick^="exportFiltered"],
         body.no-export [onclick^="_exportRawCSV"],
@@ -7601,7 +7603,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                 onclick="document.getElementById('vc-file-input').click()"><i class="fas fa-paperclip"></i></button>
                         <textarea id="vc-composer-input" rows="1" placeholder="Write a message…"
                                   oninput="VoiceCall.composerGrow(this); VoiceCall.typingPing()"
-                                  onkeydown="VoiceCall.composerKey(event)"></textarea>
+                                  onkeydown="VoiceCall.composerKey(event)"
+                                  onpaste="VoiceCall.composerPaste(event)"></textarea>
                         <button class="vc-attach-btn" id="vc-mic-btn" title="Record a voice note"
                                 onclick="VoiceCall.toggleVoice()"><i class="fas fa-microphone"></i></button>
                     </div>
@@ -7677,7 +7680,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.112.3 · 18 Sep 2026 · modal fade fix';
+        const BUILD_VERSION = 'v2.112.4 · 18 Sep 2026 · paging for all roles, paste in chat';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -26010,6 +26013,24 @@ ${(() => {
             async function pickFile(input){
                 const file = input.files && input.files[0];
                 input.value = '';                                   // so the same file can be picked twice
+                return attachFile(file);
+            }
+            /** v2.112.4: pasting into the message box. Text pastes as the
+             *  browser always did; a copied screenshot or file -- which a
+             *  textarea silently drops -- is attached exactly as if it had
+             *  been picked with the paperclip. */
+            function composerPaste(e){
+                const cd = e.clipboardData || window.clipboardData;
+                if (!cd) return;
+                let file = (cd.files && cd.files[0]) || null;
+                if (!file && cd.items){
+                    for (const it of cd.items){ if (it.kind === 'file'){ file = it.getAsFile(); if (file) break; } }
+                }
+                if (file){ e.preventDefault(); attachFile(file); return; }
+                const ta = e.target;
+                setTimeout(() => { try { composerGrow(ta); } catch(_){} }, 0);
+            }
+            async function attachFile(file){
                 if (!file || !chat.peer) return;
                 if (file.size > CHAT_MAX_MB * 1048576){
                     setStatus('That file is too large (limit ' + CHAT_MAX_MB + ' MB)', 'error');
@@ -26706,7 +26727,7 @@ ${(() => {
                 addMember,
                 removeMember,
                 leaveGroup,
-                pickFile,
+                pickFile, composerPaste,
                 clearAttachment,
                 toggleVoice,
                 cancelVoice,
