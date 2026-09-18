@@ -8063,7 +8063,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.119.4 · 19 Sep 2026 · integrity judges only what it has data for';
+        const BUILD_VERSION = 'v2.119.5 · 19 Sep 2026 · integrity: today/yesterday ranges, clearer standing';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22385,12 +22385,15 @@ ${(() => {
            look guilty of nothing more than that. */
         const INTEG = (function(){
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            let days = 7, data = null, open_ = '';
+            // v2.119.5: today and yesterday as the branches live them, not only
+            // rolling windows.
+            const RANGES = [['today','Today'],['yesterday','Yesterday'],['7','Last 7 days'],['14','Last 14 days'],['30','Last 30 days']];
+            let range = '7', data = null, open_ = '';
             const n = v => (v == null ? '\u2014' : Number(v).toLocaleString());
             const mark = (v, warn, flag) => v >= flag ? 'intg-flag' : v >= warn ? 'intg-warn' : '';
 
             async function load(){
-                const res = await apiCall('branch_integrity', { days }).catch(() => null);
+                const res = await apiCall('branch_integrity', { range }).catch(() => null);
                 data = (res && res.status === 'success') ? res : (res || { status: 'error', message: 'Could not load the report.' });
             }
             function render(){
@@ -22421,7 +22424,10 @@ ${(() => {
                 // a blank is honest, a zero looks like a finding.
                 const dash = '\u2014';
                 const row = r => `<tr data-branch="${esc(r.branch)}">
-                    <td><b>${esc(r.branch)}</b><div class="intg-why">${esc(r.why && r.why.length ? r.why.join(' \u00b7 ') : (r.judged ? 'nothing unusual' : 'not enough recorded attempts to judge yet'))}</div></td>
+                    <td><b>${esc(r.branch)}</b><div class="intg-why">${esc(
+                        r.band === 'clean'
+                            ? (r.judged ? 'nothing unusual' : 'not enough recorded attempts to judge yet')
+                            : r.why.join(' \u00b7 '))}</div></td>
                     <td data-label="Standing"><span class="intg-band ${r.band}">${r.band === 'investigate' ? 'Investigate' : r.band === 'watch' ? 'Watch' : 'Clean'}</span></td>
                     <td data-label="Subs">${n(r.subs)}</td>
                     <td data-label="Attempts">${n(r.attempts)}</td>
@@ -22439,7 +22445,8 @@ ${(() => {
                     <h4>${esc(sel.branch)} \u2014 what was counted</h4>
                     <div class="sub">Every line is a count from the submissions themselves. Nothing here is an opinion.</div>
                     ${(sel.why && sel.why.length ? sel.why : ['Nothing unusual in this period.']).map(w => `<div class="intg-line">${esc(w)}</div>`).join('')}
-                    <div class="intg-line">${n(sel.subs)} submissions in the last ${days} days<em>${n(sel.attempts)} attempt${sel.attempts === 1 ? '' : 's'} recorded${sel.devices == null ? '' : ' from ' + n(sel.devices) + ' device' + (sel.devices === 1 ? '' : 's')}</em></div>
+                    ${sel.band === 'clean' && sel.why && sel.why.length ? '<div class="intg-line" style="color:var(--text-muted);font-weight:600;">Below the level worth acting on \u2014 the branch reads clean.</div>' : ''}
+                    <div class="intg-line">${n(sel.subs)} submissions ${esc(/^(today|yesterday)$/.test(data.label || '') ? data.label : 'in ' + (data.label || 'this period'))}<em>${n(sel.attempts)} attempt${sel.attempts === 1 ? '' : 's'} recorded${sel.devices == null ? '' : ' from ' + n(sel.devices) + ' device' + (sel.devices === 1 ? '' : 's')}</em></div>
                     ${sel.judged ? '' : `<div class="intg-line">Not judged on devices or timing yet<em>fewer than ${n(data.enough)} recorded attempts</em></div>`}
                     ${Object.keys(sel.refusedBy || {}).length ? `<div class="intg-line">Refused by${Object.keys(sel.refusedBy).map(k => ' ' + esc(k) + ' \u00d7' + sel.refusedBy[k]).join(',')}</div>` : ''}
                 </div>` : '';
@@ -22450,13 +22457,13 @@ ${(() => {
                              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">
                                 How trustworthy each branch's feedback looks. Built from every submission attempt, accepted or refused.</div></div>
                         <div class="spacer"></div>
-                        <select class="select-input" onchange="INTEG.setDays(this.value)">
-                            ${[7, 14, 30].map(d => `<option value="${d}" ${d === days ? 'selected' : ''}>Last ${d} days</option>`).join('')}
+                        <select class="select-input" onchange="INTEG.setRange(this.value)">
+                            ${RANGES.map(([v, t]) => `<option value="${v}" ${v === range ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
                         <button class="fb-btn sm" onclick="INTEG.refresh()"><i class="fas fa-rotate"></i> Refresh</button>
                     </div>
                     <div class="intg-kpis">
-                        ${kpi('', 'Branches measured', n(rows.length), 'last ' + days + ' days')}
+                        ${kpi('', 'Branches measured', n(rows.length), esc(data.label || ('last ' + days + ' days')))}
                         ${kpi(bad.length ? 'bad' : '', 'Investigate', n(bad.length), bad.slice(0, 3).map(r => r.branch).join(', ') || 'none')}
                         ${kpi(watch.length ? 'warn' : '', 'Watch', n(watch.length), watch.slice(0, 3).map(r => r.branch).join(', ') || 'none')}
                         ${kpi('', 'Refused by limits', n(refused), 'every attempt is recorded')}
@@ -22467,19 +22474,19 @@ ${(() => {
                         <th>Per device</th><th>Repeat numbers</th><th>Repeat device</th><th>Out of hours</th><th>5/5 no comment</th><th>Median secs</th>
                     </tr></thead><tbody>${rows.length ? rows.map(row).join('') : '<tr><td colspan="12" style="color:var(--text-muted);">No submissions in this period.</td></tr>'}</tbody></table></div>
                     ${detail}
-                    <div class="intg-note">Subs, repeat numbers, out-of-hours and 5/5 come from the last ${days} days of submissions.
+                    <div class="intg-note">Subs, repeat numbers, out-of-hours and 5/5 come from the submissions of ${esc(data.label || 'this period')}.
                         Attempts, devices, repeat-device and timing come from the attempt record, which has ${n(data.integDays)} day${data.integDays === 1 ? '' : 's'} of data
                         (${n(data.integRows)} attempts so far) — a branch with fewer than ${n(data.enough)} recorded attempts shows a dash and is not judged on them.
                         Proportions are compared against the network's own averages, not a fixed number.</div>`;
                 if(host.__lastHtml !== host.uiHTML){ host.__lastHtml = host.uiHTML; host.innerHTML = host.uiHTML; }
             }
-            function setDays(v){ days = parseInt(v, 10) || 7; data = null; render(); }
+            function setRange(v){ range = String(v || '7'); data = null; render(); }
             function refresh(){ data = null; render(); }
             document.addEventListener('click', e => {
                 const tr = e.target.closest && e.target.closest('#integrity-root tr[data-branch]');
                 if(tr){ open_ = tr.dataset.branch; render(); }
             });
-            return { render, setDays, refresh };
+            return { render, setRange, refresh };
         })();
 
         const ACTS = (function(){
