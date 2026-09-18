@@ -4151,7 +4151,12 @@
         .intg-k small { display:block; font:500 .66rem 'Inter',sans-serif; color:var(--text-muted); margin-top:3px; }
         .intg-k.bad b { color:#B91C1C; } .intg-k.warn b { color:#B45309; }
         body.dark-theme .intg-k.bad b { color:#F87171; } body.dark-theme .intg-k.warn b { color:#FBBF24; }
-        .intg-table { width:100%; border-collapse:collapse; background:var(--white); border:1px solid var(--border-color); border-radius:12px; overflow:hidden; }
+        /* Twelve columns squeezed the branch name into a single-word column
+           with its reasons stacked vertically: the table scrolls sideways
+           inside its own box instead, and the name keeps a usable width. */
+        .intg-scroll { overflow-x:auto; border:1px solid var(--border-color); border-radius:12px; background:var(--white); }
+        .intg-table { width:100%; min-width:1040px; border-collapse:collapse; background:var(--white); }
+        .intg-table th:first-child, .intg-table td:first-child { min-width:240px; }
         .intg-table th { font:800 .58rem 'Inter',sans-serif; letter-spacing:.5px; text-transform:uppercase; color:var(--text-muted);
                          text-align:left; padding:10px 12px; background:var(--bg-light); border-bottom:1px solid var(--border-color); white-space:nowrap; }
         .intg-table td { padding:11px 12px; font:600 .78rem 'Inter',sans-serif; color:var(--text-main);
@@ -4177,6 +4182,8 @@
         .intg-line em { margin-left:auto; font:500 .7rem 'Inter',sans-serif; font-style:normal; color:var(--text-muted); }
         .intg-note { font:500 .7rem 'Inter',sans-serif; color:var(--text-muted); margin-top:10px; }
         @media (max-width: 820px){
+            .intg-scroll { border:0; background:transparent; }
+            .intg-table { min-width:0; }
             .intg-table thead { display:none; }
             .intg-table tr { display:block; border-bottom:1px solid var(--border-color); padding:8px 4px; }
             .intg-table td { display:inline-block; border:0; padding:4px 8px; }
@@ -8056,7 +8063,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.119.2 · 19 Sep 2026 · Integrity opens its own page';
+        const BUILD_VERSION = 'v2.119.4 · 19 Sep 2026 · integrity judges only what it has data for';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22410,24 +22417,30 @@ ${(() => {
 
                 const kpi = (cls, label, value, note) =>
                     `<div class="intg-k ${cls}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(note)}</small></div>`;
+                // A measure with no data behind it yet shows a dash, not a zero:
+                // a blank is honest, a zero looks like a finding.
+                const dash = '\u2014';
                 const row = r => `<tr data-branch="${esc(r.branch)}">
-                    <td><b>${esc(r.branch)}</b><div class="intg-why">${esc(r.why && r.why.length ? r.why.join(' \u00b7 ') : 'nothing unusual')}</div></td>
+                    <td><b>${esc(r.branch)}</b><div class="intg-why">${esc(r.why && r.why.length ? r.why.join(' \u00b7 ') : (r.judged ? 'nothing unusual' : 'not enough recorded attempts to judge yet'))}</div></td>
                     <td data-label="Standing"><span class="intg-band ${r.band}">${r.band === 'investigate' ? 'Investigate' : r.band === 'watch' ? 'Watch' : 'Clean'}</span></td>
                     <td data-label="Subs">${n(r.subs)}</td>
+                    <td data-label="Attempts">${n(r.attempts)}</td>
                     <td data-label="Refused" class="${mark(r.refused, 1, 5)}">${n(r.refused)}</td>
-                    <td data-label="Devices" class="${r.subs >= 40 && r.devices > 0 && r.devices <= 4 ? 'intg-flag' : (r.subs >= 40 && r.devices > 0 && r.devices <= 8 ? 'intg-warn' : '')}">${r.devices ? n(r.devices) : '\u2014'}</td>
-                    <td data-label="Repeat phones" class="${mark(r.repeatPhones, 5, 10)}">${n(r.repeatPhones)}</td>
-                    <td data-label="Bursts" class="${mark(r.burstPct, 20, 40)}">${n(r.burstPct)}%</td>
-                    <td data-label="Out of hours" class="${mark(r.outOfHours, 5, 15)}">${n(r.outOfHours)}</td>
-                    <td data-label="5/5 no comment" class="${r.subs >= 40 && r.perfectSilentPct >= (data.networkPerfectSilentPct + 20) ? 'intg-warn' : ''}">${n(r.perfectSilentPct)}%</td>
-                    <td data-label="Median secs" class="${r.medianSeconds != null && r.medianSeconds < 10 ? 'intg-flag' : ''}">${r.medianSeconds == null ? '\u2014' : n(r.medianSeconds) + 's'}</td>
+                    <td data-label="Devices">${r.devices == null ? dash : n(r.devices)}</td>
+                    <td data-label="Per device" class="${r.subsPerDevice == null ? '' : mark(r.subsPerDevice, 20, 40)}">${r.subsPerDevice == null ? dash : n(r.subsPerDevice)}</td>
+                    <td data-label="Repeat numbers" class="${r.repeatPhonePct >= (data.networkRepeatPhonePct + 25) ? 'intg-warn' : ''}">${n(r.repeatPhonePct)}%</td>
+                    <td data-label="Repeat device" class="${r.burstPct == null ? '' : mark(r.burstPct, 10, 25)}">${r.burstPct == null ? dash : n(r.burstPct) + '%'}</td>
+                    <td data-label="Out of hours" class="${r.outOfHoursPct >= 10 && r.outOfHours >= 10 ? 'intg-warn' : ''}">${n(r.outOfHours)}</td>
+                    <td data-label="5/5 no comment" class="${r.subs >= 40 && r.perfectSilentPct >= (data.networkPerfectSilentPct + 25) ? 'intg-warn' : ''}">${n(r.perfectSilentPct)}%</td>
+                    <td data-label="Median secs" class="${r.medianSeconds != null && r.medianSeconds < 10 ? 'intg-flag' : ''}">${r.medianSeconds == null ? dash : n(r.medianSeconds) + 's'}</td>
                 </tr>`;
 
                 const detail = sel ? `<div class="intg-detail">
                     <h4>${esc(sel.branch)} \u2014 what was counted</h4>
                     <div class="sub">Every line is a count from the submissions themselves. Nothing here is an opinion.</div>
                     ${(sel.why && sel.why.length ? sel.why : ['Nothing unusual in this period.']).map(w => `<div class="intg-line">${esc(w)}</div>`).join('')}
-                    <div class="intg-line">${n(sel.subs)} submissions recorded<em>${esc(sel.devices ? sel.devices + ' device' + (sel.devices === 1 ? '' : 's') : 'no device recorded yet')}</em></div>
+                    <div class="intg-line">${n(sel.subs)} submissions in the last ${days} days<em>${n(sel.attempts)} attempt${sel.attempts === 1 ? '' : 's'} recorded${sel.devices == null ? '' : ' from ' + n(sel.devices) + ' device' + (sel.devices === 1 ? '' : 's')}</em></div>
+                    ${sel.judged ? '' : `<div class="intg-line">Not judged on devices or timing yet<em>fewer than ${n(data.enough)} recorded attempts</em></div>`}
                     ${Object.keys(sel.refusedBy || {}).length ? `<div class="intg-line">Refused by${Object.keys(sel.refusedBy).map(k => ' ' + esc(k) + ' \u00d7' + sel.refusedBy[k]).join(',')}</div>` : ''}
                 </div>` : '';
 
@@ -22449,12 +22462,15 @@ ${(() => {
                         ${kpi('', 'Refused by limits', n(refused), 'every attempt is recorded')}
                         ${kpi('', 'Submissions checked', n(subs), n(data.networkPerfectSilentPct) + '% are 5/5 with no comment')}
                     </div>
-                    <table class="intg-table"><thead><tr>
-                        <th style="width:26%">Branch</th><th>Standing</th><th>Subs</th><th>Refused</th><th>Devices</th>
-                        <th>Repeat phones</th><th>Bursts</th><th>Out of hours</th><th>5/5 no comment</th><th>Median secs</th>
-                    </tr></thead><tbody>${rows.length ? rows.map(row).join('') : '<tr><td colspan="10" style="color:var(--text-muted);">No submissions in this period.</td></tr>'}</tbody></table>
+                    <div class="intg-scroll"><table class="intg-table"><thead><tr>
+                        <th style="width:24%">Branch</th><th>Standing</th><th>Subs</th><th>Attempts</th><th>Refused</th><th>Devices</th>
+                        <th>Per device</th><th>Repeat numbers</th><th>Repeat device</th><th>Out of hours</th><th>5/5 no comment</th><th>Median secs</th>
+                    </tr></thead><tbody>${rows.length ? rows.map(row).join('') : '<tr><td colspan="12" style="color:var(--text-muted);">No submissions in this period.</td></tr>'}</tbody></table></div>
                     ${detail}
-                    <div class="intg-note">Devices, bursts, repeat numbers and timing are counted from the whole period. Refusals only exist from the day the limits moved into the Worker, so the first week is a baseline rather than evidence.</div>`;
+                    <div class="intg-note">Subs, repeat numbers, out-of-hours and 5/5 come from the last ${days} days of submissions.
+                        Attempts, devices, repeat-device and timing come from the attempt record, which has ${n(data.integDays)} day${data.integDays === 1 ? '' : 's'} of data
+                        (${n(data.integRows)} attempts so far) — a branch with fewer than ${n(data.enough)} recorded attempts shows a dash and is not judged on them.
+                        Proportions are compared against the network's own averages, not a fixed number.</div>`;
                 if(host.__lastHtml !== host.uiHTML){ host.__lastHtml = host.uiHTML; host.innerHTML = host.uiHTML; }
             }
             function setDays(v){ days = parseInt(v, 10) || 7; data = null; render(); }
