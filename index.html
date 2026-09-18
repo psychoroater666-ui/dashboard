@@ -4192,6 +4192,54 @@
                      letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); margin-right:4px; }
         }
 
+
+        /* ── v2.120.0: an order, in full, and shareable ─────────────────────
+           Coordination happens by screenshotting Blink into WhatsApp. A
+           screenshot loses the order id, cannot be searched and cannot be
+           linked to a complaint. The same detail here, with a Share button,
+           puts that conversation next to the case instead. */
+        .ordv-overlay { position: fixed; inset: 0; z-index: 10030; display: none; align-items: center; justify-content: center;
+                        background: rgba(15,23,42,.5); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); padding: 20px; }
+        .ordv-overlay.open { display: flex; }
+        .ordv { width: 640px; max-width: 100%; max-height: 90vh; overflow-y: auto; background: var(--white);
+                border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 24px 60px -16px rgba(16,24,40,.4); }
+        .ordv-h { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--white); z-index: 1; }
+        .ordv-h b { font: 800 .9rem 'Inter', sans-serif; color: var(--text-main); }
+        .ordv-h .sp { flex: 1; }
+        .ordv-pill { font: 800 .6rem 'Inter', sans-serif; padding: 3px 9px; border-radius: 20px; background: rgba(1,1,151,.09); color: #010197; white-space: nowrap; }
+        body.dark-theme .ordv-pill { background: rgba(100,208,255,.15); color: #64D0FF; }
+        .ordv-sec { padding: 11px 14px; border-bottom: 1px solid var(--border-color); }
+        .ordv-sec:last-child { border-bottom: 0; }
+        .ordv-sec h5 { font: 800 .58rem 'Inter', sans-serif; letter-spacing: .6px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 7px; }
+        .ordv-kv { display: flex; gap: 10px; font: 600 .76rem 'Inter', sans-serif; color: var(--text-main); padding: 3px 0; }
+        .ordv-kv span { color: var(--text-muted); min-width: 118px; flex: none; }
+        .ordv-items { width: 100%; border-collapse: collapse; }
+        .ordv-items th { font: 800 .56rem 'Inter', sans-serif; letter-spacing: .5px; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: 5px 0; }
+        .ordv-items td { font: 600 .76rem 'Inter', sans-serif; color: var(--text-main); padding: 5px 0; border-top: 1px solid var(--border-color); }
+        .ordv-items .r { text-align: right; }
+        .ordv-tot { display: flex; font: 600 .76rem 'Inter', sans-serif; color: var(--text-main); padding: 3px 0; }
+        .ordv-tot span { color: var(--text-muted); flex: 1; }
+        .ordv-tot.grand { font-weight: 800; border-top: 1px solid var(--border-color); margin-top: 5px; padding-top: 7px; }
+        .ordv-note { background: rgba(220,38,38,.08); color: #B91C1C; border-radius: 8px; padding: 7px 10px; font: 700 .72rem 'Inter', sans-serif; margin-top: 6px; }
+        body.dark-theme .ordv-note { background: rgba(248,113,113,.14); color: #F87171; }
+        #ord-table tbody tr { cursor: pointer; }
+        #ord-table tbody tr:hover td { background: var(--bg-light); }
+        /* the card as it appears in a conversation */
+        .vc-order { display: block; align-self: flex-start; width: 100%; max-width: 330px; background: var(--white);
+                    border: 1px solid var(--border-color); border-left: 3px solid #010197; border-radius: 12px; overflow: hidden; cursor: pointer; }
+        body.dark-theme .vc-order { border-left-color: #64D0FF; }
+        .vc-order .t { display: flex; align-items: center; gap: 7px; padding: 9px 11px 6px; }
+        .vc-order .t b { font: 800 .76rem 'Inter', sans-serif; color: var(--text-main); }
+        .vc-order .t em { margin-left: auto; font-style: normal; font: 700 .6rem 'Inter', sans-serif; color: var(--text-muted); }
+        .vc-order .bd { padding: 0 11px 9px; }
+        .vc-order .r { display: flex; font: 600 .7rem 'Inter', sans-serif; color: var(--text-main); padding: 2px 0; }
+        .vc-order .r span { color: var(--text-muted); min-width: 74px; flex: none; }
+        .vc-order .it { font: 600 .7rem 'Inter', sans-serif; color: var(--text-main); padding: 2px 0; }
+        .vc-order .note { color: #B91C1C; font-weight: 800; font-size: .7rem; margin-top: 5px; }
+        body.dark-theme .vc-order .note { color: #F87171; }
+        .vc-order .g { display: flex; font: 800 .74rem 'Inter', sans-serif; color: var(--text-main); border-top: 1px solid var(--border-color); margin-top: 6px; padding-top: 6px; }
+        .vc-order .g span { flex: 1; font-weight: 600; color: var(--text-muted); }
+
         /* ═══════════ REWARDS ═══════════ */
         .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
         .rw-stat b { display:block; font-size:1.15rem; font-weight:800; color:var(--text-main); line-height:1; }
@@ -7374,6 +7422,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             <!-- ACTION REGISTER -->
             <div id="view-orders" class="view"><div id="orders-root"></div></div>
+            <div class="ordv-overlay" id="ord-view" onclick="if(event.target===this) ORD_close()"><div class="ordv" id="ord-view-body"></div></div>
             <div id="view-actions" class="view"><div id="acts-root"></div></div>
 
             <!-- FORM ANALYTICS (Owner only) -->
@@ -8063,7 +8112,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.119.5 · 19 Sep 2026 · integrity: today/yesterday ranges, clearer standing';
+        const BUILD_VERSION = 'v2.120.0 · 19 Sep 2026 · order detail, and an order card for a room';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -24982,6 +25031,73 @@ ${(() => {
             }
 
             window.ORD_setRange = function(v){ _range = v; render(); };
+            /* ── v2.120.0: the whole order, and a card for the room ─────────
+               Blink's own sections, in Blink's order, so a Call Centre agent
+               reading this recognises it instantly. Money is shown exactly as
+               stored; nothing is recalculated here. */
+            function money(v){ return fmtMoney(+String(v == null ? 0 : v).replace(/[^0-9.\-]/g, '') || 0); }
+            function raw(id){ return rows().find(function(r){ return String(r['Order ID']) === String(id); }) || null; }
+            function itemList(text){
+                // "1x Midnight Cookies & Cream, 2x Kunafa" -- what Blink sends us.
+                return String(text || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean)
+                       .map(function(s){ var m = s.match(/^(\d+)\s*[x\u00d7]\s*(.+)$/i); return m ? { qty: m[1], name: m[2] } : { qty: '', name: s }; });
+            }
+            window.ORD_open = function(id){
+                var r = raw(id); if (!r) return;
+                var o = norm(r);
+                var items = itemList(o.items);
+                var note = String(r['Kitchen Notes'] || '').trim();
+                var addr = String(r['Address'] || '').trim();
+                var kv = function(k, v){ return v ? '<div class="ordv-kv"><span>' + esc(k) + '</span>' + esc(v) + '</div>' : ''; };
+                var tot = function(k, v, grand){ return '<div class="ordv-tot' + (grand ? ' grand' : '') + '"><span>' + esc(k) + '</span>' + money(v) + '</div>'; };
+                var body = ''
+                  + '<div class="ordv-h"><b>' + esc(o.code || o.id) + '</b>'
+                  +   (o.status ? '<span class="ordv-pill">' + esc(o.status) + '</span>' : '')
+                  +   '<div class="sp"></div>'
+                  +   '<button class="fb-btn sm" onclick="ORD_share(\'' + esc(o.id).replace(/'/g, "\\'") + '\')"><i class="fas fa-share"></i> Share</button>'
+                  +   '<button class="fb-btn sm" onclick="ORD_close()">Close</button></div>'
+                  + '<div class="ordv-sec"><h5>Customer details</h5>'
+                  +   kv('Name', o.customer) + kv('Phone', o.phone) + kv('Email', String(r['Email'] || ''))
+                  +   kv('Delivery address', addr) + kv('Branch', o.branch) + '</div>'
+                  + '<div class="ordv-sec"><h5>Order details</h5>'
+                  +   kv('Order time', fmtWhen(o.ts)) + kv('Order ID', o.id) + kv('Source', o.channel)
+                  +   kv('Type', o.type) + kv('Status', o.status) + kv('Payment', o.payment)
+                  +   kv('Promo code', String(r['Promo Code'] || ''))
+                  +   (note ? '<div class="ordv-note">Delivery note \u2014 ' + esc(note) + '</div>' : '')
+                  + '</div>'
+                  + '<div class="ordv-sec"><h5>Items details</h5>'
+                  +   (items.length
+                        ? '<table class="ordv-items"><thead><tr><th>Item</th><th class="r">Qty</th></tr></thead><tbody>'
+                          + items.map(function(i){ return '<tr><td>' + esc(i.name) + '</td><td class="r">' + esc(i.qty || '1') + '</td></tr>'; }).join('')
+                          + '</tbody></table>'
+                        : '<div style="font-size:.76rem;color:var(--text-muted);">No item detail on this order.</div>')
+                  +   '<div style="font-size:.7rem;color:var(--text-muted);margin-top:6px;">Blink sends item names and quantities, not per-item prices.</div>'
+                  + '</div>'
+                  + '<div class="ordv-sec"><h5>Order total</h5>'
+                  +   tot('Sub total', r['Subtotal']) + tot('Delivery charges', r['Delivery'])
+                  +   tot('Tax', r['Tax']) + tot('Discount', r['Discount'])
+                  +   tot('Grand total', r['Total'], true) + '</div>';
+                document.getElementById('ord-view-body').innerHTML = body;
+                document.getElementById('ord-view').classList.add('open');
+            };
+            window.ORD_close = function(){ var e = document.getElementById('ord-view'); if (e) e.classList.remove('open'); };
+            /* The card a room sees. Everything a screenshot carried, except the
+               customer's phone number: rooms have many members, and the number
+               is one tap away inside the order. */
+            window.ORD_share = function(id){
+                var r = raw(id); if (!r) return;
+                var o = norm(r);
+                var card = {
+                    kind: 'order', id: o.id, code: o.code, branch: o.branch, customer: o.customer,
+                    at: fmtWhen(o.ts), channel: o.channel || o.type, status: o.status,
+                    items: itemList(o.items).slice(0, 6), note: String(r['Kitchen Notes'] || '').trim(),
+                    total: money(r['Total'])
+                };
+                ORD_close();
+                try { VoiceCall.shareOrder(card); }
+                catch(e){ try { UI.toast('Messages is not available right now.', 'error'); } catch(x){} }
+            };
+
 
             // Who ordered often and then complained -- a different, more useful
             // question than "who complained twice", which is all the dashboard
@@ -25107,7 +25223,7 @@ ${(() => {
                                 : /^failed/i.test(v) ? '<span class="ord-tag fail">failed</span>'
                                 : /^skipped/i.test(v) ? '<span class="ord-tag none">skipped</span>'
                                 : '<span class="ord-tag ok">sent</span>';
-                        return '<tr>'
+                        return '<tr onclick="ORD_open(\'' + esc(o.id).replace(/'/g, "\\'") + '\')">'
                             + '<td data-label="Order" style="font-family:monospace;font-size:0.78rem;">' + esc(o.code || o.id) + '</td>'
                             + '<td data-label="Time" style="white-space:nowrap;">' + fmtWhen(o.ts) + '</td>'
                             + '<td data-label="Branch" style="font-weight:600;">' + esc(o.branch) + '</td>'
@@ -26811,8 +26927,14 @@ ${(() => {
             }
             // ── v2.111.1: post a case card into a room or chat of my choosing ──
             let pick = null;                              // { body, onDone }
+            /** v2.120.0: an order card, sent the same way a case card is. */
+            function shareOrder(card){
+                pickTarget(card, null);
+                const sub = $('vc-pick-sub');
+                if (sub) sub.textContent = 'Order \u00b7 ' + [card.code || card.id, card.branch].filter(Boolean).join(' \u00b7 ');
+            }
             function pickTarget(card, onDone){
-                pick = { body: JSON.stringify(card), onDone };
+                pick = { body: JSON.stringify(card), onDone, kind: card && card.kind === 'order' ? 'order' : 'case' };
                 try { window.VoiceCall.openPanel(); } catch(e){}
                 chat.peer = null;
                 showTab('chat');
@@ -26852,12 +26974,13 @@ ${(() => {
             }
             async function pickSend(target){
                 if (!pick) return;
-                const body = pick.body, done = pick.onDone;
+                const body = pick.body, done = pick.onDone, pickKind = pick.kind;
                 pick = null;
                 $('vc-pick').classList.remove('visible');
-                const res = await chatApi('chat_send', { to: target, body, kind: 'case' });
+                const kind = (pickKind === 'order') ? 'order' : 'case';
+                const res = await chatApi('chat_send', { to: target, body, kind });
                 if (res && res.status === 'success') {
-                    const sent = { id: res.id, at: res.at, body: res.body, mine: true, kind: 'case', file: null, from: chat.me, to: target };
+                    const sent = { id: res.id, at: res.at, body: res.body, mine: true, kind, file: null, from: chat.me, to: target };
                     ThreadCache.add(target, sent);
                     if (res.id && res.id > chat.sinceId) chat.sinceId = res.id;
                     try { if (done) done(target); } catch(e){}
@@ -27335,6 +27458,24 @@ ${(() => {
                             continue;
                         }
                     }
+                    if (m.kind === 'order') {
+                        let c = null; try { c = JSON.parse(m.body || '{}'); } catch(e){}
+                        if (c && (c.id || c.code)) {
+                            const line = i => `<div class="it">${chatEsc((i.qty ? i.qty + '\u00d7 ' : '') + i.name)}</div>`;
+                            parts.push(`<div class="vc-order" onclick="app.navigate('orders'); setTimeout(() => { try { ORD_open('${chatEsc(String(c.id)).replace(/'/g,"\\'")}'); } catch(e){} }, 400)">
+                                <div class="t"><b>${chatEsc(c.code || c.id)}</b><em>${chatEsc(c.branch || '')}</em></div>
+                                <div class="bd">
+                                    ${c.customer ? `<div class="r"><span>Customer</span>${chatEsc(c.customer)}</div>` : ''}
+                                    ${c.at ? `<div class="r"><span>Placed</span>${chatEsc(c.at)}${c.channel ? ' \u00b7 ' + chatEsc(c.channel) : ''}</div>` : ''}
+                                    ${c.status ? `<div class="r"><span>Status</span>${chatEsc(c.status)}</div>` : ''}
+                                    <div style="margin-top:6px">${(c.items || []).map(line).join('')}</div>
+                                    ${c.note ? `<div class="note">${chatEsc(c.note)}</div>` : ''}
+                                    ${c.total ? `<div class="g"><span>Grand total</span>${chatEsc(c.total)}</div>` : ''}
+                                </div></div>`);
+                            lastFrom = '';
+                            continue;
+                        }
+                    }
                     if (m.kind === 'sys') {
                         parts.push(`<div class="vc-sys">${chatEsc(m.body || '')} · ${chatEsc(chatTime(m.at))}</div>`);
                         lastFrom = '';
@@ -27715,6 +27856,7 @@ ${(() => {
                     });
                 }
                 function textOf(m){
+                    if (m.kind === 'order') return 'Shared an order';
                     return String(chatPlain(m.body) || (m.kind === 'audio' ? 'Voice note' : m.kind === 'image' ? 'Photo'
                          : m.kind === 'file' ? 'Attachment' : m.kind === 'case' ? 'Shared a case' : 'New message')).slice(0, 180);
                 }
@@ -27918,7 +28060,7 @@ ${(() => {
                     stopDirectoryPoll();
                 },
                 testMessageAlert(){ try { MsgToast.demo(); } catch(e){} },
-                cancelReply, toggleFind, toggleNewMenu, setChatFilter, togglePin, expandFull,
+                cancelReply, toggleFind, toggleNewMenu, setChatFilter, togglePin, expandFull, shareOrder,
                 mentionInput(ta){ try { Mention.onInput(ta); } catch(e){} },
                 mentionBlur(){ setTimeout(() => { try { Mention.close(); } catch(e){} }, 160); },
                 toggleMinimise,
