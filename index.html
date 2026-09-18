@@ -8056,7 +8056,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.119.1 · 19 Sep 2026 · review time shown in seconds';
+        const BUILD_VERSION = 'v2.119.2 · 19 Sep 2026 · Integrity opens its own page';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12583,7 +12583,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'integrity'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -13059,7 +13059,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'integrity'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
