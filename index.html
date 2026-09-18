@@ -8179,7 +8179,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.121.1 · 19 Sep 2026 · integrity range picker no longer fights the repaint';
+        const BUILD_VERSION = 'v2.121.2 · 19 Sep 2026 · a short tab fetches the gap instead of starting again';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8518,15 +8518,34 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                that is every answer, so it had stopped running altogether.
                It runs again, with room for the handful of rows the intake
                reconciler removes behind us. */
-            const SHORT_TOLERANCE = 50;
+            // 50 was too tight for a live tab: at peak, rows arrive faster than a
+            // backgrounded screen counts them, and a momentary gap is not drift.
+            const SHORT_TOLERANCE = 250;
             function tabIsShort(t, exp){
                 if (exp == null || !t || t.missing) return false;
                 if (window.__dataScope && (String(window.__dataScope.branch || 'All') !== 'All'
                                         || String(window.__dataScope.region || 'All') !== 'All')) return false;  // scoped rows are filtered after counting
                 return t.rows.length > 0 && (exp - t.rows.length) > SHORT_TOLERANCE;
             }
+            /* v2.121.2: this used to throw the whole tab away and start again.
+               A screen 580 rows short of 44,700 discarded 44,120 good rows and
+               re-downloaded the lot -- which is the "Still loading earlier data"
+               banner appearing after a tab switch, several times an hour.
+
+               Rows arrive in order and the newest are always held, so what is
+               missing is the oldest part. Resuming the history walk from there
+               fetches exactly the gap and leaves the rest alone. Only a tab
+               whose position is beyond repair is thrown away. */
             function resync(key, t, exp, why){
-                console.warn('[DataFeed] ' + key + ': holding ' + t.rows.length + ' of ' + exp + ' rows (' + why + ') — re-downloading');
+                const held = t.rows.length, gap = exp - held;
+                if (held > 0 && gap > 0 && gap < exp * 0.5) {
+                    console.warn('[DataFeed] ' + key + ': holding ' + held + ' of ' + exp + ' (' + why + ') — fetching the missing ' + gap);
+                    t.complete = false;
+                    t.before = gap + 1;                  // the oldest rows we do not hold
+                    try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
+                    return;
+                }
+                console.warn('[DataFeed] ' + key + ': holding ' + held + ' of ' + exp + ' rows (' + why + ') — re-downloading');
                 t.state = null; t.rows = []; t.objRows = []; t.complete = false; t.before = 0;
                 window.__forceFullNext = true;
                 try { window.__syncDrift = (window.__syncDrift || 0) + 1; } catch(e){}
