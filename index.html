@@ -8011,7 +8011,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.118.1 · 18 Sep 2026 · a short tab re-downloads itself';
+        const BUILD_VERSION = 'v2.118.2 · 19 Sep 2026 · duplicate check no longer keyed on a rounded phone number';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8680,7 +8680,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         function _dedupeRows(rows, seen){
             const outRows = [];
             for(const r of rows){
-                const k = [ _rawFieldExact(r, 'Created At') || '', _find(r,'phone') || '', _find(r,'location') || '', _find(r,'rate','visit') || _find(r,'experience','today') || '', _find(r,'any other') || '' ].join('|');
+                // v2.118.2: the key was five fields, one of them the phone number
+                // -- and the spreadsheet returns most phone numbers as rounded
+                // numbers ("9.23E+11"), so two different customers at the same
+                // branch in the same minute with the same rating looked like one
+                // submission. 9,253 real responses were being merged away against
+                // 1,301 genuine duplicates in the database.
+                //
+                // The whole row is the key now. A double-tapped Submit still
+                // collapses, because every field of it matches; two customers
+                // never match on name, time taken and every answer at once.
+                const k = Object.keys(r).sort().map(f => f + '=' + String(r[f] == null ? '' : r[f])).join('|');
                 if(seen.has(k)) continue; seen.add(k); outRows.push(r);
             }
             return outRows;
