@@ -4229,21 +4229,72 @@
            item whose overflow is hidden loses its automatic minimum height --
            so this card was squashed to a 1px line, clickable but invisible.
            The other bubbles escape it only because their overflow is visible. */
-        .vc-order { display: block; flex: 0 0 auto; align-self: flex-start; width: 100%; max-width: 330px; margin-top: 7px;
+        .vc-order { display: block; flex: 0 0 auto; align-self: flex-start; width: 100%; max-width: 268px; margin-top: 7px;
                     background: var(--white); border: 1px solid var(--border-color); border-left: 3px solid #010197;
                     border-radius: 12px; overflow: hidden; cursor: pointer; }
+        /* My own card sits on my side, like my own messages: a card in the
+           middle of a room read as though somebody had sent it to me. */
+        .vc-order.mine { align-self: flex-end; border-left: 1px solid var(--border-color); border-right: 3px solid #010197; }
+        body.dark-theme .vc-order.mine { border-right-color: #64D0FF; }
         body.dark-theme .vc-order { border-left-color: #64D0FF; }
-        .vc-order .t { display: flex; align-items: center; gap: 7px; padding: 9px 11px 6px; }
-        .vc-order .t b { font: 800 .76rem 'Inter', sans-serif; color: var(--text-main); }
-        .vc-order .t em { margin-left: auto; font-style: normal; font: 700 .6rem 'Inter', sans-serif; color: var(--text-muted); }
-        .vc-order .bd { padding: 0 11px 9px; }
-        .vc-order .r { display: flex; font: 600 .7rem 'Inter', sans-serif; color: var(--text-main); padding: 2px 0; }
-        .vc-order .r span { color: var(--text-muted); min-width: 74px; flex: none; }
-        .vc-order .it { font: 600 .7rem 'Inter', sans-serif; color: var(--text-main); padding: 2px 0; }
-        .vc-order .note { color: #B91C1C; font-weight: 800; font-size: .7rem; margin-top: 5px; }
+        .vc-order .t { display: flex; align-items: baseline; gap: 6px; padding: 8px 10px 4px; }
+        .vc-order .t b { font: 800 .72rem 'Inter', sans-serif; color: var(--text-main); }
+        .vc-order .t em { margin-left: auto; font-style: normal; font: 700 .58rem 'Inter', sans-serif; color: var(--text-muted); }
+        .vc-order .bd { padding: 0 10px 8px; }
+        .vc-order .sub { font: 600 .63rem 'Inter', sans-serif; color: var(--text-muted); padding-bottom: 4px; }
+        .vc-order .it { display: flex; gap: 8px; font: 600 .68rem 'Inter', sans-serif; color: var(--text-main); padding: 1px 0; }
+        .vc-order .it b { font-weight: 800; flex: none; }
+        .vc-order .it i { font-style: normal; margin-left: auto; color: var(--text-muted); font-weight: 600; }
+        .vc-order .more { font: 600 .62rem 'Inter', sans-serif; color: var(--text-muted); padding-top: 2px; }
+        /* The note is the line that causes a complaint when it is missed, so it
+           stays red -- but as a line, not a boxed warning inside a small card. */
+        .vc-order .note { color: #B91C1C; font-weight: 800; font-size: .66rem; margin-top: 4px; }
         body.dark-theme .vc-order .note { color: #F87171; }
-        .vc-order .g { display: flex; font: 800 .74rem 'Inter', sans-serif; color: var(--text-main); border-top: 1px solid var(--border-color); margin-top: 6px; padding-top: 6px; }
+        .vc-order .g { display: flex; font: 800 .7rem 'Inter', sans-serif; color: var(--text-main); border-top: 1px solid var(--border-color); margin-top: 5px; padding-top: 5px; }
         .vc-order .g span { flex: 1; font-weight: 600; color: var(--text-muted); }
+
+
+        /* ── v2.121.0: Orders is a live view, analytics is its own tab ───────
+           The orders table sat below branch status, four stat cards, timings,
+           channel mix and repeat customers -- so the one thing a busy floor
+           needs was the last thing on the page. Those belong together, but not
+           in front of the orders. */
+        .olv-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+        .olv-live { display:inline-flex; align-items:center; gap:5px; font:800 .6rem 'Inter',sans-serif; color:#047857;
+                    background:rgba(5,150,105,.12); border-radius:20px; padding:3px 9px; }
+        body.dark-theme .olv-live { background:rgba(16,185,129,.16); color:#34D399; }
+        .olv-live i { width:6px; height:6px; border-radius:50%; background:#16A34A; display:block; animation:olvPulse 2s ease-in-out infinite; }
+        @keyframes olvPulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+        .olv-chips { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:10px; }
+        .olv-chip { display:inline-flex; align-items:center; gap:6px; font:700 .7rem 'Inter',sans-serif; padding:6px 11px; border-radius:999px;
+                    border:1.5px solid var(--border-color); color:var(--text-muted); background:var(--white); cursor:pointer; white-space:nowrap; }
+        .olv-chip:hover { border-color:#010197; color:#010197; }
+        body.dark-theme .olv-chip:hover { border-color:#64D0FF; color:#64D0FF; }
+        .olv-chip.on, .olv-chip.on:hover { background:#010197; border-color:#010197; color:#fff; }
+        .olv-chip b { background:var(--bg-light); border-radius:7px; padding:0 6px; font-size:.64rem; color:var(--text-main); }
+        .olv-chip.on b { background:rgba(255,255,255,.22); color:#fff; }
+        .olv-offline { display:flex; align-items:center; gap:9px; background:rgba(220,38,38,.07); border:1px solid rgba(220,38,38,.25);
+                       border-radius:10px; padding:8px 12px; font:700 .74rem 'Inter',sans-serif; color:#B91C1C; margin-bottom:10px; }
+        body.dark-theme .olv-offline { background:rgba(248,113,113,.12); border-color:rgba(248,113,113,.3); color:#F87171; }
+        .olv-offline span { margin-left:auto; font-weight:600; opacity:.85; }
+        .olv-age { font:700 .68rem 'Inter',sans-serif; color:var(--text-muted); }
+        .olv-age.warn { color:#B45309; } .olv-age.bad { color:#B91C1C; font-weight:800; }
+        body.dark-theme .olv-age.warn { color:#FBBF24; } body.dark-theme .olv-age.bad { color:#F87171; }
+        .olv-st { font:800 .6rem 'Inter',sans-serif; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+        .olv-st.placed { background:rgba(217,119,6,.13); color:#B45309; }
+        .olv-st.accepted { background:rgba(1,1,151,.09); color:#010197; }
+        .olv-st.ready { background:rgba(139,92,246,.14); color:#6D28D9; }
+        .olv-st.dispatched { background:rgba(59,91,219,.14); color:#3B5BDB; }
+        .olv-st.delivered { background:rgba(5,150,105,.12); color:#047857; }
+        .olv-st.cancelled { background:rgba(100,116,139,.14); color:#64748B; }
+        body.dark-theme .olv-st.accepted { background:rgba(100,208,255,.15); color:#64D0FF; }
+        body.dark-theme .olv-st.delivered { background:rgba(16,185,129,.16); color:#34D399; }
+        body.dark-theme .olv-st.placed { background:rgba(245,158,11,.16); color:#FBBF24; }
+        .olv-share { border:1.3px solid var(--border-color); background:var(--white); border-radius:8px; padding:5px 10px;
+                     font:700 .66rem 'Inter',sans-serif; color:var(--text-main); cursor:pointer; white-space:nowrap; }
+        .olv-share:hover { border-color:#010197; color:#010197; }
+        body.dark-theme .olv-share:hover { border-color:#64D0FF; color:#64D0FF; }
+        .olv-empty { padding:30px; text-align:center; color:var(--text-muted); font:600 .82rem 'Inter',sans-serif; }
 
         /* ═══════════ REWARDS ═══════════ */
         .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
@@ -6422,7 +6473,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
-                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Blink</span>
+                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
+                <span class="topnav-link" data-view="order-analytics" id="nav-order-analytics" style="display:none;" onclick="app.navigate('order-analytics', this)">Order analytics</span>
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
                 <span class="topnav-link" data-view="form-builder" id="nav-form-builder" style="display:none;" onclick="app.navigate('form-builder', this)">Form Builder</span>
@@ -7427,6 +7479,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             <!-- ACTION REGISTER -->
             <div id="view-orders" class="view"><div id="orders-root"></div></div>
+            <div id="view-order-analytics" class="view"><div id="order-analytics-root"></div></div>
             <div class="ordv-overlay" id="ord-view" onclick="if(event.target===this) ORD_close()"><div class="ordv" id="ord-view-body"></div></div>
             <div id="view-actions" class="view"><div id="acts-root"></div></div>
 
@@ -8117,7 +8170,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.120.1 · 19 Sep 2026 · the order card can no longer be squashed flat';
+        const BUILD_VERSION = 'v2.121.0 · 19 Sep 2026 · Orders is live; the numbers move to their own tab';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12644,7 +12697,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         const subEl = document.getElementById('pageSubtitle');
                         if(subEl) subEl.innerText = titles[savedView] || 'Dashboard Data';
 
-                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'integrity'];
+                        const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'order-analytics', 'system', 'integrity'];
                         const targetId = dedicated.includes(savedView) ? `view-${savedView}` : 'view-analytics';
                         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                         const targetView = document.getElementById(targetId);
@@ -13120,7 +13173,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 // Fade out current view, then switch
                 const currentActive = document.querySelector('.view.active');
-                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'system', 'integrity'];
+                const dedicated = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'data', 'social', 'complaints', 'form-builder', 'activity', 'rewards', 'form-analytics', 'actions', 'orders', 'order-analytics', 'system', 'integrity'];
                 const targetId = dedicated.includes(viewId) ? `view-${viewId}` : 'view-analytics';
                 const targetView = document.getElementById(targetId);
 
@@ -13232,6 +13285,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     try { if(window.pollNow) pollNow(); } catch(e){}
                     return;
                 }
+                else if (state.currentView === 'order-analytics') { ORD.renderAnalytics(); return; }
                 else if (state.currentView === 'actions') { ACTS.render(); return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
@@ -20711,6 +20765,8 @@ ${(() => {
             // the orders they are responsible for.
             const orNav = document.getElementById('nav-orders');
             if(orNav) orNav.style.display = '';
+            const oaNav = document.getElementById('nav-order-analytics');
+            if(oaNav) oaNav.style.display = can('export') ? '' : 'none';   // the numbers, not the floor's live view
             if(roleKey(PERM.role) === 'viewer'){
                 // Viewers can't see Insights, Data, AI-heavy sections
                 allNavLinks.forEach(el => {
@@ -24365,13 +24421,13 @@ ${(() => {
         window.NavBar = (function(){
             const GROUPS = [
                 { name: 'Analysis',      views: ['incident-analytics','form-analytics','insights','data'] },
-                { name: 'Operations',    views: ['orders','actions','rewards'] },
+                { name: 'Operations',    views: ['orders','order-analytics','actions','rewards'] },
                 { name: 'Setup & system',views: ['form-builder','activity','integrity','system'] }
             ];
             const ICONS = {
                 executive:'fa-gauge-high', social:'fa-hashtag', complaints:'fa-comment-dots',
                 incidents:'fa-triangle-exclamation', submissions:'fa-inbox', resolution:'fa-circle-check',
-                branches:'fa-store', integrity:'fa-shield-halved', 'incident-analytics':'fa-chart-line', 'form-analytics':'fa-chart-pie',
+                branches:'fa-store', integrity:'fa-shield-halved', 'order-analytics':'fa-chart-column', 'incident-analytics':'fa-chart-line', 'form-analytics':'fa-chart-pie',
                 insights:'fa-lightbulb', data:'fa-database', orders:'fa-receipt', actions:'fa-list-check',
                 rewards:'fa-gift', 'form-builder':'fa-pen-to-square', activity:'fa-clock-rotate-left',
                 system:'fa-heart-pulse'
@@ -25036,22 +25092,156 @@ ${(() => {
             }
 
             window.ORD_setRange = function(v){ _range = v; render(); };
+            /* ── the live view ─────────────────────────────────────────────
+               What matters on a busy evening is not how old an order is -- a
+               delivered one can be an hour old and perfectly fine -- but how
+               long it has been stuck where it is. Every status change is
+               recorded, so each stage gets its own clock and its own limit,
+               taken from what this business actually averages. */
+            var STAGE_LIMITS = {                      // amber, red, in minutes
+                placed:     [3, 5],                   // nobody has accepted it yet
+                accepted:   [20, 28],                 // being made; the kitchen averages 17
+                ready:      [5, 10],                  // made, waiting to be collected
+                assigned:   [10, 20],
+                dispatched: [50, 70],                 // on the road; the road averages 43
+                delivered:  null, cancelled: null     // finished: no clock
+            };
+            var STAGE_LABEL = { placed:'Pending', accepted:'Accepted', ready:'Ready', assigned:'Assigned',
+                                dispatched:'Dispatched', delivered:'Delivered', cancelled:'Cancelled' };
+            var _live = { rows: [], at: 0, loading: false, filter: 'open', q: '' };
+
+            function liveAge(r){
+                var t = Date.parse(r.since || r.created_at);
+                if (isNaN(t)) return null;
+                return Math.max(0, Math.round((Date.now() - t) / 60000));
+            }
+            function liveTone(stage, mins){
+                var lim = STAGE_LIMITS[stage];
+                if (!lim || mins == null) return '';
+                return mins >= lim[1] ? 'bad' : mins >= lim[0] ? 'warn' : '';
+            }
+            function liveAgo(m){
+                if (m == null) return '\u2014';
+                if (m < 1) return 'just now';
+                if (m < 60) return m + ' min';
+                return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+            }
+            async function liveLoad(){
+                if (_live.loading) return;
+                _live.loading = true;
+                try {
+                    var res = await apiCall('order_live', { hours: 14 });
+                    if (res && res.status === 'success') { _live.rows = res.rows || []; _live.at = Date.now(); }
+                } catch(e){}
+                _live.loading = false;
+                if (state.currentView === 'orders') renderLive();
+            }
+            window.ORD_live_filter = function(v){ _live.filter = v; renderLive(); };
+            window.ORD_live_q = function(v){ _live.q = String(v || '').trim().toLowerCase(); renderLive(true); };
+            function renderLive(keepFocus){
+                var root = document.getElementById('orders-root');
+                if (!root) return;
+                var rows = _live.rows.slice();
+                var OPEN = ['placed', 'accepted', 'ready', 'assigned', 'dispatched'];
+                var count = function(f){
+                    return rows.filter(function(r){
+                        return f === 'all' ? true : f === 'open' ? OPEN.indexOf(r.stage) !== -1 : r.stage === f;
+                    }).length;
+                };
+                var q = _live.q;
+                var list = rows.filter(function(r){
+                    if (_live.filter === 'open' && OPEN.indexOf(r.stage) === -1) return false;
+                    if (_live.filter !== 'open' && _live.filter !== 'all' && r.stage !== _live.filter) return false;
+                    if (q) {
+                        var hay = [r.order_code, r.order_id, r.branch, r.channel, r.customer, r.phone, r.items].join(' ').toLowerCase();
+                        if (hay.indexOf(q) === -1) return false;
+                    }
+                    return true;
+                });
+                // Oldest-in-stage first: the one that has been waiting longest is
+                // the one somebody needs to touch.
+                list.sort(function(a, b){
+                    var ao = OPEN.indexOf(a.stage) !== -1, bo = OPEN.indexOf(b.stage) !== -1;
+                    if (ao !== bo) return ao ? -1 : 1;
+                    return (liveAge(b) || 0) - (liveAge(a) || 0);
+                });
+
+                var chip = function(v, label){
+                    return '<div class="olv-chip' + (_live.filter === v ? ' on' : '') + '" onclick="ORD_live_filter(\'' + v + '\')">'
+                         + label + '<b>' + count(v).toLocaleString() + '</b></div>';
+                };
+                var offline = [];
+                try { offline = (window.__blinkOffline || []); } catch(e){}
+
+                root.uiHTML = ''
+                  + '<div class="card" style="padding:14px 16px;">'
+                  +   '<div class="olv-bar"><div class="section-header" style="margin-bottom:0;"><h3>Live orders</h3></div>'
+                  +     (_live.at ? '<span class="olv-live"><i></i>updating</span>' : '')
+                  +     '<div class="spacer" style="flex:1"></div>'
+                  +     '<div class="ord-search" style="max-width:360px;flex:1;"><i class="fas fa-magnifying-glass"></i>'
+                  +       '<input id="olv-q" type="search" placeholder="Search phone, code, customer, item or branch\u2026" value="' + esc(_live.q) + '" oninput="ORD_live_q(this.value)"></div>'
+                  +   '</div>'
+                  +   (offline.length ? '<div class="olv-offline"><i class="fas fa-triangle-exclamation"></i>'
+                        + offline.slice(0, 3).map(function(b){ return esc(b.name) + ' offline ' + liveAgo(b.minutes); }).join(' \u00b7 ')
+                        + '<span>not accepting orders</span></div>' : '')
+                  +   '<div class="olv-chips">' + chip('open', 'Open') + chip('placed', 'Pending') + chip('accepted', 'Accepted')
+                  +     chip('ready', 'Ready') + chip('dispatched', 'Dispatched') + chip('delivered', 'Delivered') + chip('all', 'All') + '</div>'
+                  +   '<div class="table-wrapper" style="border:none;">'
+                  +   '<table class="m-cardtable"><thead><tr><th>Order</th><th>In this stage</th><th>Branch</th><th>Channel</th>'
+                  +     '<th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>'
+                  +   (list.length ? list.slice(0, 200).map(function(r){
+                        var mins = liveAge(r), tone = liveTone(r.stage, mins);
+                        var st = STAGE_LABEL[r.stage] || (r.status || '\u2014');
+                        return '<tr onclick="ORD_open(\'' + esc(String(r.order_id)).replace(/'/g, "\\'") + '\')">'
+                          + '<td data-label="Order" style="font-family:monospace;font-size:0.78rem;">' + esc(r.order_code || r.order_id) + '</td>'
+                          + '<td data-label="In this stage" style="white-space:nowrap;"><span class="olv-age ' + tone + '">' + liveAgo(mins) + '</span>'
+                          +   '<div style="font-size:0.66rem;color:var(--text-muted);">' + (r.sinceKnown ? 'since ' + esc(fmtWhen(Date.parse(r.since))) : 'placed ' + esc(fmtWhen(Date.parse(r.created_at)))) + '</div></td>'
+                          + '<td data-label="Branch" style="font-weight:600;">' + esc(r.branch) + '</td>'
+                          + '<td data-label="Channel">' + esc(r.channel || r.type) + '</td>'
+                          + '<td data-label="Customer">' + esc(r.customer || '\u2014') + '</td>'
+                          + '<td data-label="Items" style="font-size:0.78rem;">' + esc(String(r.items || '').slice(0, 60)) + '</td>'
+                          + '<td data-label="Total" style="white-space:nowrap;font-weight:700;">' + fmtMoney(+String(r.total || 0).replace(/[^0-9.]/g, '') || 0) + '</td>'
+                          + '<td data-label="Status"><span class="olv-st ' + esc(r.stage || '') + '">' + esc(st) + '</span></td>'
+                          + '<td><span class="olv-share" onclick="event.stopPropagation(); ORD_share(\'' + esc(String(r.order_id)).replace(/'/g, "\\'") + '\')">Share</span></td>'
+                          + '</tr>';
+                      }).join('')
+                      : '<tr><td colspan="9" class="olv-empty">' + (_live.at ? (q ? 'No orders match.' : 'Nothing open right now.') : 'Loading orders\u2026') + '</td></tr>')
+                  +   '</tbody></table></div>'
+                  + '</div>'
+                  + '<div id="blink-tab-status"></div>';
+
+                if (root.__lastHtml !== root.uiHTML){ root.__lastHtml = root.uiHTML; root.innerHTML = root.uiHTML; }
+                if (keepFocus){ var el = document.getElementById('olv-q'); if (el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+                setTimeout(renderBlinkTabStatus, 0);
+            }
+
             /* ── v2.120.0: the whole order, and a card for the room ─────────
                Blink's own sections, in Blink's order, so a Call Centre agent
                reading this recognises it instantly. Money is shown exactly as
                stored; nothing is recalculated here. */
             function money(v){ return fmtMoney(+String(v == null ? 0 : v).replace(/[^0-9.\-]/g, '') || 0); }
             function raw(id){ return rows().find(function(r){ return String(r['Order ID']) === String(id); }) || null; }
+            /** Blink writes its own marker in front of the note -- "- ** DO NOT
+             *  PROVIDE CUTLERY" / "+ ** PLEASE PROVIDE CUTLERY". The words are
+             *  the instruction; the punctuation is theirs. */
+            function cleanNote(v){ return String(v == null ? '' : v).replace(/^[\s+\-*]+/, '').replace(/\s+$/, ''); }
             function itemList(text){
                 // "1x Midnight Cookies & Cream, 2x Kunafa" -- what Blink sends us.
+                // "1x Kunafa Double Chocolate @780" -- the price is written by
+                // Code.gs v8.35 onward; older rows simply have no price.
                 return String(text || '').split(',').map(function(s){ return s.trim(); }).filter(Boolean)
-                       .map(function(s){ var m = s.match(/^(\d+)\s*[x\u00d7]\s*(.+)$/i); return m ? { qty: m[1], name: m[2] } : { qty: '', name: s }; });
+                       .map(function(s){
+                           var price = '', mp = s.match(/\s@([\d.,]+)\s*$/);
+                           if (mp) { price = fmtMoney(+String(mp[1]).replace(/[^0-9.]/g, '') || 0); s = s.slice(0, mp.index).trim(); }
+                           var m = s.match(/^(\d+)\s*[x\u00d7]\s*(.+)$/i);
+                           return m ? { qty: m[1], name: m[2], price: price } : { qty: '', name: s, price: price };
+                       });
             }
             window.ORD_open = function(id){
                 var r = raw(id); if (!r) return;
                 var o = norm(r);
                 var items = itemList(o.items);
-                var note = String(r['Kitchen Notes'] || '').trim();
+                var note = cleanNote(r['Kitchen Notes']);
                 var addr = String(r['Address'] || '').trim();
                 var kv = function(k, v){ return v ? '<div class="ordv-kv"><span>' + esc(k) + '</span>' + esc(v) + '</div>' : ''; };
                 var tot = function(k, v, grand){ return '<div class="ordv-tot' + (grand ? ' grand' : '') + '"><span>' + esc(k) + '</span>' + money(v) + '</div>'; };
@@ -25072,11 +25262,11 @@ ${(() => {
                   + '</div>'
                   + '<div class="ordv-sec"><h5>Items details</h5>'
                   +   (items.length
-                        ? '<table class="ordv-items"><thead><tr><th>Item</th><th class="r">Qty</th></tr></thead><tbody>'
-                          + items.map(function(i){ return '<tr><td>' + esc(i.name) + '</td><td class="r">' + esc(i.qty || '1') + '</td></tr>'; }).join('')
+                        ? '<table class="ordv-items"><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th></tr></thead><tbody>'
+                          + items.map(function(i){ return '<tr><td>' + esc(i.name) + '</td><td class="r">' + esc(i.qty || '1') + '</td><td class="r">' + esc(i.price || '\u2014') + '</td></tr>'; }).join('')
                           + '</tbody></table>'
                         : '<div style="font-size:.76rem;color:var(--text-muted);">No item detail on this order.</div>')
-                  +   '<div style="font-size:.7rem;color:var(--text-muted);margin-top:6px;">Blink sends item names and quantities, not per-item prices.</div>'
+                  +   (items.some(function(i){ return i.price; }) ? '' : '<div style="font-size:.7rem;color:var(--text-muted);margin-top:6px;">This order was recorded before item prices were kept.</div>')
                   + '</div>'
                   + '<div class="ordv-sec"><h5>Order total</h5>'
                   +   tot('Sub total', r['Subtotal']) + tot('Delivery charges', r['Delivery'])
@@ -25095,7 +25285,7 @@ ${(() => {
                 var card = {
                     kind: 'order', id: o.id, code: o.code, branch: o.branch, customer: o.customer,
                     at: fmtWhen(o.ts), channel: o.channel || o.type, status: o.status,
-                    items: itemList(o.items).slice(0, 6), note: String(r['Kitchen Notes'] || '').trim(),
+                    items: itemList(o.items).slice(0, 6), note: cleanNote(r['Kitchen Notes']),
                     total: money(r['Total'])
                 };
                 ORD_close();
@@ -25141,8 +25331,12 @@ ${(() => {
                 return { sent: sent, noEmail: noEmail, pending: pending, failed: failed };
             }
 
+            /* v2.121.0: this is the analytics tab now. It kept the orders
+               table at the bottom for months, which is why nobody scrolled to
+               it: the numbers are a weekly read, the orders are a minute-by-
+               minute one. They are two different jobs and now two tabs. */
             function render(keepFocus){
-                var root = document.getElementById('orders-root');
+                var root = document.getElementById('order-analytics-root');
                 if (!root) return;
                 var all = index().all;
                 var list = all.filter(inRange).filter(matches);
@@ -25217,31 +25411,7 @@ ${(() => {
                             + '</div>';
                     }).join('') + '</div></div>' : '')
 
-                + '<div class="card" style="padding:0;overflow:hidden;">'
-                +   '<div style="padding:14px 18px 10px;"><div class="section-header" style="margin-bottom:0;"><h3>' + list.length.toLocaleString() + ' order' + (list.length === 1 ? '' : 's') + '</h3></div></div>'
-                +   '<div class="table-wrapper" style="border:none;">'
-                +   '<table class="m-cardtable" id="ord-table"><thead><tr><th>Order</th><th>Time</th><th>Branch</th><th>Channel</th><th>Customer</th><th>Items</th><th>Total</th><th>Survey</th></tr></thead><tbody>'
-                +   (list.length ? list.slice(0, 200).map(function(o){
-                        var v = (rows().find(function(r){ return String(r['Order ID']) === o.id; }) || {})['Survey Sent'] || '';
-                        var tag = !v ? '<span class="ord-tag wait">waiting</span>'
-                                : /no email/i.test(v) ? '<span class="ord-tag none">no email</span>'
-                                : /^failed/i.test(v) ? '<span class="ord-tag fail">failed</span>'
-                                : /^skipped/i.test(v) ? '<span class="ord-tag none">skipped</span>'
-                                : '<span class="ord-tag ok">sent</span>';
-                        return '<tr onclick="ORD_open(\'' + esc(o.id).replace(/'/g, "\\'") + '\')">'
-                            + '<td data-label="Order" style="font-family:monospace;font-size:0.78rem;">' + esc(o.code || o.id) + '</td>'
-                            + '<td data-label="Time" style="white-space:nowrap;">' + fmtWhen(o.ts) + '</td>'
-                            + '<td data-label="Branch" style="font-weight:600;">' + esc(o.branch) + '</td>'
-                            + '<td data-label="Channel">' + esc(o.channel || o.type) + '</td>'
-                            + '<td data-label="Customer">' + esc(o.customer || '\u2014') + '<div style="font-size:0.7rem;color:var(--text-muted);">' + esc(o.phone) + '</div></td>'
-                            + '<td data-label="Items" style="font-size:0.8rem;">' + esc(o.items) + '</td>'
-                            + '<td data-label="Total" style="white-space:nowrap;font-weight:700;">' + fmtMoney(o.total) + '</td>'
-                            + '<td data-label="Survey">' + tag + '</td>'
-                            + '</tr>';
-                    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:28px;">No orders match.</td></tr>')
-                +   '</tbody></table></div>'
-                +   (list.length > 200 ? '<div style="padding:10px 18px;font-size:0.74rem;color:var(--text-muted);">Showing the newest 200. Narrow the period or search to see the rest.</div>' : '')
-                + '</div>';
+                ;
 
                 if (keepFocus){
                     var el = document.getElementById('ord-q');
@@ -25250,7 +25420,11 @@ ${(() => {
                 setTimeout(renderBlinkTabStatus, 0);
             }
 
-            return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey, when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen, render: render };
+            // v2.121.0: render() draws the live view; renderAnalytics() the numbers.
+            return { forIncident: forIncident, cardHtml: cardHtml, index: index, count: count, phoneKey: phoneKey,
+                     when: when, fmtMoney: fmtMoney, fmtWhen: fmtWhen,
+                     render: function(){ renderLive(); liveLoad(); },
+                     renderAnalytics: render, refreshLive: liveLoad };
         })();
 
 
@@ -27466,16 +27640,21 @@ ${(() => {
                     if (m.kind === 'order') {
                         let c = null; try { c = JSON.parse(m.body || '{}'); } catch(e){}
                         if (c && (c.id || c.code)) {
-                            const line = i => `<div class="it">${chatEsc((i.qty ? i.qty + '\u00d7 ' : '') + i.name)}</div>`;
-                            parts.push(`<div class="vc-order" onclick="app.navigate('orders'); setTimeout(() => { try { ORD_open('${chatEsc(String(c.id)).replace(/'/g,"\\'")}'); } catch(e){} }, 400)">
+                            // Four labelled rows made a small card feel like a form.
+                            // Everything that identifies the order now sits on one
+                            // line under the code, and the items carry their prices.
+                            const shown = (c.items || []).slice(0, 4);
+                            const rest = (c.items || []).length - shown.length;
+                            const line = i => `<div class="it"><b>${chatEsc((i.qty || 1) + '\u00d7')}</b>${chatEsc(i.name)}${i.price ? `<i>${chatEsc(i.price)}</i>` : ''}</div>`;
+                            const sub = [c.customer, c.at, c.channel, c.status].filter(Boolean).map(chatEsc).join(' \u00b7 ');
+                            parts.push(`<div class="vc-order${m.mine ? ' mine' : ''}" onclick="app.navigate('orders'); setTimeout(() => { try { ORD_open('${chatEsc(String(c.id)).replace(/'/g,"\\'")}'); } catch(e){} }, 400)">
                                 <div class="t"><b>${chatEsc(c.code || c.id)}</b><em>${chatEsc(c.branch || '')}</em></div>
                                 <div class="bd">
-                                    ${c.customer ? `<div class="r"><span>Customer</span>${chatEsc(c.customer)}</div>` : ''}
-                                    ${c.at ? `<div class="r"><span>Placed</span>${chatEsc(c.at)}${c.channel ? ' \u00b7 ' + chatEsc(c.channel) : ''}</div>` : ''}
-                                    ${c.status ? `<div class="r"><span>Status</span>${chatEsc(c.status)}</div>` : ''}
-                                    <div style="margin-top:6px">${(c.items || []).map(line).join('')}</div>
+                                    ${sub ? `<div class="sub">${sub}</div>` : ''}
+                                    ${shown.map(line).join('')}
+                                    ${rest > 0 ? `<div class="more">+${rest} more item${rest === 1 ? '' : 's'}</div>` : ''}
                                     ${c.note ? `<div class="note">${chatEsc(c.note)}</div>` : ''}
-                                    ${c.total ? `<div class="g"><span>Grand total</span>${chatEsc(c.total)}</div>` : ''}
+                                    ${c.total ? `<div class="g"><span>Total</span>${chatEsc(c.total)}</div>` : ''}
                                 </div></div>`);
                             lastFrom = '';
                             continue;
