@@ -4305,6 +4305,21 @@
         body.dark-theme .olv-share:hover { border-color:#64D0FF; color:#64D0FF; }
         .olv-empty { padding:30px; text-align:center; color:var(--text-muted); font:600 .82rem 'Inter',sans-serif; }
 
+
+        /* ── v2.122.0: each person sets their own alert volume ──────────────
+           The sound is set loud on purpose: a branch floor is noisy and a
+           quiet alert is missed. A Call Centre agent on a live call needs the
+           opposite, and turning the laptop down turns the customer down with
+           it -- the call and the alert come out of the same browser tab, so
+           the system mixer cannot separate them. This can. */
+        .vol-row { padding: 9px 14px 11px; }
+        .vol-row .vol-top { display: flex; align-items: center; gap: 9px; font: 600 .82rem 'Inter', sans-serif; color: var(--text-main); }
+        .vol-row .vol-top .support-icon { flex: none; }
+        .vol-row .vol-val { margin-left: auto; font: 800 .7rem 'Inter', sans-serif; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+        .vol-row input[type=range] { width: 100%; margin: 9px 0 0; accent-color: #010197; }
+        body.dark-theme .vol-row input[type=range] { accent-color: #64D0FF; }
+        .vol-row .vol-hint { font: 500 .66rem 'Inter', sans-serif; color: var(--text-muted); margin-top: 5px; }
+
         /* ═══════════ REWARDS ═══════════ */
         .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
         .rw-stat b { display:block; font-size:1.15rem; font-weight:800; color:var(--text-main); line-height:1; }
@@ -8179,7 +8194,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.121.2 · 19 Sep 2026 · a short tab fetches the gap instead of starting again';
+        const BUILD_VERSION = 'v2.122.0 · 19 Sep 2026 · alert volume, set by each person on their own device';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11574,7 +11589,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // over room noise) at a higher peak gain, with a soft limiter so
                 // it stays clean rather than distorting.
                 const master = ctx.createGain();
-                master.gain.value = 1.0;
+                master.gain.value = 1.0 * (typeof AlertVolume !== 'undefined' ? AlertVolume.get() : 1);
                 try {
                     const limiter = ctx.createDynamicsCompressor();
                     limiter.threshold.value = -6; limiter.knee.value = 6; limiter.ratio.value = 12;
@@ -20859,6 +20874,13 @@ ${(() => {
                                         <span class="push-state" id="push-state">Off</span>
                                     </button>
                                 </div>
+                                ${AlertVolume.canSet() ? `<div class="vol-row">
+                                    <div class="vol-top"><span class="support-icon"><i class="fas fa-volume-high"></i></span>
+                                        <span>Alert volume</span><span class="vol-val" id="vol-val">${AlertVolume.percent()}%</span></div>
+                                    <input type="range" min="0" max="100" step="5" value="${AlertVolume.percent()}"
+                                           oninput="AlertVolume.set(this.value)" onchange="AlertVolume.preview()">
+                                    <div class="vol-hint">This device only. Lower it if you take calls; leave it high on a branch floor.</div>
+                                </div>` : ''}
                             </div>
                             <!-- Tools -->
                             <div class="dpm-group">
@@ -25842,10 +25864,43 @@ ${(() => {
             // incoming call can arrive on a tab nobody has touched yet -- so the
             // context is unlocked on the first click anywhere, once, and after
             // that ringing works whenever it is needed.
+
+        /* ── v2.122.0: alert volume, per person, per device ─────────────────
+           Owner and Call Centre only: they are the two who sit with this all
+           day. It scales every alert this dashboard makes -- the message
+           chime, the incident alarm, the ringtone -- so an agent can hear a
+           customer clearly without losing the alert entirely. Kept on the
+           device rather than the account, because the right level depends on
+           the room, not the person. */
+        const AlertVolume = (function(){
+            const KEY = 'crumble_alert_volume_v1';
+            let v = 1;
+            try { const raw = localStorage.getItem(KEY); if (raw != null && isFinite(+raw)) v = Math.max(0, Math.min(1, +raw)); } catch(e){}
+            function canSet(){
+                const r = (typeof roleKey === 'function' ? roleKey(PERM.role) : String(PERM.role || '').toLowerCase());
+                return r === 'owner' || r === 'callcenter';
+            }
+            function get(){ return canSet() ? v : 1; }          // everyone else stays as it was
+            function percent(){ return Math.round(get() * 100); }
+            function set(pct){
+                v = Math.max(0, Math.min(1, (parseInt(pct, 10) || 0) / 100));
+                try { localStorage.setItem(KEY, String(v)); } catch(e){}
+                const out = document.getElementById('vol-val');
+                if (out) out.textContent = Math.round(v * 100) + '%';
+            }
+            /** Let them hear the level they just chose, rather than guessing. */
+            function preview(){ try { VcSfx.message(); } catch(e){} }
+            return { canSet, get, percent, set, preview };
+        })();
+        window.AlertVolume = AlertVolume;
+
             const VcSfx = (() => {
                 let ac = null, master = null, timers = [], unlocked = false;
 
                 function ctx(){
+                    // The level can change between sounds, so it is applied on
+                    // every play rather than once when the context is built.
+                    if (ac && master) { try { master.gain.value = 0.9 * AlertVolume.get(); } catch(e){} }
                     if (!ac) {
                         const AC = window.AudioContext || window.webkitAudioContext;
                         if (!AC) return null;
@@ -25981,10 +26036,14 @@ ${(() => {
                     // sustained sine body underneath it: a marimba alone decays
                     // in a fraction of a second, and on a busy floor it is the
                     // length of a sound, as much as its peak, that gets it heard.
+                    // v2.121.3: eased back. At full level it measured louder than
+                    // the incident alarm and carried into live customer calls,
+                    // which a routine message should never do. Still well above
+                    // where it started, and the same tune.
                     message(){
                         const note = (f, at, p) => { marimba(f, at, p); tone(f, at, 0.30, p * 0.45, 'sine'); };
-                        note(783.99, 0.00, 0.95); note(1046.5, 0.10, 0.95);
-                        note(783.99, 0.42, 0.90); note(1046.5, 0.52, 0.90);
+                        note(783.99, 0.00, 0.62); note(1046.5, 0.10, 0.62);
+                        note(783.99, 0.42, 0.58); note(1046.5, 0.52, 0.58);
                     },
                     connected(){ stopAll(); sweep(620, 940, 0.18, 0.13); },
                     ended(){     stopAll(); sweep(480, 320, 0.28, 0.11); },
