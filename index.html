@@ -4144,6 +4144,15 @@
         @media (max-width:820px){ .act-row { grid-template-columns:1fr; } }
 
         /* ── v2.119.0: branch integrity (Owner only) ───────────────────────── */
+        /* v2.121.1: this was a <select>, and the dashboard repaints every few
+           seconds -- each repaint rebuilt the element and closed the open
+           dropdown, so a click never landed and the range appeared stuck. */
+        .intg-ranges { display:flex; gap:6px; flex-wrap:wrap; }
+        .intg-range { font:700 .7rem 'Inter',sans-serif; padding:6px 11px; border-radius:999px; border:1.5px solid var(--border-color);
+                      color:var(--text-muted); background:var(--white); cursor:pointer; white-space:nowrap; }
+        .intg-range:hover { border-color:#010197; color:#010197; }
+        body.dark-theme .intg-range:hover { border-color:#64D0FF; color:#64D0FF; }
+        .intg-range.on, .intg-range.on:hover { background:#010197; border-color:#010197; color:#fff; }
         .intg-kpis { display:flex; gap:12px; margin:14px 0; flex-wrap:wrap; }
         .intg-k { flex:1 1 150px; background:var(--white); border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; }
         .intg-k span { font:800 .6rem 'Inter',sans-serif; letter-spacing:.5px; text-transform:uppercase; color:var(--text-muted); }
@@ -8170,7 +8179,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.121.0 · 19 Sep 2026 · Orders is live; the numbers move to their own tab';
+        const BUILD_VERSION = 'v2.121.1 · 19 Sep 2026 · integrity range picker no longer fights the repaint';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -22567,9 +22576,8 @@ ${(() => {
                              <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">
                                 How trustworthy each branch's feedback looks. Built from every submission attempt, accepted or refused.</div></div>
                         <div class="spacer"></div>
-                        <select class="select-input" onchange="INTEG.setRange(this.value)">
-                            ${RANGES.map(([v, t]) => `<option value="${v}" ${v === range ? 'selected' : ''}>${t}</option>`).join('')}
-                        </select>
+                        <div class="intg-ranges">${RANGES.map(([v, t]) =>
+                            `<button type="button" class="intg-range${v === range ? ' on' : ''}" onclick="INTEG.setRange('${v}')">${t}</button>`).join('')}</div>
                         <button class="fb-btn sm" onclick="INTEG.refresh()"><i class="fas fa-rotate"></i> Refresh</button>
                     </div>
                     <div class="intg-kpis">
@@ -22588,6 +22596,10 @@ ${(() => {
                         Attempts, devices, repeat-device and timing come from the attempt record, which has ${n(data.integDays)} day${data.integDays === 1 ? '' : 's'} of data
                         (${n(data.integRows)} attempts so far) — a branch with fewer than ${n(data.enough)} recorded attempts shows a dash and is not judged on them.
                         Proportions are compared against the network's own averages, not a fixed number.</div>`;
+                // Never repaint while somebody is interacting with this tab:
+                // a rebuild mid-click throws the click away.
+                const active = document.activeElement;
+                if(active && host.contains(active) && active.tagName !== 'BODY') return;
                 if(host.__lastHtml !== host.uiHTML){ host.__lastHtml = host.uiHTML; host.innerHTML = host.uiHTML; }
             }
             function setRange(v){ range = String(v || '7'); data = null; render(); }
