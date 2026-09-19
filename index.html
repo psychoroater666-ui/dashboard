@@ -8194,7 +8194,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.124.0 · 19 Sep 2026 · a stand-in answer no longer wipes a complete tab';
+        const BUILD_VERSION = 'v2.125.0 · 20 Sep 2026 · follow-up notes are read back, not only written';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12079,6 +12079,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const catKey      = keys.find(k => k.toLowerCase().trim() === 'category');
                     const revByKey    = keys.find(k => k.toLowerCase().trim() === 'reviewed by');
                     const resByKey    = keys.find(k => k.toLowerCase().trim() === 'resolved by');
+                    // v2.125.0: this column was stored, listed in the headers, and
+                    // read by nobody. A follow-up note appeared while the page was
+                    // open -- added to the incident in memory -- and vanished the
+                    // moment the data reloaded, because nothing here ever asked
+                    // for it. The note was never lost; it was never fetched.
+                    const fuKey       = keys.find(k => k.toLowerCase().trim() === 'follow ups')
+                                     || keys.find(k => k.toLowerCase().replace(/[^a-z]/g, '') === 'followups');
                     const id         = idKey       ? String(row[idKey]||'').trim()       : '';
                     const st         = stKey       ? String(row[stKey]||'').trim()       : '';
                     const note       = noteKey     ? String(row[noteKey]||'').trim()     : '';
@@ -12088,7 +12095,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const category   = catKey      ? String(row[catKey]||'').trim()      : '';
                     const reviewedBy = revByKey    ? String(row[revByKey]||'').trim()    : '';
                     const resolvedBy = resByKey    ? String(row[resByKey]||'').trim()    : '';
-                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category, reviewedBy: reviewedBy, resolvedBy: resolvedBy };
+                    const followUps  = fuKey       ? String(row[fuKey]||'').trim()       : '';
+                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category, reviewedBy: reviewedBy, resolvedBy: resolvedBy, followUps: followUps };
                 });
                 _lastGoodIncidentResolutions = map;
                 return map;
