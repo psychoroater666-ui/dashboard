@@ -8194,7 +8194,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.122.0 · 19 Sep 2026 · alert volume, set by each person on their own device';
+        const BUILD_VERSION = 'v2.124.0 · 19 Sep 2026 · a stand-in answer no longer wipes a complete tab';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8617,6 +8617,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     return;
                 }
                 if(res.mode === 'full'){
+                    // A smaller copy from the stand-in never replaces a complete one.
+                    // Its rows are real, but they are the recent window only: taking
+                    // them wholesale loses the history behind them and starts the
+                    // download again.
+                    const standIn = DataFeed._servedBy && DataFeed._servedBy !== 'd1';
+                    if (standIn && res.state && t.complete !== false && t.rows.length > (res.rows || []).length) {
+                        console.warn('[DataFeed] ' + key + ': ignoring a ' + (res.rows || []).length
+                                   + '-row copy from ' + DataFeed._servedBy + ' \u2014 already holding ' + t.rows.length);
+                        return;
+                    }
                     t.headers = res.headers || [];
                     if(res.state) t.state = res.state;                      // first chunk carries the state to keep
                     if(res.state){ t.rows = res.rows || []; t.gen = (t.gen || 0) + 1; }   // first chunk: replace -> new generation
@@ -8684,6 +8694,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
                     const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
+                    // v2.124.0: when D1 does not answer, the Worker falls back to Apps
+                    // Script, which serves a much smaller window of rows. That answer
+                    // was being applied as a fresh full copy -- so a screen holding
+                    // 42,000 rows threw them away and downloaded them again, which is
+                    // the "Still loading earlier data" banner returning every few
+                    // minutes. A fallback answer is a stand-in, not a replacement.
+                    DataFeed._servedBy = String(res.served_by || '');
                     // A form added in the builder arrives here first: the list
                     // travels with the data it describes.
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
@@ -8756,9 +8773,29 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 return t.objRows.slice(t.consumedLen);
             }
             function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
+            /* v2.123.1: how much is actually missing, 0 when everything is held.
+               "Complete" is a flag, and since a short tab resumes its walk to
+               collect a gap, that flag now goes false for a 500-row top-up as
+               readily as for a first load of 45,000. The banner was reading the
+               flag, so it appeared several times an hour -- most often when the
+               most people were online, because that is when rows arrive fastest.
+               A screen missing 1% is not showing anyone a wrong number. */
+            function missingFraction(){
+                let held = 0, total = 0;
+                for (const k of Object.keys(tabs)) {
+                    const t = tabs[k];
+                    if (!t || t.missing) continue;
+                    const exp = t.state && typeof t.state.total === 'number' ? t.state.total : null;
+                    if (exp == null) continue;
+                    held += (t.rows || []).length;
+                    total += exp;
+                }
+                if (!total) return isComplete() ? 0 : 1;       // nothing to measure: fall back to the flag
+                return Math.max(0, Math.min(1, (total - held) / total));
+            }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, missingFraction, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
@@ -9092,7 +9129,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // reality. Silence there is dangerous (someone reads 50 instead of 400),
         // so a thin strip states it plainly until the data is complete.
         function _historyPill(){
-            const incomplete = (typeof DataFeed !== 'undefined' && DataFeed.enabled && !DataFeed.isComplete());
+            // Shown when the numbers on screen would actually mislead -- more
+            // than 3% of rows missing -- not whenever a tab is topping itself up.
+            const gap = (typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.missingFraction) ? DataFeed.missingFraction() : 0;
+            const incomplete = gap > 0.03;
             // Remove EVERY banner, not just the first: at boot the scroll
             // container may not exist yet and one gets attached to <body>, so a
             // second could be created later. getElementById only ever found one,
@@ -13572,7 +13612,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 Object.keys(oosBy).forEach(br => {
                     const list = oosBy[br], longest = list.reduce((m, i) => Math.max(m, i.outMinutes || 0), 0);
                     if (longest >= 120) att.push({ sev: 'h', who: br, owner: 'Branch Manager',
-                        what: list.length === 1 ? `${list[0].item} out of stock for ${ago(longest)}.` : `${list.length} items out of stock, the longest for ${ago(longest)}.` });
+                        // v2.123.0: "switched off", not "out of stock". Crumble has no
+                        // stock management in Blink; what this reads is the branch
+                        // availability switch, and some of those are standing menu
+                        // decisions rather than a shortage today.
+                        what: list.length === 1 ? `${list[0].item} switched off for ${ago(longest)}.` : `${list.length} items switched off, the longest for ${ago(longest)}.` });
                 });
                 const med = (tm && tm.median) || {};
                 const tb = (tm && tm.branches) || [];
@@ -13620,7 +13664,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     ${ordersCell}${progCell}${stuckCell}
                     ${cell('Foodpanda handover', med.handover != null ? med.handover + '<small> min</small>' : '—', 'median, 7 days')}
                     ${cell('Our riders', med.total != null ? med.total + '<small> min</small>' : '—', med.total != null ? 'door to door' : 'waiting for data')}
-                    ${cell('Out of stock', oos.length, oos.length ? esc2(oos[0].item) + ', ' + esc2(ago(oos[0].outMinutes)) : 'nothing out', oos.length ? 'bad' : '',
+                    ${cell('Switched off', oos.length, oos.length ? esc2(oos[0].item) + ', ' + esc2(ago(oos[0].outMinutes)) : 'nothing switched off', oos.length ? 'bad' : '',
                         oos.map(i => i.item + ' (' + i.branch + '): ' + ago(i.outMinutes)).join('\n'))}
                 </div>`;
 
@@ -25082,7 +25126,7 @@ ${(() => {
                                 <span style="font-size:0.68rem;font-weight:800;color:${col};text-transform:uppercase;letter-spacing:.3px;">${esc2(label)}</span>
                                 <span style="font-size:0.7rem;color:var(--text-muted);">${esc2(b.hours || '')}</span>
                                 ${b.subDown ? '<span style="font-size:0.62rem;font-weight:800;color:#010197;background:rgba(1,1,151,.08);border-radius:20px;padding:2px 8px;">out-of-radius delivery down</span>' : ''}
-                                <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' out of stock' : ''}</span>
+                                <span style="margin-left:auto;font-size:0.72rem;color:${oos.length ? '#DC2626' : 'var(--text-muted)'};">${oos.length ? oos.length + ' switched off' : ''}</span>
                             </div>`; }).join('')}
                     </div>`;
                 }
