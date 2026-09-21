@@ -8824,7 +8824,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.135.0 · 21 Sep 2026 · launch intro: lands only on a settled screen; re-aims at the header if sign-in closes mid-flight';
+        const BUILD_VERSION = 'v2.135.1 · 22 Sep 2026 · KPI delta chip sits beside the number instead of the card edge';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -29191,9 +29191,15 @@ ${(() => {
             const chip = document.createElement('span');
             chip.className = 'sm-delta ' + tone;
             const d = next - prev; chip.textContent = (d > 0 ? '+' : '\u2212') + Math.abs(d).toLocaleString();
-            chip.style.left = (el.offsetLeft + el.offsetWidth + 8) + 'px';
-            chip.style.top  = (el.offsetTop + 4) + 'px';
+            // Sit beside the digits themselves. The value element is a block
+            // that spans the whole card, so measuring IT put the chip at the
+            // card's right edge. A Range measures only the text.
             card.appendChild(chip);
+            const rng = document.createRange(); rng.selectNodeContents(el);
+            const tr = rng.getBoundingClientRect(), cr = card.getBoundingClientRect();
+            const room = cr.width - 12 - chip.offsetWidth;          // never past the card's padding
+            chip.style.left = Math.max(12, Math.min(tr.right - cr.left + 8, room)) + 'px';
+            chip.style.top  = Math.round(tr.top - cr.top + (tr.height - chip.offsetHeight) / 2) + 'px';
             setTimeout(() => chip.remove(), 2700);
         }
     };
