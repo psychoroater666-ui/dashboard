@@ -8650,7 +8650,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.131.0 · 21 Sep 2026 · dark sign-in + tighter filter bar + styled date range + Orders pinned in the nav';
+        const BUILD_VERSION = 'v2.132.0 · 21 Sep 2026 · chat: send and in-conversation receive sounds + haptics';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -26581,6 +26581,12 @@ ${(() => {
                         note(783.99, 0.00, 0.62); note(1046.5, 0.10, 0.62);
                         note(783.99, 0.42, 0.58); note(1046.5, 0.52, 0.58);
                     },
+                    // v2.132.0 — the in-conversation pair. Deliberately far below
+                    // message() and the incident alarm: these fire while someone is
+                    // already looking at the thread, so they confirm rather than
+                    // announce. Falling tick out, rising tick back.
+                    sent(){      sweep(760, 380, 0.11, 0.055); },
+                    inchat(){    sweep(380, 780, 0.10, 0.075); },
                     connected(){ stopAll(); sweep(620, 940, 0.18, 0.13); },
                     ended(){     stopAll(); sweep(480, 320, 0.28, 0.11); },
                     declined(){  stopAll(); tone(320, 0, 0.18, 0.11); tone(280, 0.22, 0.3, 0.11); },
@@ -28527,6 +28533,7 @@ ${(() => {
                 } else {
                     btn.disabled = true;
                 }
+                try { VcSfx.sent(); VcHaptic.sent(); } catch(e){}
                 const res = await chatApi('chat_send', { to: peer, body, attachment: att });
                 btn.disabled = false;
                 const box = $('vc-thread-msgs');
@@ -28755,6 +28762,16 @@ ${(() => {
                 return { onPoll, hide, demo, keyNow: () => key };
             })();
 
+            // Chat haptics. navigator.vibrate is Android-only — iOS gives web
+            // apps no vibration at all, so there it is sound alone. Patterns are
+            // short on purpose: a confirmation, not a buzz.
+            const VcHaptic = (() => {
+                const can = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+                const buzz = p => { if (can) { try { navigator.vibrate(p); } catch(e){} } };
+                return { sent: () => buzz(8), received: () => buzz([7, 45, 7]) };
+            })();
+            let lastInchat = 0;
+
             async function chatPoll(){
                 const res = await chatApi('chat_poll', { sinceId: chat.sinceId, peer: chat.peer || '' });
                 if (!res || res.status !== 'success') { chat.quietUntil = Date.now() + 15000; return; }
@@ -28781,6 +28798,17 @@ ${(() => {
                     const forThread = fresh.filter(m => keyOf(m) === chat.peer && !inFlight(m));
                     if (forThread.length) {
                         renderThread(forThread);
+                        // Someone else's message landing in the thread you are
+                        // reading. MsgToast deliberately stays silent here, so
+                        // without this the conversation is mute while open.
+                        try {
+                            const theirs = forThread.filter(m => !m.mine && m.kind !== 'sys');
+                            if (theirs.length && !st.inCall && !st.callId && document.visibilityState === 'visible'
+                                && Date.now() - lastInchat > 1200) {
+                                lastInchat = Date.now();
+                                VcSfx.inchat(); VcHaptic.received();
+                            }
+                        } catch(e){}
                         await chatApi('chat_mark_read', { peer: chat.peer });
                         chat.unread[chat.peer] = 0;
                     }
