@@ -3604,6 +3604,54 @@
         body.dark-theme .date-range-pill input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(1) grayscale(1); }
         body.dark-theme .date-range-pill:focus-within{ border-color:#64D0FF; box-shadow:0 0 0 3px rgba(100,208,255,.12); }
 
+        /* ── Chat polish (v2.133.0) ──────────────────────────────────────────
+           Motion is kept to transform/opacity so it stays smooth on phones. */
+
+        /* a message you send rises out of the composer instead of fading in */
+        .vc-msg.mine.launch{
+            transform-origin: 100% 100%;
+            animation: vcLaunch .34s cubic-bezier(.2,1.25,.4,1) both;
+        }
+        @keyframes vcLaunch{
+            0%   { opacity:0; transform: translateY(28px) scale(.7); }
+            55%  { opacity:1; }
+            100% { opacity:1; transform: none; }
+        }
+
+        /* a tick that changes state pops in; ticks drawn with the thread don't */
+        .vc-tick{ display:inline-block; transition: color .35s ease; }
+        .vc-tick.vc-tick-new{ animation: vcTickIn .32s cubic-bezier(.2,1.5,.4,1) both; }
+        @keyframes vcTickIn{ 0%{ opacity:0; transform: scale(.3); } 60%{ opacity:1; transform: scale(1.25); } 100%{ transform:none; } }
+
+        /* opening a conversation with nothing cached: ghost bubbles, not a blank */
+        .vc-ghosts{ display:flex; flex-direction:column; gap:9px; padding:6px 2px; }
+        .vc-ghosts .g{ height:30px; border-radius:15px; background: var(--border-color); animation: vcGhost 1.4s ease-in-out infinite; }
+        .vc-ghosts .g.them{ align-self:flex-start; border-bottom-left-radius:6px; }
+        .vc-ghosts .g.mine{ align-self:flex-end; border-bottom-right-radius:6px; background: rgba(1,1,151,.14); }
+        .vc-ghosts .g:nth-child(2){ animation-delay:.12s; } .vc-ghosts .g:nth-child(3){ animation-delay:.24s; }
+        .vc-ghosts .g:nth-child(4){ animation-delay:.36s; } .vc-ghosts .g:nth-child(5){ animation-delay:.48s; }
+        @keyframes vcGhost{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+        body.dark-theme .vc-ghosts .g.mine{ background: rgba(100,208,255,.16); }
+
+        /* contact rows: the message and call buttons appear on hover. On touch
+           screens there is no hover, so they stay put — nothing hides on a phone. */
+        @media (hover: hover){
+            .vc-ct-acts{ opacity:0; transform: translateX(6px); transition: opacity .16s ease, transform .16s ease; }
+            .vc-ct-row:hover .vc-ct-acts,
+            .vc-ct-row:focus-within .vc-ct-acts{ opacity:1; transform:none; }
+        }
+
+        /* the filter chips fade at the edge instead of cutting a word in half */
+        #vc-ct-chips{
+            -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 34px), transparent);
+                    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 34px), transparent);
+            padding-right: 22px;
+        }
+
+        @media (prefers-reduced-motion: reduce){
+            .vc-msg.mine.launch, .vc-tick.vc-tick-new, .vc-ghosts .g{ animation:none; }
+        }
+
         /* ── Loading hairline under the header ───────────────────────────────
            2.5px, zero layout cost, nothing moves when it goes. The 400ms delay
            with a backwards fill means a load that finishes sooner never shows
@@ -8650,7 +8698,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.132.0 · 21 Sep 2026 · chat: send and in-conversation receive sounds + haptics';
+        const BUILD_VERSION = 'v2.133.0 · 21 Sep 2026 · chat: launch animation, tick morph, thread skeleton, person colours, hover actions';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -27052,7 +27100,7 @@ ${(() => {
                     const row = p => {
                         const on = isOn(p), name = p.name || p.email, st8 = seenText(p);
                         return `<div class="vc-ct-row" data-email="${chatEsc(p.email)}" data-name="${chatEsc(name)}">
-                            <div class="vc-ct-ava${on ? ' online' : ''}">${chatEsc(chatInitials(name))}</div>
+                            <div class="vc-ct-ava${on ? ' online' : ''}" style="${chatAvaBg(name)}">${chatEsc(chatInitials(name))}</div>
                             <div class="vc-ct-meta"><div class="vc-ct-name">${chatEsc(name)}</div>
                                 <div class="vc-ct-sub"><span class="vc-ct-tag">${chatEsc(ROLE_TAG[rk(p.role)] || p.role || 'Team')}</span>${chatEsc(scopeOf(p))} · <span class="${on ? 'on' : ''}">${chatEsc(st8)}</span></div></div>
                             <div class="vc-ct-acts">
@@ -27176,6 +27224,13 @@ ${(() => {
 
             const chatEsc = dirEsc;
             const chatInitials = s => String(s || '?').trim().split(/\s+/).slice(0,2).map(w => w[0] || '').join('').toUpperCase() || '?';
+            // v2.133.0: every person gets their own colour — the same one their
+            // profile avatar already uses — so a list of initials becomes
+            // scannable instead of a column of identical navy circles.
+            const chatAvaBg = name => {
+                try { const c = getAvatarColor(String(name || '?')); return 'background:linear-gradient(135deg,' + c.bg + ',' + c.bg + 'D9);'; }
+                catch(e){ return ''; }
+            };
             function chatTime(iso){
                 const d = new Date(iso);
                 if (isNaN(d)) return '';
@@ -27542,7 +27597,7 @@ ${(() => {
                 chat.people.forEach(p => {
                     const key = p.email, last = chat.last[key];
                     items.push({ key, group: false, name: p.name || key,
-                        ava: `<div class="vc-chat-ava${chat.online && chat.online.has(String(key).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name || key))}</div>`,
+                        ava: `<div class="vc-chat-ava${chat.online && chat.online.has(String(key).toLowerCase()) ? ' online' : ''}" style="${chatAvaBg(p.name || key)}">${chatEsc(chatInitials(p.name || key))}</div>`,
                         sub: last ? (last.mine ? 'You: ' : '') + String(chatPlain(last.body)).slice(0, 44)
                                   : (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch),
                         at: last ? last.at : '', n: chat.unread[key] || 0,
@@ -27669,6 +27724,7 @@ ${(() => {
                                                : (p ? (p.scope === 'all' ? p.role : p.role + ' · ' + p.branch) : '');
                 $('vc-thread-ava').textContent = grp ? '' : chatInitials(chat.peerName);
                 $('vc-thread-ava').innerHTML = grp ? '<i class="fas fa-user-group"></i>' : chatEsc(chatInitials(chat.peerName));
+                $('vc-thread-ava').setAttribute('style', grp ? '' : chatAvaBg(chat.peerName));
                 $('vc-thread-sub').onclick = grp ? () => VoiceCall.groupInfo() : null;
                 $('vc-thread-sub').style.cursor = grp ? 'pointer' : '';
                 if (grp) loadMembers(email);
@@ -27678,7 +27734,10 @@ ${(() => {
                     // Instantly, from what we already hold.
                     renderThread(cached, true); markNewLine(unreadN);
                 } else {
-                    $('vc-thread-msgs').innerHTML = '<div class="vc-chat-empty">Loading…</div>';
+                    $('vc-thread-msgs').innerHTML = '<div class="vc-ghosts" aria-label="Loading messages">'
+                        + '<span class="g them" style="width:58%"></span><span class="g them" style="width:36%"></span>'
+                        + '<span class="g mine" style="width:48%"></span><span class="g them" style="width:64%"></span>'
+                        + '<span class="g mine" style="width:30%"></span></div>';
                 }
                 showTab('chat');
                 // Mark read straight away -- the badge should clear the moment the
@@ -27779,7 +27838,7 @@ ${(() => {
                 if (groups.length) html += '<div class="vc-pick-grp">Rooms</div>' + groups.map(g =>
                     row('g:' + g.id, `<div class="vc-chat-ava grp kind-${g.kind || 'chat'}"><i class="fas ${kindIcon(g.kind)}"></i></div>`, g.name, g.members + ' members')).join('');
                 if (people.length) html += '<div class="vc-pick-grp">People</div>' + people.map(p =>
-                    row(p.email, `<div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}">${chatEsc(chatInitials(p.name))}</div>`,
+                    row(p.email, `<div class="vc-chat-ava${chat.online && chat.online.has(String(p.email).toLowerCase()) ? ' online' : ''}" style="${chatAvaBg(p.name)}">${chatEsc(chatInitials(p.name))}</div>`,
                         p.name, p.scope === 'all' ? p.role : p.role + ' · ' + p.branch)).join('');
                 list.innerHTML = html || '<div class="vc-chat-empty">Nothing matches.</div>';
             }
@@ -28316,7 +28375,7 @@ ${(() => {
                     const grouped = (!newDay && !hasFile && fromKey === lastFrom) ? ' grouped' : '';
                     lastFrom = hasFile ? '' : fromKey;
                     const media = m.kind === 'image' ? (text ? ' has-media' : ' has-media media-only') : '';  // text includes any quote
-                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}${m.pending ? ' pending' : ''}" data-id="${m.id}" data-rn="${chatEsc(rName)}" data-rt="${chatEsc(String(rText).slice(0, 120))}">${who}${attachmentHtml(m)}${text}<button type="button" class="vc-reply-btn" title="Reply"><i class="fas fa-reply"></i></button>`
+                    parts.push(`<div class="vc-msg ${m.mine ? 'mine' : 'them'}${grouped}${media}${m.pending ? ' pending launch' : ''}" data-id="${m.id}" data-rn="${chatEsc(rName)}" data-rt="${chatEsc(String(rText).slice(0, 120))}">${who}${attachmentHtml(m)}${text}<button type="button" class="vc-reply-btn" title="Reply"><i class="fas fa-reply"></i></button>`
                              + `<span class="vc-msg-time">${chatEsc(chatTime(m.at))}<span class="vc-tick-slot">${tickFor(m)}</span></span></div>`);
                 }
                 box.dataset.lastDay = lastDay;
@@ -28358,7 +28417,13 @@ ${(() => {
                 });
                 for (const r of list) {
                     const el = box.querySelector('.vc-msg[data-id="' + r.id + '"] .vc-tick-slot');
-                    if (el) el.innerHTML = tickFor({ mine: true, deliveredAt: r.deliveredAt, readAt: r.readAt });
+                    if (!el) continue;
+                    // Receipts can repeat on every poll; only a real change
+                    // redraws, so the tick animates once per state, not every 3s.
+                    const html = tickFor({ mine: true, deliveredAt: r.deliveredAt, readAt: r.readAt });
+                    if (el.innerHTML === html) continue;
+                    el.innerHTML = html;
+                    const k = el.querySelector('.vc-tick'); if (k) k.classList.add('vc-tick-new');
                 }
             }
 
@@ -28550,7 +28615,10 @@ ${(() => {
                         chat.threadIds.delete(tmp); chat.threadIds.add(sent.id);
                         el.dataset.id = String(sent.id); el.classList.remove('pending');
                         const t = el.querySelector('.vc-msg-time');
-                        if (t) t.innerHTML = chatEsc(chatTime(sent.at)) + '<span class="vc-tick-slot">' + tickFor(sent) + '</span>';
+                        if (t) {
+                            t.innerHTML = chatEsc(chatTime(sent.at)) + '<span class="vc-tick-slot">' + tickFor(sent) + '</span>';
+                            const k = t.querySelector('.vc-tick'); if (k) k.classList.add('vc-tick-new');
+                        }
                     } else if (chat.peer === peer) {
                         renderThread([sent]);
                     }
