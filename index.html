@@ -3401,8 +3401,8 @@
                   overflow-y: auto !important; overscroll-behavior: contain; }
 
         /* head — avatar doubles as the photo control */
-        .dpm-head{ display:flex; align-items:center; gap:10px; padding:6px 6px 8px; }
-        .dpm-ava{ position:relative; width:34px; height:34px; border-radius:50%; flex-shrink:0;
+        .dpm-head{ display:flex; align-items:center; gap:10px; padding:3px 6px 5px; }
+        .dpm-ava{ position:relative; width:30px; height:30px; border-radius:50%; flex-shrink:0;
                   display:flex; align-items:center; justify-content:center; cursor:pointer;
                   color:#fff; font-weight:800; font-size:0.74rem; }
         .dpm-ava img{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
@@ -3422,12 +3422,12 @@
         .dpm-rm:hover{ background:rgba(220,38,38,.08); color:#DC2626; }
 
         /* grouped rows — a hairline between groups, none between rows */
-        .dpm-group{ padding:4px 0; border-top:1px solid var(--border-color); }
+        .dpm-group{ padding:2px 0; border-top:1px solid var(--border-color); }
         .dpm-group:first-of-type{ border-top:none; padding-top:0; }
         #dp-menu .dpm-row,
         #dp-menu .support-row{
             display:flex; align-items:center; gap:10px; width:100%;
-            padding:0 6px !important; min-height:36px; border:none; background:transparent;
+            padding:0 6px !important; min-height:32px; border:none; background:transparent;
             border-radius:9px; cursor:pointer; text-align:left; text-decoration:none;
             font-family:'Inter', sans-serif !important; font-size:0.8rem !important; font-weight:600 !important;
             color:var(--text-main); line-height:1.25; box-sizing:border-box; transition:background .15s;
@@ -3460,7 +3460,7 @@
         .dpm-pill.is-muted{ color:var(--text-muted); background:var(--bg-light); border-color:var(--border-color); }
 
         .dpm-ver{ display:flex; align-items:center; justify-content:space-between;
-                  padding:7px 8px 2px; border-top:1px solid var(--border-color); margin-top:2px; }
+                  padding:5px 8px 1px; border-top:1px solid var(--border-color); margin-top:1px; }
         .dpm-ver-label{ font-size:0.62rem; color:var(--text-muted); font-weight:500; }
         .dpm-ver-pill{ font-size:0.62rem; font-weight:800; padding:2px 8px; border-radius:20px;
                        background:rgba(1,1,151,.07); color:#010197; letter-spacing:.3px; }
@@ -4618,13 +4618,13 @@
            opposite, and turning the laptop down turns the customer down with
            it -- the call and the alert come out of the same browser tab, so
            the system mixer cannot separate them. This can. */
-        .vol-row { padding: 9px 14px 11px; }
+        .vol-row { padding: 6px 10px 7px; }
         .vol-row .vol-top { display: flex; align-items: center; gap: 9px; font: 600 .82rem 'Inter', sans-serif; color: var(--text-main); }
         .vol-row .vol-top .support-icon { flex: none; }
         .vol-row .vol-val { margin-left: auto; font: 800 .7rem 'Inter', sans-serif; color: var(--text-muted); font-variant-numeric: tabular-nums; }
-        .vol-row input[type=range] { width: 100%; margin: 9px 0 0; accent-color: #010197; }
+        .vol-row input[type=range] { width: 100%; margin: 6px 0 0; accent-color: #010197; }
         body.dark-theme .vol-row input[type=range] { accent-color: #64D0FF; }
-        .vol-row .vol-hint { font: 500 .66rem 'Inter', sans-serif; color: var(--text-muted); margin-top: 5px; }
+        .vol-row .vol-hint { font: 500 .66rem 'Inter', sans-serif; color: var(--text-muted); margin-top: 3px; line-height: 1.35; }
 
         /* ═══════════ REWARDS ═══════════ */
         .rw-stat { text-align:center; padding:0 14px; border-left:1px solid var(--border-color); }
@@ -8556,7 +8556,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.127.0 · 21 Sep 2026 · launch intro — mark crosses the line and docks; phone sign-in brand; step 3 reads Initialising';
+        const BUILD_VERSION = 'v2.127.1 · 21 Sep 2026 · profile menu trimmed ~12% so it clears the assistant orb';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
