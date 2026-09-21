@@ -3652,6 +3652,85 @@
             .vc-msg.mine.launch, .vc-tick.vc-tick-new, .vc-ghosts .g{ animation:none; }
         }
 
+        /* ══════════════════════════════════════════════════════════════════
+           LIVE MOTION  —  v2.134.0
+           Everything here fires once per real event and then goes still.
+           Nothing loops, nothing moves on first load or on a filter change.
+           ══════════════════════════════════════════════════════════════════ */
+
+        /* nav: one highlight glides between tabs (desktop; phones keep the pill) */
+        #topNav{ position: relative; }
+        #nav-ink{ position:absolute; left:0; top:0; width:0; height:0; border-radius:10px; pointer-events:none; z-index:0;
+            background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); opacity:0;
+            transition: left .42s cubic-bezier(.3,1.25,.4,1), width .42s cubic-bezier(.3,1.25,.4,1),
+                        top .3s ease, height .3s ease, opacity .2s ease; }
+        #nav-ink.still{ transition: opacity .2s ease; }
+        #nav-ink::after{ content:''; position:absolute; left:14%; right:14%; bottom:3px; height:2px; border-radius:2px;
+            background: linear-gradient(90deg,#64D0FF,#fff); box-shadow: 0 0 8px rgba(100,208,255,.85); }
+        body.nav-ink-on #nav-ink{ opacity:1; }
+        body.nav-ink-on #topNav .topnav-link.active{ background: transparent !important; }
+        body.nav-ink-on #topNav .topnav-link.active::after{ opacity: 0 !important; }
+        #topNav .topnav-link{ z-index: 1; }
+
+        /* bell: rings when a new alert lands */
+        @keyframes smBellRing{ 0%{transform:rotate(0)} 12%{transform:rotate(16deg)} 26%{transform:rotate(-13deg)} 40%{transform:rotate(9deg)}
+            54%{transform:rotate(-6deg)} 68%{transform:rotate(3deg)} 82%{transform:rotate(-1deg)} 100%{transform:rotate(0)} }
+        #notifBell.sm-ring > i{ transform-origin: 50% 8%; animation: smBellRing .9s cubic-bezier(.36,.07,.19,.97); }
+        @keyframes smPop{ 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+        .sm-pop{ animation: smPop .38s cubic-bezier(.2,1.5,.4,1) both; }
+
+        /* messages icon: one cyan ripple when a message arrives */
+        #vc-fab.sm-ripple::before{ content:''; position:absolute; inset:2px; border-radius:50%; border:2px solid #64D0FF;
+            animation: smFabRipple .9s cubic-bezier(.2,.8,.3,1) forwards; pointer-events:none; }
+        @keyframes smFabRipple{ from{ transform:scale(.6); opacity:.95; } to{ transform:scale(1.9); opacity:0; } }
+
+        /* theme toggle: the new icon turns in */
+        .header-controls .btn-icon > i.sm-turn{ animation: smTurn .5s cubic-bezier(.3,1.3,.4,1); }
+        @keyframes smTurn{ from{ transform: rotate(-200deg) scale(.4); opacity:0; } to{ transform:none; opacity:1; } }
+
+        /* header icons lift a touch on hover */
+        .header-controls .btn-icon{ transition: transform .2s cubic-bezier(.2,1.4,.4,1), background .18s, color .18s, box-shadow .2s !important; }
+        .header-controls .btn-icon:hover{ transform: translateY(-1px) scale(1.06); }
+
+        /* KPI: a changed number pulses once, with a small delta chip */
+        .kpi-card.sm-kpi-good{ animation: smKpiG 1.5s ease-out; }
+        .kpi-card.sm-kpi-bad { animation: smKpiR 1.5s ease-out; }
+        .kpi-card.sm-kpi-neutral{ animation: smKpiN 1.5s ease-out; }
+        @keyframes smKpiG{ 0%{box-shadow:0 0 0 0 rgba(5,150,105,.45)} 35%{box-shadow:0 0 0 7px rgba(5,150,105,.14)} 100%{box-shadow:0 0 0 0 rgba(5,150,105,0)} }
+        @keyframes smKpiR{ 0%{box-shadow:0 0 0 0 rgba(220,38,38,.45)} 35%{box-shadow:0 0 0 7px rgba(220,38,38,.13)} 100%{box-shadow:0 0 0 0 rgba(220,38,38,0)} }
+        @keyframes smKpiN{ 0%{box-shadow:0 0 0 0 rgba(1,1,151,.35)} 35%{box-shadow:0 0 0 7px rgba(1,1,151,.10)} 100%{box-shadow:0 0 0 0 rgba(1,1,151,0)} }
+        .sm-delta{ position:absolute; z-index:2; font:800 .72rem 'Inter',sans-serif; padding:2px 7px; border-radius:20px; pointer-events:none;
+            animation: smDelta 2.6s cubic-bezier(.2,1,.3,1) forwards; }
+        .sm-delta.good{ background: rgba(5,150,105,.12); color:#047857; }
+        .sm-delta.bad { background: rgba(220,38,38,.10); color:#B91C1C; }
+        .sm-delta.neutral{ background: rgba(1,1,151,.08); color:#010197; }
+        body.dark-theme .sm-delta.good{ background: rgba(52,211,153,.15); color:#34D399; }
+        body.dark-theme .sm-delta.bad { background: rgba(248,113,113,.15); color:#F87171; }
+        body.dark-theme .sm-delta.neutral{ background: rgba(100,208,255,.14); color:#64D0FF; }
+        @keyframes smDelta{ 0%{opacity:0;transform:translateY(6px) scale(.6)} 14%{opacity:1;transform:translateY(0) scale(1.08)}
+            22%{transform:scale(1)} 78%{opacity:1;transform:translateY(-2px)} 100%{opacity:0;transform:translateY(-10px)} }
+
+        /* rows: a genuinely new incident glows in, then becomes an ordinary row */
+        div.sm-row-new{ position:relative; animation: smRowIn .5s cubic-bezier(.2,1,.3,1) both, smRowGlow 3.2s ease .5s both; }
+        div.sm-row-new::before{ content:''; position:absolute; left:0; top:6px; bottom:6px; width:3px; border-radius:3px;
+            background:#010197; animation: smBarFade 3.2s ease .5s forwards; }
+        tr.sm-row-new > td{ animation: smTdIn .5s ease both, smRowGlow 3.2s ease .5s both; }
+        tr.sm-row-new > td:first-child{ box-shadow: inset 3px 0 0 #010197; animation: smTdIn .5s ease both, smRowGlow 3.2s ease .5s both, smEdgeFade 3.2s ease .5s forwards; }
+        @keyframes smRowIn{ from{ opacity:0; transform: translateY(-12px); } to{ opacity:1; transform:none; } }
+        @keyframes smTdIn{ from{ opacity:0; } to{ opacity:1; } }
+        @keyframes smRowGlow{ 0%{ background-color: rgba(1,1,151,.10); } 100%{ background-color: transparent; } }
+        @keyframes smBarFade{ 0%,70%{ opacity:1; } 100%{ opacity:0; } }
+        @keyframes smEdgeFade{ 0%,70%{ box-shadow: inset 3px 0 0 #010197; } 100%{ box-shadow: inset 3px 0 0 transparent; } }
+        body.dark-theme div.sm-row-new::before{ background:#64D0FF; }
+        body.dark-theme tr.sm-row-new > td:first-child{ box-shadow: inset 3px 0 0 #64D0FF; }
+
+        @media (prefers-reduced-motion: reduce){
+            #nav-ink{ transition: none; }
+            #notifBell.sm-ring > i, #vc-fab.sm-ripple::before, .header-controls .btn-icon > i.sm-turn,
+            .kpi-card.sm-kpi-good, .kpi-card.sm-kpi-bad, .kpi-card.sm-kpi-neutral, .sm-delta,
+            div.sm-row-new, div.sm-row-new::before, tr.sm-row-new > td{ animation: none !important; }
+        }
+
         /* ── Loading hairline under the header ───────────────────────────────
            2.5px, zero layout cost, nothing moves when it goes. The 400ms delay
            with a backwards fill means a load that finishes sooner never shows
@@ -3904,68 +3983,115 @@
             var done = function(){ return landed; };
             setTimeout(settle, 8400);        // hard stop, even if everything below fails
 
-            function pickTarget(){
-                var ls = document.getElementById('login-screen');
-                var onLogin = ls && ls.classList.contains('visible');
-                var sel = onLogin
-                    ? (window.innerWidth <= 820 ? '.login-mobile-brand .lmb-mark svg' : '.login-left .login-mark svg')
-                    : '.brand-top .brand-mark svg';
-                var el = document.querySelector(sel);
-                if (!el) return null;
-                var r = el.getBoundingClientRect();
-                return (r.width > 0 && r.height > 0) ? { el: el, r: r, login: onLogin ? ls : null } : null;
-            }
+            // ── Where to land ─────────────────────────────────────────────────
+            // v2.135.0 — rebuilt. The old version picked a destination once and
+            // committed to it. On the live site a fresh launch shows the sign-in
+            // screen for about a second while Cloudflare confirms the session;
+            // if the pick happened inside that second it aimed at the sign-in
+            // logo, the sign-in closed mid-flight, and the mark landed where
+            // that logo USED to be — in the middle of the dashboard.
+            // Now: only land on a screen that has settled, and if the sign-in
+            // disappears during the flight anyway, re-aim at the header from
+            // wherever the mark is.
+            var dockEl = ov.querySelector('.smi-dock'), bgEl = ov.querySelector('.smi-bg');
+            var x0 = (W - S0) / 2, y0 = (H - S0) / 2;
+            var EASE = 'cubic-bezier(.65,0,.25,1)', DUR = 760;
+            var flight = null, watch = null;
 
-            function dock(){
+            function rectOf(sel){
+                var el = document.querySelector(sel); if (!el) return null;
+                var r = el.getBoundingClientRect();
+                return (r.width > 0 && r.height > 0) ? { el: el, r: r } : null;
+            }
+            function headerTarget(){ return rectOf('.brand-top .brand-mark svg'); }
+            function loginTarget(){
+                return rectOf(window.innerWidth <= 820 ? '.login-mobile-brand .lmb-mark svg' : '.login-left .login-mark svg');
+            }
+            function loginUp(){
+                var ls = document.getElementById('login-screen');
+                return !!(ls && ls.classList.contains('visible'));
+            }
+            // where the mark is right now, as a transform from its start box
+            function currentTransform(){
+                var r = dockEl.getBoundingClientRect();
+                return 'translate(' + (r.left - x0) + 'px,' + (r.top - y0) + 'px) scale(' + (r.width / S0) + ')';
+            }
+            function flyTo(t, from){
+                if (target && target !== t.el) target.classList.remove('sm-target');
+                target = t.el; target.classList.add('sm-target');
+                if (flight) { try { flight.cancel(); } catch(e){} }
+                flight = dockEl.animate(
+                    [{ transform: from || 'none' },
+                     { transform: 'translate(' + (t.r.left - x0) + 'px,' + (t.r.top - y0) + 'px) scale(' + (t.r.width / S0) + ')' }],
+                    { duration: DUR, easing: EASE, fill: 'forwards' });
+                var mine = flight;
+                flight.onfinish = function(){ if (mine === flight) { clearInterval(watch); finish(); } };
+            }
+            // The navy lifts upward and becomes the header, so a white apex
+            // never crosses a pale page.
+            function retractIntoHeader(){
+                var hdr = document.querySelector('.header');
+                var hh = hdr ? Math.round(hdr.getBoundingClientRect().bottom) : 58;
+                var rest = Math.max(0, window.innerHeight - hh);
+                ov.classList.remove('out');
                 try {
-                    var t = pickTarget();
-                    if (!t){ ov.classList.add('out'); setTimeout(finish, 620); return; }
-                    if (t.login){
-                        ov.classList.add('out');                   // sign-in is navy too: a plain fade is fine
-                    } else {
-                        // Flying to the header over a pale dashboard: a cross-fade would
-                        // strand a white apex on a near-white page. Instead the navy
-                        // retracts upward and becomes the header, so the mark never
-                        // leaves a navy background and lands on the same colour.
-                        var hdr = document.querySelector('.header');
-                        var hh = hdr ? Math.round(hdr.getBoundingClientRect().bottom) : 58;
-                        var rest = Math.max(0, window.innerHeight - hh);
-                        try {
-                            var bg = ov.querySelector('.smi-bg');
-                            // Same duration and easing as the flight, so the navy's lower
-                            // edge stays below the mark the whole way instead of retracting
-                            // out from under it and stranding a white apex on a pale page.
-                            bg.animate([
-                                { clipPath:'inset(0 0 0 0)',          backgroundColor:'#000096' },
-                                { clipPath:'inset(0 0 '+rest+'px 0)', backgroundColor:'#010197' }
-                            ], { duration:760, easing:'cubic-bezier(.65,0,.25,1)', fill:'forwards' });
-                            // only once it has become the header does it hand over to the real one
-                            bg.animate([{ opacity:1 }, { opacity:0 }],
-                                { duration:130, delay:660, easing:'ease', fill:'forwards' });
-                        } catch(e){ ov.classList.add('out'); }
+                    bgEl.getAnimations().forEach(function(a){ a.cancel(); });
+                    bgEl.style.transition = 'none'; bgEl.style.opacity = '1';
+                    bgEl.animate([
+                        { clipPath: 'inset(0 0 0 0)',            backgroundColor: '#000096' },
+                        { clipPath: 'inset(0 0 ' + rest + 'px 0)', backgroundColor: '#010197' }
+                    ], { duration: DUR, easing: EASE, fill: 'forwards' });
+                    bgEl.animate([{ opacity: 1 }, { opacity: 0 }],
+                        { duration: 130, delay: DUR - 100, easing: 'ease', fill: 'forwards' });
+                } catch(e){ ov.classList.add('out'); }
+            }
+            function toHeader(from){
+                var t = headerTarget();
+                if (!t){ ov.classList.add('out'); setTimeout(finish, 620); return; }
+                retractIntoHeader();
+                flyTo(t, from);
+            }
+            function toLogin(){
+                var t = loginTarget();
+                if (!t) return toHeader();
+                ov.classList.add('out');                       // sign-in is navy too: a plain fade is fine
+                var ls = document.getElementById('login-screen');
+                if (ls) ls.classList.add('sm-reveal');
+                flyTo(t);
+                // If the sign-in closes during the flight, re-aim at the header
+                // from wherever the mark has got to.
+                watch = setInterval(function(){
+                    if (landed) { clearInterval(watch); return; }
+                    if (!loginUp()){
+                        clearInterval(watch);
+                        var from = currentTransform();
+                        toHeader(from);
                     }
-                    target = t.el; target.classList.add('sm-target');
-                    if (t.login) t.login.classList.add('sm-reveal');
-                    var d = ov.querySelector('.smi-dock');
-                    var x0 = (W - S0) / 2, y0 = (H - S0) / 2, k = t.r.width / S0;
-                    var a = d.animate(
-                        [{ transform: 'none' },
-                         { transform: 'translate(' + (t.r.left - x0) + 'px,' + (t.r.top - y0) + 'px) scale(' + k + ')' }],
-                        { duration: 760, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
-                    a.onfinish = finish;
-                    setTimeout(finish, 1400);                      // in case onfinish never fires
-                } catch(e){ finish(); }
+                }, 50);
             }
 
             // Start the motion on the first real frame, so a slow parse can't
             // eat the opening of the animation before anyone sees it.
             requestAnimationFrame(function(){ requestAnimationFrame(function(){
-                var t0 = performance.now();
+                var t0 = performance.now(), loginSince = 0;
                 ov.classList.add('go');
                 (function waitReady(){
                     if (done()) return;
+                    var now = performance.now();
                     var ready = document.body && document.body.classList.contains('app-ready');
-                    if (ready && performance.now() - t0 >= 1000) return dock();
+                    if (ready && now - t0 >= 1000){
+                        try {
+                            // The dashboard is showing: the header is the only
+                            // destination that can't disappear.
+                            if (!loginUp()) return toHeader();
+                            // The sign-in is up. Only land on it once it has
+                            // stayed up long enough to be a real wait (a slow
+                            // connection, a denied account) rather than the
+                            // one-second hand-off on every launch.
+                            if (!loginSince) loginSince = now;
+                            if (now - loginSince > 1500) return toLogin();
+                        } catch(e){ return finish(); }
+                    } else if (!loginUp()) { loginSince = 0; }
                     setTimeout(waitReady, 40);
                 })();
             }); });
@@ -8698,7 +8824,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.133.0 · 21 Sep 2026 · chat: launch animation, tick morph, thread skeleton, person colours, hover actions';
+        const BUILD_VERSION = 'v2.135.0 · 21 Sep 2026 · launch intro: lands only on a settled screen; re-aims at the header if sign-in closes mid-flight';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -12239,6 +12365,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(arr.length > 5000) arr = arr.slice(arr.length - 5000); // cap so localStorage can't grow forever
                 localStorage.setItem('crumble_seen_incident_keys', JSON.stringify(arr));
             } catch(e){}
+
+            // v2.134.0: the rows for genuinely new incidents glow in, wherever
+            // they are drawn. Keyed on the incident itself, so a filter change
+            // that merely reveals older rows never lights anything up.
+            if(!isFirstRun && newOnes.length){ try { if (window.RowFresh) RowFresh.mark(newOnes.map(_incidentStableKey)); } catch(e){} }
 
             // First-ever run: silently mark everything currently in the sheet
             // as "already seen" instead of popping up hundreds of alerts for
@@ -16813,7 +16944,7 @@ ${(() => {
                     const unresolved = c.incidents.filter(i => !i.resolved).length;
                     const sev = n >= 4 ? '#DC2626' : n === 3 ? '#010197' : '#64748B';
                     const reasons = [...new Set(c.incidents.map(reasonOf).filter(Boolean))].slice(0, 2).join(', ');
-                    return `<div onclick="app.openIncidentFromStableKey('${_incidentStableKey(last).replace(/'/g,"\\'")}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;">
+                    return `<div data-row-key="${String(_incidentStableKey(last)).replace(/"/g,'&quot;')}" onclick="app.openIncidentFromStableKey('${_incidentStableKey(last).replace(/'/g,"\\'")}')" style="display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-color);cursor:pointer;">
                         <span style="width:30px;height:30px;border-radius:9px;background:${sev}14;color:${sev};display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;flex-shrink:0;">${n}×</span>
                         <div style="min-width:0;">
                             <div style="font-size:0.83rem;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc2(c.name || c.phone || 'Unknown')}${c.name && c.phone ? ' <span style="color:var(--text-muted);font-weight:600;font-size:0.74rem;">' + esc2(c.phone) + '</span>' : ''}</div>
@@ -16875,7 +17006,7 @@ ${(() => {
                     const timeDisp = !isNaN(ts) ? new Date(ts).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'}) : '—';
                     const score = inc.smileScore||0;
                     const urgentBadge = cat.critical ? `<span style="background:rgba(220,38,38,.12);color:#DC2626;font-size:0.65rem;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px;">CRITICAL</span>` : '';
-                    return `<div onclick="app.openIncidentFromStableKey('${key}')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border-color);border-radius:9px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
+                    return `<div data-row-key="${String(key).replace(/"/g,'&quot;')}" onclick="app.openIncidentFromStableKey('${key}')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border-color);border-radius:9px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--bg-light)'" onmouseout="this.style.background='transparent'">
                         <span style="width:30px;height:30px;border-radius:8px;background:${score<=2?'rgba(220,38,38,.1)':'rgba(217,119,6,.1)'};color:${score<=2?'#DC2626':'#010197'};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.8rem;flex-shrink:0;">${score||'—'}</span>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.82rem;font-weight:700;color:var(--text-main);">${inc.branch||'—'} — ${cat.title}${urgentBadge}</div>
@@ -22006,9 +22137,14 @@ ${(() => {
             // just update to the new value, not visibly tick/count up. The
             // tick animation is reserved for manual refreshes/navigation.
             if(window._isBackgroundRefresh){
+                const prev = Number(String(el.innerText).replace(/[^0-9.-]/g,'')) || 0;
                 el.innerText = target.toLocaleString();
+                // v2.134.0: a number that genuinely changed while you were
+                // watching pulses once. Display only — the value is already set.
+                try { if (window.KpiFlash) KpiFlash.maybe(el, prev, target); } catch(e){}
                 return;
             }
+            if (el.dataset) el.dataset.kpiSeen = '1';
             if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
                 el.innerText = target.toLocaleString(); return;
             }
@@ -29028,5 +29164,123 @@ ${(() => {
         /* ══════════════ END VOICE CALL ENGINE ══════════════ */
 
         </script>
+<script>
+/* LIVE MOTION — v2.134.0. Display only: reads what the app has already
+   painted and adds a class for a moment. Nothing here computes a value.
+   Everything waits until the dashboard has settled after load, so the
+   first paint never flashes, rings or glows. */
+(function(){
+    const T0 = Date.now();
+    const settled = () => Date.now() - T0 > 12000;
+    const calm = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const replay = (el, cls) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+
+    // ── KPI flash — called from countUp's silent background branch ───────
+    const GOOD_UP = { 'kpi-subs': 'good' };                 // more submissions is good
+    const BAD_UP  = { 'kpi-incs': 1, 'kpi-ver': 1 };        // more incidents is bad
+    window.KpiFlash = {
+        maybe(el, prev, next){
+            const seen = el.dataset.kpiSeen === '1';
+            el.dataset.kpiSeen = '1';
+            if (!seen || !settled() || calm() || prev === next) return;
+            const card = el.closest('.kpi-card'); if (!card) return;
+            const up = next > prev, id = el.id || '';
+            const tone = GOOD_UP[id] ? (up ? 'good' : 'bad') : BAD_UP[id] ? (up ? 'bad' : 'good') : 'neutral';
+            replay(card, 'sm-kpi-' + tone);
+            setTimeout(() => card.classList.remove('sm-kpi-' + tone), 1600);
+            const chip = document.createElement('span');
+            chip.className = 'sm-delta ' + tone;
+            const d = next - prev; chip.textContent = (d > 0 ? '+' : '\u2212') + Math.abs(d).toLocaleString();
+            chip.style.left = (el.offsetLeft + el.offsetWidth + 8) + 'px';
+            chip.style.top  = (el.offsetTop + 4) + 'px';
+            card.appendChild(chip);
+            setTimeout(() => chip.remove(), 2700);
+        }
+    };
+
+    // ── Row glow — fed by checkForNewIncidents ────────────────────────────
+    const fresh = new Map();           // key -> when it was detected
+    const WINDOW = 12000;
+    function light(node){
+        if (!fresh.size || !node || node.nodeType !== 1) return;
+        const now = Date.now();
+        const list = node.matches && node.matches('[data-row-key]') ? [node] : [];
+        if (node.querySelectorAll) list.push(...node.querySelectorAll('[data-row-key]'));
+        for (const r of list){
+            const t = fresh.get(r.getAttribute('data-row-key'));
+            if (t && now - t < WINDOW && !r.classList.contains('sm-row-new')) r.classList.add('sm-row-new');
+        }
+        for (const [k, t] of fresh) if (now - t > WINDOW) fresh.delete(k);
+    }
+    window.RowFresh = {
+        mark(keys){
+            if (calm() || !settled()) return;
+            const now = Date.now();
+            (keys || []).forEach(k => fresh.set(String(k), now));
+            light(document.body);              // rows that were drawn before the check ran
+        }
+    };
+    new MutationObserver(ms => {
+        if (!fresh.size) return;               // costs nothing when there is nothing new
+        for (const m of ms) for (const n of m.addedNodes) light(n);
+    }).observe(document.body, { childList: true, subtree: true });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // ── Gliding nav highlight ────────────────────────────────────────
+        const nav = document.getElementById('topNav');
+        if (nav){
+            const ink = document.createElement('div'); ink.id = 'nav-ink'; ink.className = 'still';
+            nav.insertBefore(ink, nav.firstChild);
+            let placed = false, queued = false;
+            const place = () => {
+                queued = false;
+                const a = nav.querySelector('.topnav-link.active');
+                const ok = window.innerWidth > 820 && a && a.offsetParent !== null && a.getBoundingClientRect().width > 0;
+                document.body.classList.toggle('nav-ink-on', !!ok);
+                if (!ok){ placed = false; return; }
+                const n = nav.getBoundingClientRect(), r = a.getBoundingClientRect();
+                if (!placed) ink.classList.add('still');
+                ink.style.left = (r.left - n.left + nav.scrollLeft) + 'px';
+                ink.style.top = (r.top - n.top + nav.scrollTop) + 'px';
+                ink.style.width = r.width + 'px'; ink.style.height = r.height + 'px';
+                if (!placed){ placed = true; requestAnimationFrame(() => requestAnimationFrame(() => ink.classList.remove('still'))); }
+            };
+            const soon = () => { if (!queued){ queued = true; requestAnimationFrame(place); } };
+            new MutationObserver(soon).observe(nav, { attributes: true, subtree: true, attributeFilter: ['class', 'style'] });
+            window.addEventListener('resize', () => { placed = false; soon(); });
+            nav.addEventListener('scroll', soon, { passive: true });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { placed = false; soon(); });
+            soon();
+        }
+
+        // ── Bell rings / messages ripple when their count goes UP ─────────
+        const watchCount = (id, onUp) => {
+            const el = document.getElementById(id); if (!el) return;
+            let last = parseInt(el.textContent, 10) || 0;
+            new MutationObserver(() => {
+                const now = parseInt(el.textContent, 10) || 0;
+                const shown = el.style.display !== 'none' && getComputedStyle(el).display !== 'none';
+                if (now > last && shown && settled() && !calm()) onUp(el);
+                last = now;
+            }).observe(el, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+        };
+        watchCount('notifCount', badge => { replay(document.getElementById('notifBell'), 'sm-ring'); replay(badge, 'sm-pop'); });
+        watchCount('vc-fab-badge', badge => { replay(document.getElementById('vc-fab'), 'sm-ripple'); replay(badge, 'sm-pop'); });
+
+        // ── Theme icon turns in when it changes ──────────────────────────
+        const themeIcon = document.querySelector('.header-controls .btn-icon > i.fa-sun, .header-controls .btn-icon > i.fa-moon');
+        if (themeIcon){
+            let was = themeIcon.classList.contains('fa-moon');
+            new MutationObserver(() => {
+                const is = themeIcon.classList.contains('fa-moon');
+                if (is !== was && Date.now() - T0 > 2500 && !calm()){
+                    themeIcon.classList.remove('sm-turn'); void themeIcon.offsetWidth; themeIcon.classList.add('sm-turn');
+                }
+                was = is;
+            }).observe(themeIcon, { attributes: true, attributeFilter: ['class'] });
+        }
+    });
+})();
+</script>
 </body>
 </html>
