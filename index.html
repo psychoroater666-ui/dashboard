@@ -3562,6 +3562,9 @@
             gap:10px; padding:14px 0 20px; text-align:center;
         }
         .sm-boot-wrap svg{ display:block; }
+        /* the intro's mark is in flight to the header — one logo on screen, not two */
+        .sm-boot-wrap{ transition: opacity .3s ease; }
+        html.sm-intro .sm-boot-wrap{ opacity:0; }
         .sm-boot-wrap .sm-apex{ stroke:#010197; }
         .sm-boot-wrap .sm-base{ stroke:#64D0FF; }
         .sm-boot-wrap .sm-threshold{ stroke:#010197; }
@@ -3792,8 +3795,31 @@
             function dock(){
                 try {
                     var t = pickTarget();
-                    ov.classList.add('out');                       // navy lifts, page shows through
-                    if (!t){ setTimeout(finish, 620); return; }     // nothing to land on: just fade
+                    if (!t){ ov.classList.add('out'); setTimeout(finish, 620); return; }
+                    if (t.login){
+                        ov.classList.add('out');                   // sign-in is navy too: a plain fade is fine
+                    } else {
+                        // Flying to the header over a pale dashboard: a cross-fade would
+                        // strand a white apex on a near-white page. Instead the navy
+                        // retracts upward and becomes the header, so the mark never
+                        // leaves a navy background and lands on the same colour.
+                        var hdr = document.querySelector('.header');
+                        var hh = hdr ? Math.round(hdr.getBoundingClientRect().bottom) : 58;
+                        var rest = Math.max(0, window.innerHeight - hh);
+                        try {
+                            var bg = ov.querySelector('.smi-bg');
+                            // Same duration and easing as the flight, so the navy's lower
+                            // edge stays below the mark the whole way instead of retracting
+                            // out from under it and stranding a white apex on a pale page.
+                            bg.animate([
+                                { clipPath:'inset(0 0 0 0)',          backgroundColor:'#000096' },
+                                { clipPath:'inset(0 0 '+rest+'px 0)', backgroundColor:'#010197' }
+                            ], { duration:760, easing:'cubic-bezier(.65,0,.25,1)', fill:'forwards' });
+                            // only once it has become the header does it hand over to the real one
+                            bg.animate([{ opacity:1 }, { opacity:0 }],
+                                { duration:130, delay:660, easing:'ease', fill:'forwards' });
+                        } catch(e){ ov.classList.add('out'); }
+                    }
                     target = t.el; target.classList.add('sm-target');
                     if (t.login) t.login.classList.add('sm-reveal');
                     var d = ov.querySelector('.smi-dock');
@@ -3801,7 +3827,7 @@
                     var a = d.animate(
                         [{ transform: 'none' },
                          { transform: 'translate(' + (t.r.left - x0) + 'px,' + (t.r.top - y0) + 'px) scale(' + k + ')' }],
-                        { duration: 720, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
+                        { duration: 760, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
                     a.onfinish = finish;
                     setTimeout(finish, 1400);                      // in case onfinish never fires
                 } catch(e){ finish(); }
@@ -8556,7 +8582,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.127.1 · 21 Sep 2026 · profile menu trimmed ~12% so it clears the assistant orb';
+        const BUILD_VERSION = 'v2.128.0 · 21 Sep 2026 · launch intro: navy retracts into the header so the mark stays visible and lands';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
