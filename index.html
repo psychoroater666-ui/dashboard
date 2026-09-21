@@ -3607,6 +3607,109 @@
                 url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpath d='M22 88 L41 88 L60 29 L79 88 L98 88' fill='none' stroke='%23ffffff' stroke-opacity='0.62' stroke-width='16' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),
                 linear-gradient(135deg, rgba(255,255,255,.06), rgba(100,208,255,.10));
         }
+
+        /* ══════════════════════════════════════════════════════════════════
+           LAUNCH INTRO  —  added v2.127.0
+           Android draws the launch screen itself (manifest background + the
+           large icon). The first frame of this overlay is built to be that
+           same picture, so the hand-over is invisible and the mark appears to
+           come alive: the threshold line draws in, the peak pushes through,
+           then the mark docks into the page — the sign-in brand on a fresh
+           sign-in, the header mark for anyone with a saved session.
+           Every moving part is transform/opacity on HTML boxes so it runs on
+           the compositor and keeps its frame rate while the main script is
+           still being parsed. Plays once per launch (sessionStorage), never
+           for reduced-motion, never takes a click (pointer-events:none), and
+           removes itself after 8s whatever happens.
+           ══════════════════════════════════════════════════════════════════ */
+        html.sm-intro,
+        html.sm-intro.pre-dark{ background:#000096; }
+        #sm-intro{
+            position:fixed; inset:0; z-index:2147483000; pointer-events:none;
+            animation: smIntroBail .35s ease 8s forwards;   /* last-resort exit */
+        }
+        #sm-intro .smi-bg{ position:absolute; inset:0; background:#000096; }
+        #sm-intro .smi-dock{ position:absolute; transform-origin:0 0; will-change:transform; }
+        #sm-intro .smi-body{ position:relative; width:100%; height:100%; transform-origin:50% 73.3%; }
+        #sm-intro svg{ display:block; width:100%; height:100%; overflow:visible; }
+        #sm-intro .smi-line{
+            position:absolute; left:-3%; right:-3%; top:calc(51.667% - 1px); height:2px;
+            background:repeating-linear-gradient(90deg, rgba(255,255,255,.6) 0 5px, transparent 5px 11px);
+            transform:scaleX(0); transform-origin:0 50%;
+        }
+        #sm-intro .smi-glow{
+            position:absolute; inset:-34%; border-radius:50%; opacity:0;
+            background:radial-gradient(circle, rgba(100,208,255,.34), transparent 62%);
+        }
+        #sm-intro.go .smi-line{ animation: smiDraw .32s cubic-bezier(.4,0,.2,1) .2s forwards, smiFade .28s ease .74s forwards; }
+        #sm-intro.go .smi-body{ animation: smiLift .5s cubic-bezier(.3,1.4,.5,1) .5s both; }
+        #sm-intro.go .smi-glow{ animation: smiPulse .7s ease .45s both; }
+        #sm-intro.out .smi-bg{ transition: opacity .6s ease; opacity:0; }
+        @keyframes smiDraw { to { transform:scaleX(1); } }
+        @keyframes smiFade { to { opacity:0; } }
+        @keyframes smiLift { 0%{ transform:scaleY(1); } 45%{ transform:scaleY(1.09); } 100%{ transform:scaleY(1); } }
+        @keyframes smiPulse{ 0%{ opacity:0; transform:scale(.7); } 40%{ opacity:1; } 100%{ opacity:0; transform:scale(1.25); } }
+        @keyframes smIntroBail{ to { opacity:0; visibility:hidden; } }
+        /* the page's own copy of the mark stays hidden until the moving one lands on it */
+        html.sm-intro .sm-target{ visibility:hidden; }
+
+        /* Sign-in entrance is held back while the intro runs, then replayed at
+           the reveal so it happens in view instead of behind the overlay. */
+        html.sm-intro #login-screen .login-container{ animation:none; opacity:0; }
+        html.sm-intro #login-screen.sm-reveal .login-container{
+            opacity:1; animation: smCardIn .7s cubic-bezier(.16,1,.3,1) both;
+        }
+        /* after the intro: the card's own entrance must not replay */
+        #login-screen.sm-settled .login-container{ animation:none; }
+        @keyframes smCardIn{
+            from { opacity:0; transform:translateY(32px) scale(.97); }
+            to   { opacity:1; transform:none; }
+        }
+
+        /* ── Phone sign-in: brand in the empty navy half ─────────────────────
+           On phones the left brand panel is hidden, which left the lower half
+           of the sign-in screen as bare navy. It now carries the mark and the
+           wordmark, so the mark is on screen from launch to sign-in.        */
+        .login-mobile-brand{ display:none; }
+        @media (max-width: 820px){
+            .login-mobile-brand{
+                display:flex; flex:1 1 auto; min-height:0;
+                flex-direction:column; align-items:center; justify-content:center;
+                padding:28px 20px calc(28px + env(safe-area-inset-bottom));
+                text-align:center; overflow:hidden;
+            }
+            .lmb-mark{ width:64px; height:64px; margin-bottom:18px; }
+            .lmb-mark svg{ display:block; width:100%; height:100%; }
+            .lmb-name{
+                font-weight:900; font-style:italic; font-size:1.6rem; letter-spacing:4px;
+                text-transform:uppercase; color:#fff; line-height:1;
+                text-shadow:0 0 22px rgba(100,208,255,.45);
+            }
+            .lmb-sub{
+                font-weight:800; font-size:.6rem; letter-spacing:4.5px; text-indent:4.5px;
+                text-transform:uppercase; color:rgba(100,208,255,.8); margin-top:7px;
+            }
+            .lmb-tag{ font-weight:600; font-size:.72rem; color:rgba(255,255,255,.5); margin-top:20px; }
+            /* on a short phone the access-denied panel needs the room */
+            @media (max-height: 700px){ #login-screen.is-error .login-mobile-brand{ display:none; } }
+
+            /* phone reveal: the full-width card drops from the top instead of rising */
+            html.sm-intro #login-screen.sm-reveal .login-container{ animation:none; opacity:1; }
+            html.sm-intro #login-screen.sm-reveal .login-right{
+                animation: smSheetDrop .7s cubic-bezier(.65,0,.25,1) both;
+                box-shadow:0 20px 50px rgba(0,0,40,.35);
+            }
+            html.sm-intro #login-screen.sm-reveal .lmb-name,
+            html.sm-intro #login-screen.sm-reveal .lmb-sub,
+            html.sm-intro #login-screen.sm-reveal .lmb-tag{
+                animation: smRise .5s cubic-bezier(.2,.8,.2,1) both;
+            }
+            html.sm-intro #login-screen.sm-reveal .lmb-name{ animation-delay:.5s; }
+            html.sm-intro #login-screen.sm-reveal .lmb-sub { animation-delay:.6s; }
+            html.sm-intro #login-screen.sm-reveal .lmb-tag { animation-delay:.75s; }
+        }
+        @keyframes smSheetDrop{ from{ transform:translateY(-100%); } to{ transform:none; } }
+        @keyframes smRise{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:none; } }
     </style>
     <script>
         // Runs before the body exists so a returning dark-mode user never
@@ -3619,6 +3722,103 @@
                     document.documentElement.classList.add('pre-dark');
                 }
             } catch(e){}
+        })();
+
+        // ── Launch intro (v2.127.0) — see the LAUNCH INTRO block in the CSS ──
+        // Purely visual. Nothing in the app waits on it, it can't be clicked,
+        // and if anything here throws, the overlay is simply removed.
+        (function(){
+            var root = document.documentElement, KEY = 'sentinelIntroSeen';
+            try {
+                if (sessionStorage.getItem(KEY)) return;                       // once per launch
+                if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                sessionStorage.setItem(KEY, '1');
+            } catch(e){ return; }
+
+            var W = window.innerWidth, H = window.innerHeight;
+            var S0 = W <= 820 ? Math.round(Math.min(W * 0.27, 128)) : 120;  // matches the size Android draws the icon
+            var P = 'M22 88 L41 88 L60 29 L79 88 L98 88';
+            var ov = document.createElement('div');
+            ov.id = 'sm-intro'; ov.setAttribute('aria-hidden', 'true');
+            ov.innerHTML =
+                '<div class="smi-bg"></div>' +
+                '<div class="smi-dock" style="left:' + ((W - S0) / 2) + 'px;top:' + ((H - S0) / 2) + 'px;width:' + S0 + 'px;height:' + S0 + 'px">' +
+                  '<div class="smi-glow"></div>' +
+                  '<div class="smi-line"></div>' +
+                  '<div class="smi-body"><svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg"><defs>' +
+                    '<clipPath id="smiU"><rect x="0" y="0" width="120" height="62"/></clipPath>' +
+                    '<clipPath id="smiD"><rect x="0" y="62" width="120" height="58"/></clipPath></defs>' +
+                    '<g clip-path="url(#smiD)"><path d="' + P + '" fill="none" stroke="#64D0FF" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></g>' +
+                    '<g clip-path="url(#smiU)"><path d="' + P + '" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/></g>' +
+                  '</svg></div>' +
+                '</div>';
+            root.classList.add('sm-intro');
+            root.appendChild(ov);            // outside <body>, so body's opacity:0 during boot can't hide it
+
+            var landed = false, settled = false, target = null;
+            // land: the moving mark is on its target — show the real one, drop the overlay
+            function land(){
+                if (landed) return; landed = true;
+                try { if (target) target.classList.remove('sm-target'); } catch(e){}
+                requestAnimationFrame(function(){ try { ov.remove(); } catch(e){} });
+            }
+            // settle: entrance animations have finished — hand the page back.
+            // 'sm-settled' stops the sign-in card's own entrance from replaying
+            // when the intro's classes come off.
+            function settle(){
+                if (settled) return; settled = true; land();
+                try {
+                    var ls = document.getElementById('login-screen');
+                    if (ls){ ls.classList.add('sm-settled'); ls.classList.remove('sm-reveal'); }
+                } catch(e){}
+                root.classList.remove('sm-intro');
+            }
+            function finish(){ land(); setTimeout(settle, 800); }
+            var done = function(){ return landed; };
+            setTimeout(settle, 8400);        // hard stop, even if everything below fails
+
+            function pickTarget(){
+                var ls = document.getElementById('login-screen');
+                var onLogin = ls && ls.classList.contains('visible');
+                var sel = onLogin
+                    ? (window.innerWidth <= 820 ? '.login-mobile-brand .lmb-mark svg' : '.login-left .login-mark svg')
+                    : '.brand-top .brand-mark svg';
+                var el = document.querySelector(sel);
+                if (!el) return null;
+                var r = el.getBoundingClientRect();
+                return (r.width > 0 && r.height > 0) ? { el: el, r: r, login: onLogin ? ls : null } : null;
+            }
+
+            function dock(){
+                try {
+                    var t = pickTarget();
+                    ov.classList.add('out');                       // navy lifts, page shows through
+                    if (!t){ setTimeout(finish, 620); return; }     // nothing to land on: just fade
+                    target = t.el; target.classList.add('sm-target');
+                    if (t.login) t.login.classList.add('sm-reveal');
+                    var d = ov.querySelector('.smi-dock');
+                    var x0 = (W - S0) / 2, y0 = (H - S0) / 2, k = t.r.width / S0;
+                    var a = d.animate(
+                        [{ transform: 'none' },
+                         { transform: 'translate(' + (t.r.left - x0) + 'px,' + (t.r.top - y0) + 'px) scale(' + k + ')' }],
+                        { duration: 720, easing: 'cubic-bezier(.65,0,.25,1)', fill: 'forwards' });
+                    a.onfinish = finish;
+                    setTimeout(finish, 1400);                      // in case onfinish never fires
+                } catch(e){ finish(); }
+            }
+
+            // Start the motion on the first real frame, so a slow parse can't
+            // eat the opening of the animation before anyone sees it.
+            requestAnimationFrame(function(){ requestAnimationFrame(function(){
+                var t0 = performance.now();
+                ov.classList.add('go');
+                (function waitReady(){
+                    if (done()) return;
+                    var ready = document.body && document.body.classList.contains('app-ready');
+                    if (ready && performance.now() - t0 >= 1000) return dock();
+                    setTimeout(waitReady, 40);
+                })();
+            }); });
         })();
     </script>
 <style id="fb-styles">
@@ -6570,7 +6770,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <ul class="login-steps" id="login-steps">
                     <li class="login-step" data-step="1" data-state="done"><span class="dot"></span><span>Verified with Cloudflare Access</span></li>
                     <li class="login-step" data-step="2" data-state="active"><span class="dot"></span><span>Loading your profile &amp; permissions</span></li>
-                    <li class="login-step" data-step="3" data-state=""><span class="dot"></span><span>Connecting to live data</span></li>
+                    <li class="login-step" data-step="3" data-state=""><span class="dot"></span><span>Initialising</span></li>
                 </ul>
 
                 <div id="login-error" class="login-error">
@@ -6584,6 +6784,24 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 </div>
 
                 <div class="login-footer">Protected · Internal access only</div>
+            </div>
+            <!-- Phone only: the left brand panel is hidden below 820px, so the
+                 brand sits in the navy space under the card instead. Also the
+                 landing spot for the launch intro on a fresh sign-in. -->
+            <div class="login-mobile-brand" aria-hidden="true">
+                <div class="lmb-mark">
+                    <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <clipPath id="smLmbUp"><rect x="0" y="0" width="120" height="62"></rect></clipPath>
+                            <clipPath id="smLmbDn"><rect x="0" y="62" width="120" height="58"></rect></clipPath>
+                        </defs>
+                        <g clip-path="url(#smLmbDn)"><path d="M22 88 L41 88 L60 29 L79 88 L98 88" fill="none" stroke="#64D0FF" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"></path></g>
+                        <g clip-path="url(#smLmbUp)"><path d="M22 88 L41 88 L60 29 L79 88 L98 88" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"></path></g>
+                    </svg>
+                </div>
+                <div class="lmb-name">Crumble</div>
+                <div class="lmb-sub">Sentinel</div>
+                <div class="lmb-tag">Customer Experience Intelligence</div>
             </div>
         </div>
     </div>
@@ -8338,7 +8556,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.126.1 · 21 Sep 2026 · boot loader caption reads "Initialising"';
+        const BUILD_VERSION = 'v2.127.0 · 21 Sep 2026 · launch intro — mark crosses the line and docks; phone sign-in brand; step 3 reads Initialising';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
