@@ -3551,6 +3551,59 @@
             .brand-sub{ letter-spacing:2px; }
         }
 
+        /* ── Sign-in in dark mode ────────────────────────────────────────────
+           The status panel was the one surface with no dark treatment, so a
+           night-shift user got a full-brightness white card before the
+           dashboard appeared. (The existing body.dark-theme .login-card rule
+           targets a class the sign-in markup does not use.) */
+        body.dark-theme .login-right{ background:#161B22; }
+        body.dark-theme .login-welcome{ color:#64D0FF; }
+        body.dark-theme .login-title{ color:#E6EDF3; }
+        body.dark-theme .login-sub,
+        body.dark-theme .login-footer{ color:#8B949E; }
+        body.dark-theme .login-progress{ background:rgba(255,255,255,.07); }
+        body.dark-theme .login-step{ color:#8B949E; }
+        body.dark-theme .login-step .dot{ border-color:rgba(255,255,255,.16); }
+        body.dark-theme .login-step[data-state="active"],
+        body.dark-theme .login-step[data-state="done"]{ color:#E6EDF3; }
+        body.dark-theme .login-error{ background:rgba(220,38,38,.10); border-color:rgba(220,38,38,.35); color:#F87171; }
+        body.dark-theme .login-btn{ background:#21262D; border-color:rgba(255,255,255,.12); color:#E6EDF3; }
+        body.dark-theme .login-btn.primary{ background:linear-gradient(135deg,#010197,#3B5BDB); color:#fff; border-color:transparent; }
+        body.dark-theme .login-container{ box-shadow:0 40px 100px rgba(0,0,0,.6); }
+
+        /* ── Filter bar: tighter controls ────────────────────────────────────
+           The bar wraps at laptop widths, and "All Channels" was being stranded
+           on a line of its own. Trimming the padding pulls it back up, so the
+           second line carries only the view toggles. 75px -> 68px. Several of
+           these controls carry inline styles, hence the !important. */
+        .filter-row{ gap:8px; row-gap:7px; }
+        .date-presets{ gap:5px; }
+        .preset-chip{ padding:5px 11px; font-size:0.75rem; }
+        .date-range-pill{ padding:5px 11px; gap:6px; }
+        .filter-row .select-input{ padding:6px 28px 6px 11px !important; font-size:0.78rem !important; }
+        #exec-view-toggles .view-btn{ padding:4px 11px !important; }
+        .controls-wrapper{ padding-top:9px; padding-bottom:9px; }
+
+        /* ── Date range: the inputs now match the chips around them ───────────
+           They were raw browser controls inside the pill — different family,
+           different weight, a grey native picker button. The date ORDER is set
+           by the browser's locale and cannot be styled; changing it needs a
+           custom control. */
+        .date-range-pill input[type="date"]{
+            font-family:'Inter', sans-serif; font-size:0.78rem; font-weight:700;
+            color:var(--text-main); background:transparent; border:none; outline:none; padding:0;
+        }
+        .date-range-pill input[type="date"]::-webkit-calendar-picker-indicator{
+            opacity:.45; cursor:pointer; filter:grayscale(1); padding:0 0 0 4px; transition:opacity .15s;
+        }
+        .date-range-pill input[type="date"]:hover::-webkit-calendar-picker-indicator{ opacity:.9; }
+        .date-range-pill > i{ color:#010197; opacity:.75; font-size:0.78rem; }
+        .date-separator{ color:var(--text-muted); font-weight:700; }
+        .date-range-pill:focus-within{ border-color:#010197; box-shadow:0 0 0 3px rgba(1,1,151,.08); }
+        body.dark-theme .date-range-pill > i{ color:#64D0FF; }
+        body.dark-theme .date-range-pill input[type="date"]::-webkit-calendar-picker-indicator{ filter:invert(1) grayscale(1); }
+        body.dark-theme .date-range-pill:focus-within{ border-color:#64D0FF; box-shadow:0 0 0 3px rgba(100,208,255,.12); }
+
         /* ── Loading hairline under the header ───────────────────────────────
            2.5px, zero layout cost, nothing moves when it goes. The 400ms delay
            with a backwards fill means a load that finishes sooner never shows
@@ -6892,13 +6945,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 <span class="topnav-link" data-view="complaints" onclick="app.navigate('complaints', this)">Complaints</span>
                 <span class="topnav-link" data-view="incidents" onclick="app.navigate('incidents', this)">Incidents</span>
                 <span class="topnav-link" data-view="submissions" onclick="app.navigate('submissions', this)">Submissions</span>
-                <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
+                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
                 <span class="topnav-link" data-view="branches" onclick="app.navigate('branches', this)">Branches</span>
+                <span class="topnav-link" data-view="resolution" onclick="app.navigate('resolution', this)">Resolution</span>
                 <span class="topnav-link" data-view="incident-analytics" onclick="app.navigate('incident-analytics', this)">Incident Analytics</span>
                 <span class="topnav-link" data-view="form-analytics" id="nav-form-analytics" style="display:none;" onclick="app.navigate('form-analytics', this)">Form Analytics</span>
                 <span class="topnav-link" data-view="insights" id="nav-insights" style="display:none;" onclick="app.navigate('insights', this)">Insights</span>
                 <span class="topnav-link" data-view="data" onclick="app.navigate('data', this)">Data</span>
-                <span class="topnav-link" data-view="orders" id="nav-orders" style="display:none;" onclick="app.navigate('orders', this)">Orders</span>
                 <span class="topnav-link" data-view="order-analytics" id="nav-order-analytics" style="display:none;" onclick="app.navigate('order-analytics', this)">Order analytics</span>
                 <span class="topnav-link" data-view="actions" id="nav-actions" style="display:none;" onclick="app.navigate('actions', this)">Actions</span>
                 <span class="topnav-link" data-view="rewards" id="nav-rewards" style="display:none;" onclick="app.navigate('rewards', this)">Rewards</span>
@@ -8597,7 +8650,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.129.0 · 21 Sep 2026 · loading hairline under the header + skeleton held until the view has painted';
+        const BUILD_VERSION = 'v2.131.0 · 21 Sep 2026 · dark sign-in + tighter filter bar + styled date range + Orders pinned in the nav';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
