@@ -628,6 +628,17 @@
         .sv-add, .sv-reset { justify-self:start; border:none; background:transparent; color:var(--brand-accent); font:700 .76rem 'Inter',sans-serif; padding:4px 0; cursor:pointer; }
         .sv-reset { color:var(--text-muted); }
         @media (max-width:520px){ .sv-num input { width:64px; padding:8px; } .sv-num em { width:70px; } .sv-l { font-size:.78rem; } .sv-bt { flex-wrap:wrap; } .sv-bt select { flex:1 1 100%; } .sv-bt .sv-num { margin-left:auto; } }
+        /* v2.150.0: Owner settings → Protection */
+        .pr-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0; }
+        .pr-row + .pr-row { border-top:1px solid var(--border-color); padding-top:10px; }
+        .pr-t { display:grid; gap:1px; min-width:0; }
+        .pr-s { font-size:.7rem; color:var(--text-muted); font-weight:500; }
+        .pr-c { font-size:.68rem; color:var(--text-muted); font-weight:600; margin-top:2px; }
+        .pr-c b { color:var(--text-main); }
+        .pr-c.hot b { color:#B45309; }
+        .pr-fixed { font-size:.72rem; color:var(--text-muted); line-height:1.5; border:1px dashed var(--border-color); border-radius:10px; padding:10px 12px; }
+        .pr-fixed b { color:var(--text-main); margin-right:4px; }
+        @media (max-width:520px){ .pr-row { align-items:flex-start; } }
         .tg-card { display:grid; gap:12px; padding:16px 18px !important; }
         .tg-h { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
         .tg-h b { font-size:.9rem; font-weight:800; color:var(--text-main); }
@@ -8884,7 +8895,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.149.0 · 23 Sep 2026 · Owner settings → Standards (targets and alarm levels); Overview Against target strip';
+        const BUILD_VERSION = 'v2.150.0 · 23 Sep 2026 · Owner settings → Protection: editable anti-fraud limits with refusal counts';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11891,7 +11902,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         async function saveOwnerSettings(tab){
             const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
             const payload = {};
-            if(tab === 'standards'){
+            if(tab === 'protection'){
+                const got = prCollect();
+                if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
+                payload.protection = got.protection;
+            } else if(tab === 'standards'){
                 const got = svCollect();
                 if(got.error){
                     if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
@@ -11957,6 +11972,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             window.__svBranches = branches;
             const panes = {
               standards: ownerStandardsPane(st, branches),
+              protection: `<div class="pr-host">${protectionPane(st, {})}</div>`,
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
                         <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
@@ -12048,12 +12064,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
-                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
+                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
@@ -12063,6 +12079,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(tab === 'impact') loadImpact();
             if(tab === 'gaps') loadBlindSpots();
             if(tab === 'people') loadAgentStats();
+            if(tab === 'protection') loadProtectionStats();
         }
 
         /** Each integration in one line: working, or what is wrong. */
@@ -12672,6 +12689,68 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             });
             s.branchTargets = bt;
             return { standards: s };
+        }
+
+        /* v2.150.0 -- Owner settings → Protection: the anti-fraud limits the
+           Worker (v4.85) applies to every submission. Missing = the fixed
+           values it always used, so nothing changes until one is edited. */
+        const PROT_DEFAULTS = { phoneMax: 2, repeatMin: 10, deviceMax: 4, ipMax: 15, minSeconds: 6 };
+        function protectionPane(st, counts){
+            const s = Object.assign({}, PROT_DEFAULTS, (st && st.protection) || {});
+            const c = counts || {};
+            const lbl = `font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);`;
+            const num = (id, v, min, max, unit) => `<span class="sv-num"><input type="number" id="${id}" value="${v}" min="${min}" max="${max}" inputmode="numeric"><em>${unit}</em></span>`;
+            const caught = k => { const x = c[k]; if(!x) return `<small class="pr-c">Refused today: — · last 7 days: —</small>`;
+                return `<small class="pr-c${x.today ? ' hot' : ''}">Refused today: <b>${x.today}</b> · last 7 days: <b>${x.week}</b></small>`; };
+            const row = (label, sub, ctl, key) => `<div class="pr-row"><div class="pr-t"><span class="sv-l">${label}</span><small class="pr-s">${sub}</small>${caught(key)}</div>${ctl}</div>`;
+            return `<div style="display:grid;gap:14px;grid-template-columns:minmax(0,1fr);">
+                <div class="sv-sec"><b>Protection</b><span>Stops fake or padded feedback. A refused customer is thanked as usual and nothing is saved; every refusal is logged. Lower a number to tighten, raise it to loosen.</span></div>
+                <div class="sv-card"><div class="sv-h"><span style="${lbl}">Per customer</span></div>
+                    ${row('Same phone number', 'responses allowed in 12 hours', num('pr-ph', s.phoneMax, 1, 20, 'max'), 'phone')}
+                    ${row('Same phone, same form', 'must wait between two responses', num('pr-rp', s.repeatMin, 0, 240, 'min'), 'repeat')}
+                </div>
+                <div class="sv-card"><div class="sv-h"><span style="${lbl}">Per device and network</span></div>
+                    ${row('Same device', 'phone or tablet — responses in 12 hours', num('pr-dv', s.deviceMax, 1, 50, 'max'), 'device')}
+                    ${row('Same network', 'e.g. a branch\u2019s wifi — responses in 1 hour', num('pr-ip', s.ipMax, 1, 500, 'max'), 'address')}
+                    ${row('Too fast to be real', 'refused under this, once the device has already answered', num('pr-fs', s.minSeconds, 0, 60, 'sec'), 'fast')}
+                </div>
+                <div class="pr-fixed"><b>Always on</b> One response per Blink or Foodpanda order. Not adjustable — loosening it would only ever allow duplicates.</div>
+                <button class="sv-reset" onclick="prResetDefaults()">Reset to company standard</button>
+            </div>`;
+        }
+
+        function prResetDefaults(){
+            const m = { 'pr-ph':'phoneMax', 'pr-rp':'repeatMin', 'pr-dv':'deviceMax', 'pr-ip':'ipMax', 'pr-fs':'minSeconds' };
+            Object.keys(m).forEach(id => { const el = document.getElementById(id); if(el) el.value = PROT_DEFAULTS[m[id]]; });
+            try { UI.toast('Company standard filled in — press Save to use it.', 'info', 3500); } catch(e){}
+        }
+        /** Read the tab back; the same ranges the Worker accepts (PROTECTION_RANGES). */
+        function prCollect(){
+            const R = { phoneMax:['pr-ph',1,20], repeatMin:['pr-rp',0,240], deviceMax:['pr-dv',1,50], ipMax:['pr-ip',1,500], minSeconds:['pr-fs',0,60] };
+            const out = {};
+            document.querySelectorAll('#owner-settings-modal .sv-num input').forEach(i => i.style.borderColor = '');
+            for(const k in R){
+                const el = document.getElementById(R[k][0]); const v = el ? Number(el.value) : NaN;
+                if(!Number.isInteger(v) || v < R[k][1] || v > R[k][2]){
+                    if(el){ el.style.borderColor = '#DC2626'; try { el.focus(); } catch(e){} }
+                    return { error: 'Use a whole number from ' + R[k][1] + ' to ' + R[k][2] + ' in the box outlined in red.' };
+                }
+                out[k] = v;
+            }
+            return { protection: out };
+        }
+        /** Fill in "Refused today / last 7 days" under each rule. */
+        async function loadProtectionStats(){
+            let res = null; try { res = await apiCall('protection_stats', {}); } catch(e){}
+            const modal = document.getElementById('owner-settings-modal'); if(!modal) return;
+            const counts = (res && res.status === 'success' && res.counts) || null;
+            const body = modal.querySelector('.pr-host'); if(!body) return;
+            const st = window.OwnerSettings || {};
+            // Keep whatever the Owner has typed; only the counts are redrawn.
+            const typed = {}; body.querySelectorAll('.sv-num input').forEach(i => { typed[i.id] = i.value; });
+            body.innerHTML = protectionPane(st, counts || {});
+            Object.keys(typed).forEach(id => { const el = document.getElementById(id); if(el) el.value = typed[id]; });
+            if(!counts) body.querySelectorAll('.pr-c').forEach(c => { c.textContent = 'Refusal counts unavailable just now'; });
         }
 
         /** Timers written into static text: the Live queue card. */
