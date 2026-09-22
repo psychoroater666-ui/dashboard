@@ -3679,10 +3679,15 @@
 
         /* nav: one highlight glides between tabs (desktop; phones keep the pill) */
         #topNav{ position: relative; }
+        /* v2.141.3: moved by transform only. It used to animate left/width,
+           which run on the page's main thread -- so clicking Overview (a heavy
+           first paint) froze the highlight half-way between two tabs for a
+           second. A transform keeps moving on the compositor however busy the
+           page is. */
         #nav-ink{ position:absolute; left:0; top:0; width:0; height:0; border-radius:10px; pointer-events:none; z-index:0;
             background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); opacity:0;
-            transition: left .42s cubic-bezier(.3,1.25,.4,1), width .42s cubic-bezier(.3,1.25,.4,1),
-                        top .3s ease, height .3s ease, opacity .2s ease; }
+            transform-origin: 0 50%; will-change: transform;
+            transition: transform .42s cubic-bezier(.3,1.25,.4,1), opacity .2s ease; }
         #nav-ink.still{ transition: opacity .2s ease; }
         #nav-ink::after{ content:''; position:absolute; left:14%; right:14%; bottom:3px; height:2px; border-radius:2px;
             background: linear-gradient(90deg,#64D0FF,#fff); box-shadow: 0 0 8px rgba(100,208,255,.85); }
@@ -8843,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.141.2 · 22 Sep 2026 · Overview asks the server less often, rides out a single failed request, and ignores a one-off "numbers off"';
+        const BUILD_VERSION = 'v2.141.3 · 22 Sep 2026 · nav highlight glides on the compositor, so it no longer stalls half-way while a heavy tab paints';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -29669,14 +29674,30 @@ ${(() => {
                 document.body.classList.toggle('nav-ink-on', !!ok);
                 if (!ok){ placed = false; return; }
                 const n = nav.getBoundingClientRect(), r = a.getBoundingClientRect();
-                if (!placed) ink.classList.add('still');
-                ink.style.left = (r.left - n.left + nav.scrollLeft) + 'px';
-                ink.style.top = (r.top - n.top + nav.scrollTop) + 'px';
-                ink.style.width = r.width + 'px'; ink.style.height = r.height + 'px';
-                if (!placed){ placed = true; requestAnimationFrame(() => requestAnimationFrame(() => ink.classList.remove('still'))); }
+                const x = r.left - n.left + nav.scrollLeft, y = r.top - n.top + nav.scrollTop, w = r.width;
+                // v2.141.3: FLIP. The size is set at once; the move -- and the
+                // change of width, as a scale -- is a transform the compositor
+                // runs on its own, so a busy page cannot freeze it mid-way.
+                const prev = ink._pos;
+                ink._pos = { x, y, w };
+                ink.style.width = w + 'px'; ink.style.height = r.height + 'px';
+                if (placed && prev && prev.x === x && prev.y === y && prev.w === w) return;   // nothing moved
+                if (!placed || !prev || !prev.w){
+                    ink.classList.add('still');
+                    ink.style.transform = 'translate(' + x + 'px,' + y + 'px)';
+                    if (!placed){ placed = true; requestAnimationFrame(() => requestAnimationFrame(() => ink.classList.remove('still'))); }
+                    else ink.classList.remove('still');
+                    return;
+                }
+                ink.classList.add('still');
+                ink.style.transform = 'translate(' + prev.x + 'px,' + y + 'px) scaleX(' + (prev.w / w) + ')';
+                void ink.offsetWidth;                                   // commit the starting point
+                ink.classList.remove('still');
+                ink.style.transform = 'translate(' + x + 'px,' + y + 'px)';
             };
             const soon = () => { if (!queued){ queued = true; requestAnimationFrame(place); } };
-            new MutationObserver(soon).observe(nav, { attributes: true, subtree: true, attributeFilter: ['class', 'style'] });
+            // The highlight's own style changes are not a reason to measure again.
+            new MutationObserver(recs => { if (recs.some(r => r.target !== ink)) soon(); }).observe(nav, { attributes: true, subtree: true, attributeFilter: ['class', 'style'] });
             window.addEventListener('resize', () => { placed = false; soon(); });
             nav.addEventListener('scroll', soon, { passive: true });
             if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { placed = false; soon(); });
