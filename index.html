@@ -628,6 +628,40 @@
         .sv-add, .sv-reset { justify-self:start; border:none; background:transparent; color:var(--brand-accent); font:700 .76rem 'Inter',sans-serif; padding:4px 0; cursor:pointer; }
         .sv-reset { color:var(--text-muted); }
         @media (max-width:520px){ .sv-num input { width:64px; padding:8px; } .sv-num em { width:70px; } .sv-l { font-size:.78rem; } .sv-bt { flex-wrap:wrap; } .sv-bt select { flex:1 1 100%; } .sv-bt .sv-num { margin-left:auto; } }
+        /* v2.152.0: Reports & alerts */
+        .rp-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+        .rp-top p { margin:3px 0 0; font-size:.74rem; color:var(--text-muted); line-height:1.45; }
+        .rp-new { border:none; background:var(--brand-accent); color:#fff; font:700 .76rem 'Inter',sans-serif; padding:8px 13px; border-radius:9px; white-space:nowrap; }
+        .rp-list { display:grid; gap:8px; }
+        .rp-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; border:1px solid var(--border-color); border-radius:12px; padding:11px 14px; }
+        .rp-row b { font-size:.84rem; color:var(--text-main); }
+        .rp-meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:5px; font-size:.7rem; color:var(--text-muted); align-items:center; }
+        .rp-chip { padding:2px 8px; border-radius:20px; font-weight:700; font-size:.64rem; letter-spacing:.2px; }
+        .rp-chip.instant { background:#FEF2F2; color:#B91C1C; } .rp-chip.report { background:rgba(1,1,151,.07); color:#010197; }
+        .rp-right { display:flex; align-items:center; gap:10px; }
+        .tg { border:none; cursor:pointer; padding:0; width:36px; height:20px; border-radius:20px; background:#CBD5E1; position:relative; flex-shrink:0; }
+        .tg::after { content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+        .tg.on { background:var(--brand-accent); } .tg.on::after { left:18px; }
+        .rp-edit { border:1px solid var(--border-color); background:var(--white); border-radius:8px; font:700 .7rem 'Inter',sans-serif; padding:5px 9px; color:var(--text-main); }
+        /* create dialog */
+        .rc { display:grid; grid-template-columns:1fr 1fr; gap:22px 26px; }
+        .rc h4 { margin:0 0 8px; font-size:.86rem; font-weight:800; color:var(--text-main); }
+        .rc .f { display:grid; gap:5px; margin-bottom:12px; }
+        .rc .f small { font-size:.7rem; color:var(--text-muted); line-height:1.45; }
+        .rc input[type=text], .rc input[type=email], .rc textarea, .rc select, .rc .fake { width:100%; box-sizing:border-box; padding:9px 11px; border:1.5px solid var(--border-color); border-radius:10px; font:600 .8rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); }
+        .rc textarea { resize:vertical; min-height:56px; }
+        .rc .row2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .rc .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+        .rc .chips span { background:rgba(1,1,151,.07); color:#010197; border-radius:20px; padding:3px 9px; font-size:.7rem; font-weight:700; }
+        .rc .chips span.ext { background:#F1F5F9; color:#334155; }
+        .rc .chk { display:flex; gap:8px; align-items:flex-start; font-size:.78rem; font-weight:600; color:var(--text-main); margin-bottom:8px; }
+        .rc .chk input { margin-top:2px; accent-color:#010197; }
+        .rc .chk small { display:block; font-weight:500; }
+        .rc .inst { font-size:.72rem; color:#B91C1C; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; padding:8px 10px; line-height:1.45; }
+        @media (max-width:640px){ .rc { grid-template-columns:1fr; gap:6px; } .rp-row { grid-template-columns:1fr; } .rp-right { justify-content:space-between; } }
+        
+        .rc .chips a { cursor:pointer; margin-left:3px; opacity:.7; }
+        .rp-brs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 10px; max-height:180px; overflow:auto; border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; font-size:.74rem; }
         /* v2.151.0: the screen notice */
         .nt-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; font-size:.82rem; font-weight:600; line-height:1.4; border:1px solid; }
         .nt-bar .nt-ic { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.78rem; flex-shrink:0; color:#fff; }
@@ -8908,7 +8942,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.151.0 · 23 Sep 2026 · Owner settings → Notice: one message at the top of every screen';
+        const BUILD_VERSION = 'v2.152.0 · 23 Sep 2026 · Owner settings → Reports & alerts: pattern alerts and the Verified complaints report, with recipients and schedules';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11931,7 +11965,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(got.error){
                     if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
                     document.querySelectorAll('.sv-num input').forEach(i => i.style.borderColor = '');
-                    if(got.bad){ const ids = { tSmile:'sv-t-smile', tPositive:'sv-t-pos', tRating:'sv-t-rating', tIncRate:'sv-t-ir', tReviewRate:'sv-t-rev', tResolveRate:'sv-t-res', tCloseMin:'sv-t-close', subTarget:'sv-st', subCritical:'sv-sc', incWarn:'sv-iw', incCritical:'sv-ic', incRate:'sv-ir', posCritical:'sv-pc', systemic:'sv-sy', reviewMin:'sv-rv', reringMin:'sv-rr', resolveMin:'sv-rs' };
+                    if(got.bad){ const ids = { tSmile:'sv-t-smile', tPositive:'sv-t-pos', tRating:'sv-t-rating', tIncRate:'sv-t-ir', tReviewRate:'sv-t-rev', tResolveRate:'sv-t-res', tCloseMin:'sv-t-close', subTarget:'sv-st', subCritical:'sv-sc', incWarn:'sv-iw', incCritical:'sv-ic', incRate:'sv-ir', posCritical:'sv-pc', systemic:'sv-sy', reviewMin:'sv-rv', reringMin:'sv-rr', resolveMin:'sv-rs', patCross:'sv-pcx', patBranch:'sv-pbr' };
                         const el = document.getElementById(ids[got.bad]); if(el){ el.style.borderColor = '#DC2626'; try { el.focus(); el.scrollIntoView({ block: 'center' }); } catch(e){} } }
                     UI.toast(got.error, 'warning', 5000); return;
                 }
@@ -11994,6 +12028,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
               standards: ownerStandardsPane(st, branches),
               protection: `<div class="pr-host">${protectionPane(st, {})}</div>`,
               notice: noticePane(st),
+              reports: `<div class="rp-host">${reportsPane()}</div>`,
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
                         <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
@@ -12085,7 +12120,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
@@ -12615,7 +12650,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             branchTargets: {},
             // Alarms -- when a branch is flagged and when alerts ring.
             subCritical: 80, incWarn: 2, incCritical: 3, incRate: 4, systemic: 5, posCritical: 95,
-            reviewMin: 3, reringMin: 5, resolveMin: 15 };
+            reviewMin: 3, reringMin: 5, resolveMin: 15,
+            patCross: 3, patBranch: 3 };   // v2.152.0: pattern alerts
         function ownerStandardsPane(st, branches){
             const s = Object.assign({}, SVC_DEFAULTS, (st && st.standards) || {});
             const lbl = `font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);`;
@@ -12651,6 +12687,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     row('Incident rate warning above', num('sv-ir', s.incRate, 0, 100, '%', 0.1)) +
                     row('Positive feedback critical below', num('sv-pc', s.posCritical, 0, 100, '%')) +
                     row('Same complaint = systemic at', num('sv-sy', s.systemic, 2, 100, 'cases')))}
+                ${card('Pattern alerts', 'per business day, fakes not counted',
+                    row('Same complaint at', num('sv-pcx', s.patCross, 2, 20, 'branches'), 'A shared SOP or product failure') +
+                    row('Same complaint at one branch', num('sv-pbr', s.patBranch, 2, 20, 'times'), 'A branch process failing today'))}
                 ${card('Incident timers', 'each case',
                     row('Review within', num('sv-rv', s.reviewMin, 1, 60, 'min'), 'Rings if nobody has opened it') +
                     row('Ring again every', num('sv-rr', s.reringMin, 1, 60, 'min')) +
@@ -12680,7 +12719,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         function svResetDefaults(){
             const m = { 'sv-t-smile':'tSmile','sv-t-pos':'tPositive','sv-t-rating':'tRating','sv-t-ir':'tIncRate','sv-t-rev':'tReviewRate',
                         'sv-t-res':'tResolveRate','sv-t-close':'tCloseMin','sv-st':'subTarget','sv-sc':'subCritical','sv-iw':'incWarn',
-                        'sv-ic':'incCritical','sv-ir':'incRate','sv-pc':'posCritical','sv-sy':'systemic','sv-rv':'reviewMin','sv-rr':'reringMin','sv-rs':'resolveMin' };
+                        'sv-ic':'incCritical','sv-ir':'incRate','sv-pc':'posCritical','sv-sy':'systemic','sv-rv':'reviewMin','sv-rr':'reringMin','sv-rs':'resolveMin','sv-pcx':'patCross','sv-pbr':'patBranch' };
             Object.keys(m).forEach(id => { const el = document.getElementById(id); if(el) el.value = SVC_DEFAULTS[m[id]]; });
             const host = document.getElementById('sv-bts'); if(host) host.innerHTML = '';
             try { UI.toast('Company standard filled in — press Save to use it.', 'info', 3500); } catch(e){}
@@ -12691,13 +12730,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const s = { tSmile: val('sv-t-smile'), tPositive: val('sv-t-pos'), tRating: val('sv-t-rating'), tIncRate: val('sv-t-ir'),
                         tReviewRate: val('sv-t-rev'), tResolveRate: val('sv-t-res'), tCloseMin: val('sv-t-close'), subTarget: val('sv-st'),
                         subCritical: val('sv-sc'), incWarn: val('sv-iw'), incCritical: val('sv-ic'), incRate: val('sv-ir'),
-                        posCritical: val('sv-pc'), systemic: val('sv-sy'), reviewMin: val('sv-rv'), reringMin: val('sv-rr'), resolveMin: val('sv-rs') };
+                        posCritical: val('sv-pc'), systemic: val('sv-sy'), reviewMin: val('sv-rv'), reringMin: val('sv-rr'), resolveMin: val('sv-rs'),
+                        patCross: val('sv-pcx'), patBranch: val('sv-pbr') };
             for(const k in s){ if(isNaN(s[k])) return { error: 'Every box needs a number.' }; }
             // The same ranges the Worker accepts (v4.84 STANDARD_RANGES): a number
             // outside them would be dropped there and silently become the default.
             const R = { tSmile:[0,100], tPositive:[0,100], tRating:[0,5], tIncRate:[0,100], tReviewRate:[0,100], tResolveRate:[0,100],
                         tCloseMin:[1,1440], subTarget:[1,2000], subCritical:[0,2000], incWarn:[1,50], incCritical:[1,50], incRate:[0,100],
-                        posCritical:[0,100], systemic:[2,100], reviewMin:[1,60], reringMin:[1,60], resolveMin:[1,240] };
+                        posCritical:[0,100], systemic:[2,100], reviewMin:[1,60], reringMin:[1,60], resolveMin:[1,240], patCross:[2,20], patBranch:[2,20] };
             for(const k in R){ if(s[k] < R[k][0] || s[k] > R[k][1]){
                 return { error: 'One number is outside what it can be (' + R[k][0] + '–' + R[k][1] + '). Check the box outlined in red.', bad: k }; } }
             if(s.subCritical > s.subTarget) return { error: 'Collection critical level must be at or below the submissions target.' };
@@ -12851,6 +12891,186 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const m = document.getElementById('owner-settings-modal'); if(m) m.remove();
             UI.toast('Notice removed from every screen.', 'success');
             applyOwnerSettings(res.settings);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.152.0 -- REPORTS & ALERTS (Owner settings, Worker v4.87,
+           Code.gs v8.39). A list of rules: who is told what, and when.
+           Types now: Pattern alert (as it happens) and the Verified complaints
+           report (scheduled). Owner-only; saved as the setting `reports`.
+           ═══════════════════════════════════════════════════════════════════ */
+        const RP_TYPES = { pattern: { label: 'Pattern alert', kind: 'ALERT' }, verified: { label: 'Verified complaints report', kind: 'REPORT' } };
+        const RP_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        function rpDefaults(){
+            const base = { staff: [], external: [], email: true, phone: false, hide: false, branches: [], desc: '' };
+            return [
+                Object.assign({}, base, { id: 'patterns', type: 'pattern', active: false, title: 'Pattern alerts', phone: true,
+                                          desc: 'The same complaint at several branches, or several times at one branch, today.', schedule: { freq: 'daily', day: 1, time: '09:30' } }),
+                Object.assign({}, base, { id: 'verified', type: 'verified', active: false, title: 'Verified complaints report', schedule: { freq: 'daily', day: 1, time: '10:00' } })
+            ];
+        }
+        function rpList(){ const r = (window.OwnerSettings || {}).reports; return Array.isArray(r) ? JSON.parse(JSON.stringify(r)) : rpDefaults(); }
+        function rpWhen(r){
+            if(r.type === 'pattern') return 'As it happens · ' + [r.email ? 'email' : '', r.phone ? 'phone' : ''].filter(Boolean).join(' + ');
+            const t = r.schedule || {}; const [hh, mm] = String(t.time || '09:30').split(':').map(Number);
+            const hm = ((hh % 12) || 12) + ':' + String(mm).padStart(2, '0') + (hh < 12 ? ' AM' : ' PM');
+            return (t.freq === 'weekly' ? 'Weekly · ' + RP_DAYS[t.day || 0] : 'Daily') + ' · ' + hm;
+        }
+        function rpWho(r){
+            const s = (r.staff || []).length, e = (r.external || []).length;
+            if(!s && !e) return '<span style="color:#B45309;">No recipients yet</span>';
+            return [s ? s + ' staff' : '', e ? e + ' outside address' + (e > 1 ? 'es' : '') : ''].filter(Boolean).join(' · ');
+        }
+        function reportsPane(){
+            const list = rpList();
+            const rows = list.map((r, i) => `<div class="rp-row"><div><b>${_ntEsc(r.title)}</b><div class="rp-meta">
+                    <span class="rp-chip ${r.type === 'pattern' ? 'instant' : 'report'}">${RP_TYPES[r.type].kind}</span><span>${_ntEsc(rpWhen(r))}</span><span>·</span><span>${rpWho(r)}</span>
+                    ${r.type === 'verified' && !r.active ? '<span>· the old fixed-time email still goes out until this is on</span>' : ''}</div></div>
+                <div class="rp-right"><button class="tg ${r.active ? 'on' : ''}" aria-label="${r.active ? 'Switch off' : 'Switch on'}" onclick="rpToggle(${i})"></button>
+                <button class="rp-edit" onclick="rpEdit(${i})">Edit</button></div></div>`).join('');
+            return `<div style="display:grid;gap:14px;">
+                <div class="rp-top"><div><b style="font-size:.95rem;color:var(--text-main);">Reports &amp; alerts</b><p>Who is told what, and when. Staff only ever receive the branches they can see; outside addresses receive every branch. Emails go out through Google.</p></div>
+                <button class="rp-new" onclick="rpEdit(-1)">+ Create</button></div>
+                <div class="rp-list">${rows || '<span style="font-size:.78rem;color:var(--text-muted);">Nothing set up yet.</span>'}</div></div>`;
+        }
+        async function rpSaveList(list, msg){
+            const res = await apiCall('settings_set', { reports: list }).catch(() => null);
+            if(!res || res.status !== 'success'){ UI.toast((res && res.message) || 'Could not save.', 'error'); return false; }
+            applyOwnerSettings(res.settings);
+            const host = document.querySelector('#owner-settings-modal .rp-host'); if(host) host.innerHTML = reportsPane();
+            if(msg) UI.toast(msg, 'success', 3000);
+            return true;
+        }
+        function rpToggle(i){
+            const list = rpList(); const r = list[i]; if(!r) return;
+            if(!r.active && !(r.staff || []).length && !(r.external || []).length){ UI.toast('Add at least one recipient first — press Edit.', 'warning', 4000); return; }
+            r.active = !r.active;
+            rpSaveList(list, r.title + (r.active ? ' switched on.' : ' switched off.'));
+        }
+        let _rpUsers = null;
+        async function rpUsers(){
+            if(_rpUsers) return _rpUsers;
+            const res = await apiCall('get_users', {}).catch(() => null);
+            _rpUsers = (res && res.status === 'success' && Array.isArray(res.users) ? res.users : []).filter(u => u && u.email && !u.disabled && String(u.status || 'active').toLowerCase() !== 'disabled');
+            return _rpUsers;
+        }
+        function rpEdit(i){
+            const list = rpList();
+            const r = i >= 0 ? list[i] : Object.assign(rpDefaults()[0], { id: Math.random().toString(36).slice(2, 10), title: '', active: true, desc: '' });
+            window.__rpEditing = { i, r: JSON.parse(JSON.stringify(r)) };
+            const old = document.getElementById('rp-editor'); if(old) old.remove();
+            const el = document.createElement('div');
+            el.className = 'ia-overlay is-open'; el.id = 'rp-editor'; el.style.display = 'flex'; el.style.zIndex = '10001';
+            el.innerHTML = `<div class="ia-card" style="max-width:900px;overflow:hidden;">
+                <div class="ia-header"><div><div class="ia-title">${i >= 0 ? 'Edit' : 'Create'} a report or alert</div><div class="ia-sub">Automated emails and phone alerts from Sentinel.</div></div>
+                    <button class="ia-close-x" onclick="document.getElementById('rp-editor').remove()"><i class="fas fa-xmark"></i></button></div>
+                <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;" id="rp-body"></div>
+                <div style="display:flex;justify-content:space-between;gap:8px;padding:14px 22px 20px;border-top:1px solid var(--border-color);flex-wrap:wrap;">
+                    <div>${i >= 0 ? `<button class="fb-btn sm" style="color:#DC2626;" onclick="rpDelete()">Delete</button>` : ''}</div>
+                    <div style="display:flex;gap:8px;"><button class="fb-btn sm" id="rp-test" onclick="rpTest()">Send a test to me</button>
+                    <button class="fb-btn sm" onclick="document.getElementById('rp-editor').remove()">Cancel</button>
+                    <button class="fb-btn sm" id="rp-save" onclick="rpSave()" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button></div>
+                </div></div>`;
+            el.onclick = e => { if(e.target === el) el.remove(); };
+            document.body.appendChild(el);
+            rpRender();
+            rpUsers().then(() => rpRender());
+        }
+        function rpRead(){
+            const E = window.__rpEditing; if(!E) return null; const r = E.r;
+            const v = id => { const x = document.getElementById(id); return x ? x.value : ''; };
+            const c = id => { const x = document.getElementById(id); return !!(x && x.checked); };
+            if(document.getElementById('rp-title')){
+                r.title = v('rp-title').trim(); r.desc = v('rp-desc').trim(); r.type = v('rp-type') || r.type;
+                r.active = c('rp-active'); r.hide = c('rp-hide'); r.email = c('rp-email'); r.phone = c('rp-phone');
+                r.schedule = { freq: v('rp-freq') || 'daily', day: parseInt(v('rp-day'), 10) || 0, time: v('rp-time') || '09:30' };
+                r.branches = c('rp-only') ? Array.from(document.querySelectorAll('.rp-br:checked')).map(x => x.value) : [];
+            }
+            return r;
+        }
+        function rpRender(){
+            const E = window.__rpEditing; const body = document.getElementById('rp-body'); if(!E || !body) return;
+            const r = rpRead() || E.r;
+            const users = _rpUsers || [];
+            const nameOf = e => { const u = users.find(x => String(x.email).toLowerCase() === e); return u ? (u.name || u.email) : e; };
+            const branches = window.__svBranches || [];
+            const isPat = r.type === 'pattern';
+            const t = r.schedule || {};
+            body.innerHTML = `<div class="rc">
+                <div>
+                    <h4>Details</h4>
+                    <div class="f"><input type="text" id="rp-title" maxlength="80" placeholder="Title" value="${_ntEsc(r.title)}"><small>Used as the email subject.</small></div>
+                    <div class="f"><textarea id="rp-desc" maxlength="300" placeholder="Description (optional)">${_ntEsc(r.desc || '')}</textarea><small>Shown at the top of the email.</small></div>
+                    <div class="f"><select id="rp-type" onchange="rpRender()">${Object.keys(RP_TYPES).map(k => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${RP_TYPES[k].label}${k === 'pattern' ? ' — as it happens' : ' — scheduled'}</option>`).join('')}</select>
+                        <small>More types come next: Daily operations report, Level 1 escalations, Weekly summary.</small></div>
+                    <label class="chk"><input type="checkbox" id="rp-active" ${r.active ? 'checked' : ''}><span>Active</span></label>
+                    <h4 style="margin-top:6px;">Settings</h4>
+                    <label class="chk"><input type="checkbox" id="rp-hide" ${r.hide ? 'checked' : ''}><span>Hide locations<small style="color:var(--text-muted);">No branch names — totals only, for outside readers.</small></span></label>
+                    <label class="chk"><input type="checkbox" id="rp-only" ${(r.branches || []).length ? 'checked' : ''} onchange="rpRender()"><span>Only these branches<small style="color:var(--text-muted);">${(r.branches || []).length ? r.branches.length + ' chosen' : 'Every branch'}</small></span></label>
+                    ${(r.branches || []).length || (document.getElementById('rp-only') || {}).checked ? `<div class="rp-brs">${branches.map(b => `<label><input type="checkbox" class="rp-br" value="${_ntEsc(b)}" ${(r.branches || []).indexOf(b) !== -1 ? 'checked' : ''}> ${_ntEsc(b)}</label>`).join('')}</div>` : ''}
+                </div>
+                <div>
+                    <h4>Recipients</h4>
+                    <div class="f"><div style="display:flex;gap:6px;"><input type="text" id="rp-staff-q" list="rp-staff-list" placeholder="Search staff…" onkeydown="if(event.key==='Enter'){event.preventDefault();rpAddStaff();}"><button class="rp-edit" onclick="rpAddStaff()">Add</button></div>
+                        <datalist id="rp-staff-list">${users.filter(u => (r.staff || []).indexOf(String(u.email).toLowerCase()) === -1).map(u => `<option value="${_ntEsc(u.email)}">${_ntEsc((u.name || '') + (u.branch && u.branch !== 'All' ? ' · ' + u.branch : ''))}</option>`).join('')}</datalist>
+                        <div class="chips">${(r.staff || []).map(e => `<span>${_ntEsc(nameOf(e))} <a onclick="rpRemove('staff','${_ntEsc(e)}')">×</a></span>`).join('')}</div>
+                        <small>Staff receive only the branches they have access to.${_rpUsers ? '' : ' Loading staff…'}</small></div>
+                    <div class="f"><div style="display:flex;gap:6px;"><input type="email" id="rp-ext-q" placeholder="Enter an outside email address" onkeydown="if(event.key==='Enter'){event.preventDefault();rpAddExt();}"><button class="rp-edit" onclick="rpAddExt()">+</button></div>
+                        <div class="chips">${(r.external || []).map(e => `<span class="ext">${_ntEsc(e)} <a onclick="rpRemove('external','${_ntEsc(e)}')">×</a></span>`).join('')}</div>
+                        <small>Outside addresses receive every branch.</small></div>
+                    <h4 style="margin-top:6px;">${isPat ? 'How it is sent' : 'Schedule'}</h4>
+                    ${isPat ? `<label class="chk"><input type="checkbox" id="rp-email" ${r.email ? 'checked' : ''}><span>Email</span></label>
+                        <label class="chk"><input type="checkbox" id="rp-phone" ${r.phone ? 'checked' : ''}><span>Phone alert<small style="color:var(--text-muted);">Staff with the dashboard installed on their phone. Respects quiet hours and the alert pause.</small></span></label>
+                        <div class="inst">Sent the moment a pattern is found — once per pattern per day, and again only if it spreads to another branch. Thresholds are in Standards → Pattern alerts.</div>`
+                    : `<input type="checkbox" id="rp-email" checked hidden>
+                        <div class="row2"><select id="rp-freq" onchange="rpRender()"><option value="daily" ${t.freq !== 'weekly' ? 'selected' : ''}>Daily</option><option value="weekly" ${t.freq === 'weekly' ? 'selected' : ''}>Weekly</option></select>
+                        <select id="rp-day" ${t.freq === 'weekly' ? '' : 'disabled'}>${RP_DAYS.map((d, n) => `<option value="${n}" ${n === (t.day || 0) ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+                        <div class="f" style="margin-top:8px;"><input type="time" id="rp-time" value="${_ntEsc(t.time || '10:00')}"><small>Asia/Karachi time. Covers the previous business day.</small></div>`}
+                </div></div>`;
+        }
+        function rpAddStaff(){
+            const r = rpRead(); const q = String((document.getElementById('rp-staff-q') || {}).value || '').trim().toLowerCase(); if(!q) return;
+            const u = (_rpUsers || []).find(x => String(x.email).toLowerCase() === q) || (_rpUsers || []).find(x => String(x.name || '').toLowerCase() === q);
+            if(!u){ UI.toast('Pick someone from the list — for anyone else, use an outside address.', 'warning', 4000); return; }
+            const e = String(u.email).toLowerCase(); if(r.staff.indexOf(e) === -1) r.staff.push(e);
+            rpRender();
+        }
+        function rpAddExt(){
+            const r = rpRead(); const e = String((document.getElementById('rp-ext-q') || {}).value || '').trim().toLowerCase(); if(!e) return;
+            if(!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(e)){ UI.toast('That is not an email address.', 'warning'); return; }
+            if(r.external.indexOf(e) === -1) r.external.push(e);
+            rpRender();
+        }
+        function rpRemove(kind, e){ const r = rpRead(); r[kind] = (r[kind] || []).filter(x => x !== e); rpRender(); }
+        function rpCheck(r){
+            if(!r.title) return 'Give it a title.';
+            if(r.active && !r.staff.length && !r.external.length) return 'Add at least one recipient, or switch Active off.';
+            if(r.type === 'pattern' && !r.email && !r.phone) return 'Choose email, phone, or both.';
+            if(document.getElementById('rp-only') && document.getElementById('rp-only').checked && !r.branches.length) return 'Tick at least one branch, or untick "Only these branches".';
+            return '';
+        }
+        async function rpSave(){
+            const E = window.__rpEditing; const r = rpRead(); const err = rpCheck(r);
+            if(err){ UI.toast(err, 'warning', 4000); return; }
+            if(r.type !== 'pattern'){ r.email = true; r.phone = false; }
+            const list = rpList(); if(E.i >= 0) list[E.i] = r; else list.push(r);
+            const b = document.getElementById('rp-save'); if(b){ b.disabled = true; b.textContent = 'Saving…'; }
+            if(await rpSaveList(list, 'Saved.')){ const m = document.getElementById('rp-editor'); if(m) m.remove(); }
+            else if(b){ b.disabled = false; b.textContent = 'Save'; }
+        }
+        async function rpDelete(){
+            const E = window.__rpEditing; if(!E || E.i < 0) return;
+            if(!confirm('Delete "' + (E.r.title || 'this report') + '"?')) return;
+            const list = rpList(); list.splice(E.i, 1);
+            if(await rpSaveList(list, 'Deleted.')){ const m = document.getElementById('rp-editor'); if(m) m.remove(); }
+        }
+        async function rpTest(){
+            const r = rpRead(); if(!r.title){ UI.toast('Give it a title first.', 'warning'); return; }
+            const b = document.getElementById('rp-test'); if(b){ b.disabled = true; b.textContent = 'Sending…'; }
+            const res = await apiCall('report_test', { rule: r }).catch(() => null);
+            if(b){ b.disabled = false; b.textContent = 'Send a test to me'; }
+            if(res && res.status === 'success' && res.sent) UI.toast('Test sent to ' + res.to + (res.example ? ' (no pattern today, so an example was used)' : '') + '.', 'success', 5000);
+            else UI.toast((res && res.message) || 'The test could not be sent.', 'error', 5000);
         }
 
         /** Timers written into static text: the Live queue card. */
