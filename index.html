@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.139.0 · 22 Sep 2026 · with Overview numbers on the server, all six Overview cards come from it (verified, fake, best, lowest added)';
+        const BUILD_VERSION = 'v2.140.0 · 22 Sep 2026 · the Overview\'s top sentence quotes the server figures the cards show, and says how many fakes it leaves out';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10504,6 +10504,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }).finally(() => {
                     e.inflight = false;
                     try { this.paint(); } catch(x){ console.warn('[summary] paint:', x); }
+                    try { if(e.data && typeof app !== 'undefined' && state.currentView === 'executive' && state.execMode === 'overview') app.renderVerdict(); } catch(x){}
                 });
             },
             _skel(el, waitEl, text){
@@ -14494,7 +14495,6 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // unreviewed only, matching the complaint cards.
                 const real = l => (l || []).filter(i => i.caseStatus !== 'fake');
                 const p1i = real(p1.incs), p2i = real(p2.incs);
-                const rate = p1.subs.length ? (p1i.length / p1.subs.length) * 100 : 0;
                 const prevRate = p2.subs.length ? (p2i.length / p2.subs.length) * 100 : 0;
                 // same weekday a week earlier, the fair comparison in food service
                 const prevWk = (() => { if(!end) return null; const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 7); return t.toISOString().split('T')[0]; })();
@@ -14521,8 +14521,31 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     wkIncs = prevWk ? _rowsUpTo(real(rawData.incidents), prevWk, cutHour).length : 0;
                     cmpLabel = 'vs last ' + dayName + (running ? ' at this time' : '');
                 }
-                const volDelta = wkSubs ? Math.round((p1.subs.length - wkSubs) / wkSubs * 100) : null;
-                const incDelta = wkIncs ? Math.round((p1i.length - wkIncs) / wkIncs * 100) : null;
+                /* v2.140.0: with Overview numbers on the server, the sentence
+                   quotes the same figures as the cards under it. This browser's
+                   copy can hold submissions the database has since merged
+                   (the cards said 308, this line said 321), and the comparison
+                   day is asked of the server with the same filters -- before,
+                   it was counted across every branch even when one was chosen. */
+                let nSubs = p1.subs.length, nReal = p1i.length, nFake = (p1.incs || []).length - p1i.length;
+                try {
+                    const q = (typeof SummaryFeed !== 'undefined' && SummaryFeed.on()) ? SummaryFeed.screenQuery() : null;
+                    const e = q ? SummaryFeed.get(q) : null;
+                    if(e && e.data && e.data.p1 && e.data.p1.fake !== undefined){
+                        nSubs = e.data.p1.subs; nFake = e.data.p1.fake; nReal = e.data.p1.incs - e.data.p1.fake;
+                        let a = prevWk, b = prevWk;
+                        if(spanV > 1){ const pEnd = new Date(startV + 'T12:00:00'); pEnd.setDate(pEnd.getDate() - 1); const pStart = new Date(pEnd); pStart.setDate(pStart.getDate() - (spanV - 1)); a = pStart.toISOString().split('T')[0]; b = pEnd.toISOString().split('T')[0]; }
+                        if(a && b){
+                            const cq = Object.assign({}, q, { p1: { start: a, end: b }, cap: spanV === 1 && running });
+                            delete cq.p2;
+                            const ce = SummaryFeed.get(cq);
+                            if(ce && ce.data && ce.data.p1 && ce.data.p1.fake !== undefined){ wkSubs = ce.data.p1.subs; wkIncs = ce.data.p1.incs - ce.data.p1.fake; }
+                        }
+                    }
+                } catch(x){}
+                const rate = nSubs ? (nReal / nSubs) * 100 : 0;
+                const volDelta = wkSubs ? Math.round((nSubs - wkSubs) / wkSubs * 100) : null;
+                const incDelta = wkIncs ? Math.round((nReal - wkIncs) / wkIncs * 100) : null;
                 // worst branch by count, and its dominant reason
                 const byB = {}; p1i.forEach(i => byB[i.branch] = (byB[i.branch] || 0) + 1);
                 const worstB = Object.entries(byB).sort((a, b) => b[1] - a[1])[0];
@@ -14540,15 +14563,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // branch carrying a disproportionate share — and the rate moving.
                 const share = p1i.length ? (worstB ? worstB[1] / p1i.length : 0) : 0;
                 const branchBad = !!(worstB && worstB[1] >= 4 && share >= 0.45 && p1i.length >= 6);
-                const rateBad   = !!(prevRate && rate > prevRate * 1.8 && p1i.length >= 6);
+                const rateBad   = !!(prevRate && rate > prevRate * 1.8 && nReal >= 6);
                 const rateMixed = !!(incDelta !== null && incDelta >= 40 && p1i.length >= 4);
                 let level = 'ok';
                 if(branchBad || rateBad || overdue >= 3) level = 'bad';
                 else if(rateMixed || (worstB && worstB[1] >= 3 && share >= 0.4) || overdue >= 1) level = 'mixed';
                 const parts = [];
                 const cmpNote = ` ${cmpLabel}`;
-                parts.push(`<b>${p1.subs.length}</b> submissions${volDelta !== null ? ` (${volDelta >= 0 ? '+' : ''}${volDelta}%${cmpNote})` : ''}`);
-                parts.push(`<b>${p1i.length}</b> incident${p1i.length === 1 ? '' : 's'} at <b>${rate.toFixed(1)}%</b>${incDelta !== null ? ` (${incDelta >= 0 ? '+' : ''}${incDelta}%${cmpNote})` : ''}`);
+                parts.push(`<b>${nSubs}</b> submissions${volDelta !== null ? ` (${volDelta >= 0 ? '+' : ''}${volDelta}%${cmpNote})` : ''}`);
+                // The cards count every incident; this line counts real ones --
+                // said out loud, so 12 on a card and 10 here read as one story.
+                parts.push(`<b>${nReal}</b> incident${nReal === 1 ? '' : 's'}${nFake > 0 ? ` (${nFake} fake left out)` : ''} at <b>${rate.toFixed(1)}%</b>${incDelta !== null ? ` (${incDelta >= 0 ? '+' : ''}${incDelta}%${cmpNote})` : ''}`);
                 let cause = '';
                 if(level !== 'ok' && worstB && share >= 0.35) cause = ` Driven by <b>${worstB[0]}</b> with ${worstB[1]} of them${reason ? `, mostly <b>${reason.toLowerCase()}</b>` : ''}.`;
                 let sla = '';
