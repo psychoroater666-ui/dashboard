@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.146.0 · 22 Sep 2026 · Owner setting: keep the last 35 days in each browser, older ranges fetched from the server when picked';
+        const BUILD_VERSION = 'v2.147.0 · 22 Sep 2026 · Screens drop submission rows the server deleted (merged instant copies, refused repeats) within a poll';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -9258,6 +9258,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // the CSV path is only ever a per-round fallback when a sync fails.
             let enabled = true;
             let lastAiPoll = 0, lastFull = 0, syncing = null, historyLoading = false;
+            // v2.147.0: how far this screen has read the server's list of
+            // deleted submission rows (Worker v4.82). '' = from the start.
+            let goneAt = '';
 
             // old CSV url -> tab key
             function urlKey(url){
@@ -9337,6 +9340,48 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             /** Something outside the feed changed what a tab reads as: remap it in full. */
             function bump(k){ const t = tabs[k]; if(!t) return; t.gen = (t.gen || 0) + 1; t.changed = true; t._comb = null; t._combA = null; t._combB = null; }
 
+            /* v2.147.0: rows the server has deleted since this screen got them.
+               The Worker removes an instant copy once the spreadsheet's copy
+               lands, and a refused submission's instant copy; until now a
+               screen that had already received either kept counting it until
+               its six-hourly full round -- the +8 parity showed on 22 Sep.
+               Each note carries the row's fingerprint (Worker goneSig, same
+               formula): exactly one matching row is dropped per note. */
+            function rowSig(arr){
+                const s = arr.map(v => (v == null ? '' : String(v))).join('\u0001');
+                let x = 2166136261 >>> 0;
+                for(let i = 0; i < s.length; i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; }
+                return x.toString(36) + ':' + s.length;
+            }
+            function applyGone(list){
+                if(!Array.isArray(list) || !list.length) return 0;
+                const byTab = {};
+                list.forEach(g => { if(g && g.t && g.h) (byTab[g.t] = byTab[g.t] || []).push(g.h); });
+                let dropped = 0;
+                for(const k in byTab){
+                    const t = tabs[k]; if(!t || !t.rows || !t.rows.length) continue;
+                    const want = {};
+                    byTab[k].forEach(s => { want[s] = (want[s] || 0) + 1; });
+                    const drop = new Set();
+                    // Newest first: a deleted row is always a recent one.
+                    for(let i = t.rows.length - 1; i >= 0; i--){
+                        const s = rowSig(t.rows[i]);
+                        if(want[s] > 0){ want[s]--; drop.add(i); }
+                    }
+                    if(!drop.size) continue;
+                    t.rows = t.rows.filter((r, i) => !drop.has(i));
+                    t.objRows = toObjects(t.headers, t.rows);
+                    t.gen = (t.gen || 0) + 1; t.changed = true;
+                    dropped += drop.size;
+                }
+                if(dropped){
+                    window.__feedTrustDrop = true;      // a deliberate drop, not a flaky read
+                    dirty = true;
+                    console.info('[sync] dropped ' + dropped + ' row(s) the server deleted');
+                }
+                return dropped;
+            }
+
             // ── persistence (IndexedDB) ──
             function open(){ return new Promise((res, rej) => { if(!window.indexedDB) return rej(new Error('no-idb')); const r = indexedDB.open(DB, 2); r.onupgradeneeded = () => { const db = r.result; if(!db.objectStoreNames.contains('snapshot')) db.createObjectStore('snapshot'); if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
             async function load(){
@@ -9361,6 +9406,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         tabs[k] = { state: t.state, headers: t.headers, rows, objRows: toObjects(t.headers, rows), changed: true, complete, before: t.before || 0, win };
                     }
                     lastFull = saved.lastFull || 0;
+                    goneAt = typeof saved.goneAt === 'string' ? saved.goneAt : '';
                     return Object.keys(tabs).length > 0;
                 } catch(e){ return false; }
             }
@@ -9374,7 +9420,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(!dirty) return; dirty = false; lastSave = Date.now();
                 try {
                     const db = await open();
-                    const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
+                    const payload = { v: VER, savedAt: Date.now(), lastFull, goneAt, tabs: {} };
                     for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0, win: t.win || 0 }; }
                     await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                 } catch(e){ /* quota/private mode: fine */ }
@@ -9396,7 +9442,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 saveTimer = setTimeout(async () => {
                     try {
                         const db = await open();
-                        const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
+                        const payload = { v: VER, savedAt: Date.now(), lastFull, goneAt, tabs: {} };
                         for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0, win: t.win || 0 }; }
                         await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                     } catch(e){ /* quota/private mode: fine */ }
@@ -9591,7 +9637,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     });
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
                     const since = {}; if(hwSince) winKeys.forEach(k => { since[k] = hwSince; });
-                    const res = await apiCall('get_data', hwSince ? { tabs: keys, state, full: forceFull, since } : { tabs: keys, state, full: forceFull });
+                    const _req = { tabs: keys, state, full: forceFull, gone: goneAt || '' };
+                    if(hwSince) _req.since = since;
+                    const res = await apiCall('get_data', _req);
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
                     // v2.124.0: when D1 does not answer, the Worker falls back to Apps
                     // Script, which serves a much smaller window of rows. That answer
@@ -9607,6 +9655,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     for(const k in res.tabs) apply(k, res.tabs[k]);
                     // Every form tab answered now reflects the window it was asked under.
                     winKeys.forEach(k => { if(tabs[k] && res.tabs[k]) tabs[k].win = hwDays; });
+                    // v2.147.0: then drop anything the server has deleted since.
+                    if(Array.isArray(res.gone)) applyGone(res.gone);
+                    if(typeof res.goneAt === 'string' && res.goneAt !== goneAt){ goneAt = res.goneAt; dirty = true; }
                     // Tell the server how many rows we actually hold, not only
                     // the position we think we are at. When the two disagree the
                     // position is fiction and the server re-sends in full.
@@ -9704,7 +9755,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, missingFraction, status, bump, toObjects, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, missingFraction, status, bump, toObjects, rowSig, get goneAt(){ return goneAt; }, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
@@ -10299,6 +10350,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // rawData.submissions/incidents — Overview, Incidents,
                 // Branches, Submissions breakdown, all of it — inherits this
                 // automatically, with nothing further to patch per-page.
+                // v2.147.0: rows the server deleted are a real drop -- take it at once.
+                if(window.__feedTrustDrop){
+                    window.__feedTrustDrop = false;
+                    _rawSubsGuard.confirmed = null; _rawIncsGuard.confirmed = null;
+                    try { _subsStabilizer.stable = null; _incsStabilizer.stable = null; } catch(e){}
+                }
                 const guardedSubs = _guardRawArray(out.subs, _rawSubsGuard);
                 const guardedIncs = _guardRawArray(out.incs, _rawIncsGuard);
                 rawData.submissions.length = 0; rawData.incidents.length = 0;
