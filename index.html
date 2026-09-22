@@ -8824,7 +8824,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.135.1 · 22 Sep 2026 · KPI delta chip sits beside the number instead of the card edge';
+        const BUILD_VERSION = 'v2.136.0 · 22 Sep 2026 · sentinelParity(): server-counted Overview numbers checked against this screen (no visible change)';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10375,6 +10375,130 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const d = new Date();
             if(NIGHT_SHIFT_CUTOFF_HOUR > 0 && d.getHours() < NIGHT_SHIFT_CUTOFF_HOUR) d.setDate(d.getDate() - 1);
             return _fmtDate(d);
+        };
+
+        /* ── v2.136.0: server-counted numbers, Phase 1 — the proof step ─────────
+           The Worker (v4.69) can now count submissions and incidents itself
+           (action `summary`), for a range and the Overview's filters, cut to
+           the caller's scope. Nothing on screen reads it yet: before any card
+           switches over, the two answers must agree. Run in the console:
+
+               sentinelParity()
+
+           It compares, for today / yesterday / 7 days / 30 days and for the
+           range and filters currently on screen, what this browser counts
+           against what the server counts -- totals and per branch -- and
+           prints every difference. Read-only; changes nothing. */
+        const SummaryFeed = {
+            ask(q){ return apiCall('summary', q); },
+            // The Overview's filters as applyGlobalFilters() reads them,
+            // permissions applied the same way.
+            screenQuery(){
+                const sv = (document.getElementById('filter-start-date') || {}).value;
+                const ev = (document.getElementById('filter-end-date') || {}).value;
+                if(!sv || !ev) return null;
+                let region  = (document.getElementById('filter-region')  || {}).value || 'all';
+                let branch  = (document.getElementById('filter-branch')  || {}).value || 'all';
+                const channel = (document.getElementById('filter-channel') || {}).value || 'all';
+                const survey  = (document.getElementById('filter-survey')  || {}).value || 'all';
+                if(PERM.region !== 'All') region = PERM.region;
+                { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
+                const start = new Date(sv), end = new Date(ev);
+                const diffDays = Math.ceil(Math.abs(end - start) / 86400000) + 1;
+                const p2End = new Date(start); p2End.setDate(p2End.getDate() - 1);
+                const p2Start = new Date(p2End); p2Start.setDate(p2Start.getDate() - diffDays + 1);
+                const q = { p1: { start: _fmtDate(start), end: _fmtDate(end) }, p2: { start: _fmtDate(p2Start), end: _fmtDate(p2End) },
+                            cap: _fmtDate(end) === _businessToday(), branch, channel, survey };
+                if(region !== 'all') q.branches = (config.branches || []).filter(b => b.region === region).map(b => b.name);
+                return q;
+            }
+        };
+        window.SummaryFeed = SummaryFeed;
+        window.sentinelParity = async function(){
+            const t0 = Date.now();
+            const fs = (typeof DataFeed !== 'undefined' && DataFeed.status) ? DataFeed.status() : { complete: true, pending: [] };
+            if(!fs.complete) console.warn('[parity] This screen is still loading earlier data (' + fs.pending.join(', ') + '). Its own counts are partial -- run again once the banner is gone.');
+            const bt = _businessToday();
+            // Count what this browser holds, with applyFilters' own rules.
+            const nowD = new Date();
+            const off = d => ((d.getHours() - NIGHT_SHIFT_CUTOFF_HOUR + 24) % 24) * 3600000 + d.getMinutes() * 60000 + d.getSeconds() * 1000;
+            const nowOff = off(nowD);
+            const local = (r, q) => {
+                const keep = it => {
+                    const day = it.date;
+                    if(!day || day < r.start || day > r.end) return false;
+                    if(q.cap && day === r.end){
+                        const t = _parseSheetDateTime(_rawFieldExact(it._raw, 'Created At'));
+                        if(!isNaN(t) && off(new Date(t)) > nowOff) return false;
+                    }
+                    return (!q.branches || q.branches.indexOf(it.branch) !== -1) &&
+                           (!q.branch || q.branch === 'all' ? permBranchOK(it.branch) : it.branch === q.branch) &&
+                           (!q.channel || q.channel === 'all' || it.channel === q.channel) &&
+                           (!q.survey  || q.survey  === 'all' || it.surveyForm === q.survey);
+                };
+                return tally(rawData.submissions.filter(keep), rawData.incidents.filter(keep));
+            };
+            const tally = (subs, incs) => {
+                const by = {};
+                subs.forEach(s => { const b = by[s.branch] = by[s.branch] || { subs: 0, incs: 0 }; b.subs++; });
+                incs.forEach(i => { const b = by[i.branch] = by[i.branch] || { subs: 0, incs: 0 }; b.incs++; });
+                const rated = subs.filter(s => s.smileScore);
+                return { subs: subs.length, incs: incs.length, avg: rated.length ? rated.reduce((n, s) => n + s.smileScore, 0) / rated.length : 0, by };
+            };
+            const checks = [
+                ['Today',     { p1: { start: bt, end: bt }, cap: true }],
+                ['Yesterday', { p1: { start: _shiftDays(bt, -1), end: _shiftDays(bt, -1) }, cap: false }],
+                ['7 days',    { p1: { start: _shiftDays(bt, -6), end: bt }, cap: true }],
+                ['30 days',   { p1: { start: _shiftDays(bt, -29), end: bt }, cap: true }]
+            ];
+            const sq = SummaryFeed.screenQuery();
+            const rows = [], branchDiffs = [];
+            let server;
+            const compare = (label, c, s) => {
+                const sAvg = s.rated ? s.ratingSum / s.rated : 0;
+                const push = (fig, a, b, fmt) => rows.push({ check: label, figure: fig, screen: fmt(a), server: fmt(b), match: Math.abs(a - b) < 0.005 ? '✔' : '✖ ' + fmt(b - a) });
+                push('Submissions', c.subs, s.subs, n => Math.round(n));
+                push('Incidents', c.incs, s.incs, n => Math.round(n));
+                push('Avg rating', c.avg, sAvg, n => (+n).toFixed(2));
+                const names = new Set(Object.keys(c.by).concat(Object.keys(s.byBranch || {})));
+                names.forEach(b => {
+                    const x = c.by[b] || { subs: 0, incs: 0 }, y = (s.byBranch || {})[b] || { subs: 0, incs: 0 };
+                    if(x.subs !== y.subs || x.incs !== y.incs)
+                        branchDiffs.push({ check: label, branch: b, screenSubs: x.subs, serverSubs: y.subs, screenIncs: x.incs, serverIncs: y.incs });
+                });
+            };
+            try {
+                for(const [label, q] of checks){
+                    server = await SummaryFeed.ask(q);
+                    if(!server || server.status !== 'success') throw new Error((server && (server.code || server.message)) || 'no answer');
+                    compare(label, local(q.p1, q), server.p1);
+                }
+                if(sq){
+                    server = await SummaryFeed.ask(sq);
+                    if(!server || server.status !== 'success') throw new Error((server && (server.code || server.message)) || 'no answer');
+                    // What the cards actually show: the arrays applyFilters built.
+                    const p1 = (state.p1 || { subs: [], incs: [] }), p2 = (state.p2 || { subs: [], incs: [] });
+                    compare('On screen ' + sq.p1.start + '→' + sq.p1.end, tally(p1.subs, p1.incs), server.p1);
+                    compare('Compared ' + sq.p2.start + '→' + sq.p2.end, tally(p2.subs, p2.incs), server.p2);
+                }
+            } catch(e){
+                const msg = String(e && e.message || e);
+                console.error('[parity] The server could not answer: ' + msg +
+                    (/unknown|not supported|invalid action/i.test(msg) ? ' — the Worker is older than v4.69; deploy it first.' : ''));
+                return { ok: false, error: msg };
+            }
+            if(server && (server.cutoff !== NIGHT_SHIFT_CUTOFF_HOUR || server.maxRating !== INCIDENT_MAX_RATING))
+                console.warn('[parity] Settings differ: server day starts ' + server.cutoff + ':00 / incident ≤' + server.maxRating +
+                             ', this screen ' + NIGHT_SHIFT_CUTOFF_HOUR + ':00 / ≤' + INCIDENT_MAX_RATING + '. Reload this screen, then run again.');
+            const bad = rows.filter(r => r.match !== '✔').length;
+            console.log('%c[parity] ' + (bad ? bad + ' figure(s) differ' : 'Every figure matches') + ' · ' + (Date.now() - t0) + ' ms · server read ' +
+                        (server && server.meta ? server.meta.rowsRead + ' rows' + (server.meta.cached ? ' (cached)' : '') : '?'),
+                        'font-weight:700;color:' + (bad ? '#DC2626' : '#059669'));
+            console.table(rows);
+            if(branchDiffs.length){ console.log('[parity] Branches that differ:'); console.table(branchDiffs); }
+            const result = { ok: !bad && !branchDiffs.length, complete: fs.complete, rows, branchDiffs, build: BUILD_VERSION.split(' ')[0] };
+            window.__parityLast = result;
+            return result;
         };
 
         function initGlobalDates() {
