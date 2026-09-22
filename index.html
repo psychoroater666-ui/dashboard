@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.140.0 · 22 Sep 2026 · the Overview\'s top sentence quotes the server figures the cards show, and says how many fakes it leaves out';
+        const BUILD_VERSION = 'v2.141.0 · 22 Sep 2026 · Overview figures re-asked as soon as new rows arrive, and never step backwards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10483,12 +10483,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try { return !(typeof DataFeed !== 'undefined' && DataFeed.enabled) || DataFeed.status().complete; } catch(e){ return true; }
             },
             /** The answer held for this query, asking again when it is due. */
-            get(q){
+            get(q, fresh){
                 const key = JSON.stringify(q), now = Date.now();
                 let e = this._cache.get(key);
                 if(!e){ e = { data: null, at: 0, failedAt: 0, inflight: false }; this._cache.set(key, e); }
                 // A range running to today moves; a finished range barely does.
-                const ttl = q.cap ? 15000 : 120000;
+                // v2.141.0: when this screen has just received new rows (a
+                // repaint with fresh data), a running range is asked again
+                // straight away rather than after up to 15 s -- the lag that
+                // left one device on 332 while another showed 335.
+                const ttl = q.cap ? (fresh ? 2000 : 15000) : 120000;
                 if(!e.inflight && (!e.at || now - e.at > ttl) && (!e.failedAt || now - e.failedAt > 10000)) this._fetch(q, e);
                 if(this._cache.size > 24){ const first = this._cache.keys().next().value; if(first !== key) this._cache.delete(first); }
                 return e;
@@ -10497,6 +10501,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 e.inflight = true;
                 this.ask(q).then(r => {
                     if(!r || r.status !== 'success' || !r.p1) throw new Error((r && (r.code || r.message)) || 'no answer');
+                    // Never step backwards: an answer describing an older state
+                    // of today than the one already shown is not taken.
+                    const seq = f => { const m = String(f || '').match(/(\d+):(\d+)$/); return m ? +m[2] : -1; };
+                    if(e.data && seq(r.todayFp) >= 0 && seq(r.todayFp) < seq(e.data.todayFp)){ e.at = Date.now(); e.failedAt = 0; return; }
                     e.data = r; e.at = Date.now(); e.failedAt = 0;
                 }).catch(err => {
                     e.failedAt = Date.now();
@@ -10521,10 +10529,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 else if(el.dataset) el.dataset.kpiSeen = '1';
             },
             /** Draw the two server-counted cards for what is on screen now. */
-            paint(){
+            paint(fresh){
                 if(!this.on() || typeof state === 'undefined' || state.execMode !== 'overview') return;
                 const q = this.screenQuery(); if(!q) return;
-                const e = this.get(q);
+                const e = this.get(q, fresh === true);
                 const vS = document.getElementById('kpi-subs'), vI = document.getElementById('kpi-incs');
                 const tS = document.getElementById('trend-subs'), tI = document.getElementById('trend-incs');
                 const cards = [vS, vI].map(el => el && el.closest('.kpi-card'));
@@ -15045,7 +15053,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // local figures above are not drawn.
                     const _srv = (typeof SummaryFeed !== 'undefined') && SummaryFeed.on();
                     if(_srv){
-                        SummaryFeed.paint();
+                        SummaryFeed.paint(true);
                     } else {
                     ['kpi-subs','kpi-incs'].forEach(id => { const c = (document.getElementById(id) || document.body).closest('.kpi-card'); if(c) c.classList.remove('kpi-stale'); });
                     countUp(document.getElementById('kpi-subs'), tSubs);
