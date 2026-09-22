@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.143.0 · 22 Sep 2026 · Smile Score = (average stars - 1) x 25 everywhere; Rankings rank by it, Positive Feedback kept as its own choice';
+        const BUILD_VERSION = 'v2.144.0 · 22 Sep 2026 · sentinelListParity(): the server-served Submissions list checked against this screen (no visible change)';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -10665,6 +10665,68 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 SummaryFeed.paint();
             } catch(e){}
         }, 15000);
+        /* v2.144.0 -- rows per view, step 1: the proof. The Worker (v4.78)
+           can serve the Submissions list a page at a time. Before the list
+           switches over, run in the console, with the Submissions filters and
+           search you want to check:
+
+               sentinelListParity()
+
+           It walks every page of the server's list and compares it, row by
+           row, with the list this browser shows. Read-only. */
+        window.sentinelListParity = async function(){
+            const t0 = Date.now();
+            const q = SummaryFeed.screenQuery();
+            if(!q){ console.warn('[list] No date range on screen.'); return; }
+            const L = {
+                branches: (typeof _subsBranches === 'function') ? _subsBranches() : [],
+                form: document.getElementById('export-form-select')?.value || '',
+                orderSrc: document.getElementById('submissions-order-source-select')?.value || '',
+                complaintSrc: document.getElementById('submissions-complaint-source-select')?.value || '',
+                term: (typeof _submissionsSearchTerm !== 'undefined' ? _submissionsSearchTerm : '') || ''
+            };
+            // This browser's list, exactly as the Submissions view filters it.
+            let mine = (state.p1 && state.p1.subs || []).slice();
+            if(L.branches.length) mine = mine.filter(s => L.branches.includes(s.branch));
+            if(L.form) mine = mine.filter(s => (s.surveyForm||s.form) === L.form);
+            if(L.orderSrc) mine = mine.filter(s => _rawFieldContains(s._raw,'order','source').trim().toLowerCase() === L.orderSrc);
+            if(L.complaintSrc) mine = mine.filter(s => _rawFieldContains(s._raw,'source','complaint').trim().toLowerCase() === L.complaintSrc);
+            const term = L.term.toLowerCase().trim();
+            if(term) mine = mine.filter(s => [_rawFieldExact(s._raw,'Name'), _rawFieldExact(s._raw,'Phone Number'), _rawOrderId(s._raw), s.branch||'', s.comment||''].some(v => String(v).toLowerCase().includes(term)));
+            const keyOf = raw => [_rawFieldExact(raw,'Created At'), _rawFieldContains(raw,'location'), _rawFieldExact(raw,'Phone Number')].join(' | ');
+            // The server's list, every page.
+            const ask = { p1: q.p1, cap: q.cap, branch: q.branch, channel: q.channel, survey: q.survey, list: L, size: 100 };
+            if(q.branches) ask.branches = q.branches;
+            let cursor = null, rows = [], total = null, pages = 0, scanned = 0;
+            try {
+                do {
+                    const a = await apiCall('list_submissions', Object.assign({}, ask, { cursor }));
+                    if(!a || a.status !== 'success') throw new Error((a && (a.code || a.message)) || 'no answer');
+                    if(total === null) total = a.total;
+                    rows = rows.concat(a.rows || []); cursor = a.next; pages++; scanned += (a.meta && a.meta.scanned) || 0;
+                } while(cursor && pages < 400);
+            } catch(e){
+                const msg = String(e && e.message || e);
+                console.error('[list] The server could not answer: ' + msg + (/unknown|invalid action/i.test(msg) ? ' — the Worker is older than v4.78.' : ''));
+                return { ok: false, error: msg };
+            }
+            const count = arr => { const m = new Map(); arr.forEach(k => m.set(k, (m.get(k) || 0) + 1)); return m; };
+            const a = count(mine.map(s => keyOf(s._raw))), b = count(rows.map(r => keyOf(r.row)));
+            const screenOnly = [], serverOnly = [];
+            a.forEach((n, k) => { const d = n - (b.get(k) || 0); if(d > 0) screenOnly.push({ row: k, extraOnScreen: d }); });
+            b.forEach((n, k) => { const d = n - (a.get(k) || 0); if(d > 0) serverOnly.push({ row: k, extraOnServer: d }); });
+            // A row on screen twice with a near-identical twin is the known
+            // "held a copy D1 has since merged" case, not a server miss.
+            const ok = total === rows.length && !screenOnly.length && !serverOnly.length;
+            console.log('%c[list] ' + (ok ? 'The server\u2019s list matches this screen' : 'Differences found') +
+                        ' · screen ' + mine.length + ' · server total ' + total + ' (' + rows.length + ' rows, ' + pages + ' page' + (pages === 1 ? '' : 's') + ') · ' + (Date.now() - t0) + ' ms',
+                        'font-weight:700;color:' + (ok ? '#059669' : '#DC2626'));
+            if(screenOnly.length){ console.log('[list] On this screen but not on the server (often copies the database has merged away):'); console.table(screenOnly.slice(0, 40)); }
+            if(serverOnly.length){ console.log('[list] On the server but not on this screen:'); console.table(serverOnly.slice(0, 40)); }
+            const res = { ok, screen: mine.length, serverTotal: total, serverRows: rows.length, screenOnly, serverOnly };
+            window.__listParityLast = res;
+            return res;
+        };
         window.sentinelParity = async function(){
             const t0 = Date.now();
             const fs = (typeof DataFeed !== 'undefined' && DataFeed.status) ? DataFeed.status() : { complete: true, pending: [] };
