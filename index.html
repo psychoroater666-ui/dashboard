@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.137.0 · 22 Sep 2026 · Overview count cards can read the server (Owner switch, off by default); loading bars instead of partial totals';
+        const BUILD_VERSION = 'v2.137.1 · 22 Sep 2026 · Owner settings: the tab content scrolls, Save stays in view';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -11388,17 +11388,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const old = document.getElementById('owner-settings-modal'); if(old) old.remove();
             const el = document.createElement('div');
             el.className = 'ia-overlay is-open'; el.id = 'owner-settings-modal'; el.style.display = 'flex';
-            el.innerHTML = `<div class="ia-card" style="max-width:560px;">
-                <div class="ia-header">
+            el.innerHTML = `<div class="ia-card" style="max-width:560px;overflow:hidden;">
+                <div class="ia-header" style="flex-shrink:0;">
                     <div><div class="ia-title">Owner settings</div>
                     <div class="ia-sub">Rules apply to every device the moment you save.</div></div>
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
-                <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;">
+                <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
                     ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
-                <div style="padding:16px 22px 4px;">${panes[tab]}</div>
-                <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;">
+                <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
                     ${(tab === 'rules' || tab === 'alerts') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
