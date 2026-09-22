@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.141.1 · 22 Sep 2026 · Overview banner never falls back to this browser\'s submission count; no leftover faded cards';
+        const BUILD_VERSION = 'v2.141.2 · 22 Sep 2026 · Overview asks the server less often, rides out a single failed request, and ignores a one-off "numbers off"';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8954,6 +8954,20 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
          *  a reload, announced rather than sprung on whoever is working. */
         function applyOwnerSettings(st, quiet){
             if(!st || typeof st !== 'object') return;
+            /* v2.141.2: "Overview numbers: off" is believed only when it is
+               said twice, 15 s apart, or by the Owner's own Save. A Worker
+               that failed to read the settings used to answer with the
+               defaults -- "off" -- for half a minute, and every screen fell
+               back to its own half-loaded count (one showed 0). */
+            const _srWasOn = (() => { try { return SummaryFeed.on(); } catch(e){ return !!(window.OwnerSettings || {}).summaryReads; } })();
+            if(st.summaryReads === false && _srWasOn){
+                const own = window.__srSaved && window.__srSaved.v === false && Date.now() - window.__srSaved.at < 60000;
+                const first = window.__srOffSeen || 0;
+                if(!own && !(first && Date.now() - first >= 15000)){
+                    if(!first) window.__srOffSeen = Date.now();
+                    st = Object.assign({}, st); delete st.summaryReads;
+                }
+            } else if(st.summaryReads === true){ window.__srOffSeen = 0; }
             const prev = Object.assign({}, window.OwnerSettings);
             window.OwnerSettings = Object.assign({}, window.OwnerSettings, st);
             if(typeof st.incidentMaxRating === 'number') INCIDENT_MAX_RATING = st.incidentMaxRating;
@@ -10479,6 +10493,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try { return localStorage.getItem(this._LS) === '1'; } catch(e){ return false; }
             },
             remember(v){ try { localStorage.setItem(this._LS, v ? '1' : '0'); } catch(e){} },
+            /* v2.141.2: ask again early only when submissions actually
+               arrived -- not on every repaint (orders, Blink, messages...),
+               which at peak meant a request every couple of seconds from
+               every screen. */
+            _subsSeen: -1,
+            subsMoved(){
+                const n = (typeof rawData !== 'undefined' && rawData.submissions) ? rawData.submissions.length : -1;
+                const moved = n !== this._subsSeen; this._subsSeen = n; return moved;
+            },
             historyComplete(){
                 try { return !(typeof DataFeed !== 'undefined' && DataFeed.enabled) || DataFeed.status().complete; } catch(e){ return true; }
             },
@@ -10493,7 +10516,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // straight away rather than after up to 15 s -- the lag that
                 // left one device on 332 while another showed 335.
                 const ttl = q.cap ? (fresh ? 2000 : 15000) : 120000;
-                if(!e.inflight && (!e.at || now - e.at > ttl) && (!e.failedAt || now - e.failedAt > 10000)) this._fetch(q, e);
+                if(!e.inflight && (!e.at || now - e.at > ttl) && (!e.failedAt || now - e.failedAt > 5000)) this._fetch(q, e);
                 if(this._cache.size > 24){ const first = this._cache.keys().next().value; if(first !== key) this._cache.delete(first); }
                 return e;
             },
@@ -10552,7 +10575,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }
                 const p1 = e.data.p1, p2 = e.data.p2 || { subs: 0, incs: 0 };
                 this._num(vS, p1.subs); this._num(vI, p1.incs);
-                const stale = !!e.failedAt && e.failedAt >= e.at;
+                // v2.141.2: one failed request is retried quietly; the figures
+                // are marked stale only when nothing has come back for 45 s.
+                const stale = !!e.failedAt && e.failedAt >= e.at && (Date.now() - e.at > 45000);
                 cards.forEach(c => c && c.classList.toggle('kpi-stale', stale));
                 if(p1.ver !== undefined){
                     this._num(vV, p1.ver); this._num(vF, p1.fake);
@@ -11347,7 +11372,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
                 payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
                 payload.currentDrop       = document.getElementById('os-drop').value.trim();
-                { const sr = document.querySelector('input[name="os-sr"]:checked'); if(sr) payload.summaryReads = sr.value === 'server'; }
+                { const sr = document.querySelector('input[name="os-sr"]:checked'); if(sr){ payload.summaryReads = sr.value === 'server'; window.__srSaved = { v: payload.summaryReads, at: Date.now() }; } }
             }
             const res = await apiCall('settings_set', payload).catch(() => null);
             if(!res || res.status !== 'success'){
@@ -15062,7 +15087,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // local figures above are not drawn.
                     const _srv = (typeof SummaryFeed !== 'undefined') && SummaryFeed.on();
                     if(_srv){
-                        SummaryFeed.paint(true);
+                        SummaryFeed.paint(SummaryFeed.subsMoved());
                     } else {
                     ['kpi-subs','kpi-incs'].forEach(id => { const c = (document.getElementById(id) || document.body).closest('.kpi-card'); if(c) c.classList.remove('kpi-stale'); });
                     countUp(document.getElementById('kpi-subs'), tSubs);
