@@ -595,6 +595,25 @@
         .trend-bad { color: var(--status-critical); }
         .trend-neutral { color: var(--text-muted); }
         .trend-text { color: var(--text-muted); font-weight: 500; }
+        /* v2.137.0: server-counted Overview cards -- loading bar, stale figure, Owner switch */
+        .kpi-skel { display:block; height:1.75rem; width:62%; border-radius:8px; margin:0 0 8px; background:linear-gradient(90deg,var(--bg-light) 0%,var(--border-color) 45%,var(--bg-light) 90%); background-size:200% 100%; animation:kpiSkel 1.4s ease-in-out infinite; }
+        #kpi-best .kpi-skel, #kpi-worst .kpi-skel { height:1.4rem; }
+        @keyframes kpiSkel { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+        @media (prefers-reduced-motion: reduce) { .kpi-skel { animation:none; } }
+        body.dark-theme .kpi-skel { background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.13) 45%,rgba(255,255,255,.05) 90%); background-size:200% 100%; }
+        .kpi-wait { color:var(--text-muted); font-weight:600; }
+        .kpi-stale .kpi-value { opacity:.55; }
+        .kpi-asof { color:var(--text-muted); font-weight:600; display:flex; align-items:center; gap:6px; }
+        .kpi-asof i { color:var(--brand-accent); font-size:.72rem; }
+        body.dark-theme .kpi-asof i { color:#64D0FF; }
+        .os-new { margin-left:6px; padding:2px 7px; border-radius:20px; background:rgba(1,1,151,.1); color:var(--brand-accent); font-size:.6rem; }
+        body.dark-theme .os-new { background:rgba(100,208,255,.14); color:#64D0FF; }
+        .os-opt { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1.5px solid var(--border-color); border-radius:10px; cursor:pointer; font-size:.8rem; color:var(--text-main); }
+        .os-opt.on { border-color:var(--brand-accent); background:rgba(1,1,151,.04); }
+        body.dark-theme .os-opt.on { border-color:#64D0FF; background:rgba(100,208,255,.06); }
+        .os-opt input { margin-top:2px; width:15px; height:15px; accent-color:#010197; flex-shrink:0; }
+        body.dark-theme .os-opt input { accent-color:#64D0FF; }
+        .os-opt small { display:block; color:var(--text-muted); font-size:.7rem; margin-top:2px; font-weight:500; }
 
         .grid-middle { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; }
         .grid-lower { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -8824,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.136.0 · 22 Sep 2026 · sentinelParity(): server-counted Overview numbers checked against this screen (no visible change)';
+        const BUILD_VERSION = 'v2.137.0 · 22 Sep 2026 · Overview count cards can read the server (Owner switch, off by default); loading bars instead of partial totals';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -8950,6 +8969,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             if(prev.incidentMaxRating !== window.OwnerSettings.incidentMaxRating && window.__settingsApplied){
                 try { applyGlobalFilters(); app.applyFilters(); } catch(e){}
+            }
+            // v2.137.0: which path the Overview's count cards take. Kept on
+            // this device so the next load paints the right way before any
+            // answer arrives.
+            if(typeof st.summaryReads === 'boolean'){
+                try { if(typeof SummaryFeed !== 'undefined') SummaryFeed.remember(st.summaryReads); } catch(e){}
+                if(!!prev.summaryReads !== st.summaryReads && window.__settingsApplied){
+                    try { if(state.currentView === 'executive') app.renderExecutive(); } catch(e){}
+                }
             }
             window.__settingsApplied = true;
         }
@@ -10414,6 +10442,125 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
         };
         window.SummaryFeed = SummaryFeed;
+
+        /* ── v2.137.0: the Overview's two count cards read the server ─────────
+           When the Owner turns on "Overview numbers: counted on the server"
+           (setting summaryReads, Worker v4.69+), Total Submissions and Total
+           Incidents -- with their "vs prev" -- come from the `summary` action
+           instead of this browser's copy. The four cards still counted here
+           (verified, fake, best, lowest) show a loading bar until this screen
+           holds its whole history, instead of a partial figure.
+
+           Never a stand-in: if the server does not answer, the last good
+           figure stays, faded, with the time it is from. Before the first
+           answer there is no number at all -- a loading bar, not a zero and
+           not a half-count. With the switch off nothing here runs and the
+           cards behave exactly as before. */
+        Object.assign(SummaryFeed, {
+            _cache: new Map(),       // query key -> { data, at, failedAt, inflight }
+            _LS: 'crumble_summary_reads',
+            on(){
+                const st = window.OwnerSettings || {};
+                if(typeof st.summaryReads === 'boolean') return st.summaryReads;
+                try { return localStorage.getItem(this._LS) === '1'; } catch(e){ return false; }
+            },
+            remember(v){ try { localStorage.setItem(this._LS, v ? '1' : '0'); } catch(e){} },
+            historyComplete(){
+                try { return !(typeof DataFeed !== 'undefined' && DataFeed.enabled) || DataFeed.status().complete; } catch(e){ return true; }
+            },
+            /** The answer held for this query, asking again when it is due. */
+            get(q){
+                const key = JSON.stringify(q), now = Date.now();
+                let e = this._cache.get(key);
+                if(!e){ e = { data: null, at: 0, failedAt: 0, inflight: false }; this._cache.set(key, e); }
+                // A range running to today moves; a finished range barely does.
+                const ttl = q.cap ? 15000 : 120000;
+                if(!e.inflight && (!e.at || now - e.at > ttl) && (!e.failedAt || now - e.failedAt > 10000)) this._fetch(q, e);
+                if(this._cache.size > 24){ const first = this._cache.keys().next().value; if(first !== key) this._cache.delete(first); }
+                return e;
+            },
+            _fetch(q, e){
+                e.inflight = true;
+                this.ask(q).then(r => {
+                    if(!r || r.status !== 'success' || !r.p1) throw new Error((r && (r.code || r.message)) || 'no answer');
+                    e.data = r; e.at = Date.now(); e.failedAt = 0;
+                }).catch(err => {
+                    e.failedAt = Date.now();
+                    console.warn('[summary] no answer:', err && err.message || err);
+                }).finally(() => {
+                    e.inflight = false;
+                    try { this.paint(); } catch(x){ console.warn('[summary] paint:', x); }
+                });
+            },
+            _skel(el, waitEl, text){
+                if(!el) return;
+                if(!el.querySelector('.kpi-skel')){ el.innerHTML = '<span class="kpi-skel"></span>'; delete el.dataset.srvVal; }
+                if(waitEl) waitEl.innerHTML = '<span class="kpi-wait">' + text + '</span>';
+            },
+            _num(el, n){
+                if(!el) return;
+                const prev = el.dataset.srvVal;
+                el.innerText = Number(n).toLocaleString();
+                el.dataset.srvVal = String(n);
+                if(prev != null && +prev !== +n){ try { if(window.KpiFlash) KpiFlash.maybe(el, +prev, +n); } catch(x){} }
+                else if(el.dataset) el.dataset.kpiSeen = '1';
+            },
+            /** Draw the two server-counted cards for what is on screen now. */
+            paint(){
+                if(!this.on() || typeof state === 'undefined' || state.execMode !== 'overview') return;
+                const q = this.screenQuery(); if(!q) return;
+                const e = this.get(q);
+                const vS = document.getElementById('kpi-subs'), vI = document.getElementById('kpi-incs');
+                const tS = document.getElementById('trend-subs'), tI = document.getElementById('trend-incs');
+                const cards = [vS, vI].map(el => el && el.closest('.kpi-card'));
+                if(!e.data){
+                    this._skel(vS, tS, 'Counting…'); this._skel(vI, tI, 'Counting…');
+                    cards.forEach(c => c && c.classList.remove('kpi-stale'));
+                    return;
+                }
+                const p1 = e.data.p1, p2 = e.data.p2 || { subs: 0, incs: 0 };
+                this._num(vS, p1.subs); this._num(vI, p1.incs);
+                const stale = !!e.failedAt && e.failedAt >= e.at;
+                cards.forEach(c => c && c.classList.toggle('kpi-stale', stale));
+                if(stale){
+                    const t = new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const asof = '<span class="kpi-asof"><i class="fas fa-clock-rotate-left"></i> As of ' + t + ' · reconnecting</span>';
+                    if(tS) tS.innerHTML = asof; if(tI) tI.innerHTML = asof;
+                    return;
+                }
+                const pct = (a, b) => b ? ((a - b) / b) * 100 : 0;
+                const sT = pct(p1.subs, p2.subs), iT = pct(p1.incs, p2.incs);
+                if(tS) tS.innerHTML = `<span class="${sT>=0?'trend-good':'trend-bad'}"><i class="fas ${sT>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(sT).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
+                if(tI) tI.innerHTML = `<span class="${iT<=0?'trend-good':'trend-bad'}"><i class="fas ${iT>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(iT).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
+            },
+            /** The four cards still counted in this browser: a loading bar
+             *  until the history is whole. Returns true when they may draw. */
+            gateLocalCards(){
+                if(!this.on() || this.historyComplete()) return true;
+                const w = 'Loading history…';
+                this._skel(document.getElementById('kpi-ver'),  document.getElementById('trend-ver'),  w);
+                this._skel(document.getElementById('kpi-fake'), document.getElementById('trend-fake'), w);
+                this._skel(document.getElementById('kpi-best'), document.getElementById('rate-best'), w);
+                this._skel(document.getElementById('kpi-worst'), document.getElementById('rate-worst'), w);
+                return false;
+            },
+            /** Before anything is known on a fresh load: bars, not zeros. */
+            boot(){
+                if(!this.on()) return;
+                ['subs','incs','ver','fake'].forEach(k => this._skel(document.getElementById('kpi-' + k), document.getElementById('trend-' + k), 'Counting…'));
+                this._skel(document.getElementById('kpi-best'), document.getElementById('rate-best'), 'Counting…');
+                this._skel(document.getElementById('kpi-worst'), document.getElementById('rate-worst'), 'Counting…');
+            }
+        });
+        try { SummaryFeed.boot(); } catch(e){}
+        // A range running to today keeps moving while nobody touches anything.
+        setInterval(() => {
+            try {
+                if(document.visibilityState !== 'visible' || !SummaryFeed.on()) return;
+                if(typeof state === 'undefined' || state.currentView !== 'executive') return;
+                SummaryFeed.paint();
+            } catch(e){}
+        }, 15000);
         window.sentinelParity = async function(){
             const t0 = Date.now();
             const fs = (typeof DataFeed !== 'undefined' && DataFeed.status) ? DataFeed.status() : { complete: true, pending: [] };
@@ -11118,6 +11265,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 payload.businessDayStart  = parseInt(document.getElementById('os-hour').value, 10);
                 payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
                 payload.currentDrop       = document.getElementById('os-drop').value.trim();
+                { const sr = document.querySelector('input[name="os-sr"]:checked'); if(sr) payload.summaryReads = sr.value === 'server'; }
             }
             const res = await apiCall('settings_set', payload).catch(() => null);
             if(!res || res.status !== 'success'){
@@ -11167,6 +11315,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">A rating counts as an incident at</span>
                         <select id="os-rating" style="${inp}">${ratings}</select>
                         <span style="${hint}">Applies on every screen immediately.</span></label>
+                    <div style="display:grid;gap:8px;"><span style="${lbl()}">Overview numbers <span class="os-new">NEW</span></span>
+                        <label class="os-opt ${st.summaryReads ? 'on' : ''}"><input type="radio" name="os-sr" value="server" ${st.summaryReads ? 'checked' : ''} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted on the server</b><small>Every screen shows the same total the moment it opens — no half-counted figures while loading. Corrections show within minutes.</small></span></label>
+                        <label class="os-opt ${st.summaryReads ? '' : 'on'}"><input type="radio" name="os-sr" value="browser" ${st.summaryReads ? '' : 'checked'} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted in each browser</b><small>The way it has always worked. Keep this until you are happy with the server figures.</small></span></label>
+                        <span style="${hint}">Applies to Total Submissions and Total Incidents on the Overview for now. Every screen switches within a few seconds; you can switch back at any time.</span></div>
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">This month's drop</span>
                         <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie" style="${inp}">
                         <span style="${hint}">Stamped on every monthly-drop response so months stay comparable, and used as the button label on the dine-in QR screen.</span></label>
@@ -14794,15 +14946,26 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const sTrend = p2Subs ? (((tSubs - p2Subs)/p2Subs)*100).toFixed(1) : 0;
                     const iTrend = p2Incs ? (((tIncs - p2Incs)/p2Incs)*100).toFixed(1) : 0;
 
+                    // v2.137.0: with "counted on the server" on, these two
+                    // cards come from the Worker (SummaryFeed.paint) and the
+                    // local figures above are not drawn.
+                    const _srv = (typeof SummaryFeed !== 'undefined') && SummaryFeed.on();
+                    if(_srv){
+                        SummaryFeed.paint();
+                    } else {
+                    ['kpi-subs','kpi-incs'].forEach(id => { const c = (document.getElementById(id) || document.body).closest('.kpi-card'); if(c) c.classList.remove('kpi-stale'); });
                     countUp(document.getElementById('kpi-subs'), tSubs);
                     document.getElementById('trend-subs').innerHTML = `<span class="${sTrend>=0?'trend-good':'trend-bad'}"><i class="fas ${sTrend>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(sTrend).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
                     
                     countUp(document.getElementById('kpi-incs'), tIncs);
                     document.getElementById('trend-incs').innerHTML = `<span class="${iTrend<=0?'trend-good':'trend-bad'}"><i class="fas ${iTrend>=0?'fa-arrow-up':'fa-arrow-down'}"></i> ${Math.abs(iTrend).toFixed(1)}%</span> <span class="trend-text">vs prev</span>`;
+                    }
+                    const _localOk = !_srv || SummaryFeed.gateLocalCards();
 
                     const ver    = p1.incs.filter(i => (i.caseStatus||'verified') === 'verified').length;
                     const fake   = p1.incs.filter(i => i.caseStatus === 'fake').length;
                     const review = p1.incs.filter(i => i.caseStatus === 'review').length;
+                    if(_localOk){
                     countUp(document.getElementById('kpi-ver'), ver);
                     countUp(document.getElementById('kpi-fake'), fake);
                     // Surface the Foodpanda "needs review" count under the Fake card (if the element exists)
@@ -14812,6 +14975,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         : `<span class="trend-text">no manual reviews</span>`;
                     const trendVer = document.getElementById('trend-ver');
                     if(trendVer) trendVer.innerHTML = `<span class="trend-text">${tIncs?((ver/tIncs)*100).toFixed(0):0}% of incidents</span>`;
+                    }
 
                     // "Unspecified" is excluded from best/worst ranking — it's
                     // the placeholder bucket for rows missing a real branch
@@ -14834,7 +14998,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     .filter(b => b.subs > 0)
                     .sort((a,b) => a.rate - b.rate); 
 
-                    if (branchMetrics.length > 0) {
+                    if (_localOk && branchMetrics.length > 0) {
                         document.getElementById('kpi-best').innerText = branchMetrics[0].name;
                         document.getElementById('rate-best').innerText = `${branchMetrics[0].rate.toFixed(2)}% Rate`;
                         document.getElementById('kpi-worst').innerText = branchMetrics[branchMetrics.length-1].name;
