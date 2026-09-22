@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.141.4 · 22 Sep 2026 · Overview banner colour judged against the comparison it quotes, overdue counted within the dates on screen';
+        const BUILD_VERSION = 'v2.142.0 · 22 Sep 2026 · branch and region accounts see only their own branches everywhere (Overview panels, branch cards, Social, alerts)';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -9631,6 +9631,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     out.excluded.samples.push({ form: src.form, reason, _raw: r });
                 }
             };
+            // Asked once per batch, and never allowed to throw into the loop.
+            let _scoped = false; try { _scoped = permScoped(); } catch(e){ _scoped = false; }
             (rows||[]).forEach(r=>{
                 try {
                     // Guard: a row with no "Created At" timestamp isn't a real
@@ -9667,6 +9669,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // investigating why Location wasn't captured.
                     let branch = _find(r,'location');
                     if(!branch){ trackExcluded('branch', r); branch = 'Unspecified'; }
+                    // v2.142.0: second lock -- a branch account never holds another branch's row.
+                    if(_scoped && !permScopeOK(branch)) return;
                     const rating = _num(_find(r,'rate','visit') || _find(r,'experience','today') || _find(r,'rate') || _find(r,'experience'));
                     // No longer excludes the row entirely — this is a genuine,
                     // otherwise-complete submission (real branch, real status)
@@ -19522,6 +19526,7 @@ ${(() => {
                     })
                     .map(id => _slProtected[id].fullMention);
                 slMentions = [...stillPending, ...fromSheet];
+                if (typeof permScoped === 'function' && permScoped()) slMentions = slMentions.filter(m => m && m.branch && permScopeOK(m.branch));
                 // Merge saved resolution statuses from SL_Resolution (persist across sessions)
                 slApplyResolutions(await loadResolutionsFromSheet());
                 slSaveData();
@@ -21786,6 +21791,35 @@ ${(() => {
             return out.length ? out : null;
         }
         function permBranchOK(b){ const mine = permBranches(); return !mine || mine.some(x => x.toLowerCase() === String(b || '').trim().toLowerCase()); }
+        /* v2.142.0: may this person see a row from this branch? Their branches
+           when they have some; else their region; else everything. The server
+           already sends a branch or region account only its own rows -- this is
+           the second lock, for everything that was ever held in this browser
+           (a copy cached while someone else was signed in on the same device,
+           the full branch list the page starts with, social mentions). */
+        function permScopeOK(b){
+            const mine = permBranches();
+            if (mine) return permBranchOK(b);
+            const region = String(PERM.region || 'All');
+            if (region.toLowerCase() === 'all') return true;
+            try { return String(_regionFor(String(b || ''))).toLowerCase() === region.toLowerCase(); } catch(e){ return true; }
+        }
+        function permScoped(){ return !!permBranches() || String(PERM.region || 'All').toLowerCase() !== 'all'; }
+        /** Drop from this browser everything outside the person's scope. */
+        function permPruneHeld(){
+            if (!permScoped()) return;
+            try {
+                if (typeof rawData !== 'undefined'){
+                    rawData.submissions = (rawData.submissions || []).filter(x => permScopeOK(x.branch));
+                    rawData.incidents   = (rawData.incidents   || []).filter(x => permScopeOK(x.branch));
+                }
+                if (typeof config !== 'undefined' && Array.isArray(config.branches))
+                    config.branches = config.branches.filter(b => permScopeOK(b.name));
+                // Social: a manager sees mentions of their own branches only.
+                if (typeof slMentions !== 'undefined' && Array.isArray(slMentions))
+                    slMentions = slMentions.filter(m => m && m.branch && permScopeOK(m.branch));
+            } catch(e){ console.warn('[scope] prune failed', e); }
+        }
         function permBranchLabel(){ const mine = permBranches(); return mine ? mine.join(', ') : 'All'; }
         const ROLE_LABEL = { owner:'Owner', admin:'Admin', reportanalyst:'Report Analyst', callcenter:'Call Center', manager:'Manager', viewer:'Viewer' };
         function roleKey(r){ let k = String(r||'viewer').toLowerCase().replace(/[^a-z]/g,''); if(k==='analyst') k='reportanalyst'; if(k==='cc'||k==='agent') k='callcenter'; if(k==='primaryowner'||k==='superadmin') k='owner'; return ROLE_CAPS[k] ? k : 'viewer'; }
@@ -21909,6 +21943,12 @@ ${(() => {
             PERM.branch = user.branch || 'All';
             PERM.name   = user.name   || user.email || '';
             PERM.email  = user.email  || PERM.email || '';
+            // v2.142.0: anything held from before sign-in (or from another
+            // account on this device) that is outside this person's scope goes.
+            if (permScoped()){
+                permPruneHeld();
+                setTimeout(() => { try { permPruneHeld(); if (typeof app !== 'undefined' && app.applyFilters) app.applyFilters(); } catch(e){} }, 0);
+            }
 
             // ── Lock region filter ──
             const regionEl = document.getElementById('filter-region');
