@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.138.0 · 22 Sep 2026 · sentinelParity() also checks verified / fake / review / not responding and best / lowest branch (no visible change)';
+        const BUILD_VERSION = 'v2.139.0 · 22 Sep 2026 · with Overview numbers on the server, all six Overview cards come from it (verified, fake, best, lowest added)';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10527,15 +10527,40 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const vS = document.getElementById('kpi-subs'), vI = document.getElementById('kpi-incs');
                 const tS = document.getElementById('trend-subs'), tI = document.getElementById('trend-incs');
                 const cards = [vS, vI].map(el => el && el.closest('.kpi-card'));
+                // v2.139.0: the four verdict cards follow the same path when the
+                // server sends their figures (Worker v4.72+).
+                const vV = document.getElementById('kpi-ver'), vF = document.getElementById('kpi-fake');
+                const vB = document.getElementById('kpi-best'), vW = document.getElementById('kpi-worst');
+                const tV = document.getElementById('trend-ver'), tF = document.getElementById('trend-fake');
+                const rB = document.getElementById('rate-best'), rW = document.getElementById('rate-worst');
+                const vCards = [vV, vF, vB, vW].map(el => el && el.closest('.kpi-card'));
                 if(!e.data){
                     this._skel(vS, tS, 'Counting…'); this._skel(vI, tI, 'Counting…');
-                    cards.forEach(c => c && c.classList.remove('kpi-stale'));
+                    this._skel(vV, tV, 'Counting…'); this._skel(vF, tF, 'Counting…');
+                    this._skel(vB, rB, 'Counting…'); this._skel(vW, rW, 'Counting…');
+                    cards.concat(vCards).forEach(c => c && c.classList.remove('kpi-stale'));
                     return;
                 }
                 const p1 = e.data.p1, p2 = e.data.p2 || { subs: 0, incs: 0 };
                 this._num(vS, p1.subs); this._num(vI, p1.incs);
                 const stale = !!e.failedAt && e.failedAt >= e.at;
                 cards.forEach(c => c && c.classList.toggle('kpi-stale', stale));
+                if(p1.ver !== undefined){
+                    this._num(vV, p1.ver); this._num(vF, p1.fake);
+                    if(tV) tV.innerHTML = `<span class="trend-text">${p1.incs ? ((p1.ver / p1.incs) * 100).toFixed(0) : 0}% of incidents</span>`;
+                    if(tF) tF.innerHTML = p1.review > 0
+                        ? `<span style="color:var(--status-warn);font-weight:700;"><i class="fas fa-user-magnifying-glass"></i> ${p1.review} need review</span>`
+                        : `<span class="trend-text">no manual reviews</span>`;
+                    const ranked = this.rank(p1.byBranch);
+                    const setName = (el, rEl, b) => {
+                        if(!el) return;
+                        if(el.querySelector('.kpi-skel')) el.innerHTML = '';
+                        el.innerText = b ? b.name : '--';
+                        if(rEl) rEl.innerText = b ? `${b.rate.toFixed(2)}% Rate` : '';
+                    };
+                    setName(vB, rB, ranked[0]); setName(vW, rW, ranked[ranked.length - 1]);
+                    vCards.forEach(c => c && c.classList.toggle('kpi-stale', stale));
+                }
                 if(stale){
                     const t = new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
                     const asof = '<span class="kpi-asof"><i class="fas fa-clock-rotate-left"></i> As of ' + t + ' · reconnecting</span>';
@@ -10550,7 +10575,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             /** The four cards still counted in this browser: a loading bar
              *  until the history is whole. Returns true when they may draw. */
             gateLocalCards(){
-                if(!this.on() || this.historyComplete()) return true;
+                if(!this.on()) return true;
+                // v2.139.0: while the server's answer carries the verdict
+                // figures -- or before the first answer arrives -- those four
+                // cards are the server's, drawn by paint(). Only a Worker
+                // that does not send them hands them back to this browser.
+                try {
+                    const q = this.screenQuery();
+                    const e = q && this._cache.get(JSON.stringify(q));
+                    if(!e || !e.data || (e.data.p1 && e.data.p1.ver !== undefined)) return false;
+                } catch(x){}
+                if(this.historyComplete()) return true;
                 const w = 'Loading history…';
                 this._skel(document.getElementById('kpi-ver'),  document.getElementById('trend-ver'),  w);
                 this._skel(document.getElementById('kpi-fake'), document.getElementById('trend-fake'), w);
@@ -11352,7 +11387,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <div style="display:grid;gap:8px;"><span style="${lbl()}">Overview numbers <span class="os-new">NEW</span></span>
                         <label class="os-opt ${st.summaryReads ? 'on' : ''}"><input type="radio" name="os-sr" value="server" ${st.summaryReads ? 'checked' : ''} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted on the server</b><small>Every screen shows the same total the moment it opens — no half-counted figures while loading. Corrections show within minutes.</small></span></label>
                         <label class="os-opt ${st.summaryReads ? '' : 'on'}"><input type="radio" name="os-sr" value="browser" ${st.summaryReads ? '' : 'checked'} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted in each browser</b><small>The way it has always worked. Keep this until you are happy with the server figures.</small></span></label>
-                        <span style="${hint}">Applies to Total Submissions and Total Incidents on the Overview for now. Every screen switches within a few seconds; you can switch back at any time.</span></div>
+                        <span style="${hint}">Applies to the six Overview cards. Every screen switches within a few seconds; you can switch back at any time.</span></div>
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">This month's drop</span>
                         <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie" style="${inp}">
                         <span style="${hint}">Stamped on every monthly-drop response so months stay comparable, and used as the button label on the dine-in QR screen.</span></label>
