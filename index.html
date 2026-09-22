@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.141.3 · 22 Sep 2026 · nav highlight glides on the compositor, so it no longer stalls half-way while a heavy tab paints';
+        const BUILD_VERSION = 'v2.141.4 · 22 Sep 2026 · Overview banner colour judged against the comparison it quotes, overdue counted within the dates on screen';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -14537,7 +14537,6 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // unreviewed only, matching the complaint cards.
                 const real = l => (l || []).filter(i => i.caseStatus !== 'fake');
                 const p1i = real(p1.incs), p2i = real(p2.incs);
-                const prevRate = p2.subs.length ? (p2i.length / p2.subs.length) * 100 : 0;
                 // same weekday a week earlier, the fair comparison in food service
                 const prevWk = (() => { if(!end) return null; const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 7); return t.toISOString().split('T')[0]; })();
                 // If the day in view is still running, cut last week's day at the
@@ -14591,6 +14590,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     }
                 } catch(x){}
                 const rate = nSubs ? (nReal / nSubs) * 100 : 0;
+                // v2.141.4: the colour is decided against the same comparison
+                // the sentence quotes (last same weekday at this time, or the
+                // previous range of equal length) -- it used to be yesterday,
+                // counted in this browser, so the words and the colour could
+                // be answering two different questions.
+                const prevRate = wkSubs ? (wkIncs / wkSubs) * 100 : 0;
                 const volDelta = wkSubs ? Math.round((nSubs - wkSubs) / wkSubs * 100) : null;
                 const incDelta = wkIncs ? Math.round((nReal - wkIncs) / wkIncs * 100) : null;
                 // worst branch by count, and its dominant reason
@@ -14602,7 +14607,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(t && t !== 'Others') rs[t] = (rs[t] || 0) + 1; });
                     const top = Object.entries(rs).sort((a, b) => b[1] - a[1])[0]; if(top && top[1] >= 2) reason = top[0];
                 }
-                const overdue = (rawData.incidents || []).filter(i => typeof slaInScope === 'function' && slaInScope(i) && slaState(i).breached).length;
+                // Past the time limit, among the cases in the dates on screen.
+                const overdue = (rawData.incidents || []).filter(i => i.date >= startV && i.date <= end && typeof slaInScope === 'function' && slaInScope(i) && slaState(i).breached).length;
                 // rules, from the written standards: 3+ at one branch is critical,
                 // and a rate well above the recent average is critical.
                 // A branch's incident COUNT alone is not a verdict: a busy branch
