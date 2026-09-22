@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.137.1 · 22 Sep 2026 · Owner settings: the tab content scrolls, Save stays in view';
+        const BUILD_VERSION = 'v2.138.0 · 22 Sep 2026 · sentinelParity() also checks verified / fake / review / not responding and best / lowest branch (no visible change)';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10457,6 +10457,20 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            not a half-count. With the switch off nothing here runs and the
            cards behave exactly as before. */
         Object.assign(SummaryFeed, {
+            /* v2.138.0: the Overview's best / lowest ranking from per-branch
+               counts -- renderExecutive's own rules: "Unspecified" and
+               branches with no submissions are left out, the rate is
+               non-fake incidents per submission, and ties keep the order of
+               config.branches, exactly as the local sort does. */
+            rank(by){
+                by = by || {};
+                const order = (config.branches || []).map(b => b.name);
+                Object.keys(by).forEach(n => { if(order.indexOf(n) === -1) order.push(n); });
+                return order.filter(n => n !== 'Unspecified').map(n => {
+                    const b = by[n] || {}; const s = b.subs || 0, i = (b.incs || 0) - (b.fake || 0);
+                    return { name: n, subs: s, rate: s ? (i / s) * 100 : 0 };
+                }).filter(b => b.subs > 0).sort((a, b) => a.rate - b.rate);
+            },
             _cache: new Map(),       // query key -> { data, at, failedAt, inflight }
             _LS: 'crumble_summary_reads',
             on(){
@@ -10587,10 +10601,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             };
             const tally = (subs, incs) => {
                 const by = {};
-                subs.forEach(s => { const b = by[s.branch] = by[s.branch] || { subs: 0, incs: 0 }; b.subs++; });
-                incs.forEach(i => { const b = by[i.branch] = by[i.branch] || { subs: 0, incs: 0 }; b.incs++; });
+                subs.forEach(s => { const b = by[s.branch] = by[s.branch] || { subs: 0, incs: 0, fake: 0 }; b.subs++; });
+                incs.forEach(i => { const b = by[i.branch] = by[i.branch] || { subs: 0, incs: 0, fake: 0 }; b.incs++; if(i.caseStatus === 'fake') b.fake++; });
                 const rated = subs.filter(s => s.smileScore);
-                return { subs: subs.length, incs: incs.length, avg: rated.length ? rated.reduce((n, s) => n + s.smileScore, 0) / rated.length : 0, by };
+                const st = k => incs.filter(i => (i.caseStatus || 'verified') === k).length;
+                return { subs: subs.length, incs: incs.length, avg: rated.length ? rated.reduce((n, s) => n + s.smileScore, 0) / rated.length : 0, by,
+                         ver: st('verified'), fake: st('fake'), review: st('review'), notResponding: st('not_responding') };
             };
             const checks = [
                 ['Today',     { p1: { start: bt, end: bt }, cap: true }],
@@ -10607,11 +10623,29 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 push('Submissions', c.subs, s.subs, n => Math.round(n));
                 push('Incidents', c.incs, s.incs, n => Math.round(n));
                 push('Avg rating', c.avg, sAvg, n => (+n).toFixed(2));
+                // v2.138.0 -- Phase 2: the verdict figures and the branch ranking.
+                if(s.ver !== undefined){
+                    push('Verified', c.ver, s.ver, n => Math.round(n));
+                    push('Fake', c.fake, s.fake, n => Math.round(n));
+                    push('Needs review', c.review, s.review, n => Math.round(n));
+                    push('Not responding', c.notResponding, s.notResponding, n => Math.round(n));
+                    const a = SummaryFeed.rank(c.by), z = SummaryFeed.rank(s.byBranch || {});
+                    const nm = (r, i) => r.length ? r[i === 0 ? 0 : r.length - 1] : null;
+                    [['Best branch', 0], ['Lowest branch', 1]].forEach(([fig, i]) => {
+                        const x = nm(a, i), y = nm(z, i);
+                        const same = (!x && !y) || (x && y && x.name === y.name && Math.abs(x.rate - y.rate) < 0.005);
+                        rows.push({ check: label, figure: fig, screen: x ? x.name + ' ' + x.rate.toFixed(2) + '%' : '—',
+                                    server: y ? y.name + ' ' + y.rate.toFixed(2) + '%' : '—', match: same ? '✔' : '✖' });
+                    });
+                } else if(label === 'Today'){
+                    console.warn('[parity] The server did not send verdict figures (Worker older than v4.72, or it could not read the verdicts).');
+                }
                 const names = new Set(Object.keys(c.by).concat(Object.keys(s.byBranch || {})));
                 names.forEach(b => {
-                    const x = c.by[b] || { subs: 0, incs: 0 }, y = (s.byBranch || {})[b] || { subs: 0, incs: 0 };
-                    if(x.subs !== y.subs || x.incs !== y.incs)
-                        branchDiffs.push({ check: label, branch: b, screenSubs: x.subs, serverSubs: y.subs, screenIncs: x.incs, serverIncs: y.incs });
+                    const x = c.by[b] || { subs: 0, incs: 0, fake: 0 }, y = (s.byBranch || {})[b] || { subs: 0, incs: 0, fake: 0 };
+                    if(x.subs !== y.subs || x.incs !== y.incs || (s.ver !== undefined && (x.fake || 0) !== (y.fake || 0)))
+                        branchDiffs.push({ check: label, branch: b, screenSubs: x.subs, serverSubs: y.subs, screenIncs: x.incs, serverIncs: y.incs,
+                                           screenFake: x.fake || 0, serverFake: y.fake || 0 });
                 });
             };
             try {
