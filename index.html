@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.147.0 · 22 Sep 2026 · Screens drop submission rows the server deleted (merged instant copies, refused repeats) within a poll';
+        const BUILD_VERSION = 'v2.148.0 · 23 Sep 2026 · Profile photos saved to D1 under the signed-in person, and never wiped by a stale answer';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -22406,11 +22406,17 @@ ${(() => {
                         _sharedProfilePhotos = res.photos;
                         const email = (PERM.email || '').trim().toLowerCase();
                         const photo = email ? _sharedProfilePhotos[email] : null;
-                        const dpKey = 'crumble_dp_' + (PERM.email || 'user');
+                        if(!email) return;                      // not signed in yet: decide nothing
+                        const dpKey = 'crumble_dp_' + email;
+                        // v2.148.0: only D1's own answer may clear this browser's
+                        // copy -- never a stand-in, and never in the minute after
+                        // a save made here (the answer may have been sent before it).
+                        const trusted = res.served_by === 'd1' && !(window.__dpSavedAt && Date.now() - window.__dpSavedAt < 60000);
+                        if(!trusted) return;
                         if(photo){
                             try { localStorage.setItem(dpKey, photo); } catch(e){}
                         } else {
-                            // Sheet has no photo (or it was removed elsewhere) —
+                            // No photo on the server (or it was removed elsewhere) —
                             // don't let a stale local copy keep showing forever.
                             try { localStorage.removeItem(dpKey); } catch(e){}
                         }
@@ -22520,7 +22526,7 @@ ${(() => {
                 const displayName = PERM.name || PERM.email || 'User';
                 const initials = displayName.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0,2).join('').toUpperCase() || 'U';
                 const scope = PERM.branch !== 'All' ? PERM.branch : (PERM.region !== 'All' ? PERM.region : '');
-                const dpKey = 'crumble_dp_' + (PERM.email || 'user');
+                const dpKey = 'crumble_dp_' + String(PERM.email || '').trim().toLowerCase();   // v2.148.0: same key the save uses
                 const savedDp = localStorage.getItem(dpKey);
                 const avatarColor = getAvatarColor(displayName);
                 const avatarStyle = savedDp
@@ -22672,54 +22678,22 @@ ${(() => {
             reader.readAsDataURL(file);
         }
 
-        function handleDpUpload(e){
-            const file = e.target.files[0];
-            if(!file) return;
-            if(file.size > 8 * 1024 * 1024){
-                alert('Photo must be under 8MB.');
-                return;
-            }
-            _resizeImageForDp(file, function(base64){
-                if(!base64){ alert('Could not process that image — try a different photo.'); return; }
-                const emailEl = document.getElementById('dp-email-store');
-                const userEmail = emailEl ? emailEl.dataset.email : 'user';
-                const dpKey = 'crumble_dp_' + userEmail;
-                // Instant local cache — shows immediately on this device
-                // without waiting on a network round trip.
-                try { localStorage.setItem(dpKey, base64); } catch(err){ /* non-fatal — the shared save below is what actually matters */ }
-                // Update avatar immediately
-                const avatar = document.getElementById('user-avatar-el');
-                if(avatar){
-                    avatar.style.padding  = '0';
-                    avatar.style.overflow = 'hidden';
-                    avatar.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-                }
-                const menu = document.getElementById('dp-menu');
-                if(menu) menu.style.display = 'none';
-                if(_sharedProfilePhotos) _sharedProfilePhotos[(userEmail||'').trim().toLowerCase()] = base64;
-                // Shared save so the admin and this same account on any other
-                // browser/device can see it too. The backend handler for
-                // action:'save_profile_photo' does exist (Incident_Resolution-
-                // style upsert into User_Profiles) — the piece that was
-                // actually missing was nothing ever fetching it back on other
-                // devices (see _fetchSharedProfilePhotos). Still fire-and-
-                // forget here, like the other non-critical saves in this
-                // dashboard, so the upload itself never blocks on the network.
-                fetch(LIVE.slScriptUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'save_profile_photo', email: userEmail, photo: base64 })
-                }).catch(()=>{});
-            });
-        }
-
-        function removeDp(){
-            const emailEl = document.getElementById('dp-email-store');
-            const userEmail = emailEl ? emailEl.dataset.email : 'user';
-            const dpKey = 'crumble_dp_' + userEmail;
-            localStorage.removeItem(dpKey);
+        /* v2.148.0 -- profile photos are saved to D1 by the Worker (v4.83),
+           which takes whose photo it is from the sign-in itself. The page used
+           to send the email it had put in the menu, and a menu built before
+           sign-in finished said "user": the photo went under "user", showed
+           here from the browser's own copy, and vanished on the next load when
+           the server had nothing under the person's real email. The save is
+           now waited for, and a failure is said out loud. */
+        function _myDpEmail(){ return String((PERM && PERM.email) || '').trim().toLowerCase(); }
+        function _paintOwnAvatar(photo){
             const avatar = document.getElementById('user-avatar-el');
-            if(avatar){
+            if(!avatar) return;
+            if(photo){
+                avatar.style.padding  = '0';
+                avatar.style.overflow = 'hidden';
+                avatar.innerHTML = `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            } else {
                 const initials = (PERM.name||'U').split(/\s+/).filter(Boolean).map(w=>w[0]).slice(0,2).join('').toUpperCase()||'U';
                 const avatarColor = getAvatarColor(PERM.name||'U');
                 avatar.style.padding    = '';
@@ -22728,18 +22702,47 @@ ${(() => {
                 avatar.style.boxShadow  = `0 2px 8px ${avatarColor.shadow}`;
                 avatar.innerHTML = initials;
             }
+        }
+        async function _saveOwnDp(photo){
+            const email = _myDpEmail();
+            const dpKey = 'crumble_dp_' + email;
+            let before = null; try { before = localStorage.getItem(dpKey); } catch(e){}
+            // Shown at once; put back exactly as it was if the server says no.
+            _paintOwnAvatar(photo);
             const menu = document.getElementById('dp-menu');
             if(menu) menu.style.display = 'none';
-            // Clear it on the shared side too (backend already treats an empty
-            // string as "photo removed") — without this, the next fetch on any
-            // device (including this one, next login) would just bring the old
-            // photo right back.
-            if(_sharedProfilePhotos) _sharedProfilePhotos[(userEmail||'').trim().toLowerCase()] = '';
-            fetch(LIVE.slScriptUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'save_profile_photo', email: userEmail, photo: '' })
-            }).catch(()=>{});
+            let res = null;
+            try { res = await apiCall('save_profile_photo', { photo: photo || '' }); } catch(e){ res = null; }
+            if(res && res.status === 'success'){
+                try { photo ? localStorage.setItem(dpKey, photo) : localStorage.removeItem(dpKey); } catch(e){}
+                if(_sharedProfilePhotos) { if(photo) _sharedProfilePhotos[email] = photo; else delete _sharedProfilePhotos[email]; }
+                window.__dpSavedAt = Date.now();
+                try { UI.toast(photo ? 'Photo saved — it will show on every device.' : 'Photo removed.', 'success', 3000); } catch(e){}
+                return true;
+            }
+            _paintOwnAvatar(before);
+            const why = (res && res.message) || 'The connection dropped.';
+            try { UI.toast('Photo not saved: ' + why, 'warning', 6000); } catch(e){ alert('Photo not saved: ' + why); }
+            return false;
+        }
+        function handleDpUpload(e){
+            const file = e.target.files[0];
+            try { e.target.value = ''; } catch(x){}          // choosing the same file again still fires
+            if(!file) return;
+            if(!_myDpEmail()){ try { UI.toast('Still signing you in — try again in a moment.', 'warning', 4000); } catch(x){} return; }
+            if(file.size > 8 * 1024 * 1024){
+                alert('Photo must be under 8MB.');
+                return;
+            }
+            _resizeImageForDp(file, function(base64){
+                if(!base64){ alert('Could not process that image — try a different photo.'); return; }
+                _saveOwnDp(base64);
+            });
+        }
+
+        function removeDp(){
+            if(!_myDpEmail()) return;
+            _saveOwnDp('');
         }
 
         // ── User management (Admin only) ────────────────────────────────────
