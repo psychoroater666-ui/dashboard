@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.144.0 · 22 Sep 2026 · sentinelListParity(): the server-served Submissions list checked against this screen (no visible change)';
+        const BUILD_VERSION = 'v2.145.0 · 22 Sep 2026 · Submissions list served a page at a time from the server when Overview numbers are on the server';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11304,6 +11304,84 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         let _submissionsSearchTerm = '';
         let _submissionsPage = 0;
+        /* v2.145.0 -- rows per view, step 2: the Submissions list from the
+           server, a page at a time (Worker action list_submissions). Pages
+           are fetched as they are shown; the cursor of page N+1 comes back
+           with page N, so Next always works and a page never repeats a row.
+           A page that includes today is asked again after 20 s. */
+        const SrvList = {
+            _key: null, _cursors: [null], _pages: new Map(), _total: null, _busy: false, _err: null,
+            _ask(size){
+                const q = SummaryFeed.screenQuery(); if(!q) return null;
+                const L = {
+                    branches: (typeof _subsBranches === 'function') ? _subsBranches() : [],
+                    form: document.getElementById('export-form-select')?.value || '',
+                    orderSrc: document.getElementById('submissions-order-source-select')?.value || '',
+                    complaintSrc: document.getElementById('submissions-complaint-source-select')?.value || '',
+                    term: _submissionsSearchTerm || ''
+                };
+                const a = { p1: q.p1, cap: q.cap, branch: q.branch, channel: q.channel, survey: q.survey, list: L, size };
+                if(q.branches) a.branches = q.branches;
+                return a;
+            },
+            page(p, size){
+                const a = this._ask(size); if(!a) return null;
+                const key = JSON.stringify(a);
+                if(key !== this._key){ this._key = key; this._cursors = [null]; this._pages = new Map(); this._total = null; this._err = null; }
+                const hit = this._pages.get(p);
+                // A page whose starting point is no longer known (page one
+                // moved under it) starts again from page one.
+                if(p > 0 && !hit && this._cursors[p] === undefined){ _submissionsPage = 0; return this.page(0, size); }
+                const fresh = hit && (Date.now() - hit.at < (a.cap ? 20000 : 120000));
+                const resting = this._err && Date.now() - (this._errAt || 0) < 15000;   // no hammering after a failure
+                if(!fresh && !this._busy && !resting) this._fetch(p, a, key);
+                return { rows: hit ? hit.rows : null, total: this._total, loading: this._busy || !hit, err: this._err };
+            },
+            canNext(p){ return this._cursors[p + 1] != null; },
+            async _fetch(p, a, key){
+                this._busy = true;
+                try {
+                    const r = await apiCall('list_submissions', Object.assign({}, a, { cursor: this._cursors[p] || null }));
+                    if(key !== this._key) return;
+                    if(!r || r.status !== 'success') throw new Error((r && (r.code || r.message)) || 'no answer');
+                    if(r.total != null) this._total = r.total;
+                    if(p === 0){ // page one moved: everything after it is re-asked
+                        const keep = this._pages.get(0);
+                        this._pages = new Map(); if(keep) this._pages.set(0, keep);
+                        this._cursors = [null];
+                    }
+                    this._cursors[p + 1] = r.next || null;
+                    this._pages.set(p, { rows: this._map(r.rows || []), at: Date.now() });
+                    this._err = null;
+                } catch(e){
+                    this._err = String(e && e.message || e); this._errAt = Date.now();
+                    console.warn('[list] server list unavailable, showing this browser\'s:', this._err);
+                } finally {
+                    this._busy = false;
+                    try { if(state.currentView === 'submissions' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions'); } catch(x){}
+                }
+            },
+            // The server's rows become the same objects this page builds from
+            // its own copy -- same mapSource, a separate dedupe set so the
+            // live feed's own record of what it holds is left untouched.
+            _map(rows){
+                const saved = _mappedRowKeys; _mappedRowKeys = new Set();
+                const out = { subs: [], incs: [], _incremental: true };
+                try {
+                    rows.forEach(x => {
+                        const src = ((typeof LIVE !== 'undefined' && LIVE.sources) || []).find(s => s.form === x.label)
+                                 || { form: x.label, channelFields: ['order channel', 'mode order'] };
+                        mapSource([x.row], src, out);
+                    });
+                } finally { _mappedRowKeys = saved; }
+                return out.subs;
+            },
+            find(stableKey){
+                for(const v of this._pages.values()){ const s = (v.rows || []).find(x => _incidentStableKey(x) === stableKey); if(s) return s; }
+                return null;
+            }
+        };
+        window.SrvList = SrvList;
         function submissionsSearch(term) {
             _submissionsSearchTerm = term || '';
             _submissionsPage = 0;
@@ -11336,7 +11414,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // (richer, resolution-tracking) detail view instead of duplicating it here.
         const _SUBMISSION_SKIP_KEYS = new Set(['created at','created by','location','time taken','name','phone number','status']);
         function openSubmissionDetailModal(stableKey){
-            const s = (state.p1.subs || []).find(x => _incidentStableKey(x) === stableKey)
+            const s = (typeof SrvList !== 'undefined' && SrvList.find(stableKey))
+                   || (state.p1.subs || []).find(x => _incidentStableKey(x) === stableKey)
                    || (rawData.submissions || []).find(x => _incidentStableKey(x) === stableKey);
             if(!s) return;
             const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
@@ -16892,25 +16971,39 @@ ${(() => {
                             entries.forEach(([n, label]) => sel.add(new Option(label, n)));
                             if(entries.some(([n]) => n === prevVal)) sel.value = prevVal;
                         });
-                        const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-                        if(_submissionsPage >= totalPages) _submissionsPage = totalPages - 1;
+                        // v2.145.0: with "Overview numbers: counted on the server"
+                        // on, the list is the database's own (SrvList, Worker
+                        // v4.78+): the same page, filters and search, without
+                        // the copies this browser holds of rows D1 merged away.
+                        // Anything the server cannot answer falls back to the
+                        // list below, counted here as before.
+                        let _srv = null;
+                        try { if(typeof SrvList !== 'undefined' && SummaryFeed.on()) _srv = SrvList.page(_submissionsPage, PAGE_SIZE); } catch(e){ _srv = null; }
+                        const _useSrv = !!(_srv && (_srv.rows || (_srv.loading && !_srv.err)));
+                        const listTotal = (_useSrv && _srv.total != null) ? _srv.total : sorted.length;
+                        const totalPages = Math.max(1, Math.ceil(listTotal / PAGE_SIZE));
+                        if(!_useSrv && _submissionsPage >= totalPages) _submissionsPage = totalPages - 1;
                         if(_submissionsPage < 0) _submissionsPage = 0;
                         const pageStart = _submissionsPage * PAGE_SIZE;
-                        const shown = sorted.slice(pageStart, pageStart + PAGE_SIZE);
+                        const shown = _useSrv ? (_srv.rows || []) : sorted.slice(pageStart, pageStart + PAGE_SIZE);
+                        const _waiting = _useSrv && !_srv.rows;
                         const countEl = document.getElementById('submissions-detail-count');
                         if(countEl){
-                            countEl.textContent = sorted.length
-                                ? `Showing ${(pageStart+1).toLocaleString()} - ${Math.min(pageStart+PAGE_SIZE, sorted.length).toLocaleString()} of ${sorted.length.toLocaleString()} record(s)${term?' matching your search':''}.`
-                                : `No submissions${term?' match your search':' in the current filter'}.`;
+                            countEl.textContent = _waiting ? 'Loading\u2026' : (listTotal
+                                ? `Showing ${(pageStart+1).toLocaleString()} - ${Math.min(pageStart+PAGE_SIZE, listTotal).toLocaleString()} of ${listTotal.toLocaleString()} record(s)${term?' matching your search':''}.`
+                                : `No submissions${term?' match your search':' in the current filter'}.`);
                         }
                         const pageLabel = document.getElementById('submissions-page-label');
                         if(pageLabel) pageLabel.textContent = `Page ${_submissionsPage+1} of ${totalPages}`;
                         const prevBtn = document.getElementById('submissions-prev-btn');
                         const nextBtn = document.getElementById('submissions-next-btn');
-                        if(prevBtn) prevBtn.disabled = (_submissionsPage <= 0);
-                        if(nextBtn) nextBtn.disabled = (_submissionsPage >= totalPages - 1);
+                        if(prevBtn) prevBtn.disabled = (_submissionsPage <= 0) || _waiting;
+                        if(nextBtn) nextBtn.disabled = (_submissionsPage >= totalPages - 1) || _waiting || (_useSrv && !SrvList.canNext(_submissionsPage));
                         const tbody = document.getElementById('submissions-detail-tbody');
-                        if(tbody){
+                        // While the next page is on its way, the rows already
+                        // shown stay, faded, rather than the table going blank.
+                        if(tbody) tbody.style.opacity = _waiting ? '0.45' : '';
+                        if(tbody && !_waiting){
                             UI.anchoredUpdate(tbody, () => {
                             tbody.uiHTML = shown.length ? shown.map(s => {
                                 const rawCreatedAt = _rawFieldExact(s._raw, 'Created At');
