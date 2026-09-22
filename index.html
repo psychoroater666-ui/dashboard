@@ -8843,7 +8843,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.141.0 · 22 Sep 2026 · Overview figures re-asked as soon as new rows arrive, and never step backwards';
+        const BUILD_VERSION = 'v2.141.1 · 22 Sep 2026 · Overview banner never falls back to this browser\'s submission count; no leftover faded cards';
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -10569,6 +10569,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     };
                     setName(vB, rB, ranked[0]); setName(vW, rW, ranked[ranked.length - 1]);
                     vCards.forEach(c => c && c.classList.toggle('kpi-stale', stale));
+                } else {
+                    // An answer without them: those four are this browser's,
+                    // and must not keep a faded look from an earlier answer.
+                    vCards.forEach(c => c && c.classList.remove('kpi-stale'));
                 }
                 if(stale){
                     const t = new Date(e.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -14539,6 +14543,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try {
                     const q = (typeof SummaryFeed !== 'undefined' && SummaryFeed.on()) ? SummaryFeed.screenQuery() : null;
                     const e = q ? SummaryFeed.get(q) : null;
+                    if(e && e.data && e.data.p1 && e.data.p1.fake === undefined){
+                        // Counts from the server, the fake share from here --
+                        // never this browser's own submission count.
+                        nSubs = e.data.p1.subs; nReal = Math.max(0, e.data.p1.incs - nFake);
+                    }
                     if(e && e.data && e.data.p1 && e.data.p1.fake !== undefined){
                         nSubs = e.data.p1.subs; nFake = e.data.p1.fake; nReal = e.data.p1.incs - e.data.p1.fake;
                         let a = prevWk, b = prevWk;
