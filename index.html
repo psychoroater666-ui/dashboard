@@ -8848,7 +8848,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.145.0 · 22 Sep 2026 · Submissions list served a page at a time from the server when Overview numbers are on the server';
+        const BUILD_VERSION = 'v2.146.0 · 22 Sep 2026 · Owner setting: keep the last 35 days in each browser, older ranges fetched from the server when picked';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -9006,6 +9006,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     try { if(state.currentView === 'executive') app.renderExecutive(); } catch(e){}
                 }
             }
+            // v2.146.0: how much history this browser keeps (see HistoryWindow).
+            if(typeof st.historyDays === 'number'){ try { HistoryWindow.accept(st.historyDays); } catch(e){} }
             window.__settingsApplied = true;
         }
         let LIVE_MODE = false;
@@ -9097,6 +9099,155 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // feed is on, _fetch maps the old CSV url to its tab and answers
         // from memory. If the backend can't be reached, _fetch falls back
         // to the CSV download, so nothing goes dark during the cutover.
+        /* ═════════════════════════════════════════════════════════════════
+           v2.146.0 -- HISTORY WINDOW (step 3b)
+           Owner setting `historyDays` (Worker v4.81): 0 = every screen holds
+           all history, as always; 35 = it holds the last 35 days and fetches
+           an older span from the server only when someone picks a range that
+           reaches it (date bar, its previous period, Compare, Complaints).
+           The fetched span goes through the very same mapping as everything
+           else, so no view had to change. It is held for the session only.
+           ═════════════════════════════════════════════════════════════════ */
+        const HistoryWindow = (function(){
+            const LS = 'sentinel_history_days';
+            const valid = v => v === 0 || (Number.isInteger(v) && v >= 14 && v <= 365);
+            let days = (() => { try { const v = parseInt(localStorage.getItem(LS), 10); return valid(v) ? v : 0; } catch(e){ return 0; } })();
+            let offSeen = 0;                       // first time "everything" was heard (see accept)
+            const arch = {};                       // tab key -> [objRows] fetched from the server
+            let cover = null;                      // { from, to } days held in arch, `to` exclusive
+            let want = null;                       // earliest day asked for and not yet held
+            let running = null, loading = null, failedAt = 0, waiters = [];
+
+            const bt = () => { try { return _businessToday(); } catch(e){ return new Date().toISOString().slice(0, 10); } };
+            const shift = (iso, n) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); const p = x => String(x).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
+            const on = () => days > 0;
+            // The first calendar day the window holds; the Worker counts rows
+            // created on or after its midnight, so every business day from this
+            // one onwards is held whole.
+            const since = () => on() ? shift(bt(), -days) : null;
+            const nice = iso => { try { return new Date(iso + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch(e){ return iso; } };
+
+            /* A change arriving from the server. Switching TO a window only ever
+               means holding less, so it is taken at once. Switching back to
+               everything means every screen downloads all history, so -- like
+               "Overview numbers: off" -- it is believed from the Owner's own
+               Save, or when heard twice at least 15 s apart. */
+            function accept(v){
+                v = parseInt(v, 10);
+                if(!valid(v) || v === days){ if(v === days) offSeen = 0; return false; }
+                if(v === 0){
+                    const own = window.__hwSaved && window.__hwSaved.v === 0 && Date.now() - window.__hwSaved.at < 60000;
+                    if(!own && !(offSeen && Date.now() - offSeen >= 15000)){ if(!offSeen) offSeen = Date.now(); return false; }
+                }
+                offSeen = 0;
+                days = v;
+                try { localStorage.setItem(LS, String(v)); } catch(e){}
+                // Whatever was fetched belonged to the old window.
+                for(const k in arch) delete arch[k];
+                cover = null; want = null;
+                try { if(typeof DataFeed !== 'undefined') ChannelReg.keys().forEach(k => DataFeed.bump(k)); } catch(e){}
+                console.info('[history] browser keeps ' + (v ? 'the last ' + v + ' days' : 'all history') + ' from now on');
+                try { if(window.pollNow) setTimeout(() => window.pollNow(), 50); } catch(e){}
+                return true;
+            }
+
+            /* Make sure every day from `from` is held. Called by anything that
+               is about to show a range; returns at once when it is. */
+            function need(from){
+                if(!on() || !from || !/^\d{4}-\d{2}-\d{2}$/.test(from)) return Promise.resolve(true);
+                const s = since();
+                if(from >= s) return Promise.resolve(true);
+                if(cover && from >= cover.from && cover.to >= s) return Promise.resolve(true);
+                if(!want || from < want) want = from;
+                if(failedAt && Date.now() - failedAt < 30000) return Promise.resolve(false);
+                const p = new Promise(res => waiters.push(res));
+                kick();
+                return p;
+            }
+            function kick(){
+                if(running) return;
+                running = run().finally(() => { running = null; if(want && !failedAt) kick(); });
+            }
+
+            async function run(){
+                // Loop: another range may have been asked for while this one loaded.
+                while(want){
+                    const s = since(), from = want;
+                    want = null;
+                    const spans = [];
+                    if(!cover) spans.push([from, s]);
+                    else {
+                        if(from < cover.from) spans.push([from, cover.from]);
+                        if(cover.to < s) spans.push([cover.to, s]);     // the window moved on overnight
+                    }
+                    if(!spans.length) continue;
+                    const lo = spans.reduce((m, x) => x[0] < m ? x[0] : m, spans[0][0]);
+                    loading = { from: lo, to: shift(s, -1) };
+                    try { _historyPill(); } catch(e){}
+                    const t0 = Date.now();
+                    let got = 0;
+                    try {
+                        for(const [a, b] of spans){
+                            for(const k of ChannelReg.keys()){
+                                let after = 0, guard = 0;
+                                const rows = [];
+                                let headers = null;
+                                while(guard++ < 80){
+                                    const r = await apiCall('get_range', { tab: k, from: a, to: b, after, limit: 8000 });
+                                    if(r && r.status === 'error' && /unknown tab/i.test(String(r.message || ''))) break;   // a form not in the database yet
+                                    if(!r || r.status !== 'success') throw new Error((r && (r.message || r.code)) || 'no answer');
+                                    headers = (r.headers && r.headers.length) ? r.headers : headers;
+                                    if(r.rows && r.rows.length) rows.push(...r.rows);
+                                    if(!r.next) break;
+                                    after = r.next;
+                                }
+                                if(rows.length && headers){
+                                    arch[k] = (arch[k] || []).concat(DataFeed.toObjects(headers, rows));
+                                    got += rows.length;
+                                }
+                            }
+                        }
+                        cover = cover ? { from: lo < cover.from ? lo : cover.from, to: s } : { from: lo, to: s };
+                        failedAt = 0;
+                        console.info('[history] fetched ' + got + ' rows for ' + nice(lo) + ' – ' + nice(shift(s, -1)) + ' in ' + (Date.now() - t0) + ' ms');
+                        ChannelReg.keys().forEach(k => DataFeed.bump(k));
+                    } catch(e){
+                        failedAt = Date.now();
+                        console.warn('[history] could not fetch older days: ' + (e && e.message || e));
+                        try { UI.toast('Could not load dates before ' + nice(s) + ' from the server — showing what this screen holds. It will try again.', 'warning', 6000); } catch(x){}
+                        want = null;
+                    }
+                    loading = null;
+                    try { _historyPill(); } catch(e){}
+                }
+                // Map what arrived and repaint, through the same silent path as a poll.
+                try { await loadLive(); } catch(e){}
+                try {
+                    const paint = () => {
+                        const chip = document.querySelector('#date-presets .preset-chip.active');
+                        if(chip && chip.dataset.range === 'all' && typeof app !== 'undefined') { computeDataDateRange(); app.setDateRange('all', chip); }
+                        else { applyGlobalFilters(); app.refreshData(); }
+                        if(state.currentView === 'complaints' && app.renderComplaintTopography) app.renderComplaintTopography();
+                        if(state.execMode === 'compare' && typeof branchCompare !== 'undefined') branchCompare.render();
+                    };
+                    (typeof UI !== 'undefined' && UI.silent) ? UI.silent(paint) : paint();
+                } catch(e){}
+                const w = waiters; waiters = [];
+                w.forEach(f => f(!failedAt));
+            }
+
+            return {
+                on, since, accept, need,
+                days: () => days,
+                rows: k => arch[k] || null,
+                loadingLabel: () => !loading ? ''
+                    : loading.from < '2001-01-01' ? 'Loading everything before ' + nice(shift(loading.to, 1)) + ' from the server…'
+                    : 'Loading ' + nice(loading.from) + ' – ' + nice(loading.to) + ' from the server…',
+                status: () => ({ days, since: since(), cover, loading, held: Object.fromEntries(Object.keys(arch).map(k => [k, arch[k].length])) })
+            };
+        })();
+        window.HistoryWindow = HistoryWindow;
+
         const DataFeed = (function(){
             const DB = 'crumble_dashboard', STORE = 'feed', KEY = 'tabs', VER = 2;   // see above
             const AI_TABS = ['summary','actionplan','branchdx','radar','channelinsight'];
@@ -9151,6 +9302,41 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 return out.filter(Boolean);
             }
 
+            /* v2.146.0: the history window. A row's calendar day from its
+               Created At ("M/d/yyyy H:mm:ss" local, or ISO) -- the same
+               boundary the Worker uses (created_at >= day 00:00). */
+            function rowDay(v){
+                const s = String(v == null ? '' : v).trim();
+                let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                if(m) return m[3] + '-' + m[1].padStart(2, '0') + '-' + m[2].padStart(2, '0');
+                m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                return m ? m[1] + '-' + m[2] + '-' + m[3] : '';
+            }
+            /** Drop the rows created before `since`. Rows whose date cannot be
+             *  read are kept -- dropping a real row is worse than holding one. */
+            function trimTab(t, since){
+                if(!t || !since || !t.headers || !t.rows) return 0;
+                const ci = t.headers.findIndex(x => String(x).trim().toLowerCase() === 'created at');
+                if(ci < 0) return 0;
+                const before = t.rows.length;
+                t.rows = t.rows.filter(r => { const d = rowDay(r[ci]); return !d || d >= since; });
+                const cut = before - t.rows.length;
+                if(cut){ t.objRows = toObjects(t.headers, t.rows); t.gen = (t.gen || 0) + 1; t.changed = true; }
+                return cut;
+            }
+            /** Window rows plus any older span fetched for this session. The
+             *  fetched part sits in front, so rows arriving later still extend
+             *  the end and the incremental mapper keeps working. */
+            function objOf(t, k){
+                const a = (typeof HistoryWindow !== 'undefined' && ChannelReg.keys().indexOf(k) !== -1) ? HistoryWindow.rows(k) : null;
+                if(!a || !a.length) return t.objRows;
+                if(t._combA === a && t._combB === t.objRows) return t._comb;
+                t._comb = a.concat(t.objRows); t._combA = a; t._combB = t.objRows;
+                return t._comb;
+            }
+            /** Something outside the feed changed what a tab reads as: remap it in full. */
+            function bump(k){ const t = tabs[k]; if(!t) return; t.gen = (t.gen || 0) + 1; t.changed = true; t._comb = null; t._combA = null; t._combB = null; }
+
             // ── persistence (IndexedDB) ──
             function open(){ return new Promise((res, rej) => { if(!window.indexedDB) return rej(new Error('no-idb')); const r = indexedDB.open(DB, 2); r.onupgradeneeded = () => { const db = r.result; if(!db.objectStoreNames.contains('snapshot')) db.createObjectStore('snapshot'); if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
             async function load(){
@@ -9164,7 +9350,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         const complete = t.complete !== false;
                         // A half-loaded tab whose resume point wasn't saved can't be continued -- reload it fully.
                         if(!complete && !(t.before > 1)) continue;
-                        tabs[k] = { state: t.state, headers: t.headers, rows: t.rows || [], objRows: toObjects(t.headers, t.rows || []), changed: true, complete, before: t.before || 0 };
+                        // v2.146.0: a copy kept under the current window drops the
+                        // days that have aged out of it since it was saved.
+                        const win = t.win || 0;
+                        let rows = t.rows || [];
+                        if(win > 0 && complete && win === HistoryWindow.days()){
+                            const tmp = { headers: t.headers, rows };
+                            try { trimTab(tmp, HistoryWindow.since()); rows = tmp.rows; } catch(e){}
+                        }
+                        tabs[k] = { state: t.state, headers: t.headers, rows, objRows: toObjects(t.headers, rows), changed: true, complete, before: t.before || 0, win };
                     }
                     lastFull = saved.lastFull || 0;
                     return Object.keys(tabs).length > 0;
@@ -9181,7 +9375,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try {
                     const db = await open();
                     const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
-                    for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0 }; }
+                    for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0, win: t.win || 0 }; }
                     await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                 } catch(e){ /* quota/private mode: fine */ }
             }
@@ -9203,7 +9397,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     try {
                         const db = await open();
                         const payload = { v: VER, savedAt: Date.now(), lastFull, tabs: {} };
-                        for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0 }; }
+                        for(const k in tabs){ const t = tabs[k]; payload.tabs[k] = { state: t.state, headers: t.headers, rows: t.rows, complete: t.complete !== false, before: t.before || 0, win: t.win || 0 }; }
                         await new Promise((res, rej) => { const tx = db.transaction(STORE,'readwrite'); tx.objectStore(STORE).put(payload, KEY); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
                     } catch(e){ /* quota/private mode: fine */ }
                 }, 2000);
@@ -9376,8 +9570,28 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         .concat((typeof can === 'function' && can('users') && _viewIs('form-analytics')) ? ['form_analytics'] : []).concat((typeof can === 'function' && can('action')) ? ['actions'] : []);
                     // Always send the state we hold -- even mid-history. Omitting it made the
                     // server treat us as new, resend the newest chunk, and restart history forever.
+                    // v2.146.0: the history window. A form tab held under a
+                    // different window is brought in line first: from all
+                    // history to a window, a complete copy is simply cut down
+                    // (nothing to download); any other change starts that tab
+                    // afresh.
+                    const hwDays = HistoryWindow.days(), hwSince = HistoryWindow.since();
+                    const winKeys = ChannelReg.keys();
+                    winKeys.forEach(k => {
+                        const t = tabs[k]; if(!t || t.missing) return;
+                        const had = t.win || 0; if(had === hwDays) return;
+                        if(hwDays > 0 && had === 0 && t.complete !== false && t.state){
+                            const cut = trimTab(t, hwSince); t.win = hwDays;
+                            console.info('[history] ' + k + ': kept ' + t.rows.length + ' rows from ' + hwSince + ', let go of ' + cut);
+                        } else {
+                            tabs[k] = { state: null, headers: t.headers || [], rows: [], objRows: [], changed: true, complete: true, before: 0, gen: (t.gen || 0) + 1, win: hwDays };
+                            console.info('[history] ' + k + ': starting afresh for ' + (hwDays ? 'the last ' + hwDays + ' days' : 'all history'));
+                        }
+                        dirty = true;
+                    });
                     const state = {}; keys.forEach(k => { if(tabs[k] && tabs[k].state) state[k] = tabs[k].state; });
-                    const res = await apiCall('get_data', { tabs: keys, state, full: forceFull });
+                    const since = {}; if(hwSince) winKeys.forEach(k => { since[k] = hwSince; });
+                    const res = await apiCall('get_data', hwSince ? { tabs: keys, state, full: forceFull, since } : { tabs: keys, state, full: forceFull });
                     if(!res || res.status !== 'success' || !res.tabs) throw new Error(res && res.message || 'get_data failed');
                     // v2.124.0: when D1 does not answer, the Worker falls back to Apps
                     // Script, which serves a much smaller window of rows. That answer
@@ -9391,6 +9605,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if(ChannelReg.merge(res.channels)) syncSourcesWithChannels();
                     if(res.settings) applyOwnerSettings(res.settings);
                     for(const k in res.tabs) apply(k, res.tabs[k]);
+                    // Every form tab answered now reflects the window it was asked under.
+                    winKeys.forEach(k => { if(tabs[k] && res.tabs[k]) tabs[k].win = hwDays; });
                     // Tell the server how many rows we actually hold, not only
                     // the position we think we are at. When the two disagree the
                     // position is fiction and the server re-sends in full.
@@ -9429,8 +9645,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // 8000 is the backend's own ceiling; the default was 6000,
                             // so this is a third fewer round trips through a backend
                             // that answers in seconds, not milliseconds.
-                            const res = await apiCall('get_data', { tabs:[key], chunk: { [key]: { before: tabs[key].before, limit: 8000 } } });
+                            const _hs = (ChannelReg.keys().indexOf(key) !== -1 && (tabs[key].win || 0) > 0) ? HistoryWindow.since() : null;
+                            const _ask = { tabs:[key], chunk: { [key]: { before: tabs[key].before, limit: 8000 } } };
+                            if(_hs) _ask.since = { [key]: _hs };
+                            const _ref = tabs[key];
+                            const res = await apiCall('get_data', _ask);
                             if(!res || res.status !== 'success' || !res.tabs || !res.tabs[key]) break;
+                            // v2.146.0: the tab was started afresh (window changed) while
+                            // this chunk was on its way -- it belongs to the old copy.
+                            if(tabs[key] !== _ref) break;
                             apply(key, res.tabs[key]);
                             scheduleSave();
                             if(typeof window.__onHistoryChunk === 'function') window.__onHistoryChunk(key, tabs[key]);
@@ -9445,17 +9668,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }
             }
 
-            function rowsFor(url){ const k = urlKey(url); return k && tabs[k] ? tabs[k].objRows : null; }
+            function rowsFor(url){ const k = urlKey(url); return k && tabs[k] ? objOf(tabs[k], k) : null; }
             function has(url){ const k = urlKey(url); return !!(k && tabs[k] && !tabs[k].missing); }
             function changed(url){ const k = urlKey(url); return !(k && tabs[k]) || tabs[k].changed === true; }
             function anyDirty(){ return Object.keys(tabs).some(k => tabs[k].changed === true); }
-            function markConsumed(){ Object.keys(tabs).forEach(k => { const t = tabs[k]; t.changed = false; t.consumedLen = t.objRows.length; t.consumedGen = t.gen || 0; }); }
+            function markConsumed(){ Object.keys(tabs).forEach(k => { const t = tabs[k]; t.changed = false; t.consumedLen = objOf(t, k).length; t.consumedGen = t.gen || 0; }); }
             // Rows added since the dashboard last mapped this tab, or null if the
             // tab was replaced/rebuilt (then a full remap is required).
             function newSince(url){
                 const k = urlKey(url); const t = k && tabs[k]; if(!t) return null; if(t.missing) return [];
-                if(t.consumedLen == null || (t.gen || 0) !== (t.consumedGen || 0) || t.objRows.length < t.consumedLen) return null;
-                return t.objRows.slice(t.consumedLen);
+                const all = objOf(t, k);
+                if(t.consumedLen == null || (t.gen || 0) !== (t.consumedGen || 0) || all.length < t.consumedLen) return null;
+                return all.slice(t.consumedLen);
             }
             function isComplete(){ return Object.keys(tabs).every(k => tabs[k].complete !== false); }
             /* v2.123.1: how much is actually missing, 0 when everything is held.
@@ -9480,7 +9704,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             function status(){ const p = Object.keys(tabs).filter(k => tabs[k].complete === false); return { enabled, complete: !p.length, pending: p, rows: Object.fromEntries(Object.keys(tabs).map(k => [k, tabs[k].objRows.length])) }; }
 
-            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, missingFraction, status, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
+            return { sync, load, rowsFor, has, changed, anyDirty, markConsumed, newSince, urlKey, isComplete, missingFraction, status, bump, toObjects, get enabled(){ return enabled; }, set enabled(v){ enabled = !!v; }, tabs,
                      debug(){ const o = {}; for(const k in tabs){ const t = tabs[k]; o[k] = { rows: t.objRows.length, complete: t.complete !== false, state: t.state, last: t.rows.length ? t.rows[t.rows.length-1][0] : null }; } return o; } };
         })();
 
@@ -9821,7 +10045,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // Shown when the numbers on screen would actually mislead -- more
             // than 3% of rows missing -- not whenever a tab is topping itself up.
             const gap = (typeof DataFeed !== 'undefined' && DataFeed.enabled && DataFeed.missingFraction) ? DataFeed.missingFraction() : 0;
-            const incomplete = gap > 0.03;
+            // v2.146.0: an older span being fetched for the range on screen.
+            const rng = (typeof HistoryWindow !== 'undefined') ? HistoryWindow.loadingLabel() : '';
+            const incomplete = gap > 0.03 || !!rng;
+            const msg = rng ? rng + ' Figures for those dates fill in when it arrives.'
+                            : 'Still loading earlier data \u2014 totals shown below are incomplete.';
             // Remove EVERY banner, not just the first: at boot the scroll
             // container may not exist yet and one gets attached to <body>, so a
             // second could be created later. getElementById only ever found one,
@@ -9834,10 +10062,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(!el){
                 el = document.createElement('div'); el.id = 'partial-data-banner';
                 el.style.cssText = 'position:sticky;top:0;z-index:9998;background:rgba(1,1,151,.06);border-bottom:1px solid rgba(1,1,151,.16);color:var(--accent-blue);font:600 0.78rem Inter,sans-serif;padding:7px 16px;display:flex;align-items:center;gap:8px;justify-content:center;';
-                el.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:0.72rem;"></i> Still loading earlier data \u2014 totals shown below are incomplete.';
                 const host = document.querySelector('.content-scroll') || document.body;
                 host.insertBefore(el, host.firstChild);
             }
+            if(el.__msg !== msg){ el.__msg = msg; el.innerHTML = '<i class="fas fa-circle-notch fa-spin" style="font-size:0.72rem;"></i> ' + msg.replace(/</g, '&lt;'); }
         }
         // A failed live sync IS surfaced -- quietly, but it must be: it means the
         // page is on fallback data.
@@ -10727,7 +10955,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             window.__listParityLast = res;
             return res;
         };
-        window.sentinelParity = async function(){
+        window.sentinelParity = async function(extraChecks){
             const t0 = Date.now();
             const fs = (typeof DataFeed !== 'undefined' && DataFeed.status) ? DataFeed.status() : { complete: true, pending: [] };
             if(!fs.complete) console.warn('[parity] This screen is still loading earlier data (' + fs.pending.join(', ') + '). Its own counts are partial -- run again once the banner is gone.');
@@ -10760,7 +10988,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 return { subs: subs.length, incs: incs.length, avg: rated.length ? rated.reduce((n, s) => n + s.smileScore, 0) / rated.length : 0, by,
                          ver: st('verified'), fake: st('fake'), review: st('review'), notResponding: st('not_responding') };
             };
-            const checks = [
+            const checks = (Array.isArray(extraChecks) && extraChecks.length) ? extraChecks : [
                 ['Today',     { p1: { start: bt, end: bt }, cap: true }],
                 ['Yesterday', { p1: { start: _shiftDays(bt, -1), end: _shiftDays(bt, -1) }, cap: false }],
                 ['7 days',    { p1: { start: _shiftDays(bt, -6), end: bt }, cap: true }],
@@ -10806,7 +11034,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     if(!server || server.status !== 'success') throw new Error((server && (server.code || server.message)) || 'no answer');
                     compare(label, local(q.p1, q), server.p1);
                 }
-                if(sq){
+                if(sq && !(Array.isArray(extraChecks) && extraChecks.length)){
                     server = await SummaryFeed.ask(sq);
                     if(!server || server.status !== 'success') throw new Error((server && (server.code || server.message)) || 'no answer');
                     // What the cards actually show: the arrays applyFilters built.
@@ -10832,6 +11060,30 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const result = { ok: !bad && !branchDiffs.length, complete: fs.complete, rows, branchDiffs, build: BUILD_VERSION.split(' ')[0] };
             window.__parityLast = result;
             return result;
+        };
+
+        /* v2.146.0 -- step 3b check. Run in the console on a screen that keeps
+           the last 35 days:   sentinelWindowParity()
+           It fetches days 31-60 from the server the way the "30 days" button
+           does, then compares this screen's counts with the server's for
+           ranges inside the window, outside it, and straddling its edge. */
+        window.sentinelWindowParity = async function(){
+            if(!HistoryWindow.on()){ console.warn('[window] This screen holds all history (Owner settings → History kept in each browser: Everything). Nothing to check.'); return { ok: false, error: 'window off' }; }
+            const bt = _businessToday(), s = HistoryWindow.since();
+            console.info('[window] holding from ' + s + ' · fetching the 30 days before the last 30 from the server…');
+            const got = await HistoryWindow.need(_shiftDays(bt, -59));
+            if(!got){ console.error('[window] The server could not send the older days.'); return { ok: false, error: 'fetch failed' }; }
+            await new Promise(r => setTimeout(r, 400));
+            const checks = [
+                ['Days 31–60 (fetched)',   { p1: { start: _shiftDays(bt, -59), end: _shiftDays(bt, -30) }, cap: false }],
+                ['Across the window edge', { p1: { start: _shiftDays(s, -3), end: _shiftDays(s, 3) }, cap: false }],
+                ['First day held',         { p1: { start: s, end: s }, cap: false }],
+                ['Last day not held',      { p1: { start: _shiftDays(s, -1), end: _shiftDays(s, -1) }, cap: false }],
+                ['30 days',                { p1: { start: _shiftDays(bt, -29), end: bt }, cap: true }]
+            ];
+            const r = await window.sentinelParity(checks);
+            console.log('[window] rows held here:', DataFeed.status().rows, '· fetched for this session:', HistoryWindow.status().held);
+            return r;
         };
 
         function initGlobalDates() {
@@ -10882,6 +11134,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const diffDays = Math.ceil(Math.abs(end - start) / (1000 * 60 * 60 * 24)) + 1;
             const p2End = new Date(start); p2End.setDate(p2End.getDate() - 1);
             const p2Start = new Date(p2End); p2Start.setDate(p2Start.getDate() - diffDays + 1);
+            // v2.146.0: the range and its comparison period must be held. "All"
+            // means all of it, not just what this browser keeps.
+            try {
+                const _allChip = document.querySelector('#date-presets .preset-chip.active[data-range="all"]');
+                if(_allChip) HistoryWindow.need('2000-01-01');
+                else if(!isNaN(p2Start)) HistoryWindow.need(_fmtDate(p2Start));
+            } catch(e){}
 
             state.periodLabels.p2 = `${p2Start.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})} - ${p2End.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})}`;
 
@@ -11070,6 +11329,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // erroring or auto-correcting.
                 if(sA > eA){ const t = sA; sA = eA; eA = t; }
                 if(sB > eB){ const t = sB; sB = eB; eB = t; }
+                try { const _f = [sA, sB].filter(d => !isNaN(d)).map(d => d.toISOString().slice(0, 10)).sort()[0]; if(_f) HistoryWindow.need(_f); } catch(e){}
                 
                 const br = this.getSelectedOptions('branch');
                 const co = this.getSelectedOptions('complaint');
@@ -11531,6 +11791,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
                 payload.currentDrop       = document.getElementById('os-drop').value.trim();
                 { const sr = document.querySelector('input[name="os-sr"]:checked'); if(sr){ payload.summaryReads = sr.value === 'server'; window.__srSaved = { v: payload.summaryReads, at: Date.now() }; } }
+                { const hd = document.querySelector('input[name="os-hd"]:checked'); if(hd){ payload.historyDays = parseInt(hd.value, 10) || 0; window.__hwSaved = { v: payload.historyDays, at: Date.now() }; } }
             }
             const res = await apiCall('settings_set', payload).catch(() => null);
             if(!res || res.status !== 'success'){
@@ -11580,10 +11841,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">A rating counts as an incident at</span>
                         <select id="os-rating" style="${inp}">${ratings}</select>
                         <span style="${hint}">Applies on every screen immediately.</span></label>
-                    <div style="display:grid;gap:8px;"><span style="${lbl()}">Overview numbers <span class="os-new">NEW</span></span>
-                        <label class="os-opt ${st.summaryReads ? 'on' : ''}"><input type="radio" name="os-sr" value="server" ${st.summaryReads ? 'checked' : ''} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted on the server</b><small>Every screen shows the same total the moment it opens — no half-counted figures while loading. Corrections show within minutes.</small></span></label>
-                        <label class="os-opt ${st.summaryReads ? '' : 'on'}"><input type="radio" name="os-sr" value="browser" ${st.summaryReads ? '' : 'checked'} onchange="document.querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted in each browser</b><small>The way it has always worked. Keep this until you are happy with the server figures.</small></span></label>
+                    <div class="os-grp" style="display:grid;gap:8px;"><span style="${lbl()}">Overview numbers <span class="os-new">NEW</span></span>
+                        <label class="os-opt ${st.summaryReads ? 'on' : ''}"><input type="radio" name="os-sr" value="server" ${st.summaryReads ? 'checked' : ''} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted on the server</b><small>Every screen shows the same total the moment it opens — no half-counted figures while loading. Corrections show within minutes.</small></span></label>
+                        <label class="os-opt ${st.summaryReads ? '' : 'on'}"><input type="radio" name="os-sr" value="browser" ${st.summaryReads ? '' : 'checked'} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted in each browser</b><small>The way it has always worked. Keep this until you are happy with the server figures.</small></span></label>
                         <span style="${hint}">Applies to the six Overview cards. Every screen switches within a few seconds; you can switch back at any time.</span></div>
+                    <div class="os-grp" style="display:grid;gap:8px;"><span style="${lbl()}">History kept in each browser <span class="os-new">NEW</span></span>
+                        <label class="os-opt ${(st.historyDays || 0) > 0 ? 'on' : ''}"><input type="radio" name="os-hd" value="35" ${(st.historyDays || 0) > 0 ? 'checked' : ''} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Last 35 days</b><small>Screens download about a quarter less today and stay that size as the data grows. When someone picks older dates, those days are fetched from the server for that session.</small></span></label>
+                        <label class="os-opt ${(st.historyDays || 0) > 0 ? '' : 'on'}"><input type="radio" name="os-hd" value="0" ${(st.historyDays || 0) > 0 ? '' : 'checked'} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Everything</b><small>The way it has always worked: every screen holds all history.</small></span></label>
+                        <span style="${hint}">Every screen switches within a few seconds; nothing is re-downloaded when switching to 35 days. Switching back makes every screen download all history again.</span></div>
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">This month's drop</span>
                         <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie" style="${inp}">
                         <span style="${hint}">Stamped on every monthly-drop response so months stay comparable, and used as the button label on the dine-in QR screen.</span></label>
@@ -12894,7 +13159,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             const isFirstRun = _seenIncidentKeys.size === 0;
             const newOnes = [];
+            // v2.146.0: an older span fetched for a past range is history, not
+            // news -- it is neither alerted nor added to the seen list.
+            const _hwFrom = (typeof HistoryWindow !== 'undefined') ? HistoryWindow.since() : null;
             (rawData.incidents || []).forEach(inc => {
+                if(_hwFrom && inc.date && inc.date < _hwFrom) return;
                 const key = _incidentStableKey(inc);
                 if(!_seenIncidentKeys.has(key)){
                     _seenIncidentKeys.add(key);
@@ -18133,6 +18402,7 @@ ${(() => {
                 let startDate = document.getElementById('comp-bc-s')?.value;
                 let endDate   = document.getElementById('comp-bc-e')?.value;
                 if(startDate && endDate && startDate > endDate){ const t = startDate; startDate = endDate; endDate = t; }
+                try { if(startDate) HistoryWindow.need(startDate); } catch(e){}
                 const out = document.getElementById('branch-comp-output');
                 if (!out) return;
 
@@ -20656,6 +20926,13 @@ ${(() => {
         app.renderComplaintTopography = function(){
             const ledgerEl = document.getElementById('ct-ledger');
             if(!ledgerEl) return;
+            // v2.146.0: three windows back -- 21 days, 90 days, or three months.
+            try {
+                const _bt = _businessToday();
+                const _from = CT_RANGE === 'month' ? (() => { const d = new Date(_bt + 'T00:00:00'); d.setDate(1); d.setMonth(d.getMonth() - 2); return _fmtDate(d); })()
+                            : _shiftDays(_bt, -(CT_RANGE === '30d' ? 90 : 21));
+                HistoryWindow.need(_from);
+            } catch(e){}
             const incs = _getScopeFilteredIncidents();
 
             // Region coverage check — config.branches accumulates every real
