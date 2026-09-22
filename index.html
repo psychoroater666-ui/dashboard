@@ -606,6 +606,41 @@
         .kpi-asof { color:var(--text-muted); font-weight:600; display:flex; align-items:center; gap:6px; }
         .kpi-asof i { color:var(--brand-accent); font-size:.72rem; }
         body.dark-theme .kpi-asof i { color:#64D0FF; }
+        /* v2.149.0: Owner settings → Standards, and the Overview's Against target strip */
+        .sv-card { border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; display:grid; gap:8px; grid-template-columns:minmax(0,1fr); min-width:0; }
+        .sv-h { display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+        .sv-sub { font-size:.68rem; color:var(--text-muted); font-weight:600; }
+        .sv-row { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:38px; }
+        .sv-l { font-size:.8rem; color:var(--text-main); font-weight:600; }
+        .sv-num { display:inline-flex; align-items:center; gap:6px; flex-shrink:0; }
+        .sv-num input { width:78px; padding:8px 10px; border:1.5px solid var(--border-color); border-radius:9px; font:700 .84rem 'Inter',sans-serif; text-align:right; background:var(--white); color:var(--text-main); }
+        .sv-num input:focus { outline:none; border-color:var(--brand-accent); }
+        .sv-num em { font-style:normal; font-size:.72rem; color:var(--text-muted); font-weight:600; width:74px; }
+        .sv-sec { display:grid; gap:2px; margin-top:4px; }
+        .sv-sec b { font-size:.9rem; font-weight:800; color:var(--text-main); }
+        .sv-sec span { font-size:.72rem; color:var(--text-muted); line-height:1.45; }
+        .sv-l small { display:block; font-size:.68rem; color:var(--text-muted); font-weight:500; margin-top:1px; }
+        .sv-sep { height:1px; background:var(--border-color); margin:2px 0; }
+        .sv-bt { display:flex; align-items:center; gap:8px; }
+        .sv-bt select { flex:1; min-width:0; width:100%; padding:8px 10px; border:1.5px solid var(--border-color); border-radius:9px; font:600 .8rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); }
+        .sv-x { border:none; background:transparent; color:var(--text-muted); font-size:1.1rem; width:28px; height:28px; border-radius:8px; cursor:pointer; }
+        .sv-x:hover { background:rgba(220,38,38,.08); color:#DC2626; }
+        .sv-add, .sv-reset { justify-self:start; border:none; background:transparent; color:var(--brand-accent); font:700 .76rem 'Inter',sans-serif; padding:4px 0; cursor:pointer; }
+        .sv-reset { color:var(--text-muted); }
+        @media (max-width:520px){ .sv-num input { width:64px; padding:8px; } .sv-num em { width:70px; } .sv-l { font-size:.78rem; } .sv-bt { flex-wrap:wrap; } .sv-bt select { flex:1 1 100%; } .sv-bt .sv-num { margin-left:auto; } }
+        .tg-card { display:grid; gap:12px; padding:16px 18px !important; }
+        .tg-h { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+        .tg-h b { font-size:.9rem; font-weight:800; color:var(--text-main); }
+        .tg-h span { font-size:.72rem; color:var(--text-muted); }
+        .tg-g { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+        .tg-t { border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; display:grid; gap:4px; min-width:0; }
+        .tg-l { font-size:.64rem; font-weight:800; text-transform:uppercase; letter-spacing:.4px; color:var(--text-muted); }
+        .tg-v { font-size:1.35rem; font-weight:800; color:var(--text-main); letter-spacing:-.5px; font-variant-numeric:tabular-nums; }
+        .tg-v span { font-size:.75rem; color:var(--text-muted); font-weight:700; margin-left:2px; letter-spacing:0; }
+        .tg-s { font-size:.72rem; font-weight:700; }
+        .tg-s.ok { color:var(--status-good); } .tg-s.bad { color:var(--status-critical); } .tg-s.na { color:var(--text-muted); font-weight:600; }
+        @media (max-width:900px){ .tg-g { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+        @media (max-width:600px){ .tg-v { font-size:1.15rem; } }
         .os-new { margin-left:6px; padding:2px 7px; border-radius:20px; background:rgba(1,1,151,.1); color:var(--brand-accent); font-size:.6rem; }
         body.dark-theme .os-new { background:rgba(100,208,255,.14); color:#64D0FF; }
         .os-opt { display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1.5px solid var(--border-color); border-radius:10px; cursor:pointer; font-size:.8rem; color:var(--text-main); }
@@ -7352,14 +7387,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <div class="trend-indicator trend-neutral" id="rate-worst" style="color:var(--text-main);">--</div>
                         </div>
                     </div>
+                        <div class="card tg-card" id="tg-card" hidden></div>
                         <div class="card sla-card" id="sla-card">
                         <div class="sla-left">
                             <span class="sla-eyebrow"><span class="sla-dot"></span> Live queue</span>
                             <div id="sla-tile"></div>
                         </div>
                         <div class="sla-rules">
-                            <div><span>Review</span><b>3 min</b></div>
-                            <div><span>Close</span><b>15 min</b></div>
+                            <div><span>Review</span><b id="sla-rv-min">3 min</b></div>
+                            <div><span>Close</span><b id="sla-rs-min">15 min</b></div>
                             <small>measured from arrival · last 24h</small>
                         </div>
                     </div>
@@ -8848,7 +8884,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.148.0 · 23 Sep 2026 · Profile photos saved to D1 under the signed-in person, and never wiped by a stale answer';
+        const BUILD_VERSION = 'v2.149.0 · 23 Sep 2026 · Owner settings → Standards (targets and alarm levels); Overview Against target strip';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -8993,6 +9029,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     setTimeout(() => location.reload(), 5200);
                     return;
                 }
+            }
+            // v2.149.0: new standards repaint the flags, targets and timers.
+            if(st.standards && typeof st.standards === 'object' && JSON.stringify(prev.standards || {}) !== JSON.stringify(st.standards)){
+                try { applyStandardsToPage(); } catch(e){}
+                if(window.__settingsApplied){ try { if(typeof renderAlerts === 'function') renderAlerts(); if(state.currentView === 'executive') app.renderExecutive(); } catch(e){} }
             }
             if(prev.incidentMaxRating !== window.OwnerSettings.incidentMaxRating && window.__settingsApplied){
                 try { applyGlobalFilters(); app.applyFilters(); } catch(e){}
@@ -10547,20 +10588,33 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             subs.forEach(s => { const x=byBranch[s.branch]; if(x){ x.sub++; if(s.smileScore != null){ x.rated++; if(s.smileScore>=4) x.pos++; } } });
             incs.forEach(i => { const x=byBranch[i.branch]; if(x){ x.inc++; if(!i.resolved) x.unres++; } });
 
+            // v2.149.0: every level below comes from the Owner's Standards.
+            const S = Std();
+            // Collection is judged on finished days only: at 11 am every
+            // branch is "short" of a full day's target.
+            let today = ''; try { today = _businessToday(); } catch(e){}
+            const done = {}; const days = new Set();
+            subs.forEach(s => { if(!s.date || s.date === today) return; days.add(s.date); done[s.branch] = (done[s.branch] || 0) + 1; });
             const alerts = [];
             Object.keys(byBranch).forEach(name => {
                 const b = byBranch[name]; if(b.sub===0 && b.inc===0) return;
                 const rate   = b.sub ? (b.inc/b.sub*100) : 0;
                 const posPct = b.rated ? (b.pos/b.rated*100) : 100;
-                if(b.inc >= 3)      alerts.push({sev:'critical', t:`${name}: ${b.inc} incidents`, d:'Critical escalation — incidents at or above 3.'});
-                else if(b.inc === 2) alerts.push({sev:'warn', t:`${name}: 2 incidents`, d:'Warning threshold — monitor closely.'});
-                if(rate > 4)        alerts.push({sev:'warn', t:`${name}: ${rate.toFixed(1)}% incident rate`, d:'Above the 4% incident-rate threshold.'});
-                if(b.rated>=5 && posPct < 95) alerts.push({sev: posPct<90?'critical':'warn', t:`${name}: ${posPct.toFixed(0)}% positive`, d:'Below the 95% positive-feedback target.'});
+                if(b.inc >= S.incCritical)   alerts.push({sev:'critical', t:`${name}: ${b.inc} incidents`, d:`Critical escalation — incidents at or above ${S.incCritical}.`});
+                else if(b.inc >= S.incWarn)  alerts.push({sev:'warn', t:`${name}: ${b.inc} incidents`, d:'Warning threshold — monitor closely.'});
+                if(rate > S.incRate)         alerts.push({sev:'warn', t:`${name}: ${rate.toFixed(1)}% incident rate`, d:`Above the ${S.incRate}% incident-rate threshold.`});
+                if(b.rated>=5 && posPct < S.tPositive) alerts.push({sev: posPct < S.posCritical ? 'critical' : 'warn', t:`${name}: ${posPct.toFixed(0)}% positive`,
+                    d: posPct < S.posCritical ? `Below the ${S.posCritical}% critical level.` : `Below the ${S.tPositive}% positive-feedback target.`});
+                if(days.size && b.sub > 0){
+                    const perDay = (done[name] || 0) / days.size, tgt = stdSubTarget(name);
+                    if(perDay < S.subCritical) alerts.push({sev:'critical', t:`${name}: ${Math.round(perDay)} submissions a day`, d:`Below ${S.subCritical} — a collection failure, not a quiet day.`});
+                    else if(perDay < tgt)      alerts.push({sev:'warn', t:`${name}: ${Math.round(perDay)} submissions a day`, d:`Below the ${tgt} a day target.`});
+                }
                 if(b.unres >= 3)    alerts.push({sev:'warn', t:`${name}: ${b.unres} unresolved`, d:'Multiple incidents still open.'});
             });
             const ct = {}; incs.forEach(i => ct[i.complaintType] = (ct[i.complaintType]||0)+1);
             const top = Object.entries(ct).sort((a,b)=>b[1]-a[1])[0];
-            if(top && top[1] >= 5) alerts.push({sev:'critical', t:`Systemic: ${top[0]} ×${top[1]}`, d:'Repeated complaint across branches — treat as an operational failure.'});
+            if(top && top[1] >= S.systemic) alerts.push({sev:'critical', t:`Systemic: ${top[0]} ×${top[1]}`, d:'Repeated complaint across branches — treat as an operational failure.'});
 
             const order={critical:0,warn:1,good:2};
             alerts.sort((a,b)=>order[a.sev]-order[b.sev]);
@@ -11837,7 +11891,17 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         async function saveOwnerSettings(tab){
             const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
             const payload = {};
-            if(tab === 'alerts'){
+            if(tab === 'standards'){
+                const got = svCollect();
+                if(got.error){
+                    if(btn){ btn.disabled = false; btn.textContent = 'Save'; }
+                    document.querySelectorAll('.sv-num input').forEach(i => i.style.borderColor = '');
+                    if(got.bad){ const ids = { tSmile:'sv-t-smile', tPositive:'sv-t-pos', tRating:'sv-t-rating', tIncRate:'sv-t-ir', tReviewRate:'sv-t-rev', tResolveRate:'sv-t-res', tCloseMin:'sv-t-close', subTarget:'sv-st', subCritical:'sv-sc', incWarn:'sv-iw', incCritical:'sv-ic', incRate:'sv-ir', posCritical:'sv-pc', systemic:'sv-sy', reviewMin:'sv-rv', reringMin:'sv-rr', resolveMin:'sv-rs' };
+                        const el = document.getElementById(ids[got.bad]); if(el){ el.style.borderColor = '#DC2626'; try { el.focus(); el.scrollIntoView({ block: 'center' }); } catch(e){} } }
+                    UI.toast(got.error, 'warning', 5000); return;
+                }
+                payload.standards = got.standards;
+            } else if(tab === 'alerts'){
                 payload.quietStart = parseInt(document.getElementById('os-qs').value, 10);
                 payload.quietEnd   = parseInt(document.getElementById('os-qe').value, 10);
                 payload.alertBranches = Array.from(document.querySelectorAll('.os-branch:checked')).map(i => i.value);
@@ -11890,7 +11954,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 style="border:none;background:${tab===k?'var(--brand-accent)':'transparent'};color:${tab===k?'#fff':'var(--text-muted)'};
                        font:700 .74rem 'Inter',sans-serif;padding:7px 13px;border-radius:8px;cursor:pointer;">${t}</button>`;
 
+            window.__svBranches = branches;
             const panes = {
+              standards: ownerStandardsPane(st, branches),
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
                         <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
@@ -11982,12 +12048,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
-                    ${(tab === 'rules' || tab === 'alerts') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
+                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
@@ -12497,6 +12563,185 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // precise timestamp) is what actually stays consistent for the same
         // real-world incident run to run.
 
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.149.0 -- SERVICE STANDARDS (Owner settings → Standards)
+           Every target and alarm level the dashboard measures against, from
+           the Owner setting `standards` (Worker v4.84). Anything not set is
+           the company standard below. Read through Std() at the moment of
+           use, so a change applies on the next repaint with no reload.
+           ═══════════════════════════════════════════════════════════════════ */
+        const SVC_DEFAULTS = {
+            // Targets -- one number per KPI, shown on the Overview as "vs target".
+            tSmile: 90, tPositive: 98, tRating: 4.8, tIncRate: 2, tReviewRate: 100, tResolveRate: 95, tCloseMin: 15, subTarget: 100,
+            branchTargets: {},
+            // Alarms -- when a branch is flagged and when alerts ring.
+            subCritical: 80, incWarn: 2, incCritical: 3, incRate: 4, systemic: 5, posCritical: 95,
+            reviewMin: 3, reringMin: 5, resolveMin: 15 };
+        function ownerStandardsPane(st, branches){
+            const s = Object.assign({}, SVC_DEFAULTS, (st && st.standards) || {});
+            const lbl = `font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);`;
+            const hint = `font-size:.7rem;color:var(--text-muted);line-height:1.45;`;
+            const num = (id, v, min, max, unit, step) => `<span class="sv-num"><input type="number" id="${id}" value="${v}" min="${min}" max="${max}" step="${step || 1}" inputmode="decimal">${unit ? `<em>${unit}</em>` : '<em></em>'}</span>`;
+            const row = (label, ctl, sub) => `<div class="sv-row"><span class="sv-l">${label}${sub ? `<small>${sub}</small>` : ''}</span>${ctl}</div>`;
+            const card = (title, sub, body) => `<div class="sv-card"><div class="sv-h"><span style="${lbl}">${title}</span>${sub ? `<span class="sv-sub">${sub}</span>` : ''}</div>${body}</div>`;
+            const section = (title, text) => `<div class="sv-sec"><b>${title}</b><span>${text}</span></div>`;
+            const bt = s.branchTargets || {};
+            const opts = sel => ['<option value="">Choose a branch…</option>'].concat(branches.map(b => `<option ${b===sel?'selected':''}>${b}</option>`)).join('');
+            const btRows = Object.keys(bt).map(b => `<div class="sv-bt"><select class="sv-bt-b">${opts(b)}</select>${num('', bt[b], 1, 2000, '/ day')}<button class="sv-x" onclick="this.parentElement.remove()" title="Remove" aria-label="Remove">×</button></div>`).join('');
+            return `<div style="display:grid;gap:14px;grid-template-columns:minmax(0,1fr);">
+                ${section('Targets', 'What good looks like. Shown next to each figure on the Overview as “vs target”.')}
+                ${card('Customer', '',
+                    row('Smile score', num('sv-t-smile', s.tSmile, 0, 100, 'out of 100')) +
+                    row('Positive feedback', num('sv-t-pos', s.tPositive, 0, 100, '%')) +
+                    row('Average rating', num('sv-t-rating', s.tRating, 0, 5, 'out of 5', 0.1)) +
+                    row('Incident rate', num('sv-t-ir', s.tIncRate, 0, 100, '% or less', 0.1)))}
+                ${card('Team', '',
+                    row('Incidents reviewed', num('sv-t-rev', s.tReviewRate, 0, 100, '%')) +
+                    row('Incidents resolved', num('sv-t-res', s.tResolveRate, 0, 100, '%')) +
+                    row('Average time to close', num('sv-t-close', s.tCloseMin, 1, 1440, 'min')))}
+                ${card('Feedback collection', 'per branch, per day',
+                    row('Submissions', num('sv-st', s.subTarget, 1, 2000, 'per day')) +
+                    `<div class="sv-sep"></div><span class="sv-l" style="margin-bottom:2px;">Busier branches <span class="os-new">own target</span></span>
+                     <div id="sv-bts" style="display:grid;gap:6px;">${btRows}</div>
+                     <button class="sv-add" onclick="svAddBranchTarget()">+ Add a branch target</button>`)}
+                ${section('Alarms', 'When a branch is flagged on the bell and in the branch lists, and when phones ring.')}
+                ${card('Branch flags', 'per branch, per day',
+                    row('Collection critical below', num('sv-sc', s.subCritical, 0, 2000, 'per day')) +
+                    row('Incidents: warning at', num('sv-iw', s.incWarn, 1, 50, 'incidents')) +
+                    row('Incidents: critical at', num('sv-ic', s.incCritical, 1, 50, 'incidents')) +
+                    row('Incident rate warning above', num('sv-ir', s.incRate, 0, 100, '%', 0.1)) +
+                    row('Positive feedback critical below', num('sv-pc', s.posCritical, 0, 100, '%')) +
+                    row('Same complaint = systemic at', num('sv-sy', s.systemic, 2, 100, 'cases')))}
+                ${card('Incident timers', 'each case',
+                    row('Review within', num('sv-rv', s.reviewMin, 1, 60, 'min'), 'Rings if nobody has opened it') +
+                    row('Ring again every', num('sv-rr', s.reringMin, 1, 60, 'min')) +
+                    row('Close within', num('sv-rs', s.resolveMin, 1, 240, 'min'), 'Counted from review; turns red after'))}
+                <button class="sv-reset" onclick="svResetDefaults()">Reset to company standard</button>
+            </div>`;
+        }
+
+        function Std(){
+            const s = Object.assign({}, SVC_DEFAULTS, ((window.OwnerSettings || {}).standards) || {});
+            s.branchTargets = Object.assign({}, s.branchTargets || {});
+            return s;
+        }
+        /** A branch's own daily submission target, or the general one. */
+        function stdSubTarget(branch){
+            const s = Std(), bt = s.branchTargets || {};
+            const k = Object.keys(bt).find(b => b.toLowerCase() === String(branch || '').toLowerCase());
+            return k ? bt[k] : s.subTarget;
+        }
+        function svAddBranchTarget(){
+            const host = document.getElementById('sv-bts'); if(!host) return;
+            const d = document.createElement('div');
+            d.innerHTML = ownerStandardsPane({ standards: { branchTargets: { '': Std().subTarget } } }, window.__svBranches || [])
+                .match(/<div class="sv-bt">[\s\S]*?<\/button><\/div>/)[0];
+            host.appendChild(d.firstChild);
+        }
+        function svResetDefaults(){
+            const m = { 'sv-t-smile':'tSmile','sv-t-pos':'tPositive','sv-t-rating':'tRating','sv-t-ir':'tIncRate','sv-t-rev':'tReviewRate',
+                        'sv-t-res':'tResolveRate','sv-t-close':'tCloseMin','sv-st':'subTarget','sv-sc':'subCritical','sv-iw':'incWarn',
+                        'sv-ic':'incCritical','sv-ir':'incRate','sv-pc':'posCritical','sv-sy':'systemic','sv-rv':'reviewMin','sv-rr':'reringMin','sv-rs':'resolveMin' };
+            Object.keys(m).forEach(id => { const el = document.getElementById(id); if(el) el.value = SVC_DEFAULTS[m[id]]; });
+            const host = document.getElementById('sv-bts'); if(host) host.innerHTML = '';
+            try { UI.toast('Company standard filled in — press Save to use it.', 'info', 3500); } catch(e){}
+        }
+        /** Read the Standards tab back into one object, or explain what is wrong. */
+        function svCollect(){
+            const val = id => { const el = document.getElementById(id); const v = el ? parseFloat(el.value) : NaN; return v; };
+            const s = { tSmile: val('sv-t-smile'), tPositive: val('sv-t-pos'), tRating: val('sv-t-rating'), tIncRate: val('sv-t-ir'),
+                        tReviewRate: val('sv-t-rev'), tResolveRate: val('sv-t-res'), tCloseMin: val('sv-t-close'), subTarget: val('sv-st'),
+                        subCritical: val('sv-sc'), incWarn: val('sv-iw'), incCritical: val('sv-ic'), incRate: val('sv-ir'),
+                        posCritical: val('sv-pc'), systemic: val('sv-sy'), reviewMin: val('sv-rv'), reringMin: val('sv-rr'), resolveMin: val('sv-rs') };
+            for(const k in s){ if(isNaN(s[k])) return { error: 'Every box needs a number.' }; }
+            // The same ranges the Worker accepts (v4.84 STANDARD_RANGES): a number
+            // outside them would be dropped there and silently become the default.
+            const R = { tSmile:[0,100], tPositive:[0,100], tRating:[0,5], tIncRate:[0,100], tReviewRate:[0,100], tResolveRate:[0,100],
+                        tCloseMin:[1,1440], subTarget:[1,2000], subCritical:[0,2000], incWarn:[1,50], incCritical:[1,50], incRate:[0,100],
+                        posCritical:[0,100], systemic:[2,100], reviewMin:[1,60], reringMin:[1,60], resolveMin:[1,240] };
+            for(const k in R){ if(s[k] < R[k][0] || s[k] > R[k][1]){
+                return { error: 'One number is outside what it can be (' + R[k][0] + '–' + R[k][1] + '). Check the box outlined in red.', bad: k }; } }
+            if(s.subCritical > s.subTarget) return { error: 'Collection critical level must be at or below the submissions target.' };
+            if(s.incWarn > s.incCritical) return { error: 'Incident warning must be at or below the critical level.' };
+            if(s.posCritical > s.tPositive) return { error: 'Positive-feedback critical level must be at or below its target.' };
+            if(s.tRating > 5) return { error: 'Average rating is out of 5.' };
+            const bt = {};
+            document.querySelectorAll('#sv-bts .sv-bt').forEach(r => {
+                const b = (r.querySelector('select') || {}).value, n = parseInt((r.querySelector('input') || {}).value, 10);
+                if(b && n >= 1) bt[b] = n;
+            });
+            s.branchTargets = bt;
+            return { standards: s };
+        }
+
+        /** Timers written into static text: the Live queue card. */
+        function applyStandardsToPage(){
+            const S = Std();
+            const a = document.getElementById('sla-rv-min'); if(a) a.textContent = S.reviewMin + ' min';
+            const b = document.getElementById('sla-rs-min'); if(b) b.textContent = S.resolveMin + ' min';
+        }
+        /** v2.149.0 -- Overview → "Against target": the period on screen measured
+         *  against the Owner's targets. Local figures, same formulas as the
+         *  rest of the dashboard (smile100, positive = 4-5 stars of rated,
+         *  incident rate without fakes). */
+        function renderTargets(){
+            const host = document.getElementById('tg-card'); if(!host) return;
+            if(state.execMode !== 'overview' || !state.p1){ return; }
+            const S = Std(), subs = state.p1.subs || [], incs = state.p1.incs || [];
+            const rated = subs.filter(s => s.smileScore != null && !isNaN(s.smileScore));
+            const avg = rated.length ? rated.reduce((t, s) => t + Number(s.smileScore), 0) / rated.length : null;
+            const pos = rated.length ? rated.filter(s => s.smileScore >= 4).length / rated.length * 100 : null;
+            const real = incs.filter(i => i.caseStatus !== 'fake');
+            const irate = subs.length ? real.length / subs.length * 100 : null;
+            const reviewed = incs.length ? incs.filter(i => i.reviewedAt || i.resolved).length / incs.length * 100 : null;
+            const resolved = incs.length ? incs.filter(i => i.resolved).length / incs.length * 100 : null;
+            const closeT = incs.map(i => (i.resolvedAt && i.reviewedAt) ? (Date.parse(i.resolvedAt) - Date.parse(i.reviewedAt)) / 60000 : NaN)
+                               .filter(m => isFinite(m) && m >= 0);
+            const closeAvg = closeT.length ? closeT.reduce((a, b) => a + b, 0) / closeT.length : null;
+            // Collection: finished days in the range; a range that is only
+            // today counts the branches that have already reached target.
+            let today = ''; try { today = _businessToday(); } catch(e){}
+            const per = {}, days = new Set(), todayPer = {};
+            subs.forEach(s => { if(!s.branch || s.branch === 'Unspecified') return;
+                if(s.date === today) todayPer[s.branch] = (todayPer[s.branch] || 0) + 1;
+                else if(s.date){ days.add(s.date); per[s.branch] = (per[s.branch] || 0) + 1; } });
+            let colVal = null, colOk = 0, colN = 0, colNote = '';
+            if(days.size){
+                Object.keys(per).forEach(b => { colN++; if(per[b] / days.size >= stdSubTarget(b)) colOk++; });
+                colNote = 'a day, on finished days';
+            } else {
+                Object.keys(todayPer).forEach(b => { colN++; if(todayPer[b] >= stdSubTarget(b)) colOk++; });
+                colNote = 'reached so far today';
+            }
+            if(colN) colVal = colOk + ' / ' + colN;
+            const f1 = v => (Math.round(v * 10) / 10).toLocaleString();
+            const tiles = [
+                ['Smile score', avg == null ? null : smile100(avg), '/100', S.tSmile, 'up', v => Math.round(v), 'Target ' + S.tSmile],
+                ['Positive feedback', pos, '%', S.tPositive, 'up', f1, 'Target ' + S.tPositive + '%'],
+                ['Average rating', avg, '/5', S.tRating, 'up', v => v.toFixed(2), 'Target ' + S.tRating],
+                ['Incident rate', irate, '%', S.tIncRate, 'down', f1, 'Target ' + S.tIncRate + '% or less'],
+                ['Incidents reviewed', reviewed, '%', S.tReviewRate, 'up', v => Math.round(v), 'Target ' + S.tReviewRate + '%'],
+                ['Incidents resolved', resolved, '%', S.tResolveRate, 'up', v => Math.round(v), 'Target ' + S.tResolveRate + '%'],
+                ['Average time to close', closeAvg, ' min', S.tCloseMin, 'down', v => Math.round(v), 'Target ' + S.tCloseMin + ' min from review'],
+            ];
+            let met = 0, measured = 0;
+            const tileHtml = tiles.map(([name, v, unit, tgt, dir, fmt, tt]) => {
+                if(v == null || isNaN(v)) return `<div class="tg-t"><div class="tg-l">${name}</div><div class="tg-v">—</div><div class="tg-s na">${tt} · nothing to measure</div></div>`;
+                measured++;
+                const ok = dir === 'up' ? v >= tgt : v <= tgt; if(ok) met++;
+                const gap = Math.abs(v - tgt), g = gap < 0.05 ? '' : ' · ' + (dir === 'up' ? (ok ? fmt(gap) + ' above' : fmt(gap) + ' below') : (ok ? fmt(gap) + (unit.trim() === 'min' ? ' faster' : ' under') : fmt(gap) + (unit.trim() === 'min' ? ' slower' : ' above')));
+                const u = unit === '%' ? '%' : `<span>${unit}</span>`;
+                return `<div class="tg-t"><div class="tg-l">${name}</div><div class="tg-v">${fmt(v)}${u}</div><div class="tg-s ${ok ? 'ok' : 'bad'}">${ok ? '✓' : (dir === 'up' ? '▼' : '▲')} ${gap < 0.05 ? 'On target' : tt + g}</div></div>`;
+            }).join('');
+            let colTile;
+            if(colVal == null) colTile = `<div class="tg-t"><div class="tg-l">Branches on collection</div><div class="tg-v">—</div><div class="tg-s na">Target ${S.subTarget} a day · nothing to measure</div></div>`;
+            else { measured++; const ok = colOk === colN; if(ok) met++;
+                colTile = `<div class="tg-t"><div class="tg-l">Branches on collection</div><div class="tg-v">${colVal}</div><div class="tg-s ${ok ? 'ok' : 'bad'}">${ok ? '✓' : '▼'} Target ${S.subTarget} ${colNote}${ok ? '' : ' · ' + (colN - colOk) + ' short'}</div></div>`; }
+            const html = `<div class="tg-h"><b>Against target</b><span>Set in Owner settings → Standards · ${met} of ${measured} on target</span></div><div class="tg-g">${tileHtml}${colTile}</div>`;
+            if(host.__lastHtml !== html){ host.__lastHtml = html; host.innerHTML = html; }   // rule 12
+            host.hidden = false;
+        }
+
         // ═══════════════════════════════════════════════════════════════════
         // SLA CLOCK
         // Two timers per incident, both measured from when the row actually
@@ -12509,7 +12754,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // work the queue: Call Center and Report Analyst.
         // Reports still measure against the written standard (20s / 15min).
         // ═══════════════════════════════════════════════════════════════════
-        const SLA = { REVIEW_RING_MS: 3*60*1000, RESOLVE_MS: 15*60*1000, RERING_MS: 5*60*1000,
+        // v2.149.0: the three timers follow the Owner's Standards.
+        const SLA = { get REVIEW_RING_MS(){ return Std().reviewMin * 60000; },
+                      get RESOLVE_MS(){ return Std().resolveMin * 60000; },
+                      get RERING_MS(){ return Std().reringMin * 60000; },
                       REVIEW_TARGET_MS: 20*1000,
                       // Only today's queue is an SLA matter. Anything older is a
                       // backlog to work through, not a live breach -- counting it
@@ -15563,6 +15811,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try { this.renderForecast(); } catch(e){ console.warn('forecast:', e); }
                 try { this.renderBlinkLive(); } catch(e){ console.warn('blink live:', e); }
                 try { this.renderVerdict(); } catch(e){ console.warn('verdict:', e); }
+                try { renderTargets(); } catch(e){ console.warn('targets:', e); }
                 if (state.execMode === 'overview') {
                     const { p1, p2 } = state;
                     const tSubs = _stabilizeCount(p1.subs.length, _subsStabilizer, !window._isBackgroundRefresh);
@@ -24578,14 +24827,15 @@ ${(() => {
                 if(can('audit')) A.push(['fa-list-check', 'Activity trail', 'Every action taken in the dashboard, by whom and when.']);
                 return A;
             }
-            const STANDARDS = [
-                ['Review an incident', 'within 3 minutes of it arriving', 'If nobody opens it in 3 minutes the alert rings again, every 5 minutes, until someone does.'],
-                ['Close an incident', 'within 15 minutes of reviewing it', 'Past 15 minutes the case turns red and the alert rings again.'],
+            // v2.149.0: written from the Owner's Standards each time Help opens.
+            const STANDARDS_NOW = () => { const S = Std(); return [
+                ['Review an incident', `within ${S.reviewMin} minutes of it arriving`, `If nobody opens it in ${S.reviewMin} minutes the alert rings again, every ${S.reringMin} minutes, until someone does.`],
+                ['Close an incident', `within ${S.resolveMin} minutes of reviewing it`, `Past ${S.resolveMin} minutes the case turns red and the alert rings again.`],
                 ['Verified vs Fake', 'judged by the agent', 'Verified means a real complaint. Fake means it is not genuine — fakes are excluded from complaint analysis. Not Responding means the customer could not be reached.'],
-                ['Submissions', '100 per branch per day is the target', 'Under 80 is treated as a collection problem, not a quiet day.'],
-                ['Positive feedback', '98% is the target', 'Below 95% is critical.'],
+                ['Submissions', `${S.subTarget} per branch per day is the target`, `Under ${S.subCritical} is treated as a collection problem, not a quiet day.` + (Object.keys(S.branchTargets).length ? ' Some busier branches have their own target.' : '')],
+                ['Positive feedback', `${S.tPositive}% is the target`, `Below ${S.posCritical}% is critical.`],
                 ['Case discussions', 'in Sentinel, not WhatsApp', 'Anything about a complaint goes through Send to a room, so the details, the conversation and what was done stay with the case.']
-            ];
+            ]; };
             // Some answers only make sense for people who have the feature.
             const FAQ_ACTIONS = [
                 ['What is the Actions tab for?',
@@ -24898,7 +25148,7 @@ ${(() => {
                 </div>`;
             }
             function standardsPane(){
-                return `<div class="hp-scroll"><div class="hp-stds">${STANDARDS.map(([t, v, d]) => `<div class="hp-std"><b>${esc(t)}</b><em>${esc(v)}</em><span>${esc(d)}</span></div>`).join('')}</div></div>`;
+                return `<div class="hp-scroll"><div class="hp-stds">${STANDARDS_NOW().map(([t, v, d]) => `<div class="hp-std"><b>${esc(t)}</b><em>${esc(v)}</em><span>${esc(d)}</span></div>`).join('')}</div></div>`;
             }
             function renderPane(){
                 const el = document.getElementById('help-modal'); if(!el) return;
