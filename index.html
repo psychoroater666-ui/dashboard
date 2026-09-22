@@ -628,6 +628,27 @@
         .sv-add, .sv-reset { justify-self:start; border:none; background:transparent; color:var(--brand-accent); font:700 .76rem 'Inter',sans-serif; padding:4px 0; cursor:pointer; }
         .sv-reset { color:var(--text-muted); }
         @media (max-width:520px){ .sv-num input { width:64px; padding:8px; } .sv-num em { width:70px; } .sv-l { font-size:.78rem; } .sv-bt { flex-wrap:wrap; } .sv-bt select { flex:1 1 100%; } .sv-bt .sv-num { margin-left:auto; } }
+        /* v2.154.0: follow-ups and Owners */
+        #fu-root:not(:empty) { margin-bottom:16px; }
+        .fu-card { background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:16px 18px; display:grid; gap:10px; box-shadow:0 2px 8px -2px rgba(0,0,0,.06); }
+        .fu-h { display:flex; justify-content:space-between; align-items:baseline; gap:10px; flex-wrap:wrap; } .fu-h b { font-size:.95rem; color:var(--text-main); } .fu-h span { font-size:.74rem; color:var(--text-muted); }
+        .fu-tabs { display:flex; gap:6px; flex-wrap:wrap; } .fu-tabs span { font-size:.72rem; font-weight:700; padding:5px 10px; border-radius:20px; border:1px solid var(--border-color); color:var(--text-muted); cursor:pointer; }
+        .fu-tabs span.on { background:var(--brand-accent); color:#fff; border-color:var(--brand-accent); } .fu-tabs span.od:not(.on) { border-color:#FCA5A5; color:#B91C1C; }
+        .fu-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; border:1px solid var(--border-color); border-radius:12px; padding:11px 14px; }
+        .fu-row.od { border-color:#FCA5A5; background:#FFFBFB; } body.dark-theme .fu-row.od { background:rgba(220,38,38,.07); } .fu-row.dn { opacity:.75; }
+        .fu-top { display:flex; flex-wrap:wrap; gap:6px; align-items:center; font-size:.86rem; color:var(--text-main); }
+        .fu-chip { font-size:.6rem; font-weight:800; letter-spacing:.3px; padding:2px 7px; border-radius:10px; }
+        .c-pat, .c-crit { background:#FEE2E2; color:#B91C1C; } .c-em, .c-high { background:#FEF3C7; color:#92400E; }
+        .fu-do { font-size:.78rem; color:var(--text-main); margin:4px 0 3px; }
+        .fu-meta { font-size:.72rem; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:4px 10px; } .fu-meta b { color:var(--text-main); }
+        .fu-due { font-weight:800; } .fu-due.ok { color:#047857; } .fu-due.soon { color:#B45309; } .fu-due.late { color:#B91C1C; }
+        .fu-a { display:flex; gap:6px; } .fu-a button { border:1px solid var(--border-color); background:var(--white); color:var(--text-main); border-radius:8px; font:700 .72rem 'Inter',sans-serif; padding:6px 10px; cursor:pointer; }
+        .fu-a button.pr { background:var(--brand-accent); color:#fff; border-color:var(--brand-accent); }
+        @media (max-width:600px){ .fu-row { grid-template-columns:1fr; } .fu-a { justify-content:flex-end; } }
+        .ow-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:10px; align-items:center; padding:6px 0; } .ow-row + .ow-row { border-top:1px solid var(--border-color); }
+        .ow-row select { padding:8px 10px; border:1.5px solid var(--border-color); border-radius:9px; font:600 .8rem 'Inter',sans-serif; width:100%; background:var(--white); color:var(--text-main); }
+        .ow-l b { font-size:.8rem; color:var(--text-main); } .ow-l small { display:block; font-size:.68rem; color:var(--text-muted); }
+        @media (max-width:520px){ .ow-row { grid-template-columns:1fr; } }
         /* v2.153.0: Patterns today */
         .pt-cnt { font-size:.62rem; font-weight:800; background:#FEE2E2; color:#B91C1C; border-radius:10px; padding:2px 7px; margin-left:6px; vertical-align:middle; }
         .pt-row { display:flex; justify-content:space-between; align-items:center; gap:12px; border:1px solid #FECACA; background:#FFFBFB; border-radius:12px; padding:11px 14px; }
@@ -8267,7 +8288,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             <div id="view-orders" class="view"><div id="orders-root"></div></div>
             <div id="view-order-analytics" class="view"><div id="order-analytics-root"></div></div>
             <div class="ordv-overlay" id="ord-view" onclick="if(event.target===this) ORD_close()"><div class="ordv" id="ord-view-body"></div></div>
-            <div id="view-actions" class="view"><div id="acts-root"></div></div>
+            <div id="view-actions" class="view"><div id="fu-root"></div><div id="acts-root"></div></div>
 
             <!-- FORM ANALYTICS (Owner only) -->
             <div id="view-form-analytics" class="view"><div id="fa-root"></div></div>
@@ -8956,7 +8977,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.153.0 · 23 Sep 2026 · Daily operations report; Patterns today card and bell line; test sends to any address';
+        const BUILD_VERSION = 'v2.154.0 · 23 Sep 2026 · Action follow-through: automatic actions from patterns and emerging issues, owners, due times, reminders';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11969,7 +11990,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         async function saveOwnerSettings(tab){
             const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
             const payload = {};
-            if(tab === 'notice'){
+            if(tab === 'owners'){
+                const got = owCollect();
+                if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
+                payload.owners = got.owners;
+            } else if(tab === 'notice'){
                 const text = ((document.getElementById('nt-text') || {}).value || '').trim();
                 const until = (document.getElementById('nt-until') || {}).value || '';
                 if(until && until <= _ntNowPk()){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast('That end time has already passed.', 'warning', 4000); return; }
@@ -12047,6 +12072,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
               protection: `<div class="pr-host">${protectionPane(st, {})}</div>`,
               notice: noticePane(st),
               reports: `<div class="rp-host">${reportsPane()}</div>`,
+              owners: `<div class="ow-host">${ownersPane(st)}</div>`,
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
                         <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
@@ -12138,12 +12164,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('owners','Owners')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
-                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
+                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice' || tab === 'owners') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
@@ -12155,6 +12181,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(tab === 'people') loadAgentStats();
             if(tab === 'protection') loadProtectionStats();
             if(tab === 'notice') ntPreview();
+            if(tab === 'owners' && !_rpUsers) rpUsers().then(() => { const h = document.querySelector('#owner-settings-modal .ow-host'); if(h) h.innerHTML = ownersPane(window.OwnerSettings || {}); });
         }
 
         /** Each integration in one line: working, or what is wrong. */
@@ -13140,6 +13167,100 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             setInterval(() => { try { if(!document.hidden && state.currentView === 'executive') refresh(); } catch(e){} }, 30000);
             return { refresh, render, get data(){ return data; } };
         })();
+
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.154.0 -- ACTION FOLLOW-THROUGH (Worker v4.89 `followups`)
+           Every pattern and emerging issue becomes an action with an owner and
+           a due time; overdue ones are reminded until marked done.
+           ═══════════════════════════════════════════════════════════════════ */
+        const FU = (function(){
+            let data = null, at = 0, busy = false, tab = 'open';
+            async function refresh(force){
+                if(busy || (!force && Date.now() - at < 60000)) { render(); return; }
+                busy = true;
+                try { const r = await apiCall('followups', {}); if(r && r.status === 'success'){ data = r; at = Date.now(); } } catch(e){} finally { busy = false; }
+                render();
+            }
+            const dur = ms => { const m = Math.round(Math.abs(ms) / 60000), hh = Math.floor(m / 60), mm = m % 60; return (hh ? hh + ' h ' : '') + mm + ' min'; };
+            function render(){
+                const host = document.getElementById('fu-root'); if(!host) return;
+                if(!data){ host.innerHTML = ''; return; }
+                const all = data.list || [], now = Date.now(), esc = _ntEsc;
+                const open = all.filter(f => !f.done), over = open.filter(f => Date.parse(f.due) <= now), mine = open.filter(f => f.mine), done = all.filter(f => f.done);
+                if(!all.length){ const e = ''; if(host.__lastHtml !== e){ host.__lastHtml = e; host.innerHTML = e; } return; }
+                const show = tab === 'overdue' ? over : tab === 'mine' ? mine : tab === 'done' ? done : open;
+                const chip = (k, t, n, cls) => `<span class="${tab === k ? 'on' : ''} ${cls || ''}" onclick="FU.tab('${k}')">${t} · ${n}</span>`;
+                const rows = show.map(f => {
+                    const left = Date.parse(f.due) - now, late = !f.done && left <= 0, soon = !f.done && left > 0 && left < 3600000;
+                    const due = f.done ? 'Done by ' + esc(f.doneBy || '') : late ? 'Overdue ' + dur(left) : 'Due in ' + dur(left);
+                    return `<div class="fu-row ${late ? 'od' : ''} ${f.done ? 'dn' : ''}"><div>
+                        <div class="fu-top"><span class="fu-chip ${f.kind === 'pattern' ? 'c-pat' : 'c-em'}">${f.kind === 'pattern' ? 'PATTERN' : 'EMERGING'}</span><span class="fu-chip ${f.pri === 'Critical' ? 'c-crit' : 'c-high'}">${esc(String(f.pri).toUpperCase())}</span><b>${esc(f.branchLabel)}</b> · ${esc(f.issue)}</div>
+                        <div class="fu-do">${esc(f.done ? 'Done: ' + (f.note || '') : f.action)}</div>
+                        <div class="fu-meta"><span>Owner <b>${esc(f.ownerLabel)}</b></span><span class="fu-due ${f.done ? 'ok' : late ? 'late' : soon ? 'soon' : 'ok'}">${due}</span>${late && f.reminded ? `<span>Reminded ${f.reminded}×</span>` : ''}<span>${esc(f.why || '')}</span></div></div>
+                        <div class="fu-a"><button onclick="app.navigate('incidents')">View cases</button>${f.done ? '' : `<button class="pr" data-id="${esc(f.id)}" onclick="FU.done(this.dataset.id)">Mark done</button>`}</div></div>`;
+                }).join('');
+                const html = `<div class="fu-card"><div class="fu-h"><b>Waiting for action</b><span>Created automatically from patterns and emerging issues</span></div>
+                    <div class="fu-tabs">${chip('open', 'All open', open.length)}${chip('overdue', 'Overdue', over.length, over.length ? 'od' : '')}${chip('mine', 'Mine', mine.length)}${chip('done', 'Done today', done.length)}</div>
+                    ${rows || '<div class="pt-none">✓ Nothing here</div>'}</div>`;
+                if(host.__lastHtml !== html){ host.__lastHtml = html; host.innerHTML = html; }   // rule 12
+            }
+            function done(id){
+                const f = ((data || {}).list || []).find(x => x.id === id); if(!f) return;
+                const old = document.getElementById('fu-done'); if(old) old.remove();
+                const el = document.createElement('div');
+                el.className = 'ia-overlay is-open'; el.id = 'fu-done'; el.style.display = 'flex';
+                el.innerHTML = `<div class="ia-card" style="max-width:460px;"><div class="ia-header"><div><div class="ia-title">Mark done</div><div class="ia-sub">${_ntEsc(f.branchLabel)} · ${_ntEsc(f.issue)}</div></div>
+                    <button class="ia-close-x" onclick="document.getElementById('fu-done').remove()"><i class="fas fa-xmark"></i></button></div>
+                    <div style="padding:6px 22px 4px;display:grid;gap:10px;">
+                        <textarea id="fu-note" rows="3" maxlength="500" placeholder="What was done?" style="padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);resize:vertical;"></textarea>
+                        ${(typeof can === 'function' && can('action')) ? `<label style="display:flex;gap:8px;font-size:.78rem;color:var(--text-main);"><input type="checkbox" id="fu-track" checked> Also track whether it worked (opens the action log)</label>` : ''}
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;"><button class="fb-btn sm" onclick="document.getElementById('fu-done').remove()">Cancel</button>
+                    <button class="fb-btn sm" id="fu-save" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Mark done</button></div></div>`;
+                el.onclick = e => { if(e.target === el) el.remove(); };
+                document.body.appendChild(el);
+                document.getElementById('fu-save').onclick = async () => {
+                    const note = (document.getElementById('fu-note').value || '').trim();
+                    if(!note){ UI.toast('Write what was done.', 'warning'); return; }
+                    const track = !!(document.getElementById('fu-track') || {}).checked;
+                    const res = await apiCall('followup_done', { id, note }).catch(() => null);
+                    if(!res || res.status !== 'success'){ UI.toast((res && res.message) || 'Could not save.', 'error'); return; }
+                    el.remove(); UI.toast('Marked done.', 'success');
+                    f.done = true; f.doneAt = new Date().toISOString(); f.note = note; f.doneBy = PERM.name || PERM.email; render();
+                    refresh(true);
+                    if(track){ try { ACTS.log(f.branch || (f.branches || [])[0] || '', String(f.issue).replace(/ (×\d+| at \d+ branches)$/, '')); } catch(e){} }
+                };
+            }
+            setInterval(() => { try { if(!document.hidden && state.currentView === 'actions') refresh(); } catch(e){} }, 30000);
+            return { refresh, render, done, tab(k){ tab = k; render(); } };
+        })();
+        /* Owner settings → Owners */
+        const OW_ROLES = [['ops', 'Ops Manager', 'Cross-branch patterns, food safety, shake portions'], ['area', 'Area Manager', 'Positive-feedback drops'],
+                          ['delivery', 'Delivery Lead', 'Rider and delivery issues'], ['kitchen', 'Kitchen Lead', 'Product quality'], ['callcentre', 'Call Centre Lead', 'Slow case closing']];
+        function ownersPane(st){
+            const o = Object.assign({ roles: {}, dueHours: 4, remindHours: 4 }, (st && st.owners) || {});
+            const users = _rpUsers || [];
+            const opts = sel => ['<option value="">Nobody yet — the Owner receives it</option>'].concat(users.map(u => `<option value="${_ntEsc(String(u.email).toLowerCase())}" ${String(u.email).toLowerCase() === sel ? 'selected' : ''}>${_ntEsc(u.name || u.email)}</option>`)).join('');
+            return `<div style="display:grid;gap:14px;grid-template-columns:minmax(0,1fr);">
+                <div class="sv-sec"><b>Owners</b><span>Who receives each automatic action. Branch Manager actions go to that branch's manager from Manage users.</span></div>
+                <div class="sv-card"><div class="sv-h"><span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Roles</span></div>
+                    <div class="ow-row"><div class="ow-l"><b>Branch Manager</b><small>Automatic — the manager of each branch</small></div><select disabled><option>Automatic (from Manage users)</option></select></div>
+                    ${OW_ROLES.map(([k, r, s]) => `<div class="ow-row"><div class="ow-l"><b>${r}</b><small>${s}</small></div><select id="ow-${k}">${opts(o.roles[k] || '')}</select></div>`).join('')}
+                    ${_rpUsers ? '' : '<small style="font-size:.7rem;color:var(--text-muted);">Loading staff…</small>'}
+                </div>
+                <div class="sv-card"><div class="sv-h"><span style="font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);">Timing</span></div>
+                    <div class="sv-row"><span class="sv-l">Due within</span><span class="sv-num"><input type="number" id="ow-due" value="${o.dueHours}" min="1" max="72"><em>hours</em></span></div>
+                    <div class="sv-row"><span class="sv-l">Remind again every<small style="display:block;font-size:.68rem;color:var(--text-muted);font-weight:500;">Until it is marked done</small></span><span class="sv-num"><input type="number" id="ow-rem" value="${o.remindHours}" min="1" max="48"><em>hours</em></span></div>
+                    <div class="sv-row"><span class="sv-l">When overdue, also tell</span><span style="font-size:.78rem;font-weight:700;color:var(--text-main);">Every Owner</span></div>
+                </div></div>`;
+        }
+        function owCollect(){
+            const roles = {}; OW_ROLES.forEach(([k]) => { const v = (document.getElementById('ow-' + k) || {}).value; if(v) roles[k] = v; });
+            const d = parseInt((document.getElementById('ow-due') || {}).value, 10), m = parseInt((document.getElementById('ow-rem') || {}).value, 10);
+            if(!(d >= 1 && d <= 72)) return { error: 'Due within: a whole number of hours from 1 to 72.' };
+            if(!(m >= 1 && m <= 48)) return { error: 'Remind again every: a whole number of hours from 1 to 48.' };
+            return { owners: { roles, dueHours: d, remindHours: m } };
+        }
 
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
@@ -15622,7 +15743,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     return;
                 }
                 else if (state.currentView === 'order-analytics') { ORD.renderAnalytics(); return; }
-                else if (state.currentView === 'actions') { ACTS.render(); return; }
+                else if (state.currentView === 'actions') { ACTS.render(); try { FU.refresh(true); } catch(e){} return; }
                 else if (state.currentView === 'insights') this.renderInsights();
                 else if (state.currentView === 'complaints') this.renderComplaintTopography();
                 else if (state.currentView === 'data') return;
