@@ -8848,7 +8848,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.142.0 · 22 Sep 2026 · branch and region accounts see only their own branches everywhere (Overview panels, branch cards, Social, alerts)';
+        const BUILD_VERSION = 'v2.143.0 · 22 Sep 2026 · Smile Score = (average stars - 1) x 25 everywhere; Rankings rank by it, Positive Feedback kept as its own choice';
+        /* v2.143.0: the Smile Score, one formula everywhere.
+           The average star rating on a 0-100 scale where 1 star is 0 and 5
+           stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
+           smileys. It used to be average x 20 (1 star = 20) on the cards and
+           the SHARE of 4-5 star ratings in Rankings, so one branch showed 98
+           in one place and 100 in another. That share is Positive Feedback,
+           and keeps its own name. */
+        const smile100 = a => (a == null || isNaN(a) || a <= 0) ? null : Math.max(0, Math.min(100, (a - 1) * 25));
         const LIVE = {
             refreshMs: 15000,
             // Social Listening — Apps Script Web App (receives POSTs from dashboard)
@@ -15281,7 +15289,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             // actually been scored. Null now flows through to
                             // an explicit "—" in the cell.
                             const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : null;
-                            const avgSmile = avgSmileRaw === null ? null : (avgSmileRaw * 20).toFixed(0);
+                            const avgSmile = avgSmileRaw === null ? null : smile100(avgSmileRaw).toFixed(0);
                             const emojiColor = avgSmileRaw === null ? 'var(--text-muted)' : (avgSmileRaw >= 4 ? 'var(--status-good)' : (avgSmileRaw >= 3 ? 'var(--status-warn)' : 'var(--status-critical)'));
                             const posFB = rated.length ? +((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(0) : null;
                             const res = i.filter(x=>x.resolved).length;
@@ -15329,7 +15337,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // displayed as real measurements (88/100, 90.0% positive)
                     // for branches that had never been rated at all.
                     const avgSmileRaw = rated.length ? (rated.reduce((acc,curr)=>acc+curr.smileScore,0)/rated.length) : null;
-                    const avgSmile = avgSmileRaw === null ? null : (avgSmileRaw * 20).toFixed(0); // 1–5 → 0–100
+                    const avgSmile = avgSmileRaw === null ? null : smile100(avgSmileRaw).toFixed(0); // 1–5 → 0–100 (1★ = 0)
                     const posFB = rated.length ? ((rated.filter(x=>x.smileScore>=4).length/rated.length)*100).toFixed(1) : null;
                     const resolved = iL ? ((i.filter(x=>x.resolved).length/iL)*100).toFixed(1) : null;
                     return `
@@ -16941,7 +16949,7 @@ ${(() => {
                     data: { labels: branches.map(b=>b.name), datasets: [{
                         label:'Smile Score',
                         data: branches.map(b=>b.avgSmile),
-                        backgroundColor: branches.map(b => b.avgSmile>=80?'#059669':(b.avgSmile>=60?'#010197':'#DC2626')),
+                        backgroundColor: branches.map(b => b.avgSmile>=75?'#059669':(b.avgSmile>=50?'#010197':'#DC2626')),
                         borderRadius:5, maxBarThickness:32
                     }] },
                     options: {
@@ -17127,11 +17135,11 @@ ${(() => {
                     const d = byWeek[k].weekStart;
                     return `${d.getDate()} ${d.toLocaleString('default',{month:'short'})}`;
                 });
-                // 1–5 average -> /100 scale, the exact same conversion (v*20)
+                // 1–5 average -> /100 scale, the same conversion as everywhere (smile100: 1★ = 0, 5★ = 100)
                 // used everywhere else Smile Score is displayed (KPI cards,
                 // branch tables, ranking cards) — so this line is directly
                 // comparable to those numbers, not a second, different scale.
-                const scores = weekKeys.map(k => +((byWeek[k].sum / byWeek[k].count) * 20).toFixed(1));
+                const scores = weekKeys.map(k => +smile100(byWeek[k].sum / byWeek[k].count).toFixed(1));
 
                 _renderOrUpdateChart(canvasId, {
                     type: 'line',
@@ -17688,7 +17696,7 @@ ${(() => {
             { key: 'submissions',     label: 'Submissions',          fmt: v => v.toLocaleString(),    lowerBetter: false },
             { key: 'incidents',       label: 'Incidents',            fmt: v => v.toLocaleString(),    lowerBetter: true  },
             { key: 'incidentRate',    label: 'Incident Rate',        fmt: v => v.toFixed(2)+'%',      lowerBetter: true  },
-            { key: 'smileScore',      label: 'Avg Smile Score',      fmt: v => (v*20).toFixed(0)+'/100',  lowerBetter: false },
+            { key: 'smileScore',      label: 'Avg Smile Score',      fmt: v => (smile100(v) == null ? 0 : smile100(v)).toFixed(0)+'/100',  lowerBetter: false },
             { key: 'posFeedback',     label: 'Positive Feedback',    fmt: v => v.toFixed(0)+'%',      lowerBetter: false },
             { key: 'resolutionRate',  label: 'Resolution Rate',      fmt: v => v.toFixed(0)+'%',      lowerBetter: false },
             { key: 'deliverySubs',    label: 'Delivery Submissions', fmt: v => v.toLocaleString(),    lowerBetter: false },
@@ -17787,28 +17795,33 @@ ${(() => {
             const branchMetrics = config.branches.map(b => {
                 const subs = state.p1.subs.filter(x => x.branch === b.name);
                 const incs = state.p1.incs.filter(x => x.branch === b.name);
-                const rated = subs.filter(x => x.smileScore != null);
-                const smile = rated.length ? (rated.filter(x=>x.smileScore>=4).length/rated.length)*100 : null;
+                const rated = subs.filter(x => x.smileScore != null && x.smileScore > 0);
+                const avgStars = rated.length ? rated.reduce((n, x) => n + x.smileScore, 0) / rated.length : null;
+                const smile = avgStars == null ? null : smile100(avgStars);
+                const positive = rated.length ? (rated.filter(x=>x.smileScore>=4).length/rated.length)*100 : null;
                 const incidentRate = subs.length ? (incs.length/subs.length)*100 : null;
                 // ratedCount is carried through so the OM/SOM/HOP/city/region
                 // roll-ups below can weight each branch's smile score by the
                 // number of responses that score was actually derived from.
-                return { branch: b.name, region: b.region, city: b.city || b.name, subs: subs.length, incs: incs.length, ratedCount: rated.length, smile, incidentRate };
+                return { branch: b.name, region: b.region, city: b.city || b.name, subs: subs.length, incs: incs.length, ratedCount: rated.length, smile, positive, incidentRate };
             });
 
-            const scoreOf = m => metric === 'incident' ? m.incidentRate : m.smile;
+            const scoreOf = m => metric === 'incident' ? m.incidentRate : metric === 'positive' ? m.positive : m.smile;
+            // Equal scores: the one resting on more ratings first -- 100 from 60
+            // guests says more than 100 from 4.
+            const ranked = (a, b) => better(a.value, b.value) || (b.rated || 0) - (a.rated || 0);
 
             const bm = branchMetrics
                 .filter(m => scoreOf(m) != null && m.subs > 0)
-                .map(m => ({ label: (staff[m.branch] && staff[m.branch].bm) || m.branch, sub: m.branch, value: scoreOf(m), count: m.subs }))
-                .sort((a,b) => better(a.value, b.value));
+                .map(m => ({ label: (staff[m.branch] && staff[m.branch].bm) || m.branch, sub: m.branch, value: scoreOf(m), count: m.subs, rated: m.ratedCount }))
+                .sort(ranked);
 
             const groupBy = (keyFn) => {
                 const groups = {};
                 branchMetrics.forEach(m => {
                     const key = keyFn(m);
                     if(!key) return;
-                    if(!groups[key]) groups[key] = { subs:0, incs:0, smileNum:0, smileDen:0, branches:0 };
+                    if(!groups[key]) groups[key] = { subs:0, incs:0, smileNum:0, smileDen:0, posNum:0, branches:0 };
                     const g = groups[key];
                     g.subs += m.subs; g.incs += m.incs; g.branches++;
                     // Weighted by RATED responses, not total submissions.
@@ -17818,18 +17831,19 @@ ${(() => {
                     // rows dominate the group average off the back of maybe
                     // 5 actual ratings — skewing every OM/SOM/HOP, city and
                     // region ranking.
-                    if(m.smile != null){ g.smileNum += m.smile * m.ratedCount; g.smileDen += m.ratedCount; }
+                    if(m.smile != null){ g.smileNum += m.smile * m.ratedCount; g.smileDen += m.ratedCount; g.posNum += (m.positive || 0) * m.ratedCount; }
                 });
                 return Object.keys(groups)
                     .map(key => {
                         const g = groups[key];
                         const smile = g.smileDen ? g.smileNum / g.smileDen : null;
+                        const positive = g.smileDen ? g.posNum / g.smileDen : null;
                         const incidentRate = g.subs ? (g.incs / g.subs) * 100 : null;
-                        const value = metric === 'incident' ? incidentRate : smile;
-                        return { label: key, sub: g.branches + ' branch' + (g.branches===1?'':'es'), value, count: g.subs };
+                        const value = metric === 'incident' ? incidentRate : metric === 'positive' ? positive : smile;
+                        return { label: key, sub: g.branches + ' branch' + (g.branches===1?'':'es'), value, count: g.subs, rated: g.smileDen };
                     })
                     .filter(x => x.value != null && x.count > 0)
-                    .sort((a,b) => better(a.value, b.value));
+                    .sort(ranked);
             };
 
             return {
@@ -17847,7 +17861,7 @@ ${(() => {
             if(!cards.length) return;
             const smileMetric   = computeStaffRankings('smile');
             const incidentMetric = computeStaffRankings('incident');
-            const byMetric = { smile: smileMetric, incident: incidentMetric };
+            const byMetric = { smile: smileMetric, incident: incidentMetric, positive: computeStaffRankings('positive') };
             cards.forEach(card => _renderOneRankCard(card, byMetric));
         }
 
@@ -17855,7 +17869,7 @@ ${(() => {
             const kind = card.dataset.rankKind;
             const meta = RANK_META[kind];
             const st = _rankState[kind];
-            const list = (byMetric || { smile: computeStaffRankings('smile'), incident: computeStaffRankings('incident') })[st.metric][kind];
+            const list = (byMetric || { smile: computeStaffRankings('smile'), incident: computeStaffRankings('incident'), positive: computeStaffRankings('positive') })[st.metric][kind];
             const staffMissing = ['om','som','hop'].includes(kind) && !Object.keys(rawData.branchStaff||{}).length;
 
             const totalPages = Math.max(1, Math.ceil(list.length / RANK_PAGE_SIZE));
@@ -17865,7 +17879,7 @@ ${(() => {
             const fromN = list.length ? st.page * RANK_PAGE_SIZE + 1 : 0;
             const toN   = Math.min(list.length, st.page * RANK_PAGE_SIZE + RANK_PAGE_SIZE);
 
-            const valFmt = v => st.metric === 'incident' ? `${v.toFixed(1)}%` : Math.round(v);
+            const valFmt = v => (st.metric === 'incident' || st.metric === 'positive') ? `${v.toFixed(1)}%` : Math.round(v);
 
             let bodyHtml;
             if(staffMissing){
@@ -17905,6 +17919,7 @@ ${(() => {
                     </div>
                     <select onchange="_rankChangeMetric('${kind}', this.value)" style="font-size:0.76rem;padding:6px 26px 6px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:var(--text-main);font-family:'Inter',sans-serif;font-weight:600;flex-shrink:0;">
                         <option value="smile"${st.metric==='smile'?' selected':''}>Smile Score</option>
+                        <option value="positive"${st.metric==='positive'?' selected':''}>Positive Feedback</option>
                         <option value="incident"${st.metric==='incident'?' selected':''}>Incident Rate</option>
                     </select>
                 </div>
@@ -18173,11 +18188,11 @@ ${(() => {
             const sentimentData = ChannelReg.labels().map(f=>{
                 const fSubs = subs.filter(s=>s.surveyForm===f && s.smileScore != null);
                 const avgRaw = fSubs.length ? fSubs.reduce((a,c)=>a+c.smileScore,0)/fSubs.length : 0;
-                return {label:f, score:Math.round(avgRaw*20), count:fSubs.length};
+                return {label:f, score:Math.round(smile100(avgRaw) || 0), count:fSubs.length};
             }).filter(d=>d.count>0);
             const ratedSubs = subs.filter(s => s.smileScore != null);
             const allAvg = ratedSubs.length ? ratedSubs.reduce((a,c)=>a+c.smileScore,0)/ratedSubs.length : 0;
-            sentimentData.unshift({label:'Overall', score:Math.round(allAvg*20), count:ratedSubs.length});
+            sentimentData.unshift({label:'Overall', score:Math.round(smile100(allAvg) || 0), count:ratedSubs.length});
 
             const sentColors = s => s>=75?'#059669':s>=50?'#010197':'#DC2626';
             const sentBg     = s => s>=75?'rgba(5,150,105,0.65)':s>=50?'rgba(217,119,6,0.65)':'rgba(220,38,38,0.65)';
@@ -18223,7 +18238,7 @@ ${(() => {
                 const rate = sL ? (iL / sL) * 100 : 0;
                 const rated = s.filter(x => x.smileScore != null);
                 const avgSmile = rated.length ? (rated.reduce((a, c) => a + c.smileScore, 0) / rated.length) : 0;
-                const avgSmileDisplay = (avgSmile * 20).toFixed(0); // 1–5 → 0–100
+                const avgSmileDisplay = (smile100(avgSmile) || 0).toFixed(0); // 1–5 → 0–100 (1★ = 0)
                 const posFB = rated.length ? (rated.filter(x => x.smileScore >= 4).length / rated.length) * 100 : 0;
                 const res = iL ? (i.filter(x => x.resolved).length / iL) * 100 : 100;
                 const statusClass = rate < 3 ? 'good' : rate < 5 ? 'warn' : 'crit';
@@ -24231,7 +24246,7 @@ ${(() => {
                      "It is deliberately a live view of what is unresolved right now. The date filter controls the analysis cards, not the live queue.",
                      "all"],
                     ["What is the Smile Score?",
-                     "The average star rating shown out of 100 — each star is worth 20, so an average of 4.6 stars is 92. Positive Feedback is different: it is the share of submissions rated 4 or 5. A branch where most people give 4 stars has high Positive Feedback but only a middling Smile Score.",
+                     "The average star rating on a 0–100 scale where 1 star is 0 and 5 stars is 100 — (average − 1) × 25, so an average of 4.6 stars is 90. It measures how happy guests are, not just how many were happy. Positive Feedback is different: it is the share of submissions rated 4 or 5. A branch where most people give 4 stars has high Positive Feedback but only a middling Smile Score.",
                      "all"],
                     ["What is Incident Rate?",
                      "Incidents divided by submissions for the same branch and period. Five complaints from 50 submissions is 10%; eight from 200 is 4%. The first branch ranks worse even though it had fewer complaints, because a larger share of its customers were let down.",
