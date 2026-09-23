@@ -4498,6 +4498,7 @@
         .ov-strips:empty { display:none; }
         .ov-cols { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); gap:16px; align-items:start; }
         .ov-cols.ov-one { grid-template-columns:minmax(0,1fr); }
+        @media (min-width:821px){ .ov-cols.ov-pack:not(.ov-one) { grid-template-columns:repeat(2,minmax(0,1fr)); } }   /* phones keep one column */
         .ov-cols.ov-none { display:none; }
         .ov-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
         .ov-col:empty { display:none; }
@@ -5212,6 +5213,8 @@
         .lay-mi.on { background:rgba(1,1,151,.07); color:#010197; } .lay-mi i { font-style:normal; font-weight:800; color:#010197; } .lay-mi.act { color:#010197; font-weight:700; }
         body.dark-theme .lay-mi.on, body.dark-theme .lay-mi.act { color:#A5B4FC; }
         .lay-sep { height:1px; background:var(--border-color); margin:5px 4px; }
+        .lay-mh { font:800 .6rem 'Inter',sans-serif; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); padding:6px 10px 2px; }
+        body.lay-edit #lay-view-btn { background:#010197; color:#fff; border-color:#010197; }
         body.lay-edit .ov-zone { border:2px dashed #C7D2FE; border-radius:16px; padding:12px 14px 14px; background:rgba(255,255,255,.5); transition:box-shadow .15s, border-color .15s; }
         body.dark-theme.lay-edit .ov-zone { background:rgba(255,255,255,.02); border-color:rgba(165,180,252,.35); }
         body.lay-edit .ov-zone > .ov-zh { display:none; }
@@ -7538,7 +7541,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     </div>
                     <!-- v2.159.0: Overview layouts -->
                     <button class="lay-btn" id="lay-view-btn" onclick="LAY.menu(event)" title="Choose a layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lay-lbl" id="lay-view-name">Default view</span> ▾</button>
-                    <button class="lay-btn" id="lay-edit-btn" onclick="LAY.edit()" title="Move or hide sections"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span class="lay-lbl">Edit layout</span></button>
+
                     <button id="refresh-btn" onclick="appRefresh(event)" title="Refresh (Shift+click to re-verify all history)" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:#000;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
                         <i id="refresh-icon" class="fas fa-infinity" style="font-size:0.85rem;color:#000;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
                         <span id="refresh-label">Refresh</span>
@@ -9137,7 +9140,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.159.1 · 23 Sep 2026 · Overview columns pack themselves (no empty gaps); layouts; red 0 badge and Unspecified branch card fixed';
+        const BUILD_VERSION = 'v2.159.2 · 23 Sep 2026 · One layout button; packed Overview columns equal width and re-packed as cards grow';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13639,10 +13642,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const cur = currentView(), owner = (typeof roleKey === 'function' && roleKey(PERM.role) === 'owner');
                 const item = (v, d) => `<button class="lay-mi ${cur === v ? 'on' : ''}" onclick="LAY.pick('${v}')"><span><b>${VIEW_NAMES[v]}</b><small>${d}</small></span>${cur === v ? '<i>✓</i>' : ''}</button>`;
                 const m = document.createElement('div'); m.id = 'lay-menu'; m.className = 'lay-menu';
-                m.innerHTML = item('default', companyDefault() ? 'The company layout, set by the Owner' : 'The standard layout')
+                m.innerHTML = `<div class="lay-mh">Views</div>` + item('default', companyDefault() ? 'The company layout, set by the Owner' : 'The standard layout')
                     + item('mine', rec && rec.order && rec.order.length ? 'Your own order and sections' : 'Not set yet — use Edit layout')
                     + item('ops', 'Right now and causes first') + item('mgmt', 'Trends and branches first')
-                    + `<div class="lay-sep"></div><button class="lay-mi act" onclick="LAY.edit()">Edit layout</button>`
+                    + `<div class="lay-sep"></div><div class="lay-mh">Customize</div><button class="lay-mi act" onclick="LAY.edit()"><span><b>✎ Edit layout</b><small>Drag sections and cards, hide what you don’t need</small></span></button>`
                     + (rec && rec.order && rec.order.length ? `<button class="lay-mi act" onclick="LAY.resetMine()">Reset my view</button>` : '')
                     + (owner ? `<button class="lay-mi act" onclick="LAY.makeDefault()">Use my view as the company default</button>` : '');
                 document.body.appendChild(m);
@@ -27579,6 +27582,9 @@ ${(() => {
                 cards.forEach(c => c.classList.toggle('ov-strip', isEmpty(c)));
                 const top = cards.filter(isEmpty), rest = cards.filter(c => !isEmpty(c));
                 top.forEach((c, i) => { if(strips.children[i] !== c) strips.insertBefore(c, strips.children[i] || null); });
+                // v2.159.2: packed columns are equal width, so a card is the same height on
+                // either side and the split really comes out even.
+                wrap.classList.add('ov-pack');
                 const sideBySide = (() => { try { return getComputedStyle(wrap).gridTemplateColumns.trim().split(/\s+/).length > 1; } catch(e){ return false; } })();
                 let plan;
                 if(sideBySide){
@@ -27629,6 +27635,12 @@ ${(() => {
                 });
                 run();
                 window.ovArrangeSoon = run;
+                // v2.159.2: a card that grows after its data arrives (a chart, a longer
+                // list) re-packs the columns too -- not only when its body is replaced.
+                try {
+                    const ro = new ResizeObserver(run);
+                    document.querySelectorAll('.ov-flow .card').forEach(c => ro.observe(c));
+                } catch(e){}
             }
             if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
         })();
