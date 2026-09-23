@@ -9183,7 +9183,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.160.1 · 23 Sep 2026 · Today counts exactly like the Overview cards (all rows, fake shown separately)';
+        const BUILD_VERSION = 'v2.160.2 · 23 Sep 2026 · 35-day window permanent; assistant knows the Standards';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -12257,7 +12257,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 payload.incidentMaxRating = parseInt(document.getElementById('os-rating').value, 10);
                 payload.currentDrop       = document.getElementById('os-drop').value.trim();
                 { const sr = document.querySelector('input[name="os-sr"]:checked'); if(sr){ payload.summaryReads = sr.value === 'server'; window.__srSaved = { v: payload.summaryReads, at: Date.now() }; } }
-                { const hd = document.querySelector('input[name="os-hd"]:checked'); if(hd){ payload.historyDays = parseInt(hd.value, 10) || 0; window.__hwSaved = { v: payload.historyDays, at: Date.now() }; } }
+                // v2.160.2: the 35-day window is permanent (Worker v4.95) -- no longer a choice.
             }
             const res = await apiCall('settings_set', payload).catch(() => null);
             if(!res || res.status !== 'success'){
@@ -12317,10 +12317,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <label class="os-opt ${st.summaryReads ? 'on' : ''}"><input type="radio" name="os-sr" value="server" ${st.summaryReads ? 'checked' : ''} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted on the server</b><small>Every screen shows the same total the moment it opens — no half-counted figures while loading. Corrections show within minutes.</small></span></label>
                         <label class="os-opt ${st.summaryReads ? '' : 'on'}"><input type="radio" name="os-sr" value="browser" ${st.summaryReads ? '' : 'checked'} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Counted in each browser</b><small>The way it has always worked. Keep this until you are happy with the server figures.</small></span></label>
                         <span style="${hint}">Applies to the six Overview cards. Every screen switches within a few seconds; you can switch back at any time.</span></div>
-                    <div class="os-grp" style="display:grid;gap:8px;"><span style="${lbl()}">History kept in each browser <span class="os-new">NEW</span></span>
-                        <label class="os-opt ${(st.historyDays || 0) > 0 ? 'on' : ''}"><input type="radio" name="os-hd" value="35" ${(st.historyDays || 0) > 0 ? 'checked' : ''} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Last 35 days</b><small>Screens download about a quarter less today and stay that size as the data grows. When someone picks older dates, those days are fetched from the server for that session.</small></span></label>
-                        <label class="os-opt ${(st.historyDays || 0) > 0 ? '' : 'on'}"><input type="radio" name="os-hd" value="0" ${(st.historyDays || 0) > 0 ? '' : 'checked'} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>Everything</b><small>The way it has always worked: every screen holds all history.</small></span></label>
-                        <span style="${hint}">Every screen switches within a few seconds; nothing is re-downloaded when switching to 35 days. Switching back makes every screen download all history again.</span></div>
+                    <div style="display:grid;gap:4px;"><span style="${lbl()}">History kept in each browser</span>
+                        <span style="${hint}">The last 35 days. Older dates are fetched from the server when someone picks them — nothing to set.</span></div>
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">This month's drop</span>
                         <input id="os-drop" maxlength="60" value="${String(st.currentDrop||'').replace(/"/g,'&quot;')}" placeholder="e.g. Dot Cake Cookie" style="${inp}">
                         <span style="${hint}">Stamped on every monthly-drop response so months stay comparable, and used as the button label on the dine-in QR screen.</span></label>
@@ -26561,6 +26559,11 @@ ${(() => {
                 L.push('SCOPE: ' + (PERM.branch !== 'All' ? 'branch ' + PERM.branch : PERM.region !== 'All' ? 'region ' + PERM.region : 'all branches')
                      + ' | filters: region=' + (document.getElementById('filter-region')||{}).value + ', branch=' + (document.getElementById('filter-branch')||{}).value
                      + ', channel=' + (document.getElementById('filter-channel')||{}).value);
+                // v2.160.2: the Owner's Standards, so answers are judged against the company's own targets.
+                try { const S = Std(); L.push('STANDARDS (Owner settings)  submissions target ' + S.subTarget + ' per branch per day (critical below ' + S.subCritical + ')'
+                    + '; incidents per branch per day: warning at ' + S.incWarn + ', critical at ' + S.incCritical + '; incident rate target ' + S.tIncRate + '% or less'
+                    + '; positive feedback target ' + S.tPositive + '% (critical below ' + S.posCritical + '%); average rating target ' + S.tRating
+                    + '; review within ' + S.reviewMin + ' min; close within ' + S.resolveMin + ' min. Judge performance against THESE numbers only.'); } catch(e){}
                 L.push('');
                 L.push('TOTALS  this period: ' + p1.subs.length + ' submissions, ' + p1.incs.length + ' incidents (' + pct(p1.incs.length, p1.subs.length) + ' incident rate)');
                 L.push('TOTALS  previous period: ' + p2.subs.length + ' submissions, ' + p2.incs.length + ' incidents (' + pct(p2.incs.length, p2.subs.length) + ')');
