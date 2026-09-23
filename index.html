@@ -5391,7 +5391,9 @@
         .fa2 { display:grid; gap:16px; }
         .fa2 .ok { color:#047857; } .fa2 .bad { color:#B91C1C; } .fa2 .mid { color:#B45309; }
         body.dark-theme .fa2 .ok { color:#34D399; } body.dark-theme .fa2 .bad { color:#F87171; } body.dark-theme .fa2 .mid { color:#FBBF24; }
-        .fa2-top { display:flex; justify-content:flex-end; }
+        .fa2-top { display:flex; justify-content:flex-end; align-items:center; gap:10px; flex-wrap:wrap; }
+        .fa2-test { margin-right:auto; font:700 .72rem 'Inter',sans-serif; padding:6px 11px; border-radius:20px; border:1px dashed var(--border-color); background:transparent; color:var(--text-muted); cursor:pointer; display:inline-flex; gap:6px; align-items:center; min-height:0 !important; }
+        .fa2-test.on { border-style:solid; color:#B45309; background:#FFFBEB; }
         .fa2-tabs { display:flex; gap:6px; flex-wrap:wrap; }
         .fa2-tabs button { font:700 .76rem 'Inter',sans-serif; padding:7px 13px; border-radius:20px; border:1px solid var(--border-color); background:var(--white); color:var(--text-muted); cursor:pointer; min-height:0 !important; }
         .fa2-tabs button.on { background:#010197; color:#fff; border-color:#010197; }
@@ -9573,7 +9575,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.169.0 · 23 Sep 2026 · Form Analytics redesigned: answer first, fixes, journey with real question names; nothing dropped';
+        const BUILD_VERSION = 'v2.169.1 · 23 Sep 2026 · One day rule everywhere; Form Analytics links hand-offs and leaves test forms out';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13433,7 +13435,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         function calRow(sel){ const tr = sel.closest('tr'), s = sel.value;
             tr.querySelector('.cal-f').hidden = s === 'open'; tr.querySelector('.cal-t').hidden = s === 'open' || s === 'new';
             tr.querySelector('.cal-f').title = s === 'new' ? 'Opening date' : 'From';
-            if(s === 'new' && !tr.querySelector('.cal-f').value) tr.querySelector('.cal-f').value = new Date().toISOString().slice(0, 10); }
+            if(s === 'new' && !tr.querySelector('.cal-f').value) tr.querySelector('.cal-f').value = _fmtDate(new Date()); }
         function calAddDay(){ const host = document.getElementById('cal-days'); if(!host) return; const none = host.querySelector('.cal-none'); if(none) none.remove();
             host.insertAdjacentHTML('beforeend', calDayRow({ name: '', from: '', to: '', branches: [] }, (window.__svBranches || []).filter(b => b && b !== 'Unspecified'), host.children.length)); }
         function calSum(cb){ const box = cb.closest('.cal-bs'); if(cb.classList.contains('cal-a') && cb.checked) box.querySelectorAll('.cal-b').forEach(x => x.checked = false);
@@ -17960,7 +17962,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const card = document.getElementById('forecast-card'), host = document.getElementById('fc-body'), sub = document.getElementById('fc-sub');
                 if(!card || !host) return;
                 const bps = this._breakingPoints || {};
-                const today = new Date().toISOString().split('T')[0];
+                const today = _businessToday();                                       // v2.169.1: the trading day, like everywhere else
                 const end = (document.getElementById('filter-end-date') || {}).value || '';
                 // only meaningful while today is still running
                 if(end !== today || !Object.keys(bps).length){ card.style.display = 'none'; return; }
@@ -21837,7 +21839,7 @@ ${(() => {
 
             // Set the from/to inputs automatically for non-custom presets
             if(preset !== 'custom'){
-                const max = new Date().toISOString().split('T')[0];
+                const max = _fmtDate(new Date());                                     // v2.169.1: local date, not UTC
                 let from  = '';
                 if(preset === 'today'){
                     from = max;
@@ -22470,7 +22472,7 @@ ${(() => {
             const newMention = {
                 id:'sl'+Date.now(), platform, type, sentiment, branch, author, content,
                 likes, comments, shares:0,
-                date: new Date().toISOString().split('T')[0],
+                date: _fmtDate(new Date()),
                 sortTs: Date.now(),
                 url, resolved:false, tags:[],
                 resolutionStatus: sentiment === 'Complaint' ? 'none' : null,
@@ -22931,7 +22933,7 @@ ${(() => {
             // tab never opens on a blank screen and read as broken.
             if(!window._slPresetInited){
                 window._slPresetInited = true;
-                const today = new Date().toISOString().split('T')[0];
+                const today = _fmtDate(new Date());
                 const anyToday = (slMentions || []).some(m => String(m.date || '').slice(0, 10) === today);
                 slSetPreset(anyToday ? 'today' : '7d');
                 return; // slSetPreset calls renderSocialListening again
@@ -26597,12 +26599,26 @@ ${(() => {
                question customers actually saw. */
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             const rows = () => { const t = DataFeed.tabs.form_analytics; return (t && t.objRows) ? t.objRows : []; };
-            let fsel = 'all', showAll = false, titles = null, titlesLoading = false;
+            let fsel = 'all', showAll = false, titles = null, titlesLoading = false, withTests = false;
+            const isTest = k => /test|demo|trial/i.test(String(k || '')) || /test|demo|trial/i.test(formLabelSafe(k));
+            const formLabelSafe = k => { try { return formLabel(k); } catch(e){ return String(k || ''); } };
+            /* v2.169.1: the same trading day as every other screen -- before the
+               Owner's day-start hour (9 AM) belongs to the day before -- and a
+               12-hour clock read correctly. */
+            function tsOf(v){
+                const t = String(v || '').trim(); if(!t) return NaN;
+                let m = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i) || null, y, mo, d, hh, mi, ss, ap;
+                if(m){ [y, mo, d, hh, mi, ss, ap] = [m[1], m[2], m[3], m[4], m[5], m[6], m[7]]; }
+                else if((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?)?/i))){ [mo, d, y, hh, mi, ss, ap] = [m[1], m[2], m[3], m[4] || 12, m[5] || 0, m[6] || 0, m[7]]; }
+                else { const x = new Date(t); return isNaN(x.getTime()) ? NaN : x.getTime(); }
+                hh = +hh; if(ap){ if(/pm/i.test(ap) && hh < 12) hh += 12; if(/am/i.test(ap) && hh === 12) hh = 0; }
+                return new Date(+y, +mo - 1, +d, hh, +(mi || 0), +(ss || 0)).getTime();
+            }
             function isoOf(v){
-                const t = String(v || '').trim();
-                let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1] + '-' + m[2] + '-' + m[3];
-                m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m) return m[3] + '-' + String(m[1]).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
-                const d = new Date(t); return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+                const ms = tsOf(v); if(!isFinite(ms)) return '';
+                const d = new Date(ms); const cut = (typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined') ? NIGHT_SHIFT_CUTOFF_HOUR : 9;
+                if(cut > 0 && d.getHours() < cut) d.setDate(d.getDate() - 1);
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
             }
             function inRange(r){
                 const s = (document.getElementById('filter-start-date') || {}).value, e = (document.getElementById('filter-end-date') || {}).value;
@@ -26669,7 +26685,7 @@ ${(() => {
                     if(r['Distance m'] !== '' && r['Distance m'] != null && !isNaN(Number(r['Distance m']))) x.dist = Number(r['Distance m']);
                     if(r['Choice'] && r['Step']) { x.choices = x.choices || {}; x.choices[r['Step']] = r['Choice']; }
                     if(!x.day){ const iso = isoOf(r['At']); if(iso) x.day = iso; }
-                    const hm = String(r['At'] || '').match(/(\d{1,2}):(\d{2})/); if(hm && r['Event'] === 'open'){ let hh = +hm[1]; if(/pm/i.test(String(r['At'])) && hh < 12) hh += 12; if(/am/i.test(String(r['At'])) && hh === 12) hh = 0; x.hour = hh; }
+                    if(r['Event'] === 'open'){ const ms = tsOf(r['At']); if(isFinite(ms)){ x.t0 = ms; x.hour = new Date(ms).getHours(); } }
                     if(r['Form']) x.form = r['Form'];
                     if(r['Event'] === 'open') x.opened = true;
                     if(r['Event'] === 'submitted'){ x.submitted = true; x.secs = Number(r['Seconds']) || x.secs; }
@@ -26679,11 +26695,22 @@ ${(() => {
                     if(r['Event'] === 'abandoned' && r['Step']) x.lastStep = r['Step'];
                 });
                 const ALL = Object.values(sessions);
+                // v2.169.1: before the table page recorded hand-offs, a guest who tapped a
+                // button on the choice screen looked like a drop-off AND a second open. Link
+                // a choice-only visit to the form the same phone opened within 15 minutes.
+                const byDevice = {}; ALL.forEach(x => { if(x.device && x.t0) (byDevice[x.device] = byDevice[x.device] || []).push(x); });
+                ALL.forEach(x => {
+                    if(x.handoff || x.submitted || !x.device || !x.t0) return;
+                    const st = x.steps || []; if(!(st.length === 1 && st[0] === 'choose')) return;
+                    const next = (byDevice[x.device] || []).filter(y => y !== x && y.t0 >= x.t0 && y.t0 - x.t0 <= 15 * 60000 && (y.steps || [])[0] !== 'choose').sort((a, b) => a.t0 - b.t0)[0];
+                    if(next) x.handoff = next.form === 'monthlydrop' ? 'drop' : 'dinein';
+                });
                 const hops = ALL.filter(x => x.handoff);
                 const hopTo = {}; hops.forEach(x => hopTo[x.handoff] = (hopTo[x.handoff] || 0) + 1);
                 const formsSeen = {}; ALL.filter(x => !x.handoff).forEach(x => { const k = x.form || 'unknown'; formsSeen[k] = (formsSeen[k] || 0) + 1; });
                 if(fsel !== 'all' && !formsSeen[fsel]) fsel = 'all';
-                const S = ALL.filter(x => !x.handoff && (fsel === 'all' || (x.form || 'unknown') === fsel));
+                const testKeys = Object.keys(formsSeen).filter(isTest);
+                const S = ALL.filter(x => !x.handoff && (fsel === 'all' ? (withTests || !isTest(x.form || 'unknown')) : (x.form || 'unknown') === fsel));
                 const opens = S.length, subs = S.filter(x => x.submitted).length, rate = pct(subs, opens);
                 const S_std = Std(), target = Number(S_std.tFormDone) || 60;
                 if(!opens){ host.innerHTML = `<div class="fb-empty">No one opened ${esc(formLabel(fsel))} in the selected dates.</div>`; return; }
@@ -26709,7 +26736,7 @@ ${(() => {
                 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], byDay = {};
                 S.forEach(x => { if(!x.day) return; const d = new Date(x.day + 'T12:00:00'); if(isNaN(d)) return; const k = DAYS[d.getDay()]; const e = byDay[k] = byDay[k] || { o: 0, s: 0 }; e.o++; if(x.submitted) e.s++; });
                 const dayList = DAYS.filter(d => byDay[d]).map(d => ({ d, ...byDay[d], r: pct(byDay[d].s, byDay[d].o) }));
-                const byForm = {}; ALL.filter(x => !x.handoff).forEach(x => { const k = x.form || 'unknown'; const e = byForm[k] = byForm[k] || { o: 0, s: 0, drop: {} }; e.o++; if(x.submitted) e.s++; else { const l = x.lastStep || (x.steps || [])[(x.steps || []).length - 1] || 'opened, never started'; e.drop[l] = (e.drop[l] || 0) + 1; } });
+                const byForm = {}; ALL.filter(x => !x.handoff && (withTests || fsel !== 'all' || !isTest(x.form || 'unknown'))).forEach(x => { const k = x.form || 'unknown'; const e = byForm[k] = byForm[k] || { o: 0, s: 0, drop: {} }; e.o++; if(x.submitted) e.s++; else { const l = x.lastStep || (x.steps || [])[(x.steps || []).length - 1] || 'opened, never started'; e.drop[l] = (e.drop[l] || 0) + 1; } });
                 const trend = {}; S.forEach(x => { if(!x.day) return; const e = trend[x.day] = trend[x.day] || { o: 0, s: 0 }; e.o++; if(x.submitted) e.s++; });
                 const trendList = Object.keys(trend).sort().map(d => ({ d, ...trend[d], r: pct(trend[d].s, trend[d].o) }));
                 const group = fn => { const m = {}; S.forEach(x => { const k = fn(x) || 'Unknown'; const g = m[k] = m[k] || { o: 0, s: 0 }; g.o++; if(x.submitted) g.s++; }); return m; };
@@ -26854,10 +26881,11 @@ ${(() => {
                     <div class="fa2-g2">${table('BY DEVICE', byType, 'phone, tablet or computer')}${table('BY PHONE SYSTEM', byOs, 'a low rate on one system is often a bug')}</div>
                     <div class="fa2-g2">${table('BY SCREEN SIZE', byScreen, 'a collapse on small screens is a layout bug')}<div></div></div>` : ''}`;
 
-                const tabs = `<div class="fa2-top"><div class="fa2-tabs">${[['all', 'All forms']].concat(Object.keys(formsSeen).sort((a, b) => formsSeen[b] - formsSeen[a]).map(k => [k, formLabel(k)])).map(([k, l]) => `<button class="${fsel === k ? 'on' : ''}" onclick="FAT.form('${esc(k)}')">${esc(l)}</button>`).join('')}</div></div>`;
+                const testNote = testKeys.length && fsel === 'all' ? `<button class="fa2-test ${withTests ? 'on' : ''}" onclick="FAT.tests()" title="${esc(testKeys.map(formLabel).join(', '))}"><i class="fas fa-flask"></i>${withTests ? 'Test forms included' : 'Test forms left out'}</button>` : '';
+                const tabs = `<div class="fa2-top">${testNote}<div class="fa2-tabs">${[['all', 'All forms']].concat(Object.keys(formsSeen).sort((a, b) => formsSeen[b] - formsSeen[a]).map(k => [k, formLabel(k)])).map(([k, l]) => `<button class="${fsel === k ? 'on' : ''}" onclick="FAT.form('${esc(k)}')">${esc(l)}</button>`).join('')}</div></div>`;
                 host.innerHTML = `<div class="fa2">${tabs}${hero}${fixHtml}${journey}${cards}${detail}</div>`;
             }
-            return { render, form(k){ fsel = k; render(); }, toggle(){ showAll = !showAll; render(); } };
+            return { render, form(k){ fsel = k; render(); }, toggle(){ showAll = !showAll; render(); }, tests(){ withTests = !withTests; render(); } };
         })();
 
         // ═══════════════════════════════════════════════════════════════════
@@ -27001,7 +27029,7 @@ ${(() => {
             function judge(a){
                 const opened = String(a['Opened At'] || '').slice(0, 10);
                 if(!opened) return { key: 'unknown', label: 'No date recorded' };
-                const today = new Date().toISOString().split('T')[0];
+                const today = _businessToday();                                       // v2.169.1
                 const elapsed = Math.floor((Date.parse(today + 'T12:00:00') - Date.parse(opened + 'T12:00:00')) / 86400000);
                 const window_ = Number(a['Review Days']) || 14;
                 const branch = a['Branch'], reason = a['Reason'];
@@ -27127,8 +27155,8 @@ ${(() => {
             /** Open the log dialog, pre-filled from a flagged issue. */
             function log(branch, reason){
                 if(!requireCap('action', 'logging an action')) return;
-                const today = new Date().toISOString().split('T')[0];
-                const from = (() => { const d = new Date(); d.setDate(d.getDate() - 14); return d.toISOString().split('T')[0]; })();
+                const today = _businessToday();                                       // v2.169.1
+                const from = _shiftDays(today, -14);
                 const baseline = ratePerWeek(branch, reason, from, today);
                 let el = document.getElementById('act-modal'); if(el) el.remove();
                 el = document.createElement('div'); el.id = 'act-modal';
@@ -27677,7 +27705,7 @@ ${(() => {
                 // State the exact windows. The assistant previously invented a
                 // "current period" running into the future; both windows are now
                 // given explicitly and the current one can never end after today.
-                const today = new Date().toISOString().split('T')[0];
+                const today = _businessToday();                                       // v2.169.1: the trading day
                 const sV = s ? s.value : '', eVraw = e ? e.value : '';
                 const eV = (eVraw && eVraw > today) ? today : eVraw;
                 const spanD = (sV && eV) ? Math.max(1, Math.round((new Date(eV + 'T12:00:00') - new Date(sV + 'T12:00:00')) / 86400000) + 1) : 1;
