@@ -9471,7 +9471,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.165.1 · 23 Sep 2026 · Phone Today uses the Overview\'s Latest day (most recent day with data)';
+        const BUILD_VERSION = 'v2.166.1 · 23 Sep 2026 · Help & FAQs up to date; What moves the rating; Real problem or normal noise';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -26978,7 +26978,7 @@ ${(() => {
                 if(can('escalate')) A.push(['fa-flag', 'Escalate to Ops', 'Flag a social complaint for Ops. Everyone sees the badge and Ops receives an email.']);
                 if(can('ask')) A.push(['fa-robot', 'Ask the assistant', 'The AI button, bottom right. It answers only from the figures currently on screen — change the date range or filters to widen a question.']);
                 if(can('export')) A.push(['fa-file-arrow-down', 'Export data', 'Download the filtered data as CSV from the tabs that offer it.']);
-                if(can('forms')) A.push(['fa-pen-ruler', 'Form Builder', 'Edit the customer feedback forms and publish changes. Dine-In is a custom page and is not editable here.']);
+                if(can('forms')) A.push(['fa-pen-ruler', 'Form Builder', 'Create and edit every customer feedback form — including Dine-In — with rules, drafts and a live preview. Nothing changes for customers until you press Publish.']);
                 if(['owner', 'admin'].indexOf(roleKey(PERM.role)) !== -1) A.push(['fa-store', 'Branch & region rooms', 'In Messages, <b>Branch &amp; region rooms</b> creates one room per branch and per region from Manage Users, and keeps who is in each one up to date. Run it again after adding or moving a user.']);
                 if(['admin', 'reportanalyst'].indexOf(roleKey(PERM.role)) !== -1) A.push(['fa-chart-line', 'Impact report', 'From your profile menu: what the team\u2019s work has changed over time.']);
                 if(roleKey(PERM.role) === 'owner') A.push(['fa-sliders', 'Owner settings', 'From your profile menu: quiet hours, which branches ring alerts, pausing alerts or WhatsApp, the business-day start hour, the rating that counts as an incident, and the current Monthly Drop product. Also the impact report.']);
@@ -27169,6 +27169,21 @@ ${(() => {
                      "all"],
                     ["Why does a status take a moment to appear on someone else's screen?",
                      "Your own screen updates instantly. Other people normally see it within two or three seconds. If it has not appeared after a minute, report it with the case code and the time.",
+                     "all"],
+                    ["What does \"Latest day\" mean?",
+                     "The most recent day that has responses. Just after the trading day starts (9 AM) the new day has none yet, so Latest day still shows yesterday until the first response of the day arrives. The phone's Today screen uses the same days.",
+                     "all"],
+                    ["What is a pattern, and what is a Level 1?",
+                     "A pattern is the same complaint at several branches on one day, or repeatedly at one branch — it points to a system problem, not one bad order. Level 1 is the most serious level for a branch: incidents at or above the critical number, a food-safety complaint, or positive feedback below the critical level. Both can send emails, phone alerts and create actions automatically.",
+                     "all"],
+                    ["What does \"What moves the rating\" show?",
+                     "Which survey answers cost the most rating. For every answer given by at least 10 guests it compares their rating with everyone else's, weighted by how many guests gave it — so the top line is the fix that would lift the average most. It follows the dates and branches you have selected and needs at least 30 rated responses.",
+                     "all"],
+                    ["What does \"Real problem or normal noise?\" mean?",
+                     "Each branch's incidents on the latest day against its own last 28 trading days. Inside the normal range is an ordinary day; above it (by at least 3) is a genuine spike worth acting on; below it is unusually good. Closed days and fake cases are left out.",
+                     "all"],
+                    ["Why do some branches show as closed or not counted?",
+                     "The Owner has marked them closed, renovating or new (new branches are not ranked or flagged for their first 14 days), or the day is a closed day such as Eid. They raise no alarms, have no target that day and are left out of rankings and reports. Nothing is deleted.",
                      "all"]
                 ] },
                 { title: "Customers & rewards", icon: "fa-gift", items: [
@@ -27182,8 +27197,24 @@ ${(() => {
                      "No. Customers only ever see the feedback form and their own stamp card. Everything in the dashboard is internal.",
                      "all"]
                 ] },
-                { title: "Actions", icon: "fa-list-check", items: FAQ_ACTIONS.map(([q, a]) => [q, a, 'action']) },
+                { title: "Actions", icon: "fa-list-check", items: [
+                    ["Why did an action appear for me?",
+                     "Sentinel creates one automatically when it finds a pattern (the same complaint at several branches, or repeatedly at one), an emerging issue, or when an Automation asks for one. It says what to do, who owns it and when it is due. Branch Manager actions go to that branch's manager; others go to the person the Owner set under Owners.",
+                     "all"],
+                    ["How do I finish an action?",
+                     "Do the task, then press Mark done on the Actions tab and write one line on what was done. Only the person it is assigned to (or the Owner) can close it. You can also choose to track whether it worked.",
+                     "all"],
+                    ["What happens if an action goes overdue?",
+                     "It turns red, and a reminder goes to its owner — and to every Owner — every few hours until it is marked done. Quiet hours and paused alerts are respected.",
+                     "all"],
+                ].concat(FAQ_ACTIONS.map(([q, a]) => [q, a, 'action'])) },
                 { title: "Using the dashboard", icon: "fa-laptop", items: [
+                    ["How do I arrange the Overview my way?",
+                     "Press the ⊞ button next to Overview, Compare, Trend and Breakdown, then Edit layout. Drag a section or a card by its handle, press Hide or × to remove it, bring it back from the chips at the bottom, then Done. It only changes your screen and follows you to every device. The same menu switches between Default, My view, Operations and Management.",
+                     "all"],
+                    ["How do I see the full dashboard on my phone?",
+                     "At the bottom of Today, tap Open full view. The Today tab stays in the bottom bar to come back, and full view switches itself off after 15 minutes without use.",
+                     "all"],
                     ["How do I log a complaint that came in by phone?",
                      "On the Incidents tab, press Create Submission. It asks one thing at a time: the rating, the customer's order number and contact details, branch and city, where they ordered from, and what went well or wrong. A rating of 3 or below becomes an incident as soon as it is submitted.",
                      "write"],
@@ -27203,10 +27234,10 @@ ${(() => {
                      "Tabs that support it have a download button. It saves the data you are looking at as a CSV, using your current dates and filters.",
                      "export"],
                     ["Can the assistant answer anything?",
-                     "It only sees what is on screen for the period and filters you have selected, and it will say so rather than guess. It cannot look up an individual customer or anything outside the current view.",
+                     "It only uses what is on screen for the dates and filters you have selected, plus the Owner's Standards (targets and critical levels), and it will say so rather than guess. It cannot look up an individual customer or anything outside the current view. Under each answer you can copy it, ask again, or tap a suggested follow-up question.",
                      "ask"],
                     ["Does the dashboard work on a phone?",
-                     "Yes — all the main tabs work on mobile. Resolving incidents and handling rewards are easier on a laptop, but nothing is blocked.",
+                     "Yes. On a phone Sentinel opens on Today: the latest day's four key numbers, what needs you now (Level 1 branches, patterns, your open actions, cases past their time limit, genuine spikes) and the newest complaints — or the review queue for the Call Centre. Tap anything to open it. Incidents, Actions, Social and More are in the bottom bar, and chat, the bell and the assistant work as usual. Trends, comparisons and rankings are on the laptop; \"Open full view\" at the bottom of Today shows them on the phone for a while.",
                      "all"],
                     ["How do I put the dashboard on my phone like an app?",
                      "Open your profile menu and tap Install app. On an iPhone, open the dashboard in Safari, tap Share, then Add to Home Screen. It opens full screen with the Crumble Sentinel icon and updates by itself whenever the dashboard does.",
@@ -27237,8 +27268,32 @@ ${(() => {
                     ["What does Form Analytics show?",
                      "Everyone who opened a customer form, not only those who finished it. Completion rate is the share who submitted; drop-off shows the question where people most often stopped, which is the one to shorten or fix first. The daily trend shows whether a change to a form made a difference.",
                      "users"],
+                    ["How do I change a form, and when do customers see it?",
+                     "Form Builder → Edit. Every change saves as a draft by itself; customers keep seeing the live form until you press Publish, and see the new version within about a minute. Discard changes goes back to the live form. Publishing warns you if a question needs a new sheet column.",
+                     "forms"],
+                    ["Can I edit the Dine-In survey?",
+                     "Yes — Dine-In is a normal Form Builder form now, writing to the same Feedback tab. Its product and service follow-ups are \"Show only if\" rules. The table QR page still shows the monthly drop / Dine-In choice first.",
+                     "forms"],
+                    ["How do I mark a branch closed or add a holiday?",
+                     "Owner settings → Branches & days. Set a branch to Closed, Renovating or New (with dates), or add a closed day for all or chosen branches. Closed branches and days raise no alarms, have no targets and are left out of rankings and reports.",
+                     "owner"],
+                    ["Which emails does Sentinel send, and from which address?",
+                     "Only what is switched on under Owner settings → Reports & alerts: pattern alerts, Level 1 escalations, the daily operations report, the verified complaints report and the weekly summary, plus Automation emails. They go out from the sender chosen under Integrations — Resend (alerts@crumblesentinel.com) or the Google account's own Gmail address, which can send about 100 a day on a free account.",
+                     "owner"],
+                    ["What are Integrations?",
+                     "Owner settings → Integrations connects Sentinel to other tools: WhatsApp through Conviyo, Blink POS, the email sender (Resend or Gmail) and webhooks. Keys are typed once, encrypted on the server and never shown again. Google reviews, Instagram / Facebook and Foodpanda need access from those companies first — their cards explain how.",
+                     "owner"],
+                    ["What are Automations?",
+                     "Integrations → Automations: When → If → Then rules. For example, when a cold-cookie complaint arrives, send the customer the WhatsApp apology and give the Branch Manager an action. Every rule has an on/off switch, a daily limit, once-per-customer and quiet-hours settings, and a Test run that shows what it would have done without sending anything.",
+                     "owner"],
+                    ["Why is a WhatsApp message \"waiting for approval\"?",
+                     "Its automation is set to wait for someone to approve before messaging a customer — the voucher template always does, because it issues a real reward. Open Integrations → Automations and press Approve & send or Skip. Messages due during quiet hours wait there too.",
+                     "owner"],
+                    ["How do I show a message to everyone in the dashboard?",
+                     "Owner settings → Notice: a headline, a short message, a level (info, important or urgent), an optional button that opens a tab, and an end time. It appears at the top for everyone until it ends or you clear it.",
+                     "owner"],
                     ["What can I change in Owner settings?",
-                     "Alerts: quiet hours, which branches ring alerts, and switches to pause alerts or WhatsApp messages. Rules: the hour the business day starts, the highest rating that counts as an incident, and the product for the current Monthly Drop. Changes apply to everyone without a new version of the dashboard.",
+                     "Rules (business-day start, incident rating, this month's drop), Standards (every target and critical level), Protection, Notice (a banner for everyone), Reports & alerts (which emails go to whom and when), Owners (who receives each automatic action), Branches & days (closed, renovating or new branches and closed days), Alerts (quiet hours, pauses, which branches ring), Integrations (connectors and Automations), System, Audit, Impact, Blind spots and People. Changes apply to everyone straight away.",
                      "owner"],
                     ["Do quiet hours silence messages too?",
                      "Yes. Quiet hours and Pause alerts stop phone alerts for incidents and for Messages. If branches trade late, keep quiet hours outside trading time or the late shift will not be told about new cases.",
