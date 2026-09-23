@@ -9620,7 +9620,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.170.0 · 23 Sep 2026 · Branch integrity redesigned: headline, Needs a look with network average and what to do, plain table';
+        const BUILD_VERSION = 'v2.170.1 · 23 Sep 2026 · Fix: Help & what I can do opens again';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -27736,7 +27736,7 @@ ${(() => {
                         <div class="hp-tabs" role="tablist">
                             <button type="button" class="hp-tab on" role="tab" data-tab="faq">Questions <em>${nQ}</em></button>
                             <button type="button" class="hp-tab" role="tab" data-tab="access">What you can do <em>${nA}</em></button>
-                            <button type="button" class="hp-tab" role="tab" data-tab="std">Standards <em>${STANDARDS.length}</em></button>
+                            <button type="button" class="hp-tab" role="tab" data-tab="std">Standards <em>${STANDARDS_NOW().length}</em></button>
                         </div>
                         <label class="hp-search"><i class="fas fa-magnifying-glass"></i><input id="hp-q" type="search" placeholder="Search questions" autocomplete="off" aria-label="Search questions"></label>
                     </div>
