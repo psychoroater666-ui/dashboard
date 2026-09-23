@@ -4476,6 +4476,7 @@
         .ov-jump a:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ov-jump a.on { color:#010197; border-color:#010197; background:rgba(1,1,151,.06); }
         body.dark-theme .ov-jump a.on { color:#64D0FF; border-color:#64D0FF; background:rgba(100,208,255,.12); }
+        .ov-cnt[hidden] { display:none !important; }   /* v2.159.1: a zero count showed as a red "0" */
         .ov-cnt { display:inline-block; margin-left:7px; min-width:18px; padding:0 6px; border-radius:10px; background:#DC2626; color:#fff; font-size:0.64rem; line-height:17px; text-align:center; }
         .ov-zone { display:flex; flex-direction:column; gap:16px; scroll-margin-top:64px; }
         .ov-zone[hidden], .ov-jump a[hidden] { display:none !important; }
@@ -5201,6 +5202,55 @@
         .ms-btn:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
         .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
+        /* v2.159.0: Overview layouts */
+        .lay-hidden { display:none !important; }
+        .lay-btn { display:inline-flex; align-items:center; gap:6px; border:1.5px solid var(--border-color); background:var(--white); color:var(--text-main); border-radius:10px; padding:6px 11px; font:700 .74rem 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+        .lay-btn svg { width:14px; height:14px; } .lay-btn.on { background:#010197; color:#fff; border-color:#010197; }
+        .lay-menu { position:absolute; z-index:10050; width:290px; background:var(--white); border:1px solid var(--border-color); border-radius:14px; box-shadow:0 18px 40px -12px rgba(15,23,42,.3); padding:6px; }
+        .lay-mi { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; border:none; background:transparent; text-align:left; padding:9px 10px; border-radius:9px; cursor:pointer; color:var(--text-main); font:600 .8rem 'Inter',sans-serif; }
+        .lay-mi:hover { background:var(--bg-light); } .lay-mi b { display:block; font-size:.8rem; } .lay-mi small { display:block; font-size:.7rem; color:var(--text-muted); font-weight:500; margin-top:1px; }
+        .lay-mi.on { background:rgba(1,1,151,.07); color:#010197; } .lay-mi i { font-style:normal; font-weight:800; color:#010197; } .lay-mi.act { color:#010197; font-weight:700; }
+        body.dark-theme .lay-mi.on, body.dark-theme .lay-mi.act { color:#A5B4FC; }
+        .lay-sep { height:1px; background:var(--border-color); margin:5px 4px; }
+        body.lay-edit .ov-zone { border:2px dashed #C7D2FE; border-radius:16px; padding:12px 14px 14px; background:rgba(255,255,255,.5); transition:box-shadow .15s, border-color .15s; }
+        body.dark-theme.lay-edit .ov-zone { background:rgba(255,255,255,.02); border-color:rgba(165,180,252,.35); }
+        body.lay-edit .ov-zone > .ov-zh { display:none; }
+        .lay-zc { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+        .lay-zt { flex:1; font:800 1rem 'Inter',sans-serif; color:var(--text-main); }
+        .lay-grip { width:30px; height:30px; border-radius:9px; background:rgba(1,1,151,.08); color:#010197; display:inline-flex; align-items:center; justify-content:center; cursor:grab; touch-action:none; user-select:none; flex-shrink:0; }
+        body.dark-theme .lay-grip { color:#A5B4FC; background:rgba(165,180,252,.12); }
+        .lay-grip.sm { width:24px; height:24px; border-radius:7px; } .lay-grip:active { cursor:grabbing; }
+        .lay-hide { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-color); background:var(--white); color:var(--text-muted); border-radius:8px; padding:5px 10px; font:700 .72rem 'Inter',sans-serif; cursor:pointer; }
+        .lay-hide:hover { color:#B91C1C; border-color:#FCA5A5; }
+        .lay-rel { position:relative; }
+        /* the handle sits on the card's top edge, so it never covers the card's own heading */
+        .lay-cc { position:absolute; top:-13px; right:12px; display:flex; gap:5px; z-index:6; background:var(--white); border:1px solid var(--border-color); border-radius:10px; padding:2px; box-shadow:0 4px 10px -4px rgba(15,23,42,.25); }
+        body.lay-edit [data-lg] { overflow:visible !important; }
+        .lay-cc .lay-x { border:none; }
+        .ov-row > .lay-cc, .kpi-grid > .lay-cc { right:auto; left:12px; }   /* a whole row's handle sits left, clear of its cards' handles */
+        .lay-x { width:24px; height:24px; border-radius:50%; border:1px solid var(--border-color); background:var(--white); color:var(--text-muted); font:700 .9rem 'Inter',sans-serif; line-height:1; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+        .lay-x:hover { color:#B91C1C; border-color:#FCA5A5; }
+        body.lay-edit [data-lg] { outline:1px solid rgba(1,1,151,.1); outline-offset:0; }
+        .lay-dragging { opacity:.45; transform:scale(.99); }
+        .lay-before { box-shadow:inset 0 4px 0 #010197, 0 -2px 0 #010197 !important; }
+        .lay-after { box-shadow:inset 0 -4px 0 #010197, 0 2px 0 #010197 !important; }
+        .ov-zone.lay-before { box-shadow:0 -6px 0 -1px #010197 !important; } .ov-zone.lay-after { box-shadow:0 6px 0 -1px #010197 !important; }
+        .lay-hint { background:rgba(1,1,151,.06); border:1px solid #C7D2FE; border-radius:12px; padding:10px 14px; font-size:.8rem; color:var(--text-main); margin:4px 0 6px; }
+        .lay-bar { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:10040; background:#0F172A; color:#fff; border-radius:16px; padding:9px 10px 9px 16px;
+                   display:flex; align-items:center; gap:10px; box-shadow:0 20px 40px -12px rgba(15,23,42,.6); max-width:calc(100vw - 24px); }
+        .lay-bt { font:700 .8rem 'Inter',sans-serif; white-space:nowrap; }
+        .lay-tray { display:flex; gap:6px; align-items:center; flex-wrap:wrap; max-width:520px; } .lay-tray small { color:#94A3B8; font-size:.72rem; }
+        .lay-chip { border:none; background:rgba(255,255,255,.14); color:#fff; border-radius:20px; padding:5px 10px; font:700 .72rem 'Inter',sans-serif; cursor:pointer; } .lay-chip:hover { background:rgba(255,255,255,.25); }
+        .lay-gh, .lay-dn { border:none; border-radius:10px; padding:8px 13px; font:800 .76rem 'Inter',sans-serif; cursor:pointer; white-space:nowrap; }
+        .lay-gh { background:transparent; color:#CBD5E1; } .lay-gh:hover { color:#fff; } .lay-dn { background:#fff; color:#010197; }
+        body.lay-edit { padding-bottom:90px; }
+        @media (max-width:760px){
+            .lay-btn .lay-lbl { display:none; }
+            .lay-bar { left:10px; right:10px; transform:none; flex-wrap:wrap; justify-content:space-between; bottom:12px; }
+            .lay-tray { order:3; width:100%; max-width:none; }
+            body.lay-edit { padding-bottom:150px; }
+        }
+        .lay-bar button, .lay-cc button, .lay-zc button, .lay-menu button { min-height:0 !important; }
         /* v2.158.0: Form Builder editor */
         .fx { display:grid; gap:14px; }
         .fx-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:10px 14px; }
@@ -7486,6 +7536,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <button class="view-btn" onclick="app.setExecMode('trend', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Trend</button>
                         <button class="view-btn" onclick="app.setExecMode('breakdown', this)" style="font-size:0.74rem;padding:5px 13px;border-radius:7px;border:none;">Breakdown</button>
                     </div>
+                    <!-- v2.159.0: Overview layouts -->
+                    <button class="lay-btn" id="lay-view-btn" onclick="LAY.menu(event)" title="Choose a layout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="lay-lbl" id="lay-view-name">Default view</span> ▾</button>
+                    <button class="lay-btn" id="lay-edit-btn" onclick="LAY.edit()" title="Move or hide sections"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span class="lay-lbl">Edit layout</span></button>
                     <button id="refresh-btn" onclick="appRefresh(event)" title="Refresh (Shift+click to re-verify all history)" style="display:flex;align-items:center;gap:7px;padding:6px 14px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--white);color:#000;font-size:0.77rem;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;" class="refresh-btn-el">
                         <i id="refresh-icon" class="fas fa-infinity" style="font-size:0.85rem;color:#000;transition:transform .6s cubic-bezier(.16,1,.3,1);"></i>
                         <span id="refresh-label">Refresh</span>
@@ -9084,7 +9137,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.158.2 · 23 Sep 2026 · Form filter on Submissions and Incidents lists every form, including new ones';
+        const BUILD_VERSION = 'v2.159.1 · 23 Sep 2026 · Overview columns pack themselves (no empty gaps); layouts; red 0 badge and Unspecified branch card fixed';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -9232,6 +9285,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             // v2.151.0: the screen notice follows the settings on every answer.
             if(st.notice !== undefined){ try { renderNotice(); } catch(e){} }
+            if(st.layoutDefault !== undefined){ try { LAY.onSettings(); } catch(e){} }
             // v2.149.0: new standards repaint the flags, targets and timers.
             if(st.standards && typeof st.standards === 'object' && JSON.stringify(prev.standards || {}) !== JSON.stringify(st.standards)){
                 try { applyStandardsToPage(); } catch(e){}
@@ -13429,6 +13483,305 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(!(m >= 1 && m <= 48)) return { error: 'Remind again every: a whole number of hours from 1 to 48.' };
             return { owners: { roles, dueHours: d, remindHours: m } };
         }
+
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.159.0 -- OVERVIEW LAYOUTS (Worker v4.94 layout_get / layout_save;
+           Owner setting layoutDefault). "Edit layout" turns the Overview into
+           an editor in place: drag a section or a card by its handle, hide it
+           with Hide / ×, bring it back from the chips in the bottom bar, Done.
+           Each person's layout changes only their own screen. Nothing is
+           rebuilt: sections and cards are moved or hidden, never redrawn.
+           ═══════════════════════════════════════════════════════════════════ */
+        const LAY = (function(){
+            const ZONES = ['ovz-now', 'ovz-why', 'ovz-trends', 'ovz-branches', 'ovz-voice'];
+            const PRESETS = {
+                ops:  { order: ['ovz-now', 'ovz-why', 'ovz-branches', 'ovz-trends', 'ovz-voice'], hidden: [], groups: {} },
+                mgmt: { order: ['ovz-trends', 'ovz-branches', 'ovz-now', 'ovz-why', 'ovz-voice'], hidden: [], groups: {} }
+            };
+            const VIEW_NAMES = { default: 'Default view', mine: 'My view', ops: 'Operations', mgmt: 'Management' };
+            const LS = 'crumble_layout_v1';
+            let BASE = null;           // the page's own layout, read before anything moved
+            let rec = null;            // this person's saved record { view, order, hidden, groups }
+            let editing = false, snapshot = null, inited = false;
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const slug = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+            const GRIP = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+            const EYE = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18"/><path d="M10.6 5.1A9.9 9.9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6A17 17 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 5.4-1.6"/></svg>';
+
+            /* ── what can be moved ────────────────────────────────────────
+               A section's blocks: its direct children except the heading and
+               the auto-arranged flow. A row's cards. A flow's cards, moved
+               only within their own column (the flow keeps arranging them). */
+            const zoneEl = id => document.getElementById(id);
+            const zonesParent = () => (zoneEl('ovz-now') || {}).parentElement;
+            function labelOf(el){
+                if(el.classList.contains('kpi-grid')) return 'Key numbers';
+                if(el.classList.contains('ov-row')) return [...el.querySelectorAll(':scope > .card')].map(labelOf).join(' · ');
+                if(el.id === 'pt-card') return 'Patterns today';
+                if(el.id === 'tg-card') return 'Against target';
+                if(el.id === 'sla-card') return 'Live queue';
+                const h = el.querySelector('h3, .bk-hd h3, .ov-rank-hd h3, .voc-section-header');
+                const t = h ? h.textContent.replace(/\s+/g, ' ').trim() : '';
+                return t ? t.charAt(0) + t.slice(1).toLowerCase() : 'Card';
+            }
+            function keyOf(el, zid){
+                if(el.dataset.lk) return el.dataset.lk;
+                const k = zid + ':' + (el.id || (el.classList.contains('kpi-grid') ? 'kpis' : el.classList.contains('ov-row') ? 'row-' + [...el.parentElement.children].filter(x => x.classList.contains('ov-row')).indexOf(el) : slug(labelOf(el)) || 'card'));
+                el.dataset.lk = k; return k;
+            }
+            function groupsOf(zid){
+                const z = zoneEl(zid); if(!z) return [];
+                const out = [];
+                const blocks = [...z.children].filter(c => !c.classList.contains('ov-zh') && !c.classList.contains('ov-flow') && !c.classList.contains('lay-zc')
+                    && (c.classList.contains('card') || c.classList.contains('kpi-grid') || c.classList.contains('ov-row') || c.querySelector('.card')));
+                if(blocks.length) out.push({ id: zid + '/blocks', parent: z, items: blocks, kind: 'dom' });
+                z.querySelectorAll(':scope > .ov-row').forEach((row, i) => {
+                    const items = [...row.children].filter(c => c.classList.contains('card'));
+                    if(items.length) out.push({ id: zid + '/row' + i, parent: row, items, kind: 'dom' });
+                });
+                const flow = z.querySelector(':scope > .ov-flow');
+                if(flow){
+                    // v2.159.1: one reading order for the whole flow; the flow packs it into columns.
+                    const items = [...flow.querySelectorAll(':scope > .ov-strips > .card, :scope > .ov-cols > .ov-col > .card')].sort((a, b) => ovSeq(a) - ovSeq(b));
+                    if(items.length) out.push({ id: zid + '/flow', parent: flow, items, kind: 'flow' });
+                }
+                out.forEach(g => g.items.forEach(el => { keyOf(el, zid); el.dataset.lg = g.id; }));
+                return out;
+            }
+            const allGroups = () => ZONES.flatMap(groupsOf);
+
+            /* ── read / apply ───────────────────────────────────────────── */
+            function read(){
+                const order = [...(zonesParent() || { children: [] }).children].map(c => c.id).filter(id => ZONES.indexOf(id) !== -1);
+                const hidden = [];
+                ZONES.forEach(z => { const e = zoneEl(z); if(e && e.classList.contains('lay-hidden')) hidden.push(z); });
+                const groups = {};
+                allGroups().forEach(g => {
+                    groups[g.id] = g.items.map(el => el.dataset.lk);
+                    g.items.forEach(el => { if(el.classList.contains('lay-hidden')) hidden.push(el.dataset.lk); });
+                });
+                return { order, hidden, groups };
+            }
+            function apply(L){
+                if(!L || !zonesParent()) return;
+                const P = zonesParent();
+                const order = (L.order || []).filter(id => zoneEl(id)).concat(ZONES.filter(id => (L.order || []).indexOf(id) === -1 && zoneEl(id)));
+                const first = [...P.children].find(c => ZONES.indexOf(c.id) !== -1);
+                if(first){ const mark = document.createComment('lay'); P.insertBefore(mark, first); order.forEach(id => P.insertBefore(zoneEl(id), mark)); mark.remove(); }
+                const hid = new Set(L.hidden || []);
+                ZONES.forEach(z => { const e = zoneEl(z); if(e) e.classList.toggle('lay-hidden', hid.has(z)); });
+                syncJump();
+                allGroups().forEach(g => {
+                    const want = (L.groups || {})[g.id];
+                    g.items.forEach(el => el.classList.toggle('lay-hidden', hid.has(el.dataset.lk)));
+                    if(!Array.isArray(want) || !want.length) return;
+                    const pos = k => { const i = want.indexOf(k); return i === -1 ? 1000 + g.items.findIndex(x => x.dataset.lk === k) : i; };
+                    const sorted = g.items.slice().sort((a, b) => pos(a.dataset.lk) - pos(b.dataset.lk));
+                    placeGroup(g, sorted);
+                });
+                try { if(window.ovArrangeSoon) window.ovArrangeSoon(); } catch(e){}
+            }
+            /* The section links under the filter bar follow the same order, and a hidden section has no link. */
+            function syncJump(){
+                const nav = document.getElementById('ov-jump'); if(!nav) return;
+                const order = [...(zonesParent() || { children: [] }).children].map(c => c.id).filter(id => ZONES.indexOf(id) !== -1);
+                order.forEach(id => { const a = nav.querySelector('a[data-z="' + id + '"]'); if(a) nav.appendChild(a); });
+                ZONES.forEach(id => { const a = nav.querySelector('a[data-z="' + id + '"]'), z = zoneEl(id); if(a && z) a.classList.toggle('lay-hidden', z.classList.contains('lay-hidden')); });
+            }
+            function placeGroup(g, sorted){
+                if(g.kind === 'flow'){
+                    // The flow reads cards in data-ovseq order and packs them into its columns.
+                    sorted.forEach((el, i) => { el.dataset.ovseq = String(i + 1); });
+                    try { ovArrange(); } catch(e){}
+                    return;
+                }
+                const mark = document.createComment('lay');
+                g.parent.insertBefore(mark, g.items[0]);
+                sorted.forEach(el => g.parent.insertBefore(el, mark));
+                mark.remove();
+            }
+            function companyDefault(){ const d = (window.OwnerSettings || {}).layoutDefault; return d && Array.isArray(d.order) && d.order.length ? d : null; }
+            function layoutFor(view){
+                if(view === 'mine' && rec && rec.order && rec.order.length) return rec;
+                if(view === 'ops' || view === 'mgmt') return Object.assign({}, BASE, PRESETS[view], { groups: BASE.groups });
+                return companyDefault() || BASE;
+            }
+            const currentView = () => (rec && rec.view) || (rec && rec.order && rec.order.length ? 'mine' : 'default');
+            function refreshButton(){ const n = document.getElementById('lay-view-name'); if(n) n.textContent = VIEW_NAMES[currentView()] || 'Default view'; }
+
+            /* ── start ──────────────────────────────────────────────────── */
+            function init(){
+                if(inited || !zonesParent()) return;
+                inited = true;
+                BASE = read();
+                try { rec = JSON.parse(localStorage.getItem(LS) || 'null'); } catch(e){ rec = null; }
+                apply(layoutFor(currentView())); refreshButton();
+                apiCall('layout_get', {}).then(r => {
+                    if(!r || r.status !== 'success') return;
+                    rec = r.layout || null;
+                    try { localStorage.setItem(LS, JSON.stringify(rec)); } catch(e){}
+                    if(!editing){ apply(layoutFor(currentView())); refreshButton(); }
+                }).catch(() => {});
+            }
+            function onSettings(){ if(inited && !editing && currentView() === 'default') apply(layoutFor('default')); }
+            async function saveRec(next){
+                rec = next; try { localStorage.setItem(LS, JSON.stringify(rec)); } catch(e){}
+                refreshButton();
+                const r = await apiCall('layout_save', { layout: rec }).catch(() => null);
+                if(!r || r.status !== 'success') UI.toast('Saved on this device; it will reach your account when you are back online.', 'warning', 4000);
+            }
+
+            /* ── view menu ──────────────────────────────────────────────── */
+            function menu(ev){
+                if(ev) ev.stopPropagation();
+                const old = document.getElementById('lay-menu'); if(old){ old.remove(); return; }
+                const btn = document.getElementById('lay-view-btn'); if(!btn) return;
+                const cur = currentView(), owner = (typeof roleKey === 'function' && roleKey(PERM.role) === 'owner');
+                const item = (v, d) => `<button class="lay-mi ${cur === v ? 'on' : ''}" onclick="LAY.pick('${v}')"><span><b>${VIEW_NAMES[v]}</b><small>${d}</small></span>${cur === v ? '<i>✓</i>' : ''}</button>`;
+                const m = document.createElement('div'); m.id = 'lay-menu'; m.className = 'lay-menu';
+                m.innerHTML = item('default', companyDefault() ? 'The company layout, set by the Owner' : 'The standard layout')
+                    + item('mine', rec && rec.order && rec.order.length ? 'Your own order and sections' : 'Not set yet — use Edit layout')
+                    + item('ops', 'Right now and causes first') + item('mgmt', 'Trends and branches first')
+                    + `<div class="lay-sep"></div><button class="lay-mi act" onclick="LAY.edit()">Edit layout</button>`
+                    + (rec && rec.order && rec.order.length ? `<button class="lay-mi act" onclick="LAY.resetMine()">Reset my view</button>` : '')
+                    + (owner ? `<button class="lay-mi act" onclick="LAY.makeDefault()">Use my view as the company default</button>` : '');
+                document.body.appendChild(m);
+                const r = btn.getBoundingClientRect();
+                m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+                m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 8, r.right + window.scrollX - m.offsetWidth)) + 'px';
+                setTimeout(() => document.addEventListener('click', function off(e){ if(!m.contains(e.target)){ m.remove(); document.removeEventListener('click', off); } }), 0);
+            }
+            function closeMenu(){ const m = document.getElementById('lay-menu'); if(m) m.remove(); }
+            function pick(v){
+                closeMenu();
+                if(v === 'mine' && !(rec && rec.order && rec.order.length)){ edit(); return; }
+                const next = Object.assign({}, rec || {}, { view: v });
+                apply(layoutFor(v)); saveRec(next);
+            }
+            function resetMine(){
+                closeMenu();
+                if(!confirm('Go back to the default layout? Your own order and hidden sections are cleared.')) return;
+                apply(layoutFor('default')); saveRec({ view: 'default' });
+            }
+            async function makeDefault(){
+                closeMenu();
+                const L = (rec && rec.order && rec.order.length) ? rec : read();
+                if(!confirm('Make this layout the company default? Everyone who has not made their own view will see it.')) return;
+                const res = await apiCall('settings_set', { layoutDefault: { order: L.order, hidden: L.hidden, groups: L.groups } }).catch(() => null);
+                if(!res || res.status !== 'success'){ UI.toast((res && res.message) || 'Could not save.', 'error'); return; }
+                applyOwnerSettings(res.settings); UI.toast('Company default saved.', 'success');
+            }
+
+            /* ── edit mode ──────────────────────────────────────────────── */
+            function edit(){
+                closeMenu();
+                if(editing) return;
+                if(typeof state !== 'undefined' && state.execMode && state.execMode !== 'overview'){ try { app.setExecMode('overview', document.querySelector('#exec-view-toggles .view-btn')); } catch(e){} }
+                editing = true; snapshot = read();
+                document.body.classList.add('lay-edit');
+                const eb = document.getElementById('lay-edit-btn'); if(eb) eb.classList.add('on');
+                ZONES.forEach(zid => {
+                    const z = zoneEl(zid); if(!z) return;
+                    const bar = document.createElement('div'); bar.className = 'lay-zc';
+                    bar.innerHTML = `<span class="lay-grip" data-drag="zone" data-id="${zid}" title="Drag to move this section">${GRIP}</span><span class="lay-zt">${esc((z.querySelector('.ov-zh h2') || {}).textContent || '')}</span>
+                        <button class="lay-hide" onclick="LAY.hide('${zid}')">${EYE} Hide</button>`;
+                    z.insertBefore(bar, z.firstChild);
+                });
+                allGroups().forEach(g => g.items.forEach(el => {
+                    if(el.querySelector(':scope > .lay-cc')) return;
+                    const c = document.createElement('div'); c.className = 'lay-cc';
+                    c.innerHTML = `<span class="lay-grip sm" data-drag="card" data-id="${esc(el.dataset.lk)}" title="Drag to move">${GRIP}</span>${el.classList.contains('ov-row') ? '' : `<button class="lay-x" onclick="LAY.hide('${esc(el.dataset.lk)}')" title="Hide">×</button>`}`;
+                    el.classList.add('lay-rel'); el.appendChild(c);
+                }));
+                const bar = document.createElement('div'); bar.id = 'lay-bar'; bar.className = 'lay-bar';
+                document.body.appendChild(bar); renderBar();
+                const hint = document.createElement('div'); hint.id = 'lay-hint'; hint.className = 'lay-hint';
+                hint.innerHTML = '<b>Editing your layout.</b> Drag a section or a card by its handle to move it. <b>Hide</b> or <b>×</b> removes it from your view — nothing changes for anyone else.';
+                const P = zonesParent(); P.insertBefore(hint, P.firstChild);
+                document.addEventListener('pointerdown', onDown, true);
+            }
+            function renderBar(){
+                const bar = document.getElementById('lay-bar'); if(!bar) return;
+                const hidden = [];
+                ZONES.forEach(z => { const e = zoneEl(z); if(e && e.classList.contains('lay-hidden')) hidden.push([z, (e.querySelector('.ov-zh h2') || {}).textContent || z]); });
+                allGroups().forEach(g => g.items.forEach(el => { if(el.classList.contains('lay-hidden')) hidden.push([el.dataset.lk, labelOf(el)]); }));
+                bar.innerHTML = `<span class="lay-bt">Editing your layout</span>
+                    <div class="lay-tray">${hidden.length ? '<small>Hidden:</small>' + hidden.map(h => `<button class="lay-chip" onclick="LAY.show('${esc(h[0])}')">+ ${esc(h[1])}</button>`).join('') : '<small>Nothing hidden</small>'}</div>
+                    <button class="lay-gh" onclick="LAY.resetEdit()">Reset to default</button><button class="lay-gh" onclick="LAY.cancel()">Cancel</button><button class="lay-dn" onclick="LAY.done()">Done</button>`;
+            }
+            function elByKey(k){ return zoneEl(k) || document.querySelector('[data-lk="' + CSS.escape(k) + '"]'); }
+            function hide(k){ const e = elByKey(k); if(e){ e.classList.add('lay-hidden'); renderBar(); syncJump(); try { if(window.ovArrangeSoon) window.ovArrangeSoon(); } catch(x){} } }
+            function show(k){ const e = elByKey(k); if(e){ e.classList.remove('lay-hidden'); renderBar(); syncJump(); try { e.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(x){} try { if(window.ovArrangeSoon) window.ovArrangeSoon(); } catch(x){} } }
+            function stopEdit(){
+                editing = false;
+                document.body.classList.remove('lay-edit');
+                document.querySelectorAll('.lay-zc, .lay-cc, #lay-bar, #lay-hint, .lay-drop').forEach(x => x.remove());
+                document.querySelectorAll('.lay-rel').forEach(x => x.classList.remove('lay-rel'));
+                const eb = document.getElementById('lay-edit-btn'); if(eb) eb.classList.remove('on');
+                document.removeEventListener('pointerdown', onDown, true);
+            }
+            function done(){ const L = read(); stopEdit(); saveRec(Object.assign({ view: 'mine' }, L)); UI.toast('Layout saved. Only your screen changed.', 'success'); }
+            function cancel(){ const s = snapshot; stopEdit(); apply(s); }
+            function resetEdit(){ apply(layoutFor('default')); renderBar(); }
+
+            /* ── dragging (mouse and touch) ─────────────────────────────── */
+            let drag = null;
+            function onDown(e){
+                const grip = e.target.closest && e.target.closest('.lay-grip'); if(!grip || !editing) return;
+                e.preventDefault(); e.stopPropagation();
+                const isZone = grip.dataset.drag === 'zone';
+                const el = isZone ? zoneEl(grip.dataset.id) : elByKey(grip.dataset.id);
+                if(!el) return;
+                let peers;
+                if(isZone) peers = ZONES.map(zoneEl).filter(x => x && !x.classList.contains('lay-hidden'));
+                else { const g = el.dataset.lg; peers = [...document.querySelectorAll('[data-lg="' + CSS.escape(g) + '"]')].filter(x => !x.classList.contains('lay-hidden')); }
+                drag = { el, peers, isZone, target: null, before: true, y0: e.clientY };
+                el.classList.add('lay-dragging');
+                document.addEventListener('pointermove', onMove, true);
+                document.addEventListener('pointerup', onUp, true);
+                document.addEventListener('pointercancel', onUp, true);
+            }
+            function onMove(e){
+                if(!drag) return;
+                e.preventDefault();
+                // Scroll when near the edges of the screen.
+                const edge = 70; if(e.clientY < edge) window.scrollBy(0, -12); else if(e.clientY > window.innerHeight - edge) window.scrollBy(0, 12);
+                let best = null, bd = Infinity, before = true;
+                drag.peers.forEach(p => {
+                    if(p === drag.el) return;
+                    const r = p.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+                    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+                    const d = inside ? -1 : Math.hypot(e.clientX - cx, e.clientY - cy);
+                    if(d < bd){ bd = d; best = p;
+                        const horiz = !drag.isZone && r.width < (p.parentElement ? p.parentElement.getBoundingClientRect().width * 0.8 : 9999);
+                        before = horiz && Math.abs(e.clientY - cy) < r.height / 2 ? e.clientX < cx : e.clientY < cy; }
+                });
+                document.querySelectorAll('.lay-before, .lay-after').forEach(x => x.classList.remove('lay-before', 'lay-after'));
+                if(best){ best.classList.add(before ? 'lay-before' : 'lay-after'); }
+                drag.target = best; drag.before = before;
+            }
+            function onUp(){
+                document.removeEventListener('pointermove', onMove, true);
+                document.removeEventListener('pointerup', onUp, true);
+                document.removeEventListener('pointercancel', onUp, true);
+                document.querySelectorAll('.lay-before, .lay-after').forEach(x => x.classList.remove('lay-before', 'lay-after'));
+                if(!drag) return;
+                const { el, target, before, isZone } = drag; el.classList.remove('lay-dragging'); drag = null;
+                if(!target) return;
+                if(isZone){
+                    const P = zonesParent(); P.insertBefore(el, before ? target : target.nextSibling); syncJump();
+                } else {
+                    const gid = el.dataset.lg, g = allGroups().find(x => x.id === gid); if(!g) return;
+                    const items = g.items.filter(x => x !== el), at = items.indexOf(target);
+                    items.splice(before ? at : at + 1, 0, el);
+                    placeGroup(g, items);
+                    try { if(window.ovArrangeSoon) window.ovArrangeSoon(); } catch(x){}
+                }
+            }
+
+            return { init, onSettings, menu, pick, resetMine, makeDefault, edit, hide, show, done, cancel, resetEdit,
+                     get editing(){ return editing; }, _read: read, _apply: apply };
+        })();
 
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
@@ -19724,7 +20077,8 @@ ${(() => {
             if (!container) return;
             const { p1 } = state;
 
-            const branchData = config.branches.map(b => {
+            // v2.159.1: "Unspecified" is a data-quality placeholder, not a branch -- left out here as on the KPI cards.
+            const branchData = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
                 const s = (state.branchGroups[b.name] || {subs:[]}).subs;
                 const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                 const sL = s.length, iL = i.length;
@@ -24076,6 +24430,7 @@ ${(() => {
             _fetchSharedProfilePhotos(); // picks up a photo uploaded from any other device
             if(can('users')) setTimeout(() => { try { _fetchUsers().catch(()=>{}); } catch(e){} }, 2500);
             if(can('forms')) setTimeout(() => { try { FB.warm(); } catch(e){} }, 3500);   // so Form Builder opens instantly later
+            setTimeout(() => { try { LAY.init(); } catch(e){ console.warn('layout:', e); } }, 600);   // v2.159.0: this person's Overview layout
             try { AI.mount(); } catch(e){}
             // Delegated listener: the profile menu is re-rendered, and an inline
             // onclick could not see HELP (declared with const, so not on window).
@@ -27206,24 +27561,60 @@ ${(() => {
         // zone's cards: a card whose body is an empty state (.ov-empty-msg)
         // becomes a strip at the top; the rest stack in their column. Nodes
         // are moved, never rebuilt, so charts and the uiHTML cache survive.
+        /* v2.159.1: the two columns are packed, not fixed. Each card goes to
+           whichever column is shorter at that point, in the order the cards
+           are meant to be read -- so a tall card on one side no longer leaves
+           a hole on the other. A new packing is used only when it makes the
+           taller column clearly shorter, so the page never shuffles back and
+           forth as content loads. On a phone (one column) nothing changes. */
+        function ovSeq(c){ return (c.dataset.ovseq != null && c.dataset.ovseq !== '') ? +c.dataset.ovseq : (+c.dataset.ovord || 0) * 10 + (+c.dataset.ovcol || 0); }
         function ovArrange(){
             document.querySelectorAll('.ov-flow').forEach(flow => {
                 const strips = flow.querySelector(':scope > .ov-strips'), wrap = flow.querySelector(':scope > .ov-cols');
                 const cols = wrap ? [...wrap.querySelectorAll(':scope > .ov-col')] : [];
                 if(!strips || cols.length < 2) return;
-                const cards = [...flow.querySelectorAll(':scope > .ov-strips > .card, :scope > .ov-cols > .ov-col > .card')];
-                const want = new Map();
-                cards.forEach(c => {
-                    const empty = !!c.querySelector('.ov-empty-msg');
-                    c.classList.toggle('ov-strip', empty);
-                    want.set(c, empty ? strips : cols[Math.min(+c.dataset.ovcol || 0, cols.length - 1)]);
+                const cards = [...flow.querySelectorAll(':scope > .ov-strips > .card, :scope > .ov-cols > .ov-col > .card')].sort((a, b) => ovSeq(a) - ovSeq(b));
+                const shown = c => c.style.display !== 'none' && !c.classList.contains('lay-hidden');
+                const isEmpty = c => !!c.querySelector('.ov-empty-msg');
+                cards.forEach(c => c.classList.toggle('ov-strip', isEmpty(c)));
+                const top = cards.filter(isEmpty), rest = cards.filter(c => !isEmpty(c));
+                top.forEach((c, i) => { if(strips.children[i] !== c) strips.insertBefore(c, strips.children[i] || null); });
+                const sideBySide = (() => { try { return getComputedStyle(wrap).gridTemplateColumns.trim().split(/\s+/).length > 1; } catch(e){ return false; } })();
+                let plan;
+                if(sideBySide){
+                    const gap = 16, vis = rest.filter(shown), hs = vis.map(c => c.offsetHeight + gap);
+                    let h = cols.map(() => 0);
+                    plan = cols.map(() => []);
+                    if(cols.length === 2 && vis.length && vis.length <= 10){
+                        // Few cards: try every split and keep the one with the shortest tall column
+                        // (reading order is kept inside each column).
+                        let best = null, bestMax = Infinity;
+                        for(let m = 0; m < (1 << vis.length); m++){
+                            if(!(m & 1)) continue;                       // the first card always starts the left column
+                            let a = 0, b = 0;
+                            for(let i = 0; i < vis.length; i++){ if(m & (1 << i)) a += hs[i]; else b += hs[i]; }
+                            const mx = Math.max(a, b);
+                            if(mx < bestMax - 1){ bestMax = mx; best = m; h = [a, b]; }
+                        }
+                        vis.forEach((c, i) => plan[(best & (1 << i)) ? 0 : 1].push(c));
+                    } else {
+                        vis.forEach((c, i) => { const k = h.indexOf(Math.min(...h)); plan[k].push(c); h[k] += hs[i]; });
+                    }
+                    rest.filter(c => !shown(c)).forEach(c => plan[0].push(c));
+                    const now = cols.map(col => [...col.children].filter(c => c.classList.contains('card') && shown(c) && !isEmpty(c)).reduce((s, c) => s + c.offsetHeight + gap, 0));
+                    const same = plan.every((list, k) => list.filter(shown).length === [...cols[k].children].filter(c => shown(c) && !isEmpty(c)).length && list.filter(shown).every(c => c.parentElement === cols[k]));
+                    // Keep the present packing unless the new one is clearly better
+                    // (or a card is sitting somewhere it no longer belongs).
+                    const misplaced = rest.some(c => !cols.includes(c.parentElement));
+                    if(!misplaced && !same && Math.max(...h) > Math.max(...now) - 40) plan = cols.map(col => rest.filter(c => c.parentElement === col));
+                } else {
+                    plan = cols.map((col, k) => rest.filter(c => Math.min(+c.dataset.ovcol || 0, cols.length - 1) === k));
+                }
+                plan.forEach((list, k) => {
+                    const p = cols[k];
+                    list.sort((a, b) => ovSeq(a) - ovSeq(b)).forEach((c, i) => { if(p.children[i] !== c) p.insertBefore(c, p.children[i] || null); });
                 });
-                const key = c => (+c.dataset.ovcol || 0) * 100 + (+c.dataset.ovord || 0);
-                [strips, ...cols].forEach(p => {
-                    const mine = cards.filter(c => want.get(c) === p).sort((a, b) => key(a) - key(b));
-                    mine.forEach((c, i) => { if(p.children[i] !== c) p.insertBefore(c, p.children[i] || null); });
-                });
-                const live = cols.filter(c => [...c.children].some(k => k.style.display !== 'none')).length;
+                const live = cols.filter(c => [...c.children].some(k => k.style.display !== 'none' && !k.classList.contains('lay-hidden'))).length;
                 wrap.classList.toggle('ov-one', live === 1);
                 wrap.classList.toggle('ov-none', live === 0);
             });
