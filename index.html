@@ -8977,7 +8977,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.154.0 · 23 Sep 2026 · Action follow-through: automatic actions from patterns and emerging issues, owners, due times, reminders';
+        const BUILD_VERSION = 'v2.155.0 · 23 Sep 2026 · Actions tab for everyone (scoped); only the assigned person closes an action; branch names on cross-branch actions';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13187,17 +13187,23 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(!data){ host.innerHTML = ''; return; }
                 const all = data.list || [], now = Date.now(), esc = _ntEsc;
                 const open = all.filter(f => !f.done), over = open.filter(f => Date.parse(f.due) <= now), mine = open.filter(f => f.mine), done = all.filter(f => f.done);
-                if(!all.length){ const e = ''; if(host.__lastHtml !== e){ host.__lastHtml = e; host.innerHTML = e; } return; }
+                if(!all.length){
+                    const e = `<div class="fu-card"><div class="fu-h"><b>Waiting for action</b><span>Created automatically from patterns and emerging issues</span></div><div class="pt-none">✓ Nothing waiting for action${roleKey(PERM.role) === 'owner' ? '' : ' at your branches'}</div></div>`;
+                    if(host.__lastHtml !== e){ host.__lastHtml = e; host.innerHTML = e; } return;
+                }
                 const show = tab === 'overdue' ? over : tab === 'mine' ? mine : tab === 'done' ? done : open;
                 const chip = (k, t, n, cls) => `<span class="${tab === k ? 'on' : ''} ${cls || ''}" onclick="FU.tab('${k}')">${t} · ${n}</span>`;
                 const rows = show.map(f => {
                     const left = Date.parse(f.due) - now, late = !f.done && left <= 0, soon = !f.done && left > 0 && left < 3600000;
                     const due = f.done ? 'Done by ' + esc(f.doneBy || '') : late ? 'Overdue ' + dur(left) : 'Due in ' + dur(left);
+                    // v2.155.0: only the person it is assigned to (or an Owner) can close it.
+                    const mayClose = !f.done && (f.mine || roleKey(PERM.role) === 'owner');
+                    const brs = (f.branches || []).length > 1 ? `<div class="pt-br">${f.branches.map(b => `<span>${esc(b)}</span>`).join('')}</div>` : '';
                     return `<div class="fu-row ${late ? 'od' : ''} ${f.done ? 'dn' : ''}"><div>
                         <div class="fu-top"><span class="fu-chip ${f.kind === 'pattern' ? 'c-pat' : 'c-em'}">${f.kind === 'pattern' ? 'PATTERN' : 'EMERGING'}</span><span class="fu-chip ${f.pri === 'Critical' ? 'c-crit' : 'c-high'}">${esc(String(f.pri).toUpperCase())}</span><b>${esc(f.branchLabel)}</b> · ${esc(f.issue)}</div>
-                        <div class="fu-do">${esc(f.done ? 'Done: ' + (f.note || '') : f.action)}</div>
+                        ${brs}<div class="fu-do">${esc(f.done ? 'Done: ' + (f.note || '') : f.action)}</div>
                         <div class="fu-meta"><span>Owner <b>${esc(f.ownerLabel)}</b></span><span class="fu-due ${f.done ? 'ok' : late ? 'late' : soon ? 'soon' : 'ok'}">${due}</span>${late && f.reminded ? `<span>Reminded ${f.reminded}×</span>` : ''}<span>${esc(f.why || '')}</span></div></div>
-                        <div class="fu-a"><button onclick="app.navigate('incidents')">View cases</button>${f.done ? '' : `<button class="pr" data-id="${esc(f.id)}" onclick="FU.done(this.dataset.id)">Mark done</button>`}</div></div>`;
+                        <div class="fu-a"><button onclick="app.navigate('incidents')">View cases</button>${mayClose ? `<button class="pr" data-id="${esc(f.id)}" onclick="FU.done(this.dataset.id)">Mark done</button>` : ''}</div></div>`;
                 }).join('');
                 const html = `<div class="fu-card"><div class="fu-h"><b>Waiting for action</b><span>Created automatically from patterns and emerging issues</span></div>
                     <div class="fu-tabs">${chip('open', 'All open', open.length)}${chip('overdue', 'Overdue', over.length, over.length ? 'od' : '')}${chip('mine', 'Mine', mine.length)}${chip('done', 'Done today', done.length)}</div>
@@ -23340,7 +23346,10 @@ ${(() => {
             const faNav = document.getElementById('nav-form-analytics');
             if(faNav) faNav.style.display = can('users') ? '' : 'none';   // Owner only
             const acNav = document.getElementById('nav-actions');
-            if(acNav) acNav.style.display = can('action') ? '' : 'none';
+            // v2.155.0: everyone sees Actions -- each person's "Waiting for action" is
+            // cut to their branches by the server; the register below stays with
+            // the roles that can log actions.
+            if(acNav) acNav.style.display = '';
             // Orders are read-only, and the backend already scopes them to the
             // person's own branch, so anyone who can see the dashboard can see
             // the orders they are responsible for.
@@ -25280,7 +25289,7 @@ ${(() => {
 
             function render(){
                 const host = document.getElementById('acts-root'); if(!host) return;
-                if(!can('action')){ host.innerHTML = '<div class="fb-empty">The action register is available to the Owner and Report Analysts.</div>'; return; }
+                if(!can('action')){ host.innerHTML = ''; return; }     // v2.155.0: only "Waiting for action" for everyone else
                 const all = rows().slice().reverse();
                 const open_ = all.filter(a => String(a['Status'] || 'open') !== 'closed');
                 // "n closed actions hidden" used to be a dead end: it named them
