@@ -5284,6 +5284,55 @@
         .ig-dlg { margin:auto; width:min(440px,100%); background:var(--white); border-radius:20px; overflow:hidden; box-shadow:0 30px 60px -20px rgba(15,23,42,.55); }
         .ig-dlg p { margin:0; padding:4px 20px 12px; font-size:.84rem; line-height:1.6; color:var(--text-main); }
         @media (max-width:760px){ .ig-stats { grid-template-columns:1fr 1fr; } .ig-ov { padding:0; } .ig-pn { width:100%; border-radius:0; } }
+        /* v2.165.0: Automations */
+        .au { display:grid; grid-template-columns:minmax(260px,380px) minmax(0,1fr); gap:14px; align-items:start; }
+        .au-list { display:grid; gap:9px; align-content:start; }
+        .au-h { font:800 .62rem 'Inter',sans-serif; letter-spacing:.6px; color:var(--text-muted); margin:6px 2px 0; }
+        .au-r { background:var(--white); border:1px solid var(--border-color); border-radius:16px; padding:12px 13px; display:grid; gap:8px; cursor:pointer; transition:box-shadow .15s; }
+        .au-r:hover { border-color:#C7D2FE; } .au-r.on { box-shadow:0 0 0 2px #4F46E5, 0 14px 28px -18px rgba(79,70,229,.6); }
+        .au-rt { display:flex; align-items:center; gap:10px; } .au-rt b { flex:1; font-size:.84rem; color:var(--text-main); }
+        .au-tg { width:36px; height:20px; border-radius:20px; background:#10B981; position:relative; flex-shrink:0; border:none; cursor:pointer; padding:0; min-height:0 !important; }
+        .au-tg::after { content:''; position:absolute; top:2px; left:18px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .15s; }
+        .au-tg.off { background:#CBD5E1; } .au-tg.off::after { left:2px; }
+        .au-flow { display:flex; align-items:center; gap:5px; flex-wrap:wrap; font:600 .7rem 'Inter',sans-serif; color:var(--text-muted); }
+        .au-chip { display:inline-flex; align-items:center; gap:5px; border-radius:8px; padding:3px 7px; background:var(--bg-light); color:var(--text-main); }
+        .au-chip i { color:#4F46E5; } .au-chip em { width:16px; height:16px; border-radius:5px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:.55rem; font-style:normal; }
+        .au-mt { display:flex; gap:10px; flex-wrap:wrap; font-size:.68rem; color:var(--text-muted); } .au-mt b { color:var(--text-main); }
+        .au-empty { font-size:.78rem; color:var(--text-muted); padding:10px 4px; } .au-empty.big { padding:60px 20px; text-align:center; }
+        .au-rec { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+        .au-rec button { text-align:left; border:1px dashed #C7D2FE; border-radius:12px; padding:9px 10px; background:rgba(79,70,229,.05); color:#3730A3; font:600 .72rem 'Inter',sans-serif; cursor:pointer; min-height:0 !important; }
+        body.dark-theme .au-rec button { color:#C7D2FE; }
+        .au-q { background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:11px 12px; display:grid; gap:8px; }
+        body.dark-theme .au-q { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.3); }
+        .au-q b { font-size:.8rem; color:var(--text-main); } .au-q small { display:block; font-size:.7rem; color:var(--text-muted); margin-top:2px; } .au-q p { margin:6px 0 0; font-size:.74rem; color:var(--text-main); font-style:italic; }
+        .au-qa { display:flex; gap:6px; }
+        .au-ed { display:grid; gap:12px; align-content:start; max-height:70vh; overflow:auto; padding-right:2px; }
+        .au-et { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .au-name { flex:1 1 200px; border:1.5px solid transparent; border-radius:10px; background:transparent; font:800 1.05rem 'Inter',sans-serif; color:var(--text-main); padding:5px 8px; }
+        .au-name:hover, .au-name:focus { border-color:var(--border-color); outline:none; background:var(--white); }
+        .au-blk { background:var(--white); border:1px solid var(--border-color); border-radius:18px; padding:13px 15px; display:grid; gap:8px; }
+        .au-k { justify-self:start; font:800 .6rem 'Inter',sans-serif; letter-spacing:.6px; color:#fff; border-radius:7px; padding:3px 8px; }
+        .au-when { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        .au-when button { display:flex; gap:9px; align-items:flex-start; text-align:left; border:1.5px solid var(--border-color); border-radius:12px; padding:9px 10px; background:var(--white); cursor:pointer; color:var(--text-main); min-height:0 !important; }
+        .au-when button i { color:#4F46E5; margin-top:2px; } .au-when button b { display:block; font-size:.76rem; } .au-when button small { display:block; font-size:.66rem; color:var(--text-muted); margin-top:2px; }
+        .au-when button.on { border-color:#4F46E5; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+        .au-cond { display:flex; gap:6px; align-items:center; flex-wrap:wrap; } .au-cond em { font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); font-style:normal; }
+        .au-cond select, .au-cond input, .au-ab select, .au-ab input, .au-saf input { border:1.5px solid var(--border-color); border-radius:10px; padding:7px 9px; font:600 .78rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); max-width:100%; }
+        .au-x { border:none; background:transparent; color:var(--text-muted); font-size:1.1rem; cursor:pointer; min-height:0 !important; }
+        .au-add { justify-self:start; border:none; background:none; color:#4F46E5; font:700 .76rem 'Inter',sans-serif; cursor:pointer; padding:2px 0; min-height:0 !important; }
+        .au-mut { font-size:.74rem; color:var(--text-muted); }
+        .au-act { display:flex; gap:11px; align-items:flex-start; border:1.5px solid var(--border-color); border-radius:14px; padding:10px 11px; }
+        .au-ab { flex:1; min-width:0; display:grid; gap:6px; } .au-ab b { font-size:.8rem; color:var(--text-main); } .au-ab small { font-size:.68rem; color:var(--text-muted); }
+        .au-ab .au-warn { color:#B91C1C; } .au-ck { display:flex; gap:7px; align-items:center; font:600 .74rem 'Inter',sans-serif; color:var(--text-main); }
+        .au-in { display:flex; gap:6px; align-items:center; font:600 .74rem 'Inter',sans-serif; color:var(--text-muted); } .au-in input { width:70px; }
+        .au-adds { display:flex; gap:6px; flex-wrap:wrap; }
+        .au-adds button { border:1px solid var(--border-color); background:var(--white); border-radius:20px; padding:5px 10px; font:700 .7rem 'Inter',sans-serif; color:var(--text-main); cursor:pointer; min-height:0 !important; }
+        .au-saf { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        .au-saf label { background:var(--white); border:1px solid var(--border-color); border-radius:12px; padding:9px 11px; font:600 .74rem 'Inter',sans-serif; color:var(--text-main); display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+        .au-saf small { flex-basis:100%; font:800 .58rem 'Inter',sans-serif; letter-spacing:.4px; color:var(--text-muted); } .au-saf input { width:58px; padding:5px 7px; }
+        .au-dry { background:rgba(79,70,229,.07); border:1px solid #C7D2FE; border-radius:14px; padding:10px 12px; font:600 .78rem 'Inter',sans-serif; color:var(--text-main); line-height:1.5; }
+        .au-del { justify-self:start; border:none; background:none; color:#DC2626; font:700 .74rem 'Inter',sans-serif; cursor:pointer; min-height:0 !important; }
+        @media (max-width:900px){ .au { grid-template-columns:1fr; } .au-when, .au-saf { grid-template-columns:1fr; } .au-ed { max-height:none; } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9395,7 +9444,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.164.0 · 23 Sep 2026 · Integrations hub: Blink, WhatsApp via Conviyo, Resend / Gmail sender, webhooks — keys encrypted';
+        const BUILD_VERSION = 'v2.165.1 · 23 Sep 2026 · Phone Today uses the Overview\'s Latest day (most recent day with data)';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -14189,9 +14238,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const role = () => { try { return roleKey(PERM.role); } catch(e){ return 'viewer'; } };
             const isCC = () => role() === 'callcenter';
             const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-            function bizDays(){
+            /* v2.165.1: the same days as the Overview's chips -- "Latest day" is the most
+               recent day that has data (DATA_MAX_DATE), not the calendar day. Just after
+               the trading day starts (9 AM) the new day has no responses yet, and Today
+               showed 0 of 1,400 while the Overview still showed yesterday's figures. */
+            function latestIso(){
+                try { if(typeof DATA_MAX_DATE !== 'undefined' && !DATA_MAX_DATE && typeof computeDataDateRange === 'function') computeDataDateRange(); } catch(e){}
+                if(typeof DATA_MAX_DATE !== 'undefined' && DATA_MAX_DATE) return DATA_MAX_DATE;
                 const d = new Date();
                 if(typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined' && NIGHT_SHIFT_CUTOFF_HOUR > 0 && d.getHours() < NIGHT_SHIFT_CUTOFF_HOUR) d.setDate(d.getDate() - 1);
+                return iso(d);
+            }
+            const nowIso = () => { const d = new Date(); if(typeof NIGHT_SHIFT_CUTOFF_HOUR !== 'undefined' && NIGHT_SHIFT_CUTOFF_HOUR > 0 && d.getHours() < NIGHT_SHIFT_CUTOFF_HOUR) d.setDate(d.getDate() - 1); return iso(d); };
+            const live = () => range === 'today' && latestIso() === nowIso();
+            const dayLabel = ymd => { try { return new Date(ymd + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); } catch(e){ return ymd; } };
+            function bizDays(){
+                const d = new Date(latestIso() + 'T12:00:00');
                 const n = range === 'week' ? 7 : 1, start = new Date(d);
                 if(range === 'yesterday'){ d.setDate(d.getDate() - 1); start.setDate(start.getDate() - 1); }
                 start.setDate(start.getDate() - (n - 1));
@@ -14249,7 +14311,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 mine.forEach(f => { const left = Date.parse(f.due) - Date.now();
                     need.push(row(left <= 0 ? 'red' : 'amber', f.issue + ' — ' + f.branchLabel, (left <= 0 ? 'Overdue ' + ago(-left) : 'Due in ' + ago(left)) + ' · ' + f.action, `app.navigate('actions')`)); });
                 if(N.overdue.length) need.push(row('amber', N.overdue.length + ' case' + (N.overdue.length === 1 ? '' : 's') + ' past the time limit', 'Oldest waiting ' + ago(N.oldest), `app.navigate('incidents')`));
-                const status = need.length ? `<div class="td-st bad">⚠ ${need.length} thing${need.length === 1 ? '' : 's'} need${need.length === 1 ? 's' : ''} ${cc ? 'the team' : 'you'} now</div>` : `<div class="td-st ok">✓ All clear${range === 'today' ? ' so far today' : ''}</div>`;
+                const status = need.length ? `<div class="td-st bad">⚠ ${need.length} thing${need.length === 1 ? '' : 's'} need${need.length === 1 ? 's' : ''} ${cc ? 'the team' : 'you'} now</div>` : `<div class="td-st ok">✓ All clear${live() ? ' so far today' : ''}</div>`;
                 const tgtTone = subs.length >= N.target ? 'good' : subs.length < S.subCritical * (N.target / Math.max(1, Number(S.subTarget) || 100)) ? 'bad' : 'warn';
                 const cards = cc
                     ? kc('WAITING REVIEW', N.waiting.length, N.waiting.length ? 'oldest ' + ago(N.oldest) + ' · target ' + S.reviewMin + ' min' : 'queue clear', N.oldest > S.reviewMin * 60000 ? 'bad' : 'good')
@@ -14270,14 +14332,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     return `<button class="td-it" onclick="TODAY.open(${k})">${star(i)}<span class="td-tx"><b>${esc(title.length > 70 ? title.slice(0, 68) + '…' : title)}</b><small>${esc(sub)}</small></span><span class="td-ch">›</span></button>`; }).join('');
                 const brOpts = (!myBranches() || myBranches().length > 1) ? `<select class="td-br" onchange="TODAY.setBranch(this.value)"><option value="">All branches</option>${(myBranches() || config.branches.map(b => b.name)).filter(b => b !== 'Unspecified').map(b => `<option ${b === branch ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>` : '';
                 const html = `<div class="td">
-                    <div class="td-top"><div><b>${range === 'week' ? 'Last 7 days' : range === 'yesterday' ? 'Yesterday' : 'Today'} · ${esc(scopeName())}</b><small>Updated ${esc(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</small></div>${brOpts}</div>
-                    <div class="td-seg">${[['today', 'Today'], ['yesterday', 'Yesterday'], ['week', '7 days']].map(r => `<button class="${range === r[0] ? 'on' : ''}" onclick="TODAY.setRange('${r[0]}')">${r[1]}</button>`).join('')}</div>
+                    <div class="td-top"><div><b>${range === 'week' ? 'Last 7 days' : range === 'yesterday' ? 'Yesterday · ' + esc(dayLabel([...bizDays()][0])) : 'Latest day · ' + esc(dayLabel(latestIso()))} · ${esc(scopeName())}</b><small>Updated ${esc(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</small></div>${brOpts}</div>
+                    <div class="td-seg">${[['today', 'Latest day'], ['yesterday', 'Yesterday'], ['week', '7 days']].map(r => `<button class="${range === r[0] ? 'on' : ''}" onclick="TODAY.setRange('${r[0]}')">${r[1]}</button>`).join('')}</div>
                     ${status}
-                    ${(() => { const d = [...bizDays()].pop(); const pool = branch ? [branch] : (myBranches() || null); const cl = calClosedList(d, pool); return cl.length ? `<div class="td-closed">Closed ${range === 'today' ? 'today' : 'on ' + d}: ${esc(cl.join(' · '))} — not counted</div>` : ''; })()}
+                    ${(() => { const d = [...bizDays()].pop(); const pool = branch ? [branch] : (myBranches() || null); const cl = calClosedList(d, pool); return cl.length ? `<div class="td-closed">Closed ${live() ? 'today' : 'on ' + esc(dayLabel(d))}: ${esc(cl.join(' · '))} — not counted</div>` : ''; })()}
                     <div class="td-kp">${cards}</div>
                     ${need.length ? `<div class="td-h"><span>Needs ${cc ? 'the team' : 'you'} now</span></div>${need.slice(0, 6).join('')}` : ''}
                     <div class="td-h"><span>${cc ? 'Review next' : 'Latest complaints'}</span><button class="td-a" onclick="app.navigate('incidents')">${cc ? 'Queue' : 'All'} →</button></div>
-                    ${items || `<div class="td-empty">${cc ? 'Nothing waiting for review.' : 'No complaints ' + (range === 'today' ? 'so far today' : 'in this period') + '.'}</div>`}
+                    ${items || `<div class="td-empty">${cc ? 'Nothing waiting for review.' : 'No complaints ' + (live() ? 'so far today' : 'in this period') + '.'}</div>`}
                     <div class="td-lap">Trends, comparisons and rankings are on the <b>laptop dashboard</b> · <button class="td-a" onclick="MC.setFull(true)">Open full view</button></div>
                 </div>`;
                 if(host.__lastHtml !== html){ host.__lastHtml = html; host.innerHTML = html; }   // rule 12
@@ -14381,11 +14443,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 h.innerHTML = `<div class="ig">
                     <div class="ig-top"><div class="ig-t1"><span class="ig-ic"><i class="fas fa-plug"></i></span><div><h3>Integrations</h3><p>Connect Sentinel to the tools Crumble already uses. Keys are encrypted and never shown again.</p></div></div>
                         <div class="ig-stats">${stat(con, 'Connected', '#10B981')}${stat(att, 'Needs attention', '#EF4444')}${stat(today.toLocaleString(), 'Events today', '#6366F1')}${stat(pau, 'Paused', '#F59E0B')}</div></div>
-                    <div class="ig-bar"><div class="ig-seg">${[['connectors', 'Connectors'], ['activity', 'Activity']].map(v => `<button class="${view === v[0] ? 'on' : ''}" onclick="INTG.view('${v[0]}')">${v[1]}</button>`).join('')}<button disabled title="Next: When → If → Then rules">Automations</button></div>
+                    <div class="ig-bar"><div class="ig-seg">${[['connectors', 'Connectors'], ['automations', 'Automations'], ['activity', 'Activity']].map(v => `<button class="${view === v[0] ? 'on' : ''}" onclick="INTG.view('${v[0]}')">${v[1]}</button>`).join('')}</div>
                         ${view === 'connectors' ? `<input class="ig-q" placeholder="Search integrations…" value="${esc(q)}" oninput="INTG.search(this.value)">
                         <div class="ig-ch">${[['all', 'All'], ['orders', 'Orders'], ['messaging', 'Messaging'], ['reviews', 'Reviews'], ['data', 'Data']].map(v => `<button class="${filter === v[0] ? 'on' : ''}" onclick="INTG.filter('${v[0]}')">${v[1]}</button>`).join('')}</div>` : ''}</div>
-                    ${view === 'connectors' ? `<div class="ig-grid">${shown.map(card).join('') || '<div class="ig-load">Nothing matches.</div>'}</div>` : activity()}
+                    ${view === 'connectors' ? `<div class="ig-grid">${shown.map(card).join('') || '<div class="ig-load">Nothing matches.</div>'}</div>` : view === 'automations' ? '<div id="au-host"></div>' : activity()}
                 </div>`;
+                if(view === 'automations') AUTO.load();
                 if(q){ const i = h.querySelector('.ig-q'); if(i){ i.focus(); i.setSelectionRange(q.length, q.length); } }
             }
             function activity(){
@@ -14464,6 +14527,139 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             function copy(t){ try { navigator.clipboard.writeText(t); UI.toast('Copied.', 'success'); } catch(e){ prompt('Copy:', t); } }
             return { load, view: v => { view = v; render(); }, filter: v => { filter = v; render(); }, search: v => { q = String(v || '').toLowerCase(); render(); },
                      use, test, pause, how, panel, save, disconnect, copy, replace, _data: () => data };
+        })();
+
+        /* v2.165.0 -- AUTOMATIONS (Integrations → Automations; Worker v4.99). */
+        const AUTO = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            let D = null, ed = null, test = null, busy = false;
+            const host = () => document.getElementById('au-host');
+            const TR = { complaint: ['A new complaint arrives', 'Any form · a rating at or below the incident level'], level1: ['A Level 1 escalation', 'A branch reaches a critical level'], pattern: ['A pattern is detected', 'Same complaint at several branches, or repeatedly at one'] };
+            const FIELDS = { complaint: [['category', 'Category'], ['rating', 'Rating'], ['branch', 'Branch'], ['form', 'Form'], ['phone', 'Phone number'], ['text', 'Comment']],
+                             level1: [['branch', 'Branch'], ['reason', 'Reason']], pattern: [['category', 'Category'], ['branch', 'Branch']] };
+            const OPS = { category: [['is', 'is'], ['not', 'is not']], rating: [['atmost', 'is at most'], ['atleast', 'is at least']], branch: [['any', 'is any of'], ['not', 'is not']],
+                          form: [['is', 'is'], ['not', 'is not']], phone: [['has', 'was given']], text: [['contains', 'contains']], reason: [['is', 'is']] };
+            const STEP = { whatsapp: ['WhatsApp to the customer', '#111111'], action: ['Create an action', '#4F46E5'], email: ['Send an email', '#EA4335'], webhook: ['Post to Webhook out', '#334155'], push: ['Phone alert', '#0EA5E9'] };
+            const STEP_IC = { whatsapp: '<i class="fab fa-whatsapp"></i>', action: '<i class="fas fa-clipboard-check"></i>', email: '<i class="fas fa-envelope"></i>', webhook: '<i class="fas fa-arrow-up-right-from-square"></i>', push: '<i class="fas fa-bell"></i>' };
+            const RECIPES = [
+                { name: 'Cold or stale cookies → apology + action', trigger: 'complaint', conds: [{ f: 'category', op: 'is', v: ['Cold / Stale Cookies'] }, { f: 'rating', op: 'atmost', v: '2' }],
+                  steps: [{ type: 'whatsapp', template: 'apology', approve: true }, { type: 'action', role: 'Branch Manager', text: 'Hold-time check on the shift: bake to dispatch under 10 minutes', dueHours: 4 }], limit: 40, perCustomerDays: 7 },
+                { name: 'Missing item → apology + packing check', trigger: 'complaint', conds: [{ f: 'category', op: 'is', v: ['Missing Item'] }],
+                  steps: [{ type: 'whatsapp', template: 'apology', approve: true }, { type: 'action', role: 'Branch Manager', text: 'Recheck the packing checklist with the shift; confirm every order is sealed after a double-check', dueHours: 4 }], limit: 40, perCustomerDays: 7 },
+                { name: 'Level 1 → email the Ops Manager + phone alert', trigger: 'level1', conds: [], steps: [{ type: 'email', to: [] }, { type: 'push', to: 'managers' }], limit: 20 },
+                { name: 'Pattern → action for the Ops Manager + webhook', trigger: 'pattern', conds: [], steps: [{ type: 'action', role: 'Ops Manager', text: 'Find the shared cause across the branches and brief every shift', dueHours: 6 }, { type: 'webhook' }], limit: 20 }
+            ];
+            const branches = () => ((typeof config !== 'undefined' && config.branches) || []).map(b => b.name).filter(n => n && n !== 'Unspecified');
+            const forms = () => { try { return ChannelReg.all().filter(c => c.dashKey !== 'callcenter').map(c => [c.key === 'feedback' ? 'dinein' : c.key, c.label]); } catch(e){ return [['delivery', 'Delivery'], ['dinein', 'Dine In']]; } };
+
+            async function load(){
+                const h = host(); if(!h) return;
+                h.innerHTML = '<div class="ig-load">Loading automations…</div>';
+                const r = await apiCall('auto_list', {}).catch(() => null);
+                if(!r || r.status !== 'success'){ h.innerHTML = `<div class="ig-load">${esc((r && r.message) || 'Could not load. Deploy Worker v4.99.')}</div>`; return; }
+                D = r; if(!ed && D.rules.length) ed = JSON.parse(JSON.stringify(D.rules[0])); render();
+            }
+            function flow(r){
+                const t = { complaint: 'New complaint', level1: 'Level 1', pattern: 'Pattern' }[r.trigger];
+                const c = (r.conds || []).slice(0, 2).map(x => Array.isArray(x.v) ? x.v.join(', ') : (x.op === 'atmost' ? '≤ ' + x.v + '★' : x.op === 'atleast' ? '≥ ' + x.v + '★' : x.v)).filter(Boolean);
+                return `<div class="au-flow"><span class="au-chip"><i class="fas fa-bolt"></i> ${t}</span>${c.length ? '→<span class="au-chip">' + esc(c.join(' · ')) + '</span>' : ''}→${(r.steps || []).map(s => `<span class="au-chip"><em style="background:${STEP[s.type][1]}">${STEP_IC[s.type]}</em>${s.type === 'whatsapp' ? 'WhatsApp' : s.type === 'action' ? 'Action' : s.type === 'email' ? 'Email' : s.type === 'webhook' ? 'Webhook' : 'Alert'}</span>`).join('')}</div>`;
+            }
+            function listHtml(){
+                const q = D.queue || [];
+                return `${q.length ? `<div class="au-h">WAITING FOR APPROVAL · ${q.length}</div>${q.map(x => `<div class="au-q"><div><b>${esc(x.ev.name || 'Customer')} · ${esc(x.ev.branch || '')}</b><small>${esc(x.ruleName)} · ${x.ev.rating ? x.ev.rating + '★ · ' : ''}${esc(x.ev.category || '')} · ${esc(D.templates[x.step.template] || x.step.template)}${x.why === 'quiet hours' ? ' · held for quiet hours' : ''}</small>${x.ev.text ? `<p>“${esc(String(x.ev.text).slice(0, 140))}”</p>` : ''}</div>
+                    <div class="au-qa"><button class="ig-b p" onclick="AUTO.approve('${x.id}')">Approve &amp; send</button><button class="ig-b gh" onclick="AUTO.skip('${x.id}')">Skip</button></div></div>`).join('')}` : ''}
+                    <div class="au-h">YOUR AUTOMATIONS · ${D.rules.filter(r => r.on).length} ON</div>
+                    ${D.rules.map(r => `<div class="au-r ${ed && ed.id === r.id ? 'on' : ''}" onclick="AUTO.pick('${r.id}')"><div class="au-rt"><b>${esc(r.name)}</b><span class="au-tg ${r.on ? '' : 'off'}"></span></div>${flow(r)}
+                        <div class="au-mt"><span>Ran <b>${(D.stats || {})[r.id] || 0}</b> today</span><span>Limit <b>${r.limit}/day</b></span>${r.perCustomerDays ? `<span>Once per customer / ${r.perCustomerDays} d</span>` : ''}</div></div>`).join('') || '<div class="au-empty">None yet. Start from a recipe below.</div>'}
+                    <div class="au-h">RECIPES — START FROM ONE</div>
+                    <div class="au-rec">${RECIPES.map((r, i) => `<button onclick="AUTO.recipe(${i})">${esc(r.name)}</button>`).join('')}<button onclick="AUTO.blank()">+ Blank automation</button></div>`;
+            }
+            function condRow(c, i){
+                const flds = FIELDS[ed.trigger] || [];
+                const ops = OPS[c.f] || [['is', 'is']];
+                let val;
+                if(c.f === 'category') val = `<select onchange="AUTO.cv(${i}, [this.value])">${(D.categories || []).map(x => `<option ${String((c.v || [])[0]) === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+                else if(c.f === 'rating') val = `<select onchange="AUTO.cv(${i}, this.value)">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${String(c.v) === String(n) ? 'selected' : ''}>${n}★</option>`).join('')}</select>`;
+                else if(c.f === 'branch') val = `<select onchange="AUTO.cv(${i}, this.value ? [this.value] : [])"><option value="">All branches</option>${branches().map(b => `<option ${(c.v || [])[0] === b ? 'selected' : ''}>${esc(b)}</option>`).join('')}</select>`;
+                else if(c.f === 'form') val = `<select onchange="AUTO.cv(${i}, [this.value])">${forms().map(([k, l]) => `<option value="${esc(k)}" ${(c.v || [])[0] === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+                else if(c.f === 'reason') val = `<select onchange="AUTO.cv(${i}, [this.value])">${[['incidents', 'Too many incidents'], ['positive', 'Positive feedback critical'], ['safety', 'Food safety']].map(([k, l]) => `<option value="${k}" ${(c.v || [])[0] === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+                else if(c.f === 'phone') val = '';
+                else val = `<input value="${esc(Array.isArray(c.v) ? c.v.join(', ') : c.v || '')}" placeholder="word or phrase" oninput="AUTO.cv(${i}, this.value.split(',').map(s => s.trim()).filter(Boolean), true)">`;
+                return `<div class="au-cond">${i ? '<em>AND</em>' : ''}<select onchange="AUTO.cf(${i}, this.value)">${flds.map(([k, l]) => `<option value="${k}" ${c.f === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+                    <select onchange="AUTO.co(${i}, this.value)">${ops.map(([k, l]) => `<option value="${k}" ${c.op === k ? 'selected' : ''}>${l}</option>`).join('')}</select>${val}<button class="au-x" onclick="AUTO.dc(${i})" title="Remove">×</button></div>`;
+            }
+            function stepRow(s, i){
+                let body = '';
+                if(s.type === 'whatsapp') body = `<select onchange="AUTO.sv(${i}, 'template', this.value)">${Object.keys(D.templates).map(k => `<option value="${k}" ${s.template === k ? 'selected' : ''}>${esc(D.templates[k])}</option>`).join('')}</select>
+                    <label class="au-ck"><input type="checkbox" ${s.approve || s.template === 'voucher' ? 'checked' : ''} ${s.template === 'voucher' ? 'disabled' : ''} onchange="AUTO.sv(${i}, 'approve', this.checked)"> Wait for someone to approve${s.template === 'voucher' ? ' (always, it issues a reward)' : ''}</label>
+                    ${D.whatsapp ? '' : '<small class="au-warn">Conviyo is not connected or is paused — nothing will send.</small>'}<small>To the customer, only if they gave a phone number. Name, branch and complaint are filled in.</small>`;
+                if(s.type === 'action') body = `<select onchange="AUTO.sv(${i}, 'role', this.value)">${(D.roles || []).map(r => `<option ${s.role === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
+                    <input value="${esc(s.text || '')}" placeholder="What should they do?" oninput="AUTO.sv(${i}, 'text', this.value, true)"><label class="au-in">Due in <input type="number" min="1" max="72" value="${s.dueHours || 4}" oninput="AUTO.sv(${i}, 'dueHours', this.value, true)"> hours</label>
+                    <small>One action per branch per day for this automation; reminders as usual.</small>`;
+                if(s.type === 'email') body = `<input value="${esc((s.to || []).join(', '))}" placeholder="name@company.com, …" oninput="AUTO.sv(${i}, 'to', this.value.split(/[,\\s]+/).filter(Boolean), true)"><small>Counts against the email sender’s daily limit.</small>`;
+                if(s.type === 'webhook') body = '<small>Posts the event to Webhook out (set it up under Connectors).</small>';
+                if(s.type === 'push') body = `<select onchange="AUTO.sv(${i}, 'to', this.value)">${[['managers', 'The branch’s managers'], ['ops', 'The Ops Manager'], ['owners', 'Every Owner']].map(([k, l]) => `<option value="${k}" ${s.to === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+                return `<div class="au-act"><span class="ig-lg sm" style="background:${STEP[s.type][1]}">${STEP_IC[s.type]}</span><div class="au-ab"><b>${STEP[s.type][0]}</b>${body}</div><button class="au-x" onclick="AUTO.ds(${i})" title="Remove">×</button></div>`;
+            }
+            function editorHtml(){
+                if(!ed) return '<div class="au-empty big">Pick an automation on the left, or start from a recipe.</div>';
+                const t = TR[ed.trigger];
+                const addSteps = Object.keys(STEP).filter(k => k !== 'whatsapp' || ed.trigger === 'complaint');
+                return `<div class="au-et"><input class="au-name" value="${esc(ed.name)}" oninput="AUTO.set('name', this.value, true)" maxlength="80"><button class="au-tg ${ed.on ? '' : 'off'}" onclick="AUTO.set('on', ${!ed.on})" title="On / off"></button>
+                        <button class="ig-b" onclick="AUTO.test()">Test run</button><button class="ig-b p" onclick="AUTO.save()">Save</button></div>
+                    <div class="au-blk"><span class="au-k" style="background:#4F46E5">WHEN</span>
+                        <div class="au-when">${Object.keys(TR).map(k => `<button class="${ed.trigger === k ? 'on' : ''}" onclick="AUTO.set('trigger', '${k}')"><i class="fas fa-bolt"></i><span><b>${TR[k][0]}</b><small>${TR[k][1]}</small></span></button>`).join('')}</div></div>
+                    <div class="au-blk"><span class="au-k" style="background:#B45309">IF</span>${(ed.conds || []).map(condRow).join('') || '<small class="au-mut">Always — add a condition to narrow it down.</small>'}
+                        <button class="au-add" onclick="AUTO.ac()">+ Add a condition</button></div>
+                    <div class="au-blk"><span class="au-k" style="background:#047857">THEN</span>${(ed.steps || []).map(stepRow).join('') || '<small class="au-mut">Add at least one step.</small>'}
+                        <div class="au-adds">${addSteps.map(k => `<button onclick="AUTO.as('${k}')">${STEP_IC[k]} ${STEP[k][0]}</button>`).join('')}</div></div>
+                    <div class="au-saf"><label><small>DAILY LIMIT</small><input type="number" min="1" max="500" value="${ed.limit || 40}" oninput="AUTO.set('limit', this.value, true)"> a day</label>
+                        <label><small>SAME CUSTOMER</small>once in <input type="number" min="0" max="90" value="${ed.perCustomerDays || 0}" oninput="AUTO.set('perCustomerDays', this.value, true)"> days</label>
+                        <label><small>QUIET HOURS (WHATSAPP)</small><input type="number" min="0" max="23" value="${(ed.quiet || {}).start ?? 23}" oninput="AUTO.q('start', this.value)">:00 to <input type="number" min="0" max="23" value="${(ed.quiet || {}).end ?? 9}" oninput="AUTO.q('end', this.value)">:00</label></div>
+                    ${test ? `<div class="au-dry"><b>Test run</b> — in the last 24 hours this would have run <b>${test.count} time${test.count === 1 ? '' : 's'}</b>${test.count ? ' (' + Object.entries(test.by).map(([b, n]) => esc(b) + ' ' + n).join(', ') + ')' : ''}. Nothing is sent during a test.</div>` : ''}
+                    ${D.rules.some(r => r.id === ed.id) ? `<button class="au-del" onclick="AUTO.del()">Delete this automation</button>` : ''}`;
+            }
+            function render(){
+                const h = host(); if(!h || !D) return;
+                const y = (h.querySelector('.au-ed') || {}).scrollTop || 0;
+                h.innerHTML = `<div class="au"><div class="au-list">${listHtml()}</div><div class="au-ed">${editorHtml()}</div></div>`;
+                const e = h.querySelector('.au-ed'); if(e) e.scrollTop = y;
+            }
+            const mark = () => { test = null; };
+            async function call(action, p, msg){
+                if(busy) return null; busy = true;
+                try { const r = await apiCall(action, p).catch(() => null);
+                      if(!r || r.status !== 'success'){ UI.toast((r && r.message) || 'Not saved.', 'error', 6000); return null; }
+                      if(r.rules) D = r; if(msg) UI.toast(msg, 'success'); return r; } finally { busy = false; }
+            }
+            return {
+                load,
+                pick(id){ const r = D.rules.find(x => x.id === id); if(r){ ed = JSON.parse(JSON.stringify(r)); test = null; render(); } },
+                recipe(i){ ed = JSON.parse(JSON.stringify(RECIPES[i])); ed.id = 'a' + Date.now().toString(36); ed.on = false; ed.quiet = { start: 23, end: 9 }; test = null; render(); },
+                blank(){ ed = { id: 'a' + Date.now().toString(36), name: 'New automation', on: false, trigger: 'complaint', conds: [], steps: [], limit: 40, perCustomerDays: 7, quiet: { start: 23, end: 9 } }; test = null; render(); },
+                set(k, v, quiet){ ed[k] = v; if(k === 'trigger'){ ed.conds = []; ed.steps = (ed.steps || []).filter(s => s.type !== 'whatsapp' || v === 'complaint'); } mark(); if(!quiet) render(); },
+                q(k, v){ ed.quiet = Object.assign({ start: 23, end: 9 }, ed.quiet || {}); ed.quiet[k] = parseInt(v, 10); mark(); },
+                ac(){ const f = (FIELDS[ed.trigger] || [['branch']])[0][0]; ed.conds = (ed.conds || []).concat([{ f, op: (OPS[f] || [['is']])[0][0], v: f === 'category' ? [D.categories[0]] : f === 'rating' ? '2' : [] }]); mark(); render(); },
+                cf(i, f){ ed.conds[i] = { f, op: (OPS[f] || [['is']])[0][0], v: f === 'category' ? [D.categories[0]] : f === 'rating' ? '2' : f === 'form' ? [forms()[0][0]] : f === 'reason' ? ['incidents'] : f === 'phone' ? 'yes' : [] }; mark(); render(); },
+                co(i, op){ ed.conds[i].op = op; mark(); },
+                cv(i, v, quiet){ ed.conds[i].v = v; mark(); if(!quiet) render(); },
+                dc(i){ ed.conds.splice(i, 1); mark(); render(); },
+                as(t){ const s = { type: t }; if(t === 'whatsapp'){ s.template = 'apology'; s.approve = true; } if(t === 'action'){ s.role = 'Branch Manager'; s.text = ''; s.dueHours = 4; } if(t === 'email') s.to = []; if(t === 'push') s.to = 'managers';
+                       ed.steps = (ed.steps || []).concat([s]); mark(); render(); },
+                sv(i, k, v, quiet){ ed.steps[i][k] = v; if(k === 'template' && v === 'voucher') ed.steps[i].approve = true; mark(); if(!quiet) render(); },
+                ds(i){ ed.steps.splice(i, 1); mark(); render(); },
+                async test(){ const r = await call('auto_test', { rule: ed }); if(r){ test = r.test; render(); } },
+                async save(){
+                    if(!(ed.steps || []).length){ UI.toast('Add at least one step under THEN.', 'warning'); return; }
+                    if(ed.steps.some(s => s.type === 'email' && !(s.to || []).length)){ UI.toast('Add an email address to the email step.', 'warning'); return; }
+                    const r = await call('auto_save', { rule: ed }, ed.on ? 'Saved — it is on.' : 'Saved — it is off until you switch it on.');
+                    if(r){ const s = D.rules.find(x => x.id === r.saved); if(s) ed = JSON.parse(JSON.stringify(s)); render(); }
+                },
+                async del(){ if(!confirm('Delete "' + ed.name + '"?')) return; const r = await call('auto_delete', { id: ed.id }, 'Deleted.'); if(r){ ed = D.rules[0] ? JSON.parse(JSON.stringify(D.rules[0])) : null; render(); } },
+                async approve(id){ const r = await call('auto_approve', { id }, 'Sent.'); if(r) render(); },
+                async skip(id){ const r = await call('auto_skip', { id }, 'Skipped.'); if(r) render(); },
+                _state: () => ({ D, ed, test })
+            };
         })();
 
         /** Timers written into static text: the Live queue card. */
