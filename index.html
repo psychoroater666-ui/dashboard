@@ -8180,7 +8180,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             <option value="all">All channels</option>
                         </select>
                         <select class="select-input" id="inc-survey-filter" onchange="app.filterIncidents()" style="font-size:0.82rem;padding:8px 30px 8px 12px;">
-                            <option value="all">All surveys</option>
+                            <option value="all">All forms</option>
                         </select>
                     </div>
                 </div>
@@ -8783,11 +8783,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         </div>
                         <div>
                             <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px;">Form</div>
-                            <select id="export-form-select" class="select-input" style="width:100%;" onchange="submissionsFilterChanged()">
+                            <select id="export-form-select" class="select-input" style="width:100%;" onchange="_subsFormSync(this.value)">
                                 <option value="">All Forms</option>
-                                <option value="Dine In">Dine In</option>
-                                <option value="Delivery">Delivery</option>
-                                <option value="Call Center">Call Center</option>
                             </select>
                         </div>
                         <div>
@@ -8819,6 +8816,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                                        oninput="submissionsSearch(this.value)"
                                        style="padding:8px 12px 8px 32px; border-radius:8px; border:1.5px solid var(--border-color); font-size:0.8rem; min-width:240px; background:var(--white); color:var(--text-main);">
                             </div>
+                            <select id="submissions-form-select" class="select-input" onchange="_subsFormSync(this.value)" style="font-size:0.8rem;padding:8px 26px 8px 10px;" title="Show one form only">
+                                <option value="">All Forms</option>
+                            </select>
                             <select id="submissions-order-source-select" class="select-input" onchange="submissionsFilterChanged()" style="font-size:0.8rem;padding:8px 26px 8px 10px;">
                                 <option value="">All Order Sources</option>
                             </select>
@@ -9084,7 +9084,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.158.1 · 23 Sep 2026 · Form Builder: rating, branch, phone and comment columns always named so the dashboard reads them';
+        const BUILD_VERSION = 'v2.158.2 · 23 Sep 2026 · Form filter on Submissions and Incidents lists every form, including new ones';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11978,6 +11978,32 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         // Selected branches on the Submissions page ([] = all). Backed by the
         // hidden multi-select; the visible control is a MultiSelect widget.
         function _subsBranches(){ return (typeof MultiSelect !== 'undefined') ? MultiSelect.values('export-branch-select') : (document.getElementById('export-branch-select')?.value ? [document.getElementById('export-branch-select').value] : []); }
+        /* v2.158.2: the Form filter lists every form -- built-in and Form Builder
+           ones -- from the channel list, so a new form appears in it by itself.
+           The list toolbar and the export panel show the same choice. */
+        function _subsFormOptions(){
+            const labels = (typeof ChannelReg !== 'undefined') ? ChannelReg.labels() : ['Dine In', 'Delivery', 'Call Center'];
+            const seen = new Set(labels);
+            (state.p1 && state.p1.subs || []).forEach(s => { const f = s.surveyForm || s.form; if(f && !seen.has(f)){ seen.add(f); labels.push(f); } });
+            return labels;
+        }
+        function _subsFormFill(){
+            const opts = _subsFormOptions();
+            ['submissions-form-select', 'export-form-select'].forEach(id => {
+                const sel = document.getElementById(id); if(!sel) return;
+                const cur = sel.value, sig = opts.join('|');
+                if(sel.__sig !== sig){
+                    sel.__sig = sig;
+                    sel.innerHTML = '<option value="">All Forms</option>' + opts.map(o => '<option></option>').join('');
+                    opts.forEach((o, i) => { sel.options[i + 1].value = o; sel.options[i + 1].textContent = o; });
+                }
+                sel.value = opts.indexOf(cur) !== -1 ? cur : '';
+            });
+        }
+        function _subsFormSync(v){
+            ['submissions-form-select', 'export-form-select'].forEach(id => { const s = document.getElementById(id); if(s) s.value = v; });
+            submissionsFilterChanged();
+        }
         function submissionsFilterChanged() {
             _submissionsPage = 0;
             if(typeof app !== 'undefined' && app.renderUniversalAnalytics) app.renderUniversalAnalytics('submissions');
@@ -17308,7 +17334,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // Lets you isolate, for example, only Call Center incidents —
                 // i.e. the ones your own agents logged themselves — to track
                 // that they're being closed out promptly.
-                UI.syncSelect(document.getElementById('inc-survey-filter'), Object.keys(bySurvey).sort(), true);
+                // v2.158.2: every form is listed -- including new Form Builder ones
+                // with no incidents yet -- not only those found in the period.
+                const _allForms = (typeof ChannelReg !== 'undefined' ? ChannelReg.labels() : []).slice();
+                Object.keys(bySurvey).forEach(k => { if(_allForms.indexOf(k) === -1) _allForms.push(k); });
+                UI.syncSelect(document.getElementById('inc-survey-filter'), _allForms, true);
 
                 this.filterIncidents();
             },
@@ -18213,6 +18243,7 @@ ${(() => {
                         // Branch/Form filters live right above this table (in the
                         // export panel) — applying them here too, not just at
                         // export time, so picking one actually changes what's shown.
+                        try { _subsFormFill(); } catch(e){}
                         const filterBranches = _subsBranches();
                         const filterForm   = document.getElementById('export-form-select')?.value || '';
                         const filterOrderSrc = document.getElementById('submissions-order-source-select')?.value || '';
