@@ -5201,6 +5201,100 @@
         .ms-btn:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
         .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
+        /* v2.158.0: Form Builder editor */
+        .fx { display:grid; gap:14px; }
+        .fx-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:10px 14px; }
+        .fx-back { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--border-color); background:var(--white); color:var(--text-muted); border-radius:9px; padding:7px 10px; font:700 .74rem 'Inter',sans-serif; cursor:pointer; }
+        .fx-name { font:800 1.02rem 'Inter',sans-serif; color:var(--text-main); border:1.5px solid transparent; border-radius:8px; padding:5px 8px; background:transparent; min-width:120px; max-width:280px; }
+        .fx-name:hover, .fx-name:focus { border-color:var(--border-color); outline:none; background:var(--white); }
+        .fx-st { font:800 .6rem 'Inter',sans-serif; letter-spacing:.5px; padding:3px 8px; border-radius:20px; background:#F1F5F9; color:#475569; }
+        .fx-st.dr { background:#FEF3C7; color:#92400E; } .fx-st.ok { background:rgba(5,150,105,.12); color:#047857; } .fx-st.bad { background:#FEE2E2; color:#B91C1C; }
+        .fx-saved { font-size:.72rem; color:var(--text-muted); margin-left:6px; }
+        .fx-tabs { display:flex; gap:2px; margin-left:10px; } .fx-tabs span { font:700 .76rem 'Inter',sans-serif; padding:7px 11px; border-radius:8px; color:var(--text-muted); cursor:pointer; white-space:nowrap; }
+        .fx-tabs span.on { background:rgba(1,1,151,.08); color:#010197; } body.dark-theme .fx-tabs span.on { color:#A5B4FC; }
+        .fx-sp { flex:1; } .fx-top .fb-btn svg { flex-shrink:0; }
+        .fx-main { display:grid; grid-template-columns:300px minmax(0,1fr) 360px; gap:14px; align-items:start; }
+        .fx-col { background:var(--white); border:1px solid var(--border-color); border-radius:14px; padding:14px; min-width:0; }
+        .fx-right { position:sticky; top:12px; }
+        .fx-h { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin:2px 2px 10px; }
+        .fx-h span { font:800 .66rem 'Inter',sans-serif; letter-spacing:.6px; text-transform:uppercase; color:var(--text-muted); } .fx-h small { font-size:.7rem; color:var(--text-muted); }
+        .fx-qi { display:flex; align-items:center; gap:8px; border:1px solid var(--border-color); border-radius:11px; padding:8px 9px; margin-bottom:6px; background:var(--white); cursor:pointer; transition:border-color .12s, box-shadow .12s; }
+        .fx-qi:hover { border-color:#C7D2FE; } .fx-qi.on { border-color:#010197; box-shadow:0 0 0 3px rgba(1,1,151,.08); }
+        .fx-qi.drag { opacity:.4; } .fx-qi.over { border-top:3px solid #010197; }
+        .fx-grip { color:#CBD5E1; width:14px; display:flex; cursor:grab; } .fx-grip svg { width:14px; height:14px; }
+        .fx-num { font:800 .66rem 'Inter',sans-serif; color:#94A3B8; width:16px; text-align:center; }
+        .fx-ic { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#334155; flex-shrink:0; }
+        .fx-ic.sm { width:24px; height:24px; border-radius:7px; } .fx-ic.sm svg { width:14px; height:14px; }
+        .fx-qt { flex:1; min-width:0; } .fx-qt b { display:block; font-size:.78rem; color:var(--text-main); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .fx-qt small { font-size:.66rem; color:var(--text-muted); }
+        .fx-lg { display:inline-flex; align-items:center; gap:2px; font:800 .58rem 'Inter',sans-serif; background:#FEF3C7; color:#92400E; border-radius:6px; padding:2px 5px; }
+        .fx-lg svg { width:10px; height:10px; } .fx-lg.bad { background:#FEE2E2; color:#B91C1C; }
+        .fx-req { color:#DC2626; font-weight:800; }
+        .fx-mv { display:flex; flex-direction:column; } .fx-mv button { border:none; background:transparent; color:#94A3B8; padding:0; width:18px; height:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .fx-mv button:hover { color:#010197; } .fx-mv svg { width:13px; height:13px; }
+        .fx-pal { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+        .fx-pal button { display:flex; align-items:center; gap:7px; border:1px solid var(--border-color); background:var(--white); border-radius:9px; padding:6px 8px; font:600 .72rem 'Inter',sans-serif; color:var(--text-main); cursor:pointer; text-align:left; }
+        .fx-pal button:hover:not(:disabled) { border-color:#010197; } .fx-pal button:disabled { opacity:.4; cursor:not-allowed; }
+        .fx-f { display:grid; gap:5px; margin-bottom:13px; } .fx-f label { font:700 .74rem 'Inter',sans-serif; color:var(--text-main); } .fx-f label em { font-style:normal; color:var(--text-muted); font-weight:600; }
+        .fx-f small { font-size:.7rem; color:var(--text-muted); line-height:1.45; }
+        .fx-in { width:100%; box-sizing:border-box; padding:9px 11px; border:1.5px solid var(--border-color); border-radius:10px; font:600 .88rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); }
+        .fx-in.lt { font-weight:500; font-size:.84rem; } .fx-in:focus { outline:none; border-color:#010197; } .fx-in[readonly] { background:var(--bg-light); color:var(--text-muted); }
+        textarea.fx-in { resize:vertical; }
+        .fx-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+        .fx-seg { display:flex; gap:6px; flex-wrap:wrap; } .fx-seg span { font:700 .72rem 'Inter',sans-serif; border:1px solid var(--border-color); border-radius:20px; padding:6px 11px; color:var(--text-muted); cursor:pointer; }
+        .fx-seg span.on { background:#010197; color:#fff; border-color:#010197; }
+        .fx-opt { display:flex; align-items:center; gap:6px; border:1px solid var(--border-color); border-radius:10px; padding:4px 6px; margin-bottom:6px; }
+        .fx-opt input { flex:1; border:none; background:transparent; font:600 .84rem 'Inter',sans-serif; color:var(--text-main); padding:5px 2px; min-width:0; } .fx-opt input:focus { outline:none; }
+        .fx-opt.add { border-style:dashed; gap:14px; padding:8px 10px; }
+        .fx-x { border:none; background:transparent; color:#94A3B8; cursor:pointer; display:flex; } .fx-x:hover { color:#DC2626; } .fx-x svg { width:14px; height:14px; }
+        .fx-link { border:none; background:none; color:#010197; font:700 .74rem 'Inter',sans-serif; cursor:pointer; padding:0; text-decoration:none; } body.dark-theme .fx-link { color:#A5B4FC; }
+        .fx-sw { display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--border-color); padding:12px 0; }
+        .fx-sw b { font-size:.8rem; color:var(--text-main); } .fx-sw small { display:block; font-size:.7rem; color:var(--text-muted); }
+        .fx-tg { width:38px; height:22px; border-radius:20px; background:#CBD5E1; position:relative; border:none; cursor:pointer; flex-shrink:0; }
+        .fx-tg::after { content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .15s; }
+        .fx-tg.on { background:#010197; } .fx-tg.on::after { left:19px; }
+        .fx-rule { background:#FFFBEB; border:1px solid #FDE68A; border-radius:12px; padding:12px; display:grid; gap:8px; margin-bottom:12px; }
+        body.dark-theme .fx-rule { background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.35); }
+        .fx-rule b { display:inline-flex; align-items:center; gap:5px; font-size:.8rem; color:var(--text-main); } .fx-rule b svg { width:14px; height:14px; color:#B45309; }
+        .fx-rule small { font-size:.7rem; color:#92400E; } .fx-rule.off { background:var(--bg-light); border-color:var(--border-color); } .fx-rule.off small { color:var(--text-muted); }
+        .fx-rule-h { display:flex; justify-content:space-between; align-items:center; }
+        .fx-rule-row { display:flex; gap:6px; flex-wrap:wrap; } .fx-rule-row select { padding:7px 9px; border:1.5px solid var(--border-color); border-radius:9px; font:600 .78rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); max-width:100%; }
+        .fx-adv { border-top:1px solid var(--border-color); padding-top:10px; font-size:.74rem; color:var(--text-muted); } .fx-adv summary { cursor:pointer; margin-bottom:8px; }
+        .fx-adv > small { display:block; margin-top:4px; font-size:.66rem; }
+        .fx-qa { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; } .fx-qa .fx-mback { display:none; }
+        .fx-empty { font-size:.84rem; color:var(--text-muted); padding:30px 10px; text-align:center; }
+        .fx-phone { width:300px; height:600px; margin:0 auto; border-radius:38px; background:#0F172A; padding:10px; box-shadow:0 20px 40px -15px rgba(15,23,42,.4); }
+        .fx-phone iframe { width:100%; height:100%; border:none; border-radius:30px; background:#F3F1EC; }
+        .fx-phone.m { width:min(340px, 80vw); height:min(640px, 70vh); }
+        .fx-pv-btn { display:none; }
+        .fx-sw-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+        .fx-sws { display:flex; align-items:center; gap:8px; border:1.5px solid var(--border-color); background:var(--white); border-radius:10px; padding:8px 10px; font:600 .76rem 'Inter',sans-serif; color:var(--text-main); cursor:pointer; }
+        .fx-sws span { width:20px; height:20px; border-radius:6px; flex-shrink:0; } .fx-sws.on { border-color:#010197; box-shadow:0 0 0 3px rgba(1,1,151,.08); }
+        .fx-note { font-size:.74rem; color:var(--text-muted); background:var(--bg-light); border-radius:10px; padding:10px 12px; margin-top:14px; line-height:1.5; }
+        .fx-qr { display:flex; gap:14px; align-items:center; margin-top:12px; } .fx-qr img { border-radius:10px; border:1px solid var(--border-color); background:#fff; }
+        .fx-qr b { display:block; font-size:.84rem; color:var(--text-main); } .fx-qr small { display:block; font-size:.72rem; color:var(--text-muted); margin:3px 0 8px; }
+        .fx-brl { display:grid; gap:4px; } .fx-brl div { display:flex; align-items:center; gap:12px; font-size:.78rem; color:var(--text-main); padding:6px 2px; border-bottom:1px solid var(--border-color); }
+        .fx-brl div span { flex:1; }
+        .fx-probs { margin:0; padding-left:18px; font-size:.84rem; color:var(--text-main); line-height:1.7; }
+        .fx-new .fx-l { display:block; font:700 .76rem 'Inter',sans-serif; color:var(--text-main); margin-bottom:6px; }
+        .fx-new .fx-in { font-size:1rem; border-color:#010197; }
+        .fx-tiles { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:16px; }
+        .fx-tile { border:1.5px solid var(--border-color); border-radius:14px; padding:13px; display:grid; gap:5px; cursor:pointer; background:var(--white); }
+        .fx-tile.on { border-color:#010197; box-shadow:0 0 0 3px rgba(1,1,151,.08); } .fx-tile:hover { border-color:#C7D2FE; }
+        .fx-ti { width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; } .fx-ti svg { width:19px; height:19px; }
+        .fx-tile b { font-size:.84rem; color:var(--text-main); } .fx-tile small { font-size:.72rem; color:var(--text-muted); line-height:1.4; }
+        .fx-hint { font-size:.74rem; color:var(--text-muted); margin-top:14px; }
+        .fx-archived { opacity:.65; }
+        /* the phone layout gives every button a large tap size; these small controls keep theirs */
+        .fx .fx-mv button, .fx .fx-x, .fx .fx-link, #fb-modal .fx-link { min-height:0 !important; min-width:0 !important; padding:0 !important; }
+        .fx .fx-mv button { width:22px !important; height:18px !important; }
+        .fx .fx-tg { min-height:0 !important; min-width:0 !important; width:38px !important; height:22px !important; padding:0 !important; border-radius:20px !important; }
+        @media (max-width:1280px){ .fx-main { grid-template-columns:280px minmax(0,1fr); } .fx-right { display:none; } .fx-pv-btn { display:inline-flex; } }
+        @media (max-width:760px){
+            .fx-main { grid-template-columns:1fr; } .fx-col.mhide { display:none; } .fx-qa .fx-mback { display:inline-flex; }
+            .fx-tabs { margin-left:0; width:100%; overflow-x:auto; order:5; } .fx-name { max-width:100%; flex:1; }
+            .fx-tiles { grid-template-columns:1fr 1fr; } .fx-sw-grid { grid-template-columns:1fr 1fr; } .fx-2 { grid-template-columns:1fr; }
+        }
         /* ═══════════ FORM BUILDER ═══════════ */
         .fb-wrap { display:grid; grid-template-columns: minmax(0,1fr) 380px; gap:20px; align-items:start; }
         @media (max-width: 1180px){ .fb-wrap { grid-template-columns: 1fr; } .fb-preview-col { display:none; } }
@@ -8990,7 +9084,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.157.0 · 23 Sep 2026 · Reports & alerts: Level 1 escalations (instant) and the Weekly summary';
+        const BUILD_VERSION = 'v2.158.0 · 23 Sep 2026 · New Form Builder: create from any form or template, 13 question types, rules, drafts and publish, live preview';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -26170,375 +26264,659 @@ ${(() => {
             return { render, set, redeem };
         })();
 
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.158.0 -- FORM BUILDER (rebuilt). Works with Code.gs v8.43
+           (drafts: save_form draft / publish_form / discard_draft), the forms
+           page v1.4+ and forms-code.gs v2.7 (new types, showIf rules).
+           Edits save as a draft automatically; only Publish changes the live
+           form. Every form can be the starting point for a new one.
+           ═══════════════════════════════════════════════════════════════════ */
         const FB = (function(){
-            const PUBLIC_FORM_ORIGIN = 'https://feedback.crumblesentinel.com';
-            const TYPES = {
-                name:   { label:'Name',           hint:'Collected on the welcome screen, above the phone number.' },
-                phone:  { label:'Phone number',   hint:'Collected on the welcome screen. Stored as +92XXXXXXXXXX.' },
-                rating: { label:'Rating 1–5',     hint:'Five emoji faces. Auto-advances on tap.' },
-                branch: { label:'Branch',         hint:'Auto-detected from GPS; falls back to a dropdown of the branches below.' },
-                single: { label:'Single choice',  hint:'Customer picks exactly one option. Auto-advances on tap.' },
-                multi:  { label:'Multiple choice',hint:'Customer can pick several. Optional low-rating variant.' },
-                text:   { label:'Free text',      hint:'A comments box.' }
+            const ORIGIN = 'https://feedback.crumblesentinel.com';
+            const SV = p => `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+            const IC = {
+                phone: SV('<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/>'),
+                name: SV('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+                rating: SV('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>'),
+                stars: SV('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+                nps: SV('<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/>'),
+                single: SV('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>'),
+                multi: SV('<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="M8 12l3 3 5-6"/>'),
+                dropdown: SV('<rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M9 11l3 3 3-3"/>'),
+                yesno: SV('<path d="M7 11v9H4v-9z"/><path d="M7 11l4-7a2 2 0 0 1 3 2l-1 5h5a2 2 0 0 1 2 2.3l-1.2 6A2 2 0 0 1 16.8 21H7"/>'),
+                shorttext: SV('<path d="M4 7h16M4 12h10"/>'),
+                longtext: SV('<path d="M4 6h16M4 11h16M4 16h10"/>'),
+                text: SV('<path d="M4 6h16M4 11h16M4 16h10"/>'),
+                email: SV('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/>'),
+                date: SV('<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3.5 10h17"/>'),
+                branch: SV('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>'),
+                grip: SV('<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>'),
+                up: SV('<path d="M6 15l6-6 6 6"/>'), down: SV('<path d="M6 9l6 6 6-6"/>'), x: SV('<path d="M6 6l12 12M18 6L6 18"/>'),
+                bolt: SV('<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>'), copy: SV('<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+                back: SV('<path d="M15 18l-6-6 6-6"/>'), eye: SV('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+                doc: SV('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 12v6M9 15h6"/>'),
+                van: SV('<path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/>'),
+                cutlery: SV('<path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18"/><path d="M17 3c-2 2-3 4-3 7h3v11"/>'),
+                gift: SV('<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18"/><path d="M12 8c-2-4-6-4-6-1s4 1 6 1c2 0 6 2 6-1s-4-3-6 1z"/>'),
+                person: SV('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+                cal: SV('<rect x="3.5" y="4.5" width="17" height="16" rx="2.5"/><path d="M8 2.5v4M16 2.5v4M3.5 10h17"/><path d="M8 14h3v3H8z"/>'),
+                form: SV('<rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/>')
             };
-            const META_COLUMNS = ['Created At','Created By','Time Taken','Status'];
-
-            let forms = [], tabs = [], tabHeaders = {};
-            let editing = null;          // deep copy of the form being edited
-            let isNew = false;
-            let dirty = false;
-            let previewTimer = null;
-            let loaded = false;
-
-            const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            const slug = s => String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+            const TYPES = {
+                rating:    { label: 'Rating',            desc: '5 smileys or stars' },
+                nps:       { label: 'Recommend 0–10',    desc: 'Slider with a face' },
+                single:    { label: 'One choice',        desc: 'Pick one' },
+                multi:     { label: 'Several choices',   desc: 'Pick several' },
+                dropdown:  { label: 'Dropdown',          desc: 'Pick one from a list' },
+                yesno:     { label: 'Yes / No',          desc: 'Two buttons' },
+                shorttext: { label: 'Short answer',      desc: 'One line' },
+                longtext:  { label: 'Long answer',       desc: 'A comments box' },
+                text:      { label: 'Long answer',       desc: 'A comments box' },
+                phone:     { label: 'Phone',             desc: 'On the first screen' },
+                name:      { label: 'Name',              desc: 'On the first screen' },
+                email:     { label: 'Email',             desc: 'Checked as an address' },
+                date:      { label: 'Date',              desc: 'A date picker' },
+                branch:    { label: 'Branch',            desc: 'Found from location' }
+            };
+            const PALETTE = ['rating', 'nps', 'single', 'multi', 'dropdown', 'yesno', 'shorttext', 'longtext', 'phone', 'email', 'date', 'branch', 'name'];
+            const TINT = { rating: '#FEF3C7', nps: '#DCFCE7', single: '#E0E7FF', multi: '#FCE7F3', dropdown: '#E0F2FE', yesno: '#FFEDD5', shorttext: '#F1F5F9',
+                           longtext: '#F1F5F9', text: '#F1F5F9', phone: '#EEF2FF', name: '#EEF2FF', email: '#F3E8FF', date: '#F3E8FF', branch: '#E0F2FE' };
+            const META_COLS = ['created at', 'created by', 'time taken', 'status'];
+            const CUSTOM_PAGES = { dinein: ORIGIN + '/dinein/' };
+            const publicUrl = id => CUSTOM_PAGES[id] || (ORIGIN + '/?f=' + encodeURIComponent(id));
+            const qrUrl = u => 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=' + encodeURIComponent(u);
+            const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
             const clone = o => JSON.parse(JSON.stringify(o));
-            // Forms served by their own page (branching logic the builder can't
-            // express) instead of the config-driven renderer.
-            const CUSTOM_PAGES = { dinein: { url: PUBLIC_FORM_ORIGIN + '/dinein/', note: 'Branching survey page (product / service paths). The sequence lives in the page itself and is not editable here. Add ?branch=<Branch> to the link to pre-fill the branch.' } };
-            const publicUrl = id => (CUSTOM_PAGES[id] ? CUSTOM_PAGES[id].url : PUBLIC_FORM_ORIGIN + '/?f=' + encodeURIComponent(id));
-            const qrUrl = id => 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=8&data=' + encodeURIComponent(publicUrl(id));
+            const slug = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
             const root = () => document.getElementById('fb-root');
+            const numeric = t => t === 'rating' || t === 'nps';
+            const hasOptions = t => t === 'single' || t === 'multi' || t === 'dropdown';
 
-            // ── data ────────────────────────────────────────────────────────
-            // Opening this tab used to wait 2-5s on a cold Apps Script call every
-            // time. The last payload is cached for the session, so the list paints
-            // instantly and the fresh copy swaps in behind.
-            const FB_CACHE_KEY = 'crumble_forms_cache';
+            let forms = [], tabs = [], loaded = false, inflight = null;
+            let E = null;              // the form being edited
+            let saveTimer = null, previewTimer = null;
+
+            /* ── data ───────────────────────────────────────────────────── */
+            const CACHE = 'crumble_forms_cache_v2';
             function loadCached(){
                 if(loaded) return true;
-                try { const raw = sessionStorage.getItem(FB_CACHE_KEY); if(!raw) return false;
-                      const c = JSON.parse(raw); forms = c.forms || []; tabs = c.tabs || []; tabHeaders = c.tabHeaders || {}; return !!(forms && forms.length); } catch(e){ return false; }
+                try { const c = JSON.parse(sessionStorage.getItem(CACHE) || 'null'); if(c && Array.isArray(c.forms)){ forms = c.forms; tabs = c.tabs || []; return true; } } catch(e){}
+                return false;
             }
-            let _fbInflight = null;
             async function load(force){
                 if(loaded && !force) return;
-                if(_fbInflight) return _fbInflight;
-                _fbInflight = (async () => {
+                if(inflight) return inflight;
+                inflight = (async () => {
                     const res = await apiCall('get_forms');
-                    if(!res || res.status !== 'success') throw new Error(res && res.message || 'Failed to load forms');
-                    forms = res.forms || []; tabs = res.tabs || []; tabHeaders = res.tabHeaders || {};
-                    loaded = true;
-                    try { sessionStorage.setItem(FB_CACHE_KEY, JSON.stringify({ forms, tabs, tabHeaders })); } catch(e){}
-                })().finally(() => { _fbInflight = null; });
-                return _fbInflight;
+                    if(!res || res.status !== 'success') throw new Error((res && res.message) || 'Could not load the forms.');
+                    forms = res.forms || []; tabs = res.tabs || []; loaded = true;
+                    try { sessionStorage.setItem(CACHE, JSON.stringify({ forms, tabs })); } catch(e){}
+                })().finally(() => { inflight = null; });
+                return inflight;
             }
+            const byId = id => forms.find(f => f.id === id);
 
-            // ── entry point from app.renderCurrentView ─────────────────────
+            /* ── entry ──────────────────────────────────────────────────── */
             async function render(){
                 const host = root(); if(!host) return;
                 if(!can('forms')){ host.innerHTML = `<div class="fb-empty">Form Builder is available to the Owner and Report Analysts.</div>`; return; }
-                if(editing){ renderEditor(); return; }
-                if(loadCached()){
-                    renderList();                                   // instant from cache
-                    load(true).then(() => { if(state.currentView === 'form-builder' && !editing) renderList(); }).catch(()=>{});
-                    return;
-                }
+                if(E){ renderEditor(); return; }
+                if(loadCached()){ renderList(); load(true).then(() => { if(state.currentView === 'form-builder' && !E) renderList(); }).catch(() => {}); return; }
                 host.innerHTML = `<div class="fb-empty"><i class="fas fa-spinner fa-spin"></i>&nbsp; Loading forms…</div>`;
                 try { await load(); renderList(); }
-                catch(e){ host.innerHTML = `<div class="fb-alert err"><i class="fas fa-triangle-exclamation"></i><div>${esc(e.message)}<br><button class="fb-btn sm" style="margin-top:8px" onclick="FB.reload()">Retry</button></div></div>`; }
+                catch(e){ host.innerHTML = `<div class="fb-alert err"><div>${esc(e.message)}<br><button class="fb-btn sm" style="margin-top:8px" onclick="FB.reload()">Retry</button></div></div>`; }
             }
             async function reload(){ loaded = false; await render(); }
 
-            // ── list ────────────────────────────────────────────────────────
+            /* ── list ───────────────────────────────────────────────────── */
             function renderList(){
-                const cards = forms.map(f => {
+                const cards = forms.filter(f => f.status !== 'archived').concat(forms.filter(f => f.status === 'archived')).map(f => {
                     const cfg = f.config || {};
-                    const custom = CUSTOM_PAGES[f.id];
-                    const n = custom ? 18 : (cfg.questions||[]).length;
-                    const upd = f.updatedAt ? new Date(f.updatedAt) : null;
-                    return `<div class="fb-card">
-                        <div class="name">${esc(f.name || f.id)} <span class="fb-badge ${custom ? 'live' : esc(f.status)}">${custom ? 'live' : esc(f.status)}</span>${custom ? ' <span class="fb-badge" style="background:rgba(124,58,237,.12);color:#7C3AED;">custom page</span>' : ''}</div>
-                        <div class="fb-meta"><span>ID <b>${esc(f.id)}</b></span><span>Writes to <b>${esc(f.targetTab||'—')}</b></span><span><b>${n}</b> step${n===1?'':'s'}</span></div>
-                        ${custom ? `<div class="fb-meta" style="color:var(--text-muted);">${esc(custom.note)}</div>` : ''}
-                        <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(publicUrl(f.id))}</span><button class="ia-copy-btn" title="Copy link" onclick="FB.copy('${esc(publicUrl(f.id))}')"><i class="fas fa-copy"></i></button></div>
-                        ${upd ? `<div class="fb-meta"><span>Updated <b>${upd.toLocaleString()}</b>${f.updatedBy ? ' by <b>'+esc(f.updatedBy)+'</b>' : ''}</span></div>` : ''}
+                    const custom = !!CUSTOM_PAGES[f.id];
+                    const n = custom ? 18 : (cfg.questions || []).length;
+                    const st = f.status === 'draft' ? 'not published' : f.status;
+                    return `<div class="fb-card${f.status === 'archived' ? ' fx-archived' : ''}">
+                        <div class="name">${esc(f.name || f.id)} <span class="fb-badge ${f.status === 'draft' ? 'draft' : esc(f.status)}">${esc(st)}</span>
+                            ${f.draft && f.status !== 'draft' ? '<span class="fb-badge" style="background:#FEF3C7;color:#92400E;">unpublished changes</span>' : ''}
+                            ${custom ? '<span class="fb-badge" style="background:rgba(124,58,237,.12);color:#7C3AED;">custom page</span>' : ''}</div>
+                        <div class="fb-meta"><span><b>${n}</b> question${n === 1 ? '' : 's'}</span><span>Responses go to <b>${esc(f.targetTab || '—')}</b></span></div>
+                        ${custom ? `<div class="fb-meta">A hand-built page. Use <b>Copy</b> to make an editable version.</div>` : ''}
+                        <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(publicUrl(f.id))}</span><button class="ia-copy-btn" title="Copy link" onclick="FB.copyText('${esc(publicUrl(f.id))}')"><i class="fas fa-copy"></i></button></div>
                         <div class="fb-actions">
                             ${custom ? '' : `<button class="fb-btn sm primary" onclick="FB.edit('${esc(f.id)}')"><i class="fas fa-pen"></i> Edit</button>`}
-                            <button class="fb-btn sm" onclick="FB.showQr('${esc(f.id)}')"><i class="fas fa-qrcode"></i> QR</button>
-                            <a class="fb-btn sm" href="${esc(publicUrl(f.id))}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Open</a>
-                        </div>
-                    </div>`;
+                            <button class="fb-btn sm" onclick="FB.startNew('${esc(f.id)}')">${IC.copy} Copy</button>
+                            ${f.status === 'live' || custom ? `<button class="fb-btn sm" onclick="FB.qr('${esc(f.id)}')"><i class="fas fa-qrcode"></i> QR</button>
+                            <a class="fb-btn sm" href="${esc(publicUrl(f.id))}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Open</a>` : ''}
+                        </div></div>`;
                 }).join('');
-                root().innerHTML = `
-                    <div class="fb-toolbar">
-                        <div><div class="section-header" style="margin-bottom:0;"><h3>Form Builder</h3></div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">Customer-facing feedback forms served at ${esc(PUBLIC_FORM_ORIGIN)}. Changes go live within ~60 seconds of publishing.</div></div>
-                        <div class="spacer"></div>
-                        <button class="fb-btn" onclick="FB.reload()"><i class="fas fa-rotate"></i> Refresh</button>
-                        <button class="fb-btn primary" onclick="FB.startNew()"><i class="fas fa-plus"></i> New form</button>
-                    </div>
-                    <div class="fb-grid">${cards}
-                        <div class="fb-card fb-new-card" onclick="FB.startNew()"><i class="fas fa-plus-circle"></i><span>Create a new form</span></div>
-                    </div>`;
+                root().innerHTML = `<div class="fb-toolbar"><div><div style="font-size:1.05rem;font-weight:800;color:var(--text-main);">Forms</div>
+                        <div style="font-size:.78rem;color:var(--text-muted);">Customer feedback forms at ${esc(ORIGIN.replace('https://', ''))}. Edits stay a draft until you publish.</div></div>
+                        <span class="spacer"></span><button class="fb-btn" onclick="FB.reload()"><i class="fas fa-rotate"></i> Refresh</button>
+                        <button class="fb-btn primary" onclick="FB.startNew()"><i class="fas fa-plus"></i> New form</button></div>
+                    <div class="fb-grid">${cards}<div class="fb-card fb-new-card" onclick="FB.startNew()"><i class="fas fa-circle-plus"></i> Create a new form</div></div>`;
             }
 
-            function copy(text){ navigator.clipboard.writeText(text).then(() => UI.toast('Link copied', 'success')).catch(() => prompt('Copy this link:', text)); }
-            function showQr(id){
-                openModal(`QR code — ${esc(id)}`, `Point this at ${esc(publicUrl(id))}`,
-                    `<div style="text-align:center;padding:10px 0 4px;"><img class="fb-qr" style="width:240px;height:240px;" src="${esc(qrUrl(id))}" alt="QR"><div style="font-size:0.72rem;color:var(--text-muted);margin-top:10px;">Right-click → Save image to download.</div></div>`,
-                    `<a class="ia-btn-view" href="${esc(qrUrl(id))}" target="_blank" rel="noopener" download="crumble-${esc(id)}-qr.png">Open full size</a><button class="ia-btn-close" onclick="FB.closeModal()">Close</button>`);
-            }
-
-            // ── editor ──────────────────────────────────────────────────────
-            function edit(id){
-                const f = forms.find(x => x.id === id); if(!f) return;
-                editing = clone(f.config || {});
-                editing.id = f.id; editing.name = f.name || editing.name || f.id; editing.status = f.status || 'live'; editing.targetTab = f.targetTab || editing.targetTab || '';
-                editing.welcome = editing.welcome || {}; editing.thankYou = editing.thankYou || {}; editing.branches = editing.branches || []; editing.questions = editing.questions || [];
-                isNew = false; dirty = false;
-                renderEditor();
-            }
-            function startNew(){
-                editing = {
-                    id:'', name:'', status:'draft', targetTab:'', _createTab:true,
-                    welcome:{ eyebrow:'Thanks for choosing Crumble!', title:'Please fill in this 30 second survey for a chance to win a special prize!' },
-                    thankYou:{ title:'Thank you!', body:'Your response has been recorded. We appreciate you taking the time.' },
-                    branches: clone((forms.find(f => f.id === 'delivery') || {config:{}}).config.branches || []),
-                    questions:[
-                        { id:'name',   type:'name',   required:false, column:'Name', placeholder:'Your name' },
-                        { id:'phone',  type:'phone',  required:true, column:'Phone Number', placeholder:'Phone Number' },
-                        { id:'rating', type:'rating', required:true, eyebrow:'Rate 1 - 5', title:'How was your experience today?', column:'How was your experience today?' },
-                        { id:'branch', type:'branch', required:true, eyebrow:'Feedback', column:'Location' },
-                        { id:'comments', type:'text', required:false, eyebrow:'Your feedback matters!', title:'Any other comments or suggestions?', column:'Any other comments or suggestions?', placeholder:'Type here...' }
-                    ]
+            /* ── templates ──────────────────────────────────────────────── */
+            const Q = (type, title, extra) => Object.assign({ type, title }, extra || {});
+            function templates(){
+                const del = byId('delivery'), branches = (del && del.config && del.config.branches) || [];
+                const T = {
+                    blank: { label: 'Blank form', desc: 'Phone and rating, nothing else', icon: IC.doc, tint: '#EEF2FF', color: '#010197',
+                        build: () => ({ branches, questions: [Q('phone', 'Phone number', { required: true }), Q('rating', 'How was your experience today?', { required: true })] }) },
+                    product: { label: 'Product feedback', desc: 'Template · taste, freshness, reorder', icon: IC.stars, tint: '#FFEDD5', color: '#C2410C',
+                        build: () => ({ branches, questions: [Q('phone', 'Phone number', { required: true }), Q('rating', 'How was your order?', { style: 'stars', required: true }), Q('branch', 'Branch'),
+                            Q('single', 'How did it taste?', { options: ['Delicious', 'Good', 'Okay', 'Not good'] }), Q('single', 'Was it fresh?', { options: ['Fresh', 'A bit stale', 'Stale'] }),
+                            Q('multi', 'What went wrong?', { options: ['Taste', 'Freshness', 'Texture', 'Portion size', 'Packaging'], required: true, _ruleOn: 1, _rule: { op: 'lte', value: 3 } }),
+                            Q('yesno', 'Would you order it again?'), Q('longtext', 'Anything else?')] }) },
+                    service: { label: 'Service feedback', desc: 'Template · speed, staff, cleanliness', icon: IC.person, tint: '#DCFCE7', color: '#15803D',
+                        build: () => ({ branches, questions: [Q('phone', 'Phone number', { required: true }), Q('rating', 'How was your visit today?', { required: true }), Q('branch', 'Branch'),
+                            Q('single', 'How quickly were you served?', { options: ['Very fast', 'Acceptable', 'Too slow'] }), Q('single', 'Was the team friendly?', { options: ['Very friendly', 'Neutral', 'Unfriendly'] }),
+                            Q('single', 'How clean was the branch?', { options: ['Spotless', 'Clean', 'Needs attention'] }),
+                            Q('multi', 'What went wrong?', { options: ['Slow service', 'Staff attitude', 'Cleanliness', 'Wrong order', 'Something else'], required: true, _ruleOn: 1, _rule: { op: 'lte', value: 3 } }),
+                            Q('nps', 'How likely are you to recommend Crumble?'), Q('longtext', 'Anything else?')] }) },
+                    event: { label: 'Event / catering', desc: 'Template · order, delivery, setup', icon: IC.cal, tint: '#F3E8FF', color: '#7E22CE',
+                        build: () => ({ branches, questions: [Q('name', 'Your name', { required: true }), Q('phone', 'Phone number', { required: true }), Q('shorttext', 'Company or event name'), Q('date', 'Event date'),
+                            Q('rating', 'How was the order overall?', { style: 'stars', required: true }), Q('single', 'Was the delivery on time?', { options: ['On time', 'A little late', 'Very late'] }),
+                            Q('yesno', 'Was everything included?'), Q('multi', 'What was missing?', { options: ['Cookies', 'Drinks', 'Boxes / packaging', 'Something else'], _ruleOn: 6, _rule: { op: 'eq', value: 'No' } }),
+                            Q('nps', 'How likely are you to recommend Crumble?'), Q('longtext', 'Anything else?')] }) }
                 };
-                isNew = true; dirty = true;
+                return T;
+            }
+            /* Dine-In, rebuilt as a normal form: its product / service paths become rules. */
+            function dineinTemplate(){
+                const del = byId('delivery'), branches = (del && del.config && del.config.branches) || [];
+                const qs = [
+                    { id: 'name', type: 'name', title: 'Name', column: 'Name', required: true },
+                    { id: 'phone', type: 'phone', title: 'Phone Number', column: 'Phone Number', required: true },
+                    { id: 'order', type: 'shorttext', title: 'Order number (if possible)', column: 'Order Number (if possible)' },
+                    { id: 'rating', type: 'rating', title: 'How would you rate your visit today?', column: 'How would you rate your visit today?', required: true },
+                    { id: 'branch', type: 'branch', title: 'Branch', column: 'Location' },
+                    { id: 'about', type: 'single', title: 'What would you like to share feedback on?', column: 'What would you like to share feedback on?', required: true,
+                      options: ['What I ordered (Product)', 'How I was served (Service)'] },
+                    { id: 'prod', type: 'multi', title: 'What would you like to review about your cookies?', column: 'What would you like to review about your cookies?', required: true,
+                      options: ['Taste & sweetness', 'Consistency', 'Texture', 'Freshness', 'Portion Size'], showIf: { q: 'about', op: 'eq', value: 'What I ordered (Product)' } },
+                    { id: 'pcons', type: 'single', title: 'How well was it prepared?', column: 'How well was it prepared?', options: ['Over baked', 'Under baked', 'Perfect!'], showIf: { q: 'prod', op: 'eq', value: 'Consistency' } },
+                    { id: 'ptext', type: 'single', title: 'How was the texture?', column: 'How was the texture?', options: ['Too soft', 'Too hard', 'Broken', 'Gooey (in a good way)', 'Just right'], showIf: { q: 'prod', op: 'eq', value: 'Texture' } },
+                    { id: 'pfresh', type: 'single', title: 'How fresh was it?', column: 'How fresh was it?', options: ['Fresh & hot', 'Stale', 'Cold'], showIf: { q: 'prod', op: 'eq', value: 'Freshness' } },
+                    { id: 'pport', type: 'single', title: 'How was the portion size?', column: 'How was the portion size?', options: ['Generous', 'Just right', 'Too small'], showIf: { q: 'prod', op: 'eq', value: 'Portion Size' } },
+                    { id: 'serv', type: 'multi', title: 'What would you like to review about the service?', column: 'What would you like to review about the service?', required: true,
+                      options: ['Service Timeliness', 'Staff Friendliness', 'Staff Communication', 'Staff Hygiene', 'Product Knowledge'], showIf: { q: 'about', op: 'eq', value: 'How I was served (Service)' } },
+                    { id: 'stime', type: 'single', title: 'How quickly were you served?', column: 'How quickly were you served?', options: ['Very fast', 'Acceptable', 'Too slow'], showIf: { q: 'serv', op: 'eq', value: 'Service Timeliness' } },
+                    { id: 'sfriend', type: 'single', title: 'Was the team friendly?', column: 'Was the team friendly?', options: ['Very friendly', 'Neutral', 'Unfriendly'], showIf: { q: 'serv', op: 'eq', value: 'Staff Friendliness' } },
+                    { id: 'scomm', type: 'single', title: 'Did they communicate clearly?', column: 'Did they communicate clearly?', options: ['Very clear', 'Could be better', 'Unclear'], showIf: { q: 'serv', op: 'eq', value: 'Staff Communication' } },
+                    { id: 'shyg', type: 'single', title: 'How was staff hygiene & appearance?', column: 'How was staff hygiene & appearance?', options: ['Very neat', 'Acceptable', 'Needs improvement'], showIf: { q: 'serv', op: 'eq', value: 'Staff Hygiene' } },
+                    { id: 'sknow', type: 'single', title: 'How well did the team know the menu?', column: 'How well did the team know the menu?', options: ['Very knowledgeable', 'Somewhat', 'Not at all'], showIf: { q: 'serv', op: 'eq', value: 'Product Knowledge' } },
+                    { id: 'served', type: 'single', title: 'How long did it take our staff to serve you after placing the order?', column: 'How long did it take our staff to serve you after placing the order?', options: ['5-7 mins', '7-10 mins', '10-15 mins', 'More than 15 mins'] },
+                    { id: 'placed', type: 'single', title: 'How long did it take you to place your order?', column: 'How long did it take you to place your order?', options: ['Instantly', '1-3 mins', '3-7 mins', 'Took too long'] },
+                    { id: 'comments', type: 'longtext', title: 'Any other thoughts or suggestions for us?', column: 'Any other thoughts or suggestions for us?' }
+                ];
+                return { branches, welcome: { eyebrow: 'Thank you for choosing Crumble!', title: 'Please fill in this 30 second feedback form for a chance to win a special prize :)' }, questions: qs };
+            }
+
+            /* ── create ─────────────────────────────────────────────────── */
+            let pick = 'blank';
+            function startNew(fromId){
+                pick = fromId ? 'copy:' + fromId : 'blank';
+                const T = templates();
+                const tile = (key, label, desc, icon, tint, color) => `<div class="fx-tile ${pick === key ? 'on' : ''}" data-k="${esc(key)}" onclick="FB.pickTile(this.dataset.k)">
+                    <span class="fx-ti" style="background:${tint};color:${color}">${icon}</span><b>${esc(label)}</b><small>${esc(desc)}</small></div>`;
+                const copies = forms.filter(f => f.status !== 'archived').map(f => {
+                    const custom = !!CUSTOM_PAGES[f.id], n = custom ? 20 : ((f.config || {}).questions || []).length;
+                    const ico = f.id === 'delivery' ? IC.van : f.id === 'dinein' ? IC.cutlery : f.id === 'monthlydrop' ? IC.gift : IC.form;
+                    const tint = f.id === 'delivery' ? ['#E0F2FE', '#0369A1'] : f.id === 'dinein' ? ['#FCE7F3', '#BE185D'] : f.id === 'monthlydrop' ? ['#FEF3C7', '#B45309'] : ['#F1F5F9', '#334155'];
+                    return tile('copy:' + f.id, 'Copy of ' + String(f.name || f.id).split(' — ')[0].replace(/ feedback$/i, ''), custom ? 'All questions and its product / service paths' : 'All ' + n + ' question' + (n === 1 ? '' : 's') + ', edit freely', ico, tint[0], tint[1]);
+                }).join('');
+                const body = `<div class="fx-new"><label class="fx-l">Form name</label>
+                    <input class="fx-in" id="fx-new-name" maxlength="60" placeholder="e.g. Catering Feedback" oninput="FB.newHint()" value="${fromId && byId(fromId) ? esc('Copy of ' + (byId(fromId).name || fromId)) : ''}">
+                    <div class="fx-tiles">${tile('blank', T.blank.label, T.blank.desc, T.blank.icon, T.blank.tint, T.blank.color)}${copies}
+                        ${['product', 'service', 'event'].map(k => tile(k, T[k].label, T[k].desc, T[k].icon, T[k].tint, T[k].color)).join('')}</div>
+                    <div class="fx-hint" id="fx-new-hint"></div></div>`;
+                openModal('Create a form', 'Name it, pick a starting point, and start editing. Nothing goes live until you publish.', body,
+                    `<button class="fb-btn" onclick="FB.closeModal()">Cancel</button><button class="fb-btn primary" id="fx-create" onclick="FB.create()">Create and edit →</button>`, 760);
+                newHint();
+                setTimeout(() => { const i = document.getElementById('fx-new-name'); if(i) i.focus(); }, 60);
+            }
+            function pickTile(k){ pick = k; document.querySelectorAll('.fx-tile').forEach(t => t.classList.toggle('on', t.dataset.k === k)); }
+            function uniqueId(name){
+                let base = slug(name) || 'form', id = base, n = 2;
+                while(forms.some(f => f.id === id)) id = (base.slice(0, 36) + '-' + n++);
+                return id;
+            }
+            function uniqueTab(name){
+                let base = String(name || 'Form').replace(/[^\w &\-]/g, '').trim().slice(0, 40) || 'Form', t = base, n = 2;
+                const lower = tabs.map(x => String(x).toLowerCase());
+                while(lower.indexOf(t.toLowerCase()) !== -1 || forms.some(f => String(f.targetTab || '').toLowerCase() === t.toLowerCase())) t = base + ' ' + n++;
+                return t;
+            }
+            function newHint(){
+                const n = (document.getElementById('fx-new-name') || {}).value || '', h = document.getElementById('fx-new-hint'); if(!h) return;
+                h.innerHTML = n.trim() ? `Link: ${esc(ORIGIN.replace('https://', ''))}/?f=<b>${esc(uniqueId(n))}</b> · responses go to a new tab <b>${esc(uniqueTab(n))}</b>` : 'Give it a name to see its link.';
+            }
+            function create(){
+                const name = ((document.getElementById('fx-new-name') || {}).value || '').trim();
+                if(!name){ UI.toast('Give the form a name.', 'warning'); return; }
+                let base;
+                if(pick.indexOf('copy:') === 0){
+                    const src = byId(pick.slice(5));
+                    base = src && src.id === 'dinein' ? dineinTemplate() : clone((src && (src.draft || src.config)) || {});
+                    delete base.id; delete base.status; delete base.targetTab;
+                } else base = templates()[pick].build();
+                const cfg = Object.assign({ welcome: {}, thankYou: {}, design: {} }, base, { id: uniqueId(name), name, targetTab: uniqueTab(name) });
+                // Fresh ids and columns for template questions; copies keep theirs.
+                const idx = {};
+                cfg.questions = (cfg.questions || []).map((q, i) => {
+                    const o = Object.assign({}, q);
+                    if(!o.id) o.id = newQid(cfg, o.type);
+                    if(!o.column) o.column = uniqueColumn(cfg, o.title || TYPES[o.type].label, o.id);
+                    idx[i] = o.id;
+                    return o;
+                });
+                cfg.questions.forEach(o => { if(o._rule){ o.showIf = { q: idx[o._ruleOn], op: o._rule.op, value: o._rule.value }; } delete o._rule; delete o._ruleOn; });
+                closeModal();
+                E = { id: cfg.id, isNew: true, cfg, live: null, sel: firstQ(cfg), tab: 'questions', dirty: true, saving: false, savedAt: null, err: '', mobile: 'list' };
+                renderEditor(); scheduleSave(200);
+            }
+            function firstQ(cfg){ const q = (cfg.questions || []).find(x => x.type !== 'phone' && x.type !== 'name') || (cfg.questions || [])[0]; return q ? q.id : null; }
+
+            /* ── ids and columns ────────────────────────────────────────── */
+            function newQid(cfg, type){
+                const used = new Set((cfg.questions || []).map(q => q.id));
+                if(['phone', 'name', 'rating', 'branch'].indexOf(type) !== -1 && !used.has(type)) return type;
+                let id; do { id = 'q' + Math.random().toString(36).slice(2, 7); } while(used.has(id));
+                return id;
+            }
+            function uniqueColumn(cfg, title, selfId){
+                let base = String(title || 'Answer').replace(/\s+/g, ' ').trim().slice(0, 90) || 'Answer', c = base, n = 2;
+                const taken = q => q.id !== selfId && [q.column, q.negativeColumn].some(x => String(x || '').toLowerCase() === c.toLowerCase());
+                while(META_COLS.indexOf(c.toLowerCase()) !== -1 || (cfg.questions || []).some(taken)) c = base + ' (' + n++ + ')';
+                return c;
+            }
+            // A question already published keeps its column: its answers are stored there.
+            const colLocked = q => !!(E && E.live && (E.live.questions || []).some(x => x.id === q.id));
+
+            /* ── editor ─────────────────────────────────────────────────── */
+            async function edit(id){
+                const f = byId(id); if(!f) return;
+                const cfg = clone(f.draft || f.config || {}); cfg.id = f.id; cfg.name = cfg.name || f.name; cfg.targetTab = f.targetTab || cfg.targetTab;
+                cfg.welcome = cfg.welcome || {}; cfg.thankYou = cfg.thankYou || {}; cfg.design = cfg.design || {}; cfg.questions = cfg.questions || [];
+                E = { id: f.id, isNew: false, cfg, live: f.status === 'draft' ? null : clone(f.config || {}), status: f.status, hasDraft: !!f.draft,
+                      sel: firstQ(cfg), tab: 'questions', dirty: false, saving: false, savedAt: f.draftAt || null, err: '', mobile: 'list' };
                 renderEditor();
             }
             function back(){
-                if(dirty && !confirm('Discard unsaved changes?')) return;
-                editing = null; isNew = false; dirty = false; renderList();
+                if(E && (E.dirty || E.saving)){ flushSave().then(() => { E = null; reload(); }); return; }
+                E = null; reload();
             }
-
+            const selQ = () => E.cfg.questions.find(q => q.id === E.sel);
+            function statusChip(){
+                if(E.err) return `<span class="fx-st bad">Not saved — ${esc(E.err)}</span>`;
+                if(E.saving || E.dirty) return `<span class="fx-st">Saving…</span>`;
+                const pub = E.status === 'live' || E.status === 'archived';
+                return `<span class="fx-st ${E.hasDraft || !pub ? 'dr' : 'ok'}">${!pub ? 'NOT PUBLISHED YET' : E.hasDraft ? 'DRAFT CHANGES' : 'PUBLISHED'}</span>`
+                     + (E.savedAt ? `<span class="fx-saved">Saved ${esc(ago(E.savedAt))}</span>` : '');
+            }
+            function ago(t){ const s = Math.max(0, Math.round((Date.now() - Date.parse(t)) / 1000)); return s < 10 ? 'just now' : s < 60 ? s + ' s ago' : s < 3600 ? Math.round(s / 60) + ' min ago' : new Date(t).toLocaleString(); }
             function renderEditor(){
-                const f = editing;
-                const tabOpts = tabs.map(t => `<option value="${esc(t)}" ${t===f.targetTab?'selected':''}>${esc(t)}</option>`).join('');
-                const liveWarn = (!isNew && f.status === 'live')
-                    ? `<div class="fb-alert warn"><i class="fas fa-triangle-exclamation"></i><div><b>This form is live.</b> Wording, options and order are safe to change. Changing a question's <b>sheet column</b> affects reporting — the dashboard and AI reports match on column names. Save as draft first if unsure.</div></div>` : '';
-                root().innerHTML = `
-                    <div class="fb-toolbar">
-                        <button class="fb-btn" onclick="FB.back()"><i class="fas fa-arrow-left"></i> All forms</button>
-                        <div style="min-width:0;flex:1;">
-                            <div style="display:flex;align-items:center;gap:10px;"><div class="section-header" style="margin-bottom:0;"><h3 id="fb-title-echo">${esc(f.name || 'New form')}</h3></div><span class="fb-badge ${esc(f.status)}">${esc(f.status)}</span><span id="fb-dirty" style="font-size:0.7rem;color:var(--text-muted);">${dirty?'• unsaved':''}</span></div>
-                        </div>
-                        <button class="fb-btn" onclick="FB.save('draft')"><i class="fas fa-floppy-disk"></i> Save as draft</button>
-                        <button class="fb-btn primary" onclick="FB.save('live')"><i class="fas fa-paper-plane"></i> Publish</button>
-                    </div>
-                    ${liveWarn}
-                    <div id="fb-error"></div>
-                    <div class="fb-wrap">
-                      <div>
-                        <div class="fb-section"><h4>Basics</h4>
-                          <div class="fb-row">
-                            <div class="fb-field"><label>Form name</label><input id="fb-name" value="${esc(f.name)}" placeholder="e.g. Dine-In Feedback" oninput="FB.onName(this.value)"></div>
-                            <div class="fb-field"><label>Form ID (in the link)</label><input id="fb-id" value="${esc(f.id)}" ${isNew?'':'readonly'} placeholder="dinein" oninput="this.dataset.touched=1; FB.set('id', FB.slug(this.value)); this.value=FB.slug(this.value)"><div class="hint">${esc(PUBLIC_FORM_ORIGIN)}/?f=<b id="fb-id-echo">${esc(f.id||'…')}</b></div></div>
-                          </div>
-                          <div class="fb-row">
-                            <div class="fb-field"><label>Writes answers to sheet tab</label>
-                              ${isNew ? `<select id="fb-tab" onchange="FB.onTab(this.value)"><option value="__new__" ${f._createTab?'selected':''}>＋ Create a new tab named after the Form ID</option>${tabOpts}</select>` : `<input value="${esc(f.targetTab)}" readonly>`}
-                              <div class="hint">${isNew ? 'A new tab gets the standard columns plus one per question. Existing tab: its headers must match the column names below.' : 'Locked after creation.'}</div></div>
-                            <div class="fb-field"><label>Status</label><input value="${esc(f.status)}" readonly><div class="hint">Draft = link shows "not available". Publish makes it live.</div></div>
-                          </div>
-                        </div>
-
-                        <div class="fb-section"><h4>Welcome & thank-you screens</h4>
-                          <div class="fb-row">
-                            <div class="fb-field"><label>Welcome eyebrow</label><input value="${esc(f.welcome.eyebrow||'')}" oninput="FB.setPath('welcome.eyebrow', this.value)"></div>
-                            <div class="fb-field"><label>Welcome title</label><input value="${esc(f.welcome.title||'')}" oninput="FB.setPath('welcome.title', this.value)"></div>
-                          </div>
-                          <div class="fb-row">
-                            <div class="fb-field"><label>Thank-you title</label><input value="${esc(f.thankYou.title||'')}" oninput="FB.setPath('thankYou.title', this.value)"></div>
-                            <div class="fb-field"><label>Thank-you message</label><input value="${esc(f.thankYou.body||'')}" oninput="FB.setPath('thankYou.body', this.value)"></div>
-                          </div>
-                        </div>
-
-                        <div class="fb-section"><h4>Questions <span style="font-weight:600;text-transform:none;letter-spacing:0;">${f.questions.length} total · name &amp; phone appear on the welcome screen</span></h4>
-                          <div id="fb-qlist">${f.questions.map((q,i) => renderQ(q,i)).join('')}</div>
-                          <div class="fb-addq"><span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">Add:</span>
-                            ${Object.keys(TYPES).map(t => `<button class="fb-btn sm" onclick="FB.addQ('${t}')" ${(t==='phone'||t==='rating'||t==='branch'||t==='name') && f.questions.some(q=>q.type===t) ? 'disabled title="Only one allowed"' : ''}>${esc(TYPES[t].label)}</button>`).join('')}
-                          </div>
-                        </div>
-
-                        <div class="fb-section"><h4>Branches <span style="font-weight:600;text-transform:none;letter-spacing:0;">used by the Branch question · one per line</span></h4>
-                          <div class="fb-field"><textarea id="fb-branches" style="min-height:150px;font-family:monospace;font-size:0.78rem;" oninput="FB.onBranches(this.value)">${esc(f.branches.map(b => [b.name, b.lat, b.lng].filter(x => x!==undefined && x!=='').join(' | ')).join('\n'))}</textarea>
-                          <div class="hint">Format: <code>Branch name | latitude | longitude</code>. Coordinates enable GPS auto-detect; leave them off and the customer picks from a list.</div></div>
-                        </div>
-                      </div>
-
-                      <div class="fb-preview-col">
-                        <div class="fb-phone"><iframe id="fb-preview" src="${esc(PUBLIC_FORM_ORIGIN)}/?preview=1" title="Live preview"></iframe></div>
-                        <div class="fb-preview-note">Live preview — updates as you type. Submissions are disabled here.</div>
-                      </div>
-                    </div>`;
-                const fr = document.getElementById('fb-preview');
-                if(fr) fr.addEventListener('load', () => pushPreview(true));
-                schedulePreview();
+                const host = root(); if(!host || !E) return;
+                const T = (k, l) => `<span class="${E.tab === k ? 'on' : ''}" onclick="FB.tab('${k}')">${l}</span>`;
+                host.innerHTML = `<div class="fx">
+                    <div class="fx-top"><button class="fx-back" onclick="FB.back()">${IC.back} Forms</button>
+                        <input class="fx-name" value="${esc(E.cfg.name)}" maxlength="60" oninput="FB.setName(this.value)" aria-label="Form name">
+                        <span id="fx-status">${statusChip()}</span>
+                        <div class="fx-tabs">${T('questions', 'Questions')}${T('screens', 'Welcome &amp; thanks')}${T('design', 'Design')}${T('share', 'Share')}</div>
+                        <span class="fx-sp"></span>
+                        ${E.hasDraft && E.status === 'live' ? `<button class="fb-btn sm" onclick="FB.discard()">Discard changes</button>` : ''}
+                        <button class="fb-btn fx-pv-btn" onclick="FB.previewModal()">${IC.eye} Preview</button>
+                        <button class="fb-btn primary" id="fx-pub" onclick="FB.publish()">Publish</button></div>
+                    <div class="fx-main">
+                        <div class="fx-col fx-left ${E.mobile === 'list' ? '' : 'mhide'}" id="fx-left">${E.tab === 'questions' ? leftQuestions() : leftOther()}</div>
+                        <div class="fx-col fx-mid ${E.mobile === 'list' && E.tab === 'questions' ? 'mhide' : ''}" id="fx-mid">${E.tab === 'questions' ? midQuestion() : E.tab === 'screens' ? midScreens() : E.tab === 'design' ? midDesign() : midShare()}</div>
+                        <div class="fx-col fx-right"><div class="fx-h"><span>Live preview</span><small>${esc(E.tab === 'screens' ? 'first and last screen' : 'what customers see')}</small></div>
+                            <div class="fx-phone"><iframe id="fx-frame" title="Form preview" src="${esc(ORIGIN + '/?f=' + encodeURIComponent(E.cfg.id) + '&preview=1')}" onload="FB.pushPreview(true)"></iframe></div></div>
+                    </div></div>`;
+                bindDrag();
+            }
+            function leftOther(){
+                const items = E.tab === 'screens' ? [['First screen', 'Title and the line above it'], ['Thank-you screen', 'Shown after a response is saved']]
+                            : E.tab === 'design' ? [['Accent colour', 'Buttons, progress bar, highlights']] : [['Link', 'The public address'], ['QR codes', 'One for the form, one per branch']];
+                return `<div class="fx-h"><span>${E.tab === 'screens' ? 'Screens' : E.tab === 'design' ? 'Design' : 'Share'}</span></div>`
+                     + items.map(i => `<div class="fx-qi"><div class="fx-qt"><b>${i[0]}</b><small>${i[1]}</small></div></div>`).join('');
+            }
+            function leftQuestions(){
+                const qs = E.cfg.questions, pos = {};
+                qs.forEach((q, i) => pos[q.id] = i);
+                const items = qs.map((q, i) => {
+                    const t = TYPES[q.type] || { label: q.type }, pinned = q.type === 'phone' || q.type === 'name';
+                    const badRule = q.showIf && !(pos[q.showIf.q] < i);
+                    const ico = q.type === 'rating' && q.style === 'stars' ? IC.stars : (IC[q.type] || IC.form);
+                    return `<div class="fx-qi ${E.sel === q.id ? 'on' : ''}" data-id="${esc(q.id)}" ${pinned ? '' : 'draggable="true"'} onclick="FB.select('${esc(q.id)}')">
+                        <span class="fx-grip" title="${pinned ? 'Always on the first screen' : 'Drag to reorder'}">${pinned ? '' : IC.grip}</span>
+                        <span class="fx-num">${i + 1}</span><span class="fx-ic" style="background:${TINT[q.type] || '#F1F5F9'}">${ico}</span>
+                        <div class="fx-qt"><b>${esc(q.title || t.label)}</b><small>${esc(t.label)}${pinned ? ' · first screen' : q.type === 'rating' ? ' · ' + (q.style === 'stars' ? 'stars' : 'smileys') : ''}</small></div>
+                        ${q.showIf ? `<span class="fx-lg ${badRule ? 'bad' : ''}" title="${badRule ? 'This rule points at a later question' : 'Shown only sometimes'}">${IC.bolt}${badRule ? ' fix' : ' IF'}</span>` : ''}
+                        ${q.required ? '<span class="fx-req" title="Required">*</span>' : ''}
+                        <span class="fx-mv">${pinned ? '' : `<button onclick="event.stopPropagation();FB.move('${esc(q.id)}',-1)" title="Move up">${IC.up}</button><button onclick="event.stopPropagation();FB.move('${esc(q.id)}',1)" title="Move down">${IC.down}</button>`}</span></div>`;
+                }).join('');
+                return `<div class="fx-h"><span>Questions · ${qs.length}</span></div><div id="fx-list">${items}</div>
+                    <div class="fx-h" style="margin-top:14px;"><span>Add a question</span></div>
+                    <div class="fx-pal">${PALETTE.map(k => `<button onclick="FB.add('${k}')" ${((k === 'phone' || k === 'name' || k === 'branch') && qs.some(q => q.type === k)) ? 'disabled title="Already in this form"' : ''}>
+                        <span class="fx-ic sm" style="background:${TINT[k]}">${IC[k]}</span>${TYPES[k].label}</button>`).join('')}</div>`;
+            }
+            function earlierFor(q){
+                const i = E.cfg.questions.indexOf(q);
+                return E.cfg.questions.slice(0, i).filter(x => ['rating', 'nps', 'single', 'multi', 'dropdown', 'yesno'].indexOf(x.type) !== -1);
+            }
+            function ruleEditor(q){
+                const srcs = earlierFor(q);
+                if(!q.showIf){
+                    return `<div class="fx-rule off"><b>${IC.bolt} Show this question only if…</b>
+                        ${srcs.length ? `<button class="fb-btn sm" onclick="FB.ruleOn()">Add a rule</button><small>For example: only when the rating is 3 or less.</small>`
+                                      : `<small>Add a rating or choice question above this one to use a rule.</small>`}</div>`;
+                }
+                const src = E.cfg.questions.find(x => x.id === q.showIf.q) || srcs[0];
+                const ops = src && numeric(src.type) ? [['lte', 'is at most'], ['gte', 'is at least'], ['eq', 'is exactly']]
+                          : src && src.type === 'multi' ? [['eq', 'includes'], ['neq', 'does not include']] : [['eq', 'is'], ['neq', 'is not']];
+                let valInput;
+                if(src && numeric(src.type)){
+                    const max = src.type === 'nps' ? 10 : 5, min = src.type === 'nps' ? 0 : 1, vals = []; for(let v = min; v <= max; v++) vals.push(v);
+                    valInput = `<select onchange="FB.rule('value', Number(this.value))">${vals.map(v => `<option ${Number(q.showIf.value) === v ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
+                } else {
+                    const opts = src && src.type === 'yesno' ? ['Yes', 'No'] : ((src && src.options) || []);
+                    valInput = `<select onchange="FB.rule('value', this.value)">${opts.map(v => `<option ${String(q.showIf.value) === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>`;
+                }
+                return `<div class="fx-rule"><div class="fx-rule-h"><b>${IC.bolt} Show this question only if</b><button class="fx-link" onclick="FB.ruleOff()">Remove rule</button></div>
+                    <div class="fx-rule-row"><select onchange="FB.rule('q', this.value)">${srcs.map(s => `<option value="${esc(s.id)}" ${src && s.id === src.id ? 'selected' : ''}>${esc(s.title || TYPES[s.type].label)}</option>`).join('')}</select>
+                    <select onchange="FB.rule('op', this.value)">${ops.map(o => `<option value="${o[0]}" ${q.showIf.op === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>${valInput}</div>
+                    <small>Otherwise it is skipped — and not required.</small></div>`;
+            }
+            function midQuestion(){
+                const q = selQ();
+                if(!q) return `<div class="fx-empty">Pick a question on the left, or add one.</div>`;
+                const i = E.cfg.questions.indexOf(q), t = TYPES[q.type] || { label: q.type };
+                const typeSwitch = hasOptions(q.type) ? ['single', 'multi', 'dropdown'] : (q.type === 'shorttext' || q.type === 'longtext' || q.type === 'text') ? ['shorttext', 'longtext'] : null;
+                const fld = (label, html, hint) => `<div class="fx-f"><label>${label}</label>${html}${hint ? `<small>${hint}</small>` : ''}</div>`;
+                let body = '';
+                body += `<div class="fx-h"><span>Question ${i + 1}</span><small>${esc(t.label)}</small></div>`;
+                if(typeSwitch) body += fld('Type', `<div class="fx-seg">${typeSwitch.map(k => `<span class="${q.type === k || (k === 'longtext' && q.type === 'text') ? 'on' : ''}" onclick="FB.setType('${k}')">${TYPES[k].label}</span>`).join('')}</div>`);
+                if(q.type === 'rating') body += fld('Style', `<div class="fx-seg"><span class="${q.style !== 'stars' ? 'on' : ''}" onclick="FB.setQ('style','')">Smileys</span><span class="${q.style === 'stars' ? 'on' : ''}" onclick="FB.setQ('style','stars')">Stars</span></div>`, 'Both give a 1–5 answer. 3 or less counts as a complaint on the dashboard.');
+                body += fld(q.type === 'phone' || q.type === 'name' ? 'Label' : 'Question', `<input class="fx-in" value="${esc(q.title || '')}" maxlength="200" oninput="FB.setQ('title', this.value)">`);
+                if(q.type !== 'phone' && q.type !== 'name' && q.type !== 'branch') body += fld('Help text <em>(optional)</em>', `<input class="fx-in lt" value="${esc(q.help || '')}" maxlength="160" oninput="FB.setQ('help', this.value)">`);
+                if(['shorttext', 'longtext', 'text', 'email', 'phone', 'name', 'dropdown'].indexOf(q.type) !== -1) body += fld('Placeholder <em>(optional)</em>', `<input class="fx-in lt" value="${esc(q.placeholder || '')}" maxlength="80" oninput="FB.setQ('placeholder', this.value)">`);
+                if(hasOptions(q.type)){
+                    body += fld('Choices', `<div id="fx-opts">${(q.options || []).map((o, k) => `<div class="fx-opt" data-k="${k}">
+                        <span class="fx-mv v"><button onclick="FB.moveOpt(${k},-1)" title="Up">${IC.up}</button><button onclick="FB.moveOpt(${k},1)" title="Down">${IC.down}</button></span>
+                        <input value="${esc(o)}" maxlength="120" oninput="FB.setOpt(${k}, this.value)"><button class="fx-x" onclick="FB.delOpt(${k})" title="Remove">${IC.x}</button></div>`).join('')}
+                        <div class="fx-opt add"><button class="fx-link" onclick="FB.addOpt()">+ Add a choice</button><button class="fx-link" onclick="FB.pasteOpts()">Paste a list</button></div></div>`);
+                }
+                if(q.type === 'nps') body += `<div class="fx-2">${fld('Left label', `<input class="fx-in lt" value="${esc(q.lowLabel || 'Not likely')}" maxlength="30" oninput="FB.setQ('lowLabel', this.value)">`)}${fld('Right label', `<input class="fx-in lt" value="${esc(q.highLabel || 'Very likely')}" maxlength="30" oninput="FB.setQ('highLabel', this.value)">`)}</div>`;
+                if(q.type === 'yesno') body += `<div class="fx-2">${fld('Yes button', `<input class="fx-in lt" value="${esc(q.yesLabel || 'Yes')}" maxlength="30" oninput="FB.setQ('yesLabel', this.value)">`)}${fld('No button', `<input class="fx-in lt" value="${esc(q.noLabel || 'No')}" maxlength="30" oninput="FB.setQ('noLabel', this.value)">`)}</div>`;
+                if(q.type === 'branch') body += fld('Branches', `<textarea class="fx-in lt" rows="5" oninput="FB.setBranches(this.value)">${esc((E.cfg.branches || []).map(b => b.name).join('\n'))}</textarea>`, 'One per line. Customers are matched to the nearest branch from their location; if that fails they pick from this list.');
+                body += `<div class="fx-sw"><div><b>Required</b><small>Customers must answer before moving on</small></div><button class="fx-tg ${q.required ? 'on' : ''}" onclick="FB.setQ('required', ${!q.required})" aria-label="Required"></button></div>`;
+                if(q.type !== 'phone' && q.type !== 'name') body += ruleEditor(q);
+                const locked = colLocked(q);
+                body += `<details class="fx-adv"><summary>Advanced · saved to sheet column <b>${esc(q.column || '')}</b></summary>
+                    ${fld('Sheet column', `<input class="fx-in lt" value="${esc(q.column || '')}" maxlength="90" ${locked ? 'readonly' : ''} oninput="FB.setQ('column', this.value, true)">`, locked ? 'Locked: this question already has answers saved under this column.' : 'Made from the question for you. Change it only if a column already exists with another name.')}
+                    ${q.type === 'multi' ? fld('Wording when the rating is 3 or less <em>(optional)</em>', `<input class="fx-in lt" value="${esc(q.negativeTitle || '')}" maxlength="200" oninput="FB.setQ('negativeTitle', this.value)">`, 'e.g. "What can we improve?" instead of "What did you like?"') : ''}
+                    ${q.type === 'multi' && q.negativeTitle ? fld('Column for low ratings', `<input class="fx-in lt" value="${esc(q.negativeColumn || '')}" maxlength="90" oninput="FB.setQ('negativeColumn', this.value)">`) : ''}
+                    <small>Question id: ${esc(q.id)}</small></details>
+                    <div class="fx-qa"><button class="fb-btn sm" onclick="FB.dup()">${IC.copy} Duplicate</button><button class="fb-btn sm danger" onclick="FB.del()">Delete question</button>
+                    <button class="fb-btn sm fx-mback" onclick="FB.mobile('list')">← All questions</button></div>`;
+                return body;
+            }
+            function midScreens(){
+                const w = E.cfg.welcome, t = E.cfg.thankYou;
+                const fld = (label, html, hint) => `<div class="fx-f"><label>${label}</label>${html}${hint ? `<small>${hint}</small>` : ''}</div>`;
+                return `<div class="fx-h"><span>First screen</span><small>Shown with the phone number</small></div>
+                    ${fld('Small line on top', `<input class="fx-in lt" value="${esc(w.eyebrow || '')}" placeholder="Thanks for choosing Crumble!" maxlength="80" oninput="FB.setScreen('welcome','eyebrow',this.value)" onfocus="FB.focusPreview('__welcome')">`)}
+                    ${fld('Title', `<textarea class="fx-in" rows="2" placeholder="Please fill in this short survey." maxlength="160" oninput="FB.setScreen('welcome','title',this.value)" onfocus="FB.focusPreview('__welcome')">${esc(w.title || '')}</textarea>`)}
+                    <div class="fx-h" style="margin-top:18px;"><span>Thank-you screen</span><small>After a response is saved</small></div>
+                    ${fld('Title', `<input class="fx-in lt" value="${esc(t.title || '')}" placeholder="Thank you!" maxlength="80" oninput="FB.setScreen('thankYou','title',this.value)" onfocus="FB.focusPreview('__done')">`, 'Write {name} to use the customer’s first name, e.g. “Thank you, {name}!”')}
+                    ${fld('Message', `<textarea class="fx-in" rows="2" placeholder="Your response has been recorded." maxlength="200" oninput="FB.setScreen('thankYou','body',this.value)" onfocus="FB.focusPreview('__done')">${esc(t.body || '')}</textarea>`)}`;
+            }
+            const ACCENTS = [['#010197', 'Crumble navy'], ['#0F766E', 'Teal'], ['#7E22CE', 'Plum'], ['#B91C1C', 'Crimson'], ['#1F2937', 'Charcoal'], ['#C2410C', 'Amber']];
+            function midDesign(){
+                const cur = (E.cfg.design.accent || '#010197').toUpperCase();
+                return `<div class="fx-h"><span>Accent colour</span><small>Buttons, progress bar and highlights</small></div>
+                    <div class="fx-sw-grid">${ACCENTS.map(a => `<button class="fx-sws ${cur === a[0] ? 'on' : ''}" onclick="FB.setAccent('${a[0]}')"><span style="background:${a[0]}"></span>${a[1]}</button>`).join('')}</div>
+                    <div class="fx-f" style="margin-top:12px;"><label>Or any colour</label><input class="fx-in lt" value="${esc(cur)}" maxlength="7" style="max-width:140px" onchange="FB.setAccent(this.value)"><small>A hex colour such as #010197.</small></div>
+                    <div class="fx-note">The logo, font and page background stay the same on every form, so customers always recognise Crumble.</div>`;
+            }
+            function midShare(){
+                const url = publicUrl(E.cfg.id), pub = E.status === 'live';
+                const brs = (E.cfg.branches || []).map(b => b.name).filter(Boolean);
+                return `<div class="fx-h"><span>Link</span><small>${pub ? 'Live' : 'Works once published'}</small></div>
+                    <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(url)}</span><button class="ia-copy-btn" onclick="FB.copyText('${esc(url)}')"><i class="fas fa-copy"></i></button></div>
+                    <div class="fx-qr"><img src="${esc(qrUrl(url))}" alt="QR code" width="150" height="150"><div><b>QR for the form</b><small>Print it on receipts, bags or table cards.</small>
+                        <a class="fb-btn sm" href="${esc(qrUrl(url))}" target="_blank" rel="noopener">Open QR</a></div></div>
+                    ${brs.length ? `<div class="fx-h" style="margin-top:16px;"><span>Per-branch links</span><small>The branch is filled in for the customer</small></div>
+                    <div class="fx-brl">${brs.map(b => { const u = url + (url.indexOf('?') === -1 ? '?' : '&') + 'branch=' + encodeURIComponent(b);
+                        return `<div><span>${esc(b)}</span><button class="fx-link" onclick="FB.copyText('${esc(u)}')">Copy link</button><a class="fx-link" href="${esc(qrUrl(u))}" target="_blank" rel="noopener">QR</a></div>`; }).join('')}</div>` : ''}
+                    ${E.status === 'live' ? `<div class="fx-note" style="margin-top:16px;">Stop taking responses: <button class="fx-link" onclick="FB.archive()">Archive this form</button></div>`
+                      : E.status === 'archived' ? `<div class="fx-note" style="margin-top:16px;">This form is archived. <button class="fx-link" onclick="FB.publish()">Publish</button> to bring it back.</div>` : ''}`;
             }
 
-            function renderQ(q, i){
-                const isFixed = q.type === 'phone' || q.type === 'branch' || q.type === 'name';
-                const title = q.type === 'phone' ? 'Phone number (welcome screen)' : q.type === 'name' ? 'Name (welcome screen)' : q.type === 'branch' ? 'Branch (auto-detect)' : (q.title || '(untitled)');
-                const body = `
-                    <div class="fb-row three">
-                      <div class="fb-field"><label>Question ID</label><input value="${esc(q.id)}" oninput="FB.setQ(${i},'id',FB.slug(this.value))"><div class="hint">Internal key. Letters/numbers/dashes.</div></div>
-                      <div class="fb-field"><label>Sheet column</label><input value="${esc(q.column||'')}" list="fb-cols" oninput="FB.setQ(${i},'column',this.value)"><div class="hint">Exact header text in the target tab.</div></div>
-                      <div class="fb-field" style="justify-content:flex-end;"><label class="fb-check" style="margin-top:20px;"><input type="checkbox" ${q.required?'checked':''} onchange="FB.setQ(${i},'required',this.checked)"> Required</label></div>
-                    </div>
-                    ${(q.type==='phone' || q.type==='name') ? `<div class="fb-field"><label>Placeholder</label><input value="${esc(q.placeholder||'')}" oninput="FB.setQ(${i},'placeholder',this.value)"></div>` : ''}
-                    ${q.type==='branch' ? `<div class="fb-field"><label>Eyebrow</label><input value="${esc(q.eyebrow||'')}" oninput="FB.setQ(${i},'eyebrow',this.value)"></div>` : ''}
-                    ${!isFixed ? `<div class="fb-row">
-                      <div class="fb-field"><label>Eyebrow (small text above)</label><input value="${esc(q.eyebrow||'')}" oninput="FB.setQ(${i},'eyebrow',this.value)"></div>
-                      <div class="fb-field"><label>Question title</label><input value="${esc(q.title||'')}" oninput="FB.setQ(${i},'title',this.value)"></div>
-                    </div>` : ''}
-                    ${(q.type==='single'||q.type==='multi') ? `<div class="fb-field"><label>Options (one per line)</label><textarea oninput="FB.setQ(${i},'options',this.value.split('\\n').map(s=>s.trim()).filter(Boolean))">${esc((q.options||[]).join('\n'))}</textarea></div>` : ''}
-                    ${q.type==='multi' ? `<div class="fb-row">
-                      <div class="fb-field"><label>Low-rating title (rating ≤ 3)</label><input value="${esc(q.negativeTitle||'')}" placeholder="e.g. What can we improve?" oninput="FB.setQ(${i},'negativeTitle',this.value)"></div>
-                      <div class="fb-field"><label>Low-rating sheet column</label><input value="${esc(q.negativeColumn||'')}" list="fb-cols" placeholder="e.g. What can we improve?" oninput="FB.setQ(${i},'negativeColumn',this.value)"><div class="hint">Leave both blank to always use the same title/column.</div></div>
-                    </div>` : ''}
-                    ${q.type==='text' ? `<div class="fb-row">
-                      <div class="fb-field"><label>Placeholder</label><input value="${esc(q.placeholder||'')}" oninput="FB.setQ(${i},'placeholder',this.value)"></div>
-                      <div class="fb-field"><label>Max length</label><input type="number" value="${esc(q.maxLength||2000)}" oninput="FB.setQ(${i},'maxLength',parseInt(this.value,10)||2000)"></div>
-                    </div>` : ''}
-                    <div class="hint" style="font-size:0.66rem;color:var(--text-muted);">${esc(TYPES[q.type] ? TYPES[q.type].hint : '')}</div>`;
-                return `<div class="fb-q ${q._open===false?'collapsed':''}" data-i="${i}">
-                    <div class="fb-q-head">
-                      <span class="num">${i+1}</span>
-                      <span class="ttl" onclick="FB.toggleQ(${i})">${esc(title)}</span>
-                      <span class="fb-type">${esc(TYPES[q.type] ? TYPES[q.type].label : q.type)}</span>
-                      <button class="ico" title="Move up" onclick="FB.moveQ(${i},-1)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
-                      <button class="ico" title="Move down" onclick="FB.moveQ(${i},1)" ${i===editing.questions.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
-                      <button class="ico" title="${q._open===false?'Expand':'Collapse'}" onclick="FB.toggleQ(${i})"><i class="fas fa-${q._open===false?'plus':'minus'}"></i></button>
-                      <button class="ico del" title="Delete" onclick="FB.delQ(${i})"><i class="fas fa-trash"></i></button>
-                    </div>
-                    <div class="fb-q-body">${body}</div>
-                </div>`;
+            /* ── edits ──────────────────────────────────────────────────── */
+            function changed(opts){
+                E.dirty = true; E.err = '';
+                const st = document.getElementById('fx-status'); if(st) st.innerHTML = statusChip();
+                if(opts && opts.left){ const l = document.getElementById('fx-left'); if(l){ l.innerHTML = E.tab === 'questions' ? leftQuestions() : leftOther(); bindDrag(); } }
+                if(opts && opts.mid){ const m = document.getElementById('fx-mid'); if(m) m.innerHTML = E.tab === 'questions' ? midQuestion() : E.tab === 'screens' ? midScreens() : E.tab === 'design' ? midDesign() : midShare(); }
+                scheduleSave(); schedulePreview();
             }
-
-            function rerenderQuestions(){
-                const list = document.getElementById('fb-qlist'); if(!list) return;
-                list.innerHTML = editing.questions.map((q,i) => renderQ(q,i)).join('');
-                // datalist of known headers for the target tab
-                let dl = document.getElementById('fb-cols');
-                if(!dl){ dl = document.createElement('datalist'); dl.id = 'fb-cols'; document.body.appendChild(dl); }
-                dl.innerHTML = (tabHeaders[editing.targetTab] || []).map(h => `<option value="${esc(h)}">`).join('');
-                markDirty();
+            function setName(v){ E.cfg.name = v; changed(); }
+            function select(id){ E.sel = id; E.mobile = 'q'; renderEditor(); focusPreview(id); }
+            function setQ(k, v, fromColumn){
+                const q = selQ(); if(!q) return;
+                if(k === 'title' && !colLocked(q) && (!q.column || q._auto !== false)){ q.column = uniqueColumn(E.cfg, v || TYPES[q.type].label, q.id); }
+                if(fromColumn) q._auto = false;
+                if(v === '' || v === false) delete q[k]; else q[k] = v;
+                if(k === 'title' || k === 'column'){
+                    const it = document.querySelector('.fx-qi.on .fx-qt b'); if(it && k === 'title') it.textContent = v || TYPES[q.type].label;
+                    const sm = document.querySelector('.fx-adv summary b'); if(sm) sm.textContent = q.column || '';
+                    changed(); return;
+                }
+                changed({ left: true, mid: ['required', 'style', 'negativeTitle'].indexOf(k) !== -1 });
             }
-
-            // ── mutations ───────────────────────────────────────────────────
-            function markDirty(){ dirty = true; const d = document.getElementById('fb-dirty'); if(d) d.textContent = '• unsaved'; schedulePreview(); }
-            function set(k, v){ editing[k] = v; if(k==='id'){ const e = document.getElementById('fb-id-echo'); if(e) e.textContent = v || '…'; } markDirty(); }
-            function setPath(path, v){ const [a,b] = path.split('.'); editing[a] = editing[a] || {}; editing[a][b] = v; markDirty(); }
-            function onName(v){ editing.name = v; const t = document.getElementById('fb-title-echo'); if(t) t.textContent = v || 'New form';
-                if(isNew){ const idEl = document.getElementById('fb-id'); if(idEl && !idEl.dataset.touched){ idEl.value = slug(v); set('id', slug(v)); } } markDirty(); }
-            function onTab(v){ if(v === '__new__'){ editing._createTab = true; editing.targetTab = ''; } else { editing._createTab = false; editing.targetTab = v; } rerenderQuestions(); }
-            function setQ(i, k, v){ editing.questions[i][k] = v; if(k==='title'){ const t = document.querySelectorAll('.fb-q .ttl')[i]; if(t) t.textContent = v || '(untitled)'; } markDirty(); }
-            function toggleQ(i){ const q = editing.questions[i]; q._open = (q._open === false); rerenderQuestions(); }
-            function moveQ(i, d){ const a = editing.questions; const j = i + d; if(j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; rerenderQuestions(); }
-            function delQ(i){ const q = editing.questions[i]; if(!confirm(`Delete question "${q.title || q.type}"?`)) return; editing.questions.splice(i,1); rerenderQuestions(); }
-            function addQ(type){
-                const n = editing.questions.filter(q => q.type === type).length + 1;
-                const base = { id: slug(type + (n>1?'-'+n:'')), type, required: type !== 'text', eyebrow: 'Feedback', _open: true };
-                if(type==='phone')  Object.assign(base, { column:'Phone Number', placeholder:'Phone Number', eyebrow: undefined });
-                if(type==='name')   Object.assign(base, { column:'Name', placeholder:'Your name', eyebrow: undefined });
-                if(type==='rating') Object.assign(base, { eyebrow:'Rate 1 - 5', title:'How was your experience today?', column:'How was your experience today?' });
-                if(type==='branch') Object.assign(base, { column:'Location' });
-                if(type==='single') Object.assign(base, { title:'New question', options:['Option A','Option B'], column:'New question' });
-                if(type==='multi')  Object.assign(base, { title:'What did you like?', options:['Option A','Option B'], column:'What did you like?' });
-                if(type==='text')   Object.assign(base, { title:'Any other comments or suggestions?', column:'Any other comments or suggestions?', placeholder:'Type here...', maxLength:2000 });
-                editing.questions.forEach(q => q._open = false);
-                editing.questions.push(base);
-                rerenderQuestions();
-                const els = document.querySelectorAll('.fb-q'); const last = els[els.length-1]; if(last && last.scrollIntoView) last.scrollIntoView({ behavior:"smooth", block:"center" });
+            function setType(t){
+                const q = selQ(); if(!q) return;
+                q.type = t;
+                if(hasOptions(t) && (!q.options || q.options.length < 2)) q.options = ['Option 1', 'Option 2'];
+                // A rule pointing at this question may no longer fit its answers.
+                E.cfg.questions.forEach(x => { if(x.showIf && x.showIf.q === q.id && (x.showIf.op === 'lte' || x.showIf.op === 'gte')) delete x.showIf; });
+                changed({ left: true, mid: true });
             }
-            function onBranches(text){
-                editing.branches = text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-                    const p = l.split('|').map(s => s.trim());
-                    const b = { name: p[0] };
-                    if(p[1] !== undefined && p[1] !== '' && !isNaN(parseFloat(p[1]))) b.lat = parseFloat(p[1]);
-                    if(p[2] !== undefined && p[2] !== '' && !isNaN(parseFloat(p[2]))) b.lng = parseFloat(p[2]);
-                    return b;
-                }).filter(b => b.name);
-                markDirty();
+            function setOpt(k, v){
+                const q = selQ(); const old = q.options[k]; q.options[k] = v;
+                E.cfg.questions.forEach(x => { if(x.showIf && x.showIf.q === q.id && x.showIf.value === old) x.showIf.value = v; });
+                changed();
             }
-
-            // ── validation ──────────────────────────────────────────────────
-            function cleanConfig(){
-                const f = clone(editing);
-                delete f._createTab;
-                f.questions.forEach(q => { delete q._open; Object.keys(q).forEach(k => { if(q[k] === undefined || q[k] === '') delete q[k]; }); });
-                return f;
+            function addOpt(){ const q = selQ(); q.options = (q.options || []).concat(['Option ' + ((q.options || []).length + 1)]); changed({ mid: true }); }
+            function delOpt(k){ const q = selQ(); if((q.options || []).length <= 2){ UI.toast('A choice question needs at least 2 choices.', 'warning'); return; } q.options.splice(k, 1); changed({ mid: true }); }
+            function moveOpt(k, d){ const q = selQ(), j = k + d; if(j < 0 || j >= q.options.length) return; const t = q.options[k]; q.options[k] = q.options[j]; q.options[j] = t; changed({ mid: true }); }
+            function pasteOpts(){
+                const txt = prompt('Paste the choices, one per line:'); if(txt == null) return;
+                const list = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 40);
+                if(list.length < 2){ UI.toast('Paste at least 2 choices, one per line.', 'warning'); return; }
+                selQ().options = Array.from(new Set(list)); changed({ mid: true });
             }
-            function validate(f){
-                const errs = [];
-                if(!f.name) errs.push('Form name is required.');
-                if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(f.id||'')) errs.push('Form ID must be 2–40 characters: lowercase letters, numbers, dashes.');
-                if(isNew && forms.some(x => x.id === f.id)) errs.push(`A form with ID "${f.id}" already exists.`);
-                if(!editing._createTab && !f.targetTab) errs.push('Choose a sheet tab, or create a new one.');
-                if(!f.questions.length) errs.push('Add at least one question.');
-                const ids = new Set();
-                const hasRating = f.questions.some(q => q.type === 'rating');
-                f.questions.forEach((q, i) => {
-                    const n = `Question ${i+1}`;
-                    if(!q.id) errs.push(`${n}: needs an ID.`); else if(ids.has(q.id)) errs.push(`${n}: duplicate ID "${q.id}".`); ids.add(q.id);
-                    if(!q.column) errs.push(`${n}: needs a sheet column.`);
-                    if(!['phone','branch','name'].includes(q.type) && !q.title) errs.push(`${n}: needs a title.`);
-                    if((q.type==='single'||q.type==='multi') && (!q.options || q.options.length < 2)) errs.push(`${n}: needs at least 2 options.`);
-                    if(q.type==='multi' && ((q.negativeTitle && !q.negativeColumn) || (!q.negativeTitle && q.negativeColumn))) errs.push(`${n}: fill both low-rating title and column, or neither.`);
-                    if(q.type==='multi' && q.negativeColumn && !hasRating) errs.push(`${n}: a low-rating variant needs a Rating question in the form.`);
-                    if(q.type==='branch' && !f.branches.length) errs.push(`${n}: add at least one branch in the Branches section.`);
+            function setBranches(txt){
+                const old = {}; (E.cfg.branches || []).forEach(b => old[b.name] = b);
+                E.cfg.branches = String(txt).split(/\r?\n/).map(s => s.trim()).filter(Boolean).slice(0, 60).map(n => old[n] || { name: n });
+                changed();
+            }
+            function add(type){
+                const q = { id: newQid(E.cfg, type), type, title: type === 'phone' ? 'Phone number' : type === 'name' ? 'Your name' : type === 'branch' ? 'Branch' : type === 'rating' ? 'How was your experience?'
+                          : type === 'nps' ? 'How likely are you to recommend Crumble?' : type === 'yesno' ? 'Would you order again?' : type === 'email' ? 'Your email' : type === 'date' ? 'Date' : 'New question' };
+                if(hasOptions(type)) q.options = ['Option 1', 'Option 2'];
+                if(type === 'phone') q.required = true;
+                q.column = uniqueColumn(E.cfg, q.title, q.id);
+                const qs = E.cfg.questions, at = qs.findIndex(x => x.id === E.sel);
+                if(type === 'phone' || type === 'name') qs.unshift(q); else qs.splice(at >= 0 ? at + 1 : qs.length, 0, q);
+                if(type === 'branch' && !(E.cfg.branches || []).length){ const del = byId('delivery'); E.cfg.branches = clone((del && del.config && del.config.branches) || []); }
+                E.sel = q.id; E.mobile = 'q'; changed(); renderEditor(); focusPreview(q.id);
+                setTimeout(() => { const i = document.querySelector('#fx-mid .fx-in'); if(i && type !== 'phone'){ i.focus(); i.select(); } }, 40);
+            }
+            function dup(){
+                const q = selQ(); if(!q || q.type === 'phone' || q.type === 'name' || q.type === 'branch'){ UI.toast('This question can only appear once.', 'warning'); return; }
+                const c = clone(q); c.id = newQid(E.cfg, c.type); c.title = (c.title || '') + ' (copy)'; c.column = uniqueColumn(E.cfg, c.title, c.id); delete c._auto;
+                const qs = E.cfg.questions; qs.splice(qs.indexOf(q) + 1, 0, c); E.sel = c.id; changed(); renderEditor();
+            }
+            function del(){
+                const q = selQ(); if(!q) return;
+                const deps = E.cfg.questions.filter(x => x.showIf && x.showIf.q === q.id);
+                if(!confirm('Delete "' + (q.title || TYPES[q.type].label) + '"?' + (deps.length ? '\n\n' + deps.length + ' question(s) with a rule based on it will always show.' : '') + (colLocked(q) ? '\n\nAnswers already saved stay in the sheet.' : ''))) return;
+                deps.forEach(x => delete x.showIf);
+                const qs = E.cfg.questions, i = qs.indexOf(q); qs.splice(i, 1);
+                E.sel = (qs[i] || qs[i - 1] || {}).id || null; changed(); renderEditor();
+            }
+            function move(id, d){
+                const qs = E.cfg.questions, i = qs.findIndex(q => q.id === id), j = i + d;
+                if(j < 0 || j >= qs.length || ['phone', 'name'].indexOf(qs[j].type) !== -1) return;
+                const t = qs[i]; qs[i] = qs[j]; qs[j] = t; changed({ left: true, mid: true });
+            }
+            function bindDrag(){
+                const list = document.getElementById('fx-list'); if(!list) return;
+                let dragId = null;
+                list.querySelectorAll('.fx-qi[draggable]').forEach(el => {
+                    el.addEventListener('dragstart', e => { dragId = el.dataset.id; el.classList.add('drag'); try { e.dataTransfer.setData('text/plain', dragId); } catch(x){} });
+                    el.addEventListener('dragend', () => { el.classList.remove('drag'); list.querySelectorAll('.over').forEach(o => o.classList.remove('over')); });
+                    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('over'); });
+                    el.addEventListener('dragleave', () => el.classList.remove('over'));
+                    el.addEventListener('drop', e => {
+                        e.preventDefault(); el.classList.remove('over');
+                        const qs = E.cfg.questions, from = qs.findIndex(q => q.id === dragId), to = qs.findIndex(q => q.id === el.dataset.id);
+                        if(from < 0 || to < 0 || from === to) return;
+                        const [m] = qs.splice(from, 1); qs.splice(to, 0, m); changed({ left: true, mid: true });
+                    });
                 });
-                if(META_COLUMNS.some(m => f.questions.some(q => (q.column||'').toLowerCase() === m.toLowerCase()))) errs.push(`Columns ${META_COLUMNS.join(', ')} are filled automatically — pick a different column.`);
-                return errs;
             }
-            function showErrors(errs){
-                const box = document.getElementById('fb-error'); if(!box) return;
-                box.innerHTML = errs.length ? `<div class="fb-alert err"><i class="fas fa-circle-xmark"></i><div>${errs.map(esc).join('<br>')}</div></div>` : '';
-                if(errs.length && box.scrollIntoView) box.scrollIntoView({ behavior:"smooth", block:"start" });
+            function ruleOn(){ const q = selQ(), s = earlierFor(q)[0]; if(!s) return;
+                q.showIf = numeric(s.type) ? { q: s.id, op: 'lte', value: 3 } : { q: s.id, op: 'eq', value: s.type === 'yesno' ? 'No' : (s.options || [''])[0] }; changed({ left: true, mid: true }); }
+            function ruleOff(){ delete selQ().showIf; changed({ left: true, mid: true }); }
+            function rule(k, v){
+                const q = selQ(); q.showIf[k] = v;
+                if(k === 'q'){ const s = E.cfg.questions.find(x => x.id === v); q.showIf = numeric(s.type) ? { q: v, op: 'lte', value: 3 } : { q: v, op: 'eq', value: s.type === 'yesno' ? 'No' : (s.options || [''])[0] }; }
+                changed({ left: true, mid: k === 'q' });
             }
+            function setScreen(which, k, v){ E.cfg[which] = E.cfg[which] || {}; if(v) E.cfg[which][k] = v; else delete E.cfg[which][k]; changed(); }
+            function setAccent(v){ v = String(v || '').trim(); if(!/^#[0-9a-f]{6}$/i.test(v)){ UI.toast('Use a colour like #010197.', 'warning'); return; } E.cfg.design = { accent: v.toUpperCase() }; changed({ mid: true }); }
+            function tab(k){ E.tab = k; E.mobile = k === 'questions' ? 'list' : 'q'; renderEditor(); if(k === 'screens') focusPreview('__welcome'); }
+            function mobile(m){ E.mobile = m; renderEditor(); }
 
-            // ── save ────────────────────────────────────────────────────────
-            async function save(status, extra){
-                const f = cleanConfig(); f.status = status;
-                const errs = validate(f); showErrors(errs); if(errs.length) return;
-                if(status === 'live' && !confirm(isNew ? `Publish "${f.name}"? The link goes live immediately.` : `Publish changes to "${f.name}"? Customers see them within about a minute.`)) return;
-                const btns = document.querySelectorAll('.fb-toolbar .fb-btn'); btns.forEach(b => b.disabled = true);
-                try {
-                    const res = await apiCall('save_form', Object.assign({ form: f, createTab: !!editing._createTab, isNew }, extra || {}));
-                    if(res && res.status === 'error' && res.code === 'missing_columns'){
-                        btns.forEach(b => b.disabled = false);
-                        const ok = confirm(`The tab "${f.targetTab}" is missing these columns:\n\n• ${res.missing.join('\n• ')}\n\nAdd them to the end of that tab now?`);
-                        if(ok) return save(status, { addMissingColumns: true });
-                        return;
+            /* ── clean + check ──────────────────────────────────────────── */
+            function cleanConfig(){
+                const c = clone(E.cfg);
+                c.questions = c.questions.map(q => { const o = {}; Object.keys(q).forEach(k => { if(k.charAt(0) !== '_' && q[k] !== '' && q[k] != null) o[k] = q[k]; }); return o; });
+                if(!c.questions.some(q => q.type === 'branch')) c.branches = c.branches || [];
+                ['welcome', 'thankYou', 'design'].forEach(k => { if(c[k] && !Object.keys(c[k]).length) delete c[k]; });
+                return c;
+            }
+            function problems(c){
+                const out = [], cols = {}, pos = {};
+                if(!String(c.name || '').trim()) out.push('Give the form a name.');
+                if(!c.questions.length) out.push('Add at least one question.');
+                c.questions.forEach((q, i) => {
+                    pos[q.id] = i;
+                    const label = 'Question ' + (i + 1) + ' (' + (q.title || TYPES[q.type].label) + ')';
+                    if(!String(q.title || '').trim()) out.push(label + ': write the question.');
+                    if(hasOptions(q.type)){
+                        const o = (q.options || []).map(s => String(s).trim());
+                        if(o.filter(Boolean).length < 2) out.push(label + ': needs at least 2 choices.');
+                        if(o.some(s => !s)) out.push(label + ': one choice is empty.');
+                        if(new Set(o).size !== o.length) out.push(label + ': two choices are the same.');
                     }
-                    if(!res || res.status !== 'success') throw new Error(res && res.message || 'Save failed');
-                    UI.toast(status === 'live' ? 'Form published' : 'Draft saved', 'success');
-                    dirty = false; isNew = false; editing.status = status; editing._createTab = false;
-                    if(res.targetTab) editing.targetTab = res.targetTab;
-                    await load(true);
-                    edit(f.id);
-                } catch(e){
-                    showErrors([e.message]);
-                } finally { btns.forEach(b => b.disabled = false); }
+                    const col = String(q.column || '').trim().toLowerCase();
+                    if(!col) out.push(label + ': needs a sheet column.');
+                    else if(cols[col]) out.push(label + ': uses the same sheet column as question ' + cols[col] + '.');
+                    else cols[col] = i + 1;
+                    if(q.showIf && !(pos[q.showIf.q] < i)) out.push(label + ': its rule must look at a question above it — move it lower or change the rule.');
+                    if(q.type === 'branch' && !(c.branches || []).length) out.push(label + ': list at least one branch.');
+                });
+                return out;
             }
 
-            // ── preview ─────────────────────────────────────────────────────
-            function schedulePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(() => pushPreview(false), 350); }
+            /* ── save (draft) / publish ─────────────────────────────────── */
+            function scheduleSave(ms){ clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, ms == null ? 1400 : ms); }
+            async function saveDraft(){
+                if(!E || E.saving) { if(E) scheduleSave(); return; }
+                clearTimeout(saveTimer);
+                const c = cleanConfig();
+                if(!String(c.name || '').trim() || !c.questions.length){ E.err = 'needs a name and a question'; const st = document.getElementById('fx-status'); if(st) st.innerHTML = statusChip(); return; }
+                E.saving = true; E.dirty = false;
+                try {
+                    const res = await apiCall('save_form', { form: Object.assign(c, { status: 'live' }), draft: true, isNew: E.isNew });
+                    if(!res || res.status !== 'success') throw new Error((res && res.message) || 'could not save');
+                    E.isNew = false; E.hasDraft = true; E.savedAt = new Date().toISOString(); E.err = '';
+                    if(!E.status) E.status = 'draft';
+                } catch(e){ E.err = String(e.message || e).slice(0, 120); E.dirty = true; }
+                finally { E.saving = false; const st = document.getElementById('fx-status'); if(st) st.innerHTML = statusChip(); if(E && E.dirty && !E.err) scheduleSave(); }
+            }
+            async function flushSave(){ clearTimeout(saveTimer); if(E && (E.dirty || E.isNew)) await saveDraft(); let n = 0; while(E && E.saving && n++ < 50) await new Promise(r => setTimeout(r, 100)); }
+            async function publish(){
+                const c = cleanConfig(), errs = problems(c);
+                if(errs.length){ showProblems(errs); return; }
+                if(!confirm(E.status === 'live' ? 'Publish your changes to "' + c.name + '"? Customers see them within about a minute.' : 'Publish "' + c.name + '"? The link goes live straight away.')) return;
+                const b = document.getElementById('fx-pub'); if(b){ b.disabled = true; b.textContent = 'Publishing…'; }
+                try {
+                    E.dirty = true; await flushSave();
+                    if(E.err) throw new Error(E.err);
+                    const res = await apiCall('publish_form', { id: E.cfg.id });
+                    if(!res || res.status !== 'success') throw new Error((res && res.message) || 'Publish failed');
+                    UI.toast('Published. Customers see it within about a minute.', 'success', 5000);
+                    await load(true); const id = E.cfg.id; E = null; edit(id); E.tab = 'share'; renderEditor();
+                } catch(e){ UI.toast(String(e.message || e), 'error', 6000); if(b){ b.disabled = false; b.textContent = 'Publish'; } }
+            }
+            function showProblems(errs){
+                openModal('Almost there', 'Fix these, then publish again.', `<ul class="fx-probs">${errs.map(e => `<li>${esc(e)}</li>`).join('')}</ul>`, `<button class="fb-btn primary" onclick="FB.closeModal()">OK</button>`, 520);
+            }
+            async function discard(){
+                if(!confirm('Throw away the unpublished changes and go back to the live form?')) return;
+                clearTimeout(saveTimer);
+                const res = await apiCall('discard_draft', { id: E.cfg.id }).catch(() => null);
+                if(!res || res.status !== 'success'){ UI.toast((res && res.message) || 'Could not discard.', 'error'); return; }
+                await load(true); const id = E.cfg.id; E = null; edit(id); UI.toast('Changes discarded.', 'success');
+            }
+            async function archive(){
+                if(!confirm('Archive "' + E.cfg.name + '"? The link stops accepting responses. Past responses stay.')) return;
+                await flushSave();
+                const f = byId(E.cfg.id), live = clone((f && f.config) || {}); live.id = E.cfg.id; live.name = live.name || E.cfg.name; live.status = 'archived';
+                const res = await apiCall('save_form', { form: live, isNew: false }).catch(() => null);
+                if(!res || res.status !== 'success'){ UI.toast((res && res.message) || 'Could not archive.', 'error'); return; }
+                UI.toast('Archived.', 'success'); await load(true); E = null; renderList();
+            }
+
+            /* ── preview ────────────────────────────────────────────────── */
+            let focusId = null;
+            function schedulePreview(){ clearTimeout(previewTimer); previewTimer = setTimeout(() => pushPreview(false), 300); }
             function pushPreview(reset){
-                const fr = document.getElementById('fb-preview'); if(!fr || !fr.contentWindow || !editing) return;
-                try { fr.contentWindow.postMessage({ type:'crumble-form-preview', form: cleanConfig(), reset: !!reset }, PUBLIC_FORM_ORIGIN); } catch(e){}
+                const fr = document.getElementById('fx-frame') || document.getElementById('fx-frame-m');
+                if(!fr || !fr.contentWindow || !E) return;
+                try { fr.contentWindow.postMessage({ type: 'crumble-form-preview', form: cleanConfig(), reset: !!reset, focus: focusId || E.sel }, ORIGIN); } catch(e){}
+            }
+            function focusPreview(id){ focusId = id; pushPreview(false); }
+            function previewModal(){
+                openModal('Preview', 'Exactly what customers see. Nothing is sent.', `<div class="fx-phone m"><iframe id="fx-frame-m" title="Form preview" src="${esc(ORIGIN + '/?f=' + encodeURIComponent(E.cfg.id) + '&preview=1')}" onload="FB.pushPreview(true)"></iframe></div>`, '', 420);
             }
 
-            // ── modal ───────────────────────────────────────────────────────
-            function openModal(title, sub, bodyHtml, footerHtml){
+            /* ── bits ───────────────────────────────────────────────────── */
+            function copyText(t){ try { navigator.clipboard.writeText(t); UI.toast('Link copied.', 'success'); } catch(e){ prompt('Copy the link:', t); } }
+            function qr(id){ const u = publicUrl(id); openModal('QR code', esc(u), `<div style="text-align:center"><img src="${esc(qrUrl(u))}" width="240" height="240" alt="QR code"></div>`, `<a class="fb-btn" href="${esc(qrUrl(u))}" target="_blank" rel="noopener">Open image</a>`, 360); }
+            function openModal(title, sub, body, footer, w){
                 let m = document.getElementById('fb-modal');
-                if(!m){ m = document.createElement('div'); m.id = 'fb-modal'; m.className = 'ia-overlay'; m.style.display = 'none'; m.onclick = e => { if(e.target === m) closeModal(); }; document.body.appendChild(m); }
-                m.innerHTML = `<div class="ia-card" style="max-width:420px;"><div class="ia-header"><div><div class="ia-title">${title}</div><div class="ia-sub">${sub}</div></div><button class="ia-close-x" onclick="FB.closeModal()"><i class="fas fa-xmark"></i></button></div><div class="ia-body">${bodyHtml}</div><div class="ia-footer">${footerHtml||''}</div></div>`;
-                m.style.display = 'flex';
+                if(!m){ m = document.createElement('div'); m.id = 'fb-modal'; m.className = 'ia-overlay'; m.onclick = e => { if(e.target === m) closeModal(); }; document.body.appendChild(m); }
+                m.innerHTML = `<div class="ia-card" style="max-width:${w || 460}px;"><div class="ia-header"><div><div class="ia-title">${title}</div><div class="ia-sub">${sub}</div></div><button class="ia-close-x" onclick="FB.closeModal()"><i class="fas fa-xmark"></i></button></div>
+                    <div class="ia-body" style="overflow:auto;">${body}</div>${footer ? `<div class="ia-footer">${footer}</div>` : ''}</div>`;
+                m.style.display = 'flex'; m.classList.add('is-open');
             }
-            function closeModal(){ const m = document.getElementById('fb-modal'); if(m) m.style.display = 'none'; }
+            function closeModal(){ const m = document.getElementById('fb-modal'); if(m){ m.style.display = 'none'; m.classList.remove('is-open'); } }
+            setInterval(() => { try { if(E && !E.dirty && !E.saving){ const st = document.getElementById('fx-status'); if(st) st.innerHTML = statusChip(); } } catch(e){} }, 15000);
+            window.addEventListener('beforeunload', e => { if(E && (E.dirty || E.saving)){ e.preventDefault(); e.returnValue = ''; } });
 
-            return { warm: () => { try { load(true).catch(()=>{}); } catch(e){} }, render, reload, edit, startNew, back, save, copy, showQr, set, setPath, onName, onTab, setQ, toggleQ, moveQ, delQ, addQ, onBranches, slug, closeModal, hasUnsaved: () => dirty };
+            return { warm: () => { try { load(true).catch(() => {}); } catch(e){} }, render, reload, edit, back, startNew, pickTile, newHint, create, tab, mobile, select, setName, setQ, setType,
+                     setOpt, addOpt, delOpt, moveOpt, pasteOpts, setBranches, add, dup, del, move, ruleOn, ruleOff, rule, setScreen, setAccent, publish, discard, archive,
+                     pushPreview, focusPreview, previewModal, copyText, qr, closeModal, slug,
+                     hasUnsaved: () => !!(E && (E.dirty || E.saving)),
+                     _test: { templates, dineinTemplate, problems: () => problems(cleanConfig()), cfg: () => E && E.cfg, state: () => E, setForms: (f, t) => { forms = f; tabs = t || []; loaded = true; } } };
         })();
 
 
