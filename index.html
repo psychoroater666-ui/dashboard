@@ -5500,6 +5500,9 @@
         .ig2-note { margin-top:10px; font-size:.68rem; color:var(--text-muted); line-height:1.5; }
         @media (max-width:1000px){ .ig2-hero, .ig2-nl { grid-template-columns:1fr; } .ig2-guide { grid-template-columns:repeat(3,minmax(0,1fr)); } }
         @media (max-width:560px){ .ig2-guide { grid-template-columns:1fr 1fr; } .ig2-rg { flex-wrap:nowrap; overflow-x:auto; } }
+        /* v2.171.0: the action an email pointed to */
+        .fu-row.fu-focus { box-shadow:0 0 0 3px #4F46E5, 0 10px 30px -12px rgba(79,70,229,.6); animation:fuGlow 1.2s ease 2; border-radius:14px; }
+        @keyframes fuGlow { 50% { box-shadow:0 0 0 6px rgba(79,70,229,.35); } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9620,7 +9623,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.170.1 · 23 Sep 2026 · Fix: Help & what I can do opens again';
+        const BUILD_VERSION = 'v2.171.0 · 23 Sep 2026 · Action emails open that exact action';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13994,7 +13997,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // v2.155.0: only the person it is assigned to (or an Owner) can close it.
                     const mayClose = !f.done && (f.mine || roleKey(PERM.role) === 'owner');
                     const brs = (f.branches || []).length > 1 ? `<div class="pt-br">${f.branches.map(b => `<span>${esc(b)}</span>`).join('')}</div>` : '';
-                    return `<div class="fu-row ${late ? 'od' : ''} ${f.done ? 'dn' : ''}"><div>
+                    return `<div class="fu-row ${late ? 'od' : ''} ${f.done ? 'dn' : ''}" data-fu="${esc(f.id)}"><div>
                         <div class="fu-top"><span class="fu-chip ${f.kind === 'pattern' ? 'c-pat' : 'c-em'}">${f.kind === 'pattern' ? 'PATTERN' : 'EMERGING'}</span><span class="fu-chip ${f.pri === 'Critical' ? 'c-crit' : 'c-high'}">${esc(String(f.pri).toUpperCase())}</span><b>${esc(f.branchLabel)}</b> · ${esc(f.issue)}</div>
                         ${brs}<div class="fu-do">${esc(f.done ? 'Done: ' + (f.note || '') : f.action)}</div>
                         <div class="fu-meta"><span>Owner <b>${esc(f.ownerLabel)}</b></span><span class="fu-due ${f.done ? 'ok' : late ? 'late' : soon ? 'soon' : 'ok'}">${due}</span>${late && f.reminded ? `<span>Reminded ${f.reminded}×</span>` : ''}<span>${esc(f.why || '')}</span></div></div>
@@ -29396,6 +29399,16 @@ ${(() => {
                     var u = new URL(href, location.href);
                     var v = u.searchParams.get('open');
                     if (!v) return;
+                    // v2.171.0: an action email opens THAT action -- scroll to it and make it glow.
+                    var fuId = u.searchParams.get('fu');
+                    if (v === 'actions' && fuId) {
+                        var tries = 0;
+                        (function find(){
+                            var el = null; try { el = document.querySelector('.fu-row[data-fu="' + (window.CSS && CSS.escape ? CSS.escape(fuId) : fuId) + '"]'); } catch (e) {}
+                            if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('fu-focus'); setTimeout(function(){ el.classList.remove('fu-focus'); }, 4000); return; }
+                            if (++tries < 20) setTimeout(find, 500);
+                        })();
+                    }
                     // A message or a call notification opens the panel on that
                     // conversation, rather than a dashboard tab that has
                     // nothing to do with what was tapped.
