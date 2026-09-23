@@ -9183,7 +9183,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.160.0 · 23 Sep 2026 · Phones: compact Today app (numbers, needs you now, latest complaints / review queue); full view one tap away';
+        const BUILD_VERSION = 'v2.160.1 · 23 Sep 2026 · Today counts exactly like the Overview cards (all rows, fake shown separately)';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13882,7 +13882,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             const myBranches = () => { try { const b = permBranches(); return b && b.length ? b : null; } catch(e){ return null; } };
             const scopeName = () => branch || (myBranches() && myBranches().length === 1 ? myBranches()[0] : 'All branches');
-            const inScope = b => b !== 'Unspecified' && (branch ? b === branch : (!myBranches() || myBranches().indexOf(b) !== -1));
+            // v2.160.1: counted exactly like the Overview cards -- every row in scope, "Unspecified" included
+            // in the all-branches totals. It is only kept out of the per-branch lists (Level 1, branch picker).
+            const inScope = b => branch ? b === branch : (!myBranches() || myBranches().indexOf(b) !== -1);
             const ago = ms => { const m = Math.max(0, Math.round(ms / 60000)); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min'; };
             const when = inc => { const t = slaStart(inc); if(!isFinite(t)) return ''; const d = new Date(t); let h = d.getHours(); const ap = h < 12 ? 'am' : 'pm'; h = h % 12 || 12; return h + ':' + String(d.getMinutes()).padStart(2, '0') + ' ' + ap; };
             const openCase = inc => { try { app.openIncidentFromStableKey(_incidentStableKey(inc)); } catch(e){} };
@@ -13900,7 +13902,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const target = brs.reduce((s, b) => s + perDay(b), 0) * days;
                 const rated = subs.filter(s => s.smileScore != null), pos = rated.length ? rated.filter(s => s.smileScore >= 4).length / rated.length * 100 : null;
                 const byB = {}; real.forEach(i => byB[i.branch] = (byB[i.branch] || 0) + 1);
-                const l1 = Object.keys(byB).filter(b => range !== 'week' && byB[b] >= S.incCritical);
+                const l1 = Object.keys(byB).filter(b => b !== 'Unspecified' && range !== 'week' && byB[b] >= S.incCritical);
                 const open = real.filter(i => slaState(i).stage !== 'done');
                 const waiting = open.filter(i => slaState(i).stage === 'review'), reviewing = open.filter(i => slaState(i).stage === 'resolve');
                 const overdue = open.filter(i => slaState(i).breached);
@@ -13933,10 +13935,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const cards = cc
                     ? kc('WAITING REVIEW', N.waiting.length, N.waiting.length ? 'oldest ' + ago(N.oldest) + ' · target ' + S.reviewMin + ' min' : 'queue clear', N.oldest > S.reviewMin * 60000 ? 'bad' : 'good')
                     + kc('OPEN (REVIEWED)', N.reviewing.length, N.avgClose != null ? 'avg close ' + N.avgClose + ' min' : '', N.avgClose != null && N.avgClose > S.resolveMin ? 'warn' : 'good')
-                    + kc('INCIDENTS', N.real.length, (incs.length - N.real.length) + ' fake', '')
+                    + kc('INCIDENTS', incs.length, (incs.length - N.real.length) + ' fake · ' + N.real.length + ' real', '')
                     + kc('LEVEL 1', N.l1.length, N.l1.length ? N.l1.slice(0, 2).join(', ') : 'none', N.l1.length ? 'bad' : 'good')
                     : kc('SUBMISSIONS', subs.length.toLocaleString(), subs.length >= N.target ? '✓ target ' + N.target : (N.target - subs.length) + ' short of ' + N.target, tgtTone)
-                    + kc('INCIDENTS', N.real.length, N.l1.length ? 'Level 1' : N.real.length >= S.incWarn && range !== 'week' ? 'watch' : 'fine', N.l1.length ? 'bad' : N.real.length >= S.incWarn && range !== 'week' ? 'warn' : 'good')
+                    + kc('INCIDENTS', incs.length, (incs.length - N.real.length) + ' fake' + (N.l1.length ? ' · Level 1' : ''), N.l1.length ? 'bad' : N.real.length >= S.incWarn && range !== 'week' ? 'warn' : 'good')
                     + kc('POSITIVE', N.pos == null ? '—' : N.pos.toFixed(1) + '%', 'target ' + S.tPositive + '%', N.pos == null || N.pos >= S.tPositive ? 'good' : N.pos < S.posCritical ? 'bad' : 'warn')
                     + kc('OPEN CASES', N.open.length, N.overdue.length ? N.overdue.length + ' overdue' : 'none overdue', N.overdue.length ? 'bad' : 'good');
                 const list = cc
