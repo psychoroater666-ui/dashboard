@@ -5333,6 +5333,25 @@
         .au-dry { background:rgba(79,70,229,.07); border:1px solid #C7D2FE; border-radius:14px; padding:10px 12px; font:600 .78rem 'Inter',sans-serif; color:var(--text-main); line-height:1.5; }
         .au-del { justify-self:start; border:none; background:none; color:#DC2626; font:700 .74rem 'Inter',sans-serif; cursor:pointer; min-height:0 !important; }
         @media (max-width:900px){ .au { grid-template-columns:1fr; } .au-when, .au-saf { grid-template-columns:1fr; } .au-ed { max-height:none; } }
+        /* v2.166.0: key drivers, normal range */
+        .drv-lead { margin:4px 0 10px; font-size:.82rem; color:var(--text-main); line-height:1.55; background:var(--bg-light); border-radius:12px; padding:10px 12px; }
+        .drv-r { display:grid; grid-template-columns:22px minmax(0,1fr) minmax(60px,110px) 62px; gap:10px; align-items:center; padding:9px 0; border-top:1px solid var(--border-color); }
+        .drv-k { width:22px; height:22px; border-radius:7px; background:#FEE2E2; color:#B91C1C; font:800 .68rem 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; }
+        .drv-t b { display:block; font-size:.82rem; color:var(--text-main); } .drv-t small { display:block; font-size:.68rem; color:var(--text-muted); margin-top:1px; }
+        .drv-bar { height:8px; border-radius:6px; background:var(--bg-light); overflow:hidden; } .drv-bar i { display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#F87171,#DC2626); }
+        .drv-v { text-align:right; font:800 .8rem 'Inter',sans-serif; color:#B91C1C; } .drv-v small { display:block; font:600 .6rem 'Inter',sans-serif; color:var(--text-muted); }
+        .drv-r.up .drv-k { background:#DCFCE7; color:#15803D; } .drv-r.up .drv-bar i { background:linear-gradient(90deg,#34D399,#059669); } .drv-r.up .drv-v { color:#047857; }
+        body.dark-theme .drv-v { color:#F87171; } body.dark-theme .drv-r.up .drv-v { color:#34D399; }
+        .drv-sep { font:800 .62rem 'Inter',sans-serif; letter-spacing:.5px; color:var(--text-muted); margin:10px 0 0; }
+        .drv-foot { font-size:.66rem; color:var(--text-muted); margin-top:10px; }
+        .ctl-sum { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:2px 0 8px; }
+        .ctl-sum div { border:1px solid var(--border-color); border-radius:12px; padding:8px 10px; } .ctl-sum b { display:block; font:800 1.1rem 'Inter',sans-serif; color:var(--text-main); } .ctl-sum small { font-size:.66rem; color:var(--text-muted); }
+        .ctl-r { display:grid; grid-template-columns:minmax(0,130px) minmax(0,1fr) 116px; gap:12px; align-items:center; padding:9px 0; border-top:1px solid var(--border-color); }
+        .ctl-b b { display:block; font-size:.82rem; color:var(--text-main); } .ctl-b small { font-size:.68rem; color:var(--text-muted); }
+        .ctl-sp { width:100%; height:40px; display:block; }
+        .ctl-t { justify-self:end; font:800 .58rem 'Inter',sans-serif; letter-spacing:.3px; border-radius:6px; padding:3px 7px; white-space:nowrap; }
+        .ctl-t.sp { background:#FEE2E2; color:#B91C1C; } .ctl-t.lo { background:#DCFCE7; color:#047857; } .ctl-t.no { background:var(--bg-light); color:var(--text-muted); }
+        @media (max-width:820px){ .drv-r { grid-template-columns:22px minmax(0,1fr) 58px; } .drv-bar { display:none; } .ctl-r { grid-template-columns:minmax(0,1fr) auto; } .ctl-sp { display:none; } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -7970,6 +7989,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         </div>
                         </div>
                         <div class="ov-col">
+<div class="card ctl-card" data-ovcol="1" data-ovord="2" id="ctl-card" style="padding:20px;">
+                            <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;"><i class="fas fa-wave-square" style="color:#010197;margin-right:6px;"></i>REAL PROBLEM OR NORMAL NOISE?</h3><span class="text-xs text-muted" style="font-size:0.68rem;">latest day vs each branch’s normal range</span></div>
+                            <div id="ctl-body"></div>
+                        </div>
 <div class="ov-incmon card" data-ovcol="1" data-ovord="1" style="padding:20px;">
                             <div class="section-header" style="margin-bottom:14px;">
                                 <h3 style="font-size:0.78rem;"><span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--status-critical); margin-right:7px; animation: pulse 2s infinite;"></span>INCIDENTS BY FORM</h3>
@@ -8029,6 +8052,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             </div>
                             <div id="exec-repeat-risk"></div>
                         </div>
+<div class="card drv-card" data-ovcol="0" data-ovord="3" id="drv-card" style="padding:20px;">
+                        <div class="section-header" style="margin-bottom:8px;"><h3 style="font-size:0.78rem;"><i class="fas fa-scale-unbalanced" style="color:#010197;margin-right:6px;"></i>WHAT MOVES THE RATING</h3><span class="text-xs text-muted" style="font-size:0.68rem;">guests’ own answers · this period</span></div>
+                        <div id="drv-body"></div>
+                    </div>
 <div class="card churn-card" data-ovcol="1" data-ovord="3" id="churn-card">
                         <div class="section-header" style="margin-bottom:10px;"><h3 style="font-size:0.78rem;"><i class="fas fa-user-clock" style="color:#010197;margin-right:6px;"></i>AT RISK OF LEAVING</h3><span class="text-xs text-muted" id="churn-sub" style="font-size:0.68rem;"></span></div>
                         <div id="churn-body"></div>
@@ -14195,6 +14222,118 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            Chat, the bell, the AI button, Incidents, Actions, Social and More
            are all kept. Laptop screens are not touched.
            ═══════════════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.166.0 -- WHAT MOVES THE RATING (key drivers) and REAL PROBLEM OR
+           NORMAL NOISE? (each branch against its own normal range).
+           ═══════════════════════════════════════════════════════════════════ */
+        const _drvEsc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        // Columns that are not a guest's choice: who, where, when, the rating itself, free text, device data.
+        const DRV_SKIP = /created|^name$|phone|location|branch|status|time taken|order (id|number|no)|order_id|^order$|device|rating|rate |rate$|experience|comment|any other|suggest|thought|improve|email|date|client|^lat|^lng|url|source|accuracy|reward|stamp|drop|month|visit today|feedback source|^id$|code|gps|agent|resolution|verified|review/i;
+        function computeDrivers(subs){
+            const rated = (subs || []).filter(s => s.smileScore != null && s.smileScore > 0 && s._raw);
+            const N = rated.length; if(N < 30) return null;
+            const total = rated.reduce((a, s) => a + s.smileScore, 0);
+            const cols = {};
+            rated.forEach(s => {
+                Object.keys(s._raw).forEach(k => {
+                    if(DRV_SKIP.test(k)) return;
+                    const v = s._raw[k]; if(v == null || v === '') return;
+                    const str = String(v).trim(); if(!str || str.length > 120 || /^[\d.\s:/-]+$/.test(str)) return;
+                    const c = cols[k] = cols[k] || { vals: {}, n: 0 };
+                    c.n++;
+                    str.split(/,\s*/).map(x => x.trim()).filter(x => x && x.length <= 40).forEach(val => {
+                        const e = c.vals[val] = c.vals[val] || { n: 0, sum: 0 };
+                        e.n++; e.sum += s.smileScore;
+                    });
+                });
+            });
+            const rows = [];
+            Object.entries(cols).forEach(([q, c]) => {
+                const vals = Object.entries(c.vals);
+                if(vals.length < 2 || vals.length > 14) return;                       // not a choice question
+                vals.forEach(([val, e]) => {
+                    if(e.n < 10 || e.n >= N) return;
+                    const withAvg = e.sum / e.n, restAvg = (total - e.sum) / (N - e.n);
+                    rows.push({ q, val, n: e.n, share: e.n / N, withAvg, restAvg, pull: (restAvg - withAvg) * e.n / N, lift: withAvg - restAvg });
+                });
+            });
+            const down = rows.filter(r => r.withAvg <= r.restAvg - 0.3 && r.pull > 0.01).sort((a, b) => b.pull - a.pull).slice(0, 4);
+            const up = rows.filter(r => r.lift >= 0.3 && r.share >= 0.1).sort((a, b) => b.lift * b.share - a.lift * a.share)[0] || null;
+            return { N, down, up };
+        }
+        function renderDrivers(){
+            const host = document.getElementById('drv-body'); if(!host) return;
+            const R = computeDrivers((state.p1 || {}).subs || []);
+            const qLabel = q => q.replace(/\?$/, '?');
+            let html;
+            if(!R || !R.down.length){
+                html = `<div class="ov-empty-msg" style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-check" style="color:var(--status-good);"></i>${!R ? 'Needs at least 30 rated responses in the selected dates.' : 'No survey answer is pulling the rating down noticeably in the selected dates.'}</div>`;
+            } else {
+                const top = R.down[0], max = top.pull;
+                html = `<div class="drv-lead">Fix <b>${_drvEsc(top.val.toLowerCase())}</b> first: guests who answered <b>${_drvEsc(top.val)}</b> rated <b>${top.withAvg.toFixed(1)}★</b> against <b>${top.restAvg.toFixed(1)}★</b> for everyone else — it pulls the whole average down by <b>${top.pull.toFixed(2)}★</b>.</div>`
+                    + R.down.map((r, i) => `<div class="drv-r"><span class="drv-k">${i + 1}</span><div class="drv-t"><b>${_drvEsc(r.val)}</b><small>${_drvEsc(qLabel(r.q))} · ${Math.round(r.share * 100)}% of guests · ${r.withAvg.toFixed(1)}★ vs ${r.restAvg.toFixed(1)}★</small></div>
+                        <div class="drv-bar"><i style="width:${Math.max(6, r.pull / max * 100).toFixed(0)}%"></i></div><div class="drv-v">−${r.pull.toFixed(2)}★<small>on average</small></div></div>`).join('')
+                    + (R.up ? `<div class="drv-sep">WHAT LIFTS IT</div><div class="drv-r up"><span class="drv-k">+</span><div class="drv-t"><b>${_drvEsc(R.up.val)}</b><small>${_drvEsc(qLabel(R.up.q))} · ${Math.round(R.up.share * 100)}% of guests · ${R.up.withAvg.toFixed(1)}★ vs ${R.up.restAvg.toFixed(1)}★</small></div>
+                        <div class="drv-bar"><i style="width:${Math.min(100, R.up.lift / 2 * 100).toFixed(0)}%"></i></div><div class="drv-v">+${R.up.lift.toFixed(2)}★<small>vs the rest</small></div></div>` : '')
+                    + `<div class="drv-foot">From ${R.N.toLocaleString()} rated responses · only answers given by at least 10 guests · follows the dates and branches above</div>`;
+            }
+            if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+        }
+
+        /* Each branch against its own last 28 trading days (closed days and days
+           with no responses left out). Normal range ≈ mean ± 2·√mean (counts). */
+        function computeControl(end, onlyBranches){
+            if(!end) return null;
+            const addDays = (d, n) => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return t.toISOString().slice(0, 10); };
+            const days = []; for(let i = 28; i >= 1; i--) days.push(addDays(end, -i));
+            const subN = {}, incN = {};
+            (rawData.submissions || []).forEach(s => { if(!s.branch || s.branch === 'Unspecified') return; const k = s.branch + '|' + s.date; subN[k] = (subN[k] || 0) + 1; });
+            (rawData.incidents || []).forEach(i => { if(!i.branch || i.caseStatus === 'fake') return; const k = i.branch + '|' + i.date; incN[k] = (incN[k] || 0) + 1; });
+            const names = (onlyBranches || (config.branches || []).map(b => b.name)).filter(b => b && b !== 'Unspecified');
+            const out = [];
+            names.forEach(b => {
+                if(typeof calExempt === 'function' && calExempt(b, end)) return;
+                const hist = days.filter(d => (subN[b + '|' + d] || 0) > 0 && !(typeof calExempt === 'function' && calExempt(b, d))).map(d => incN[b + '|' + d] || 0);
+                const today = incN[b + '|' + end] || 0, todaySubs = subN[b + '|' + end] || 0;
+                if(hist.length < 10){ out.push({ branch: b, today, hist, state: 'short' }); return; }
+                const m = hist.reduce((a, x) => a + x, 0) / hist.length;
+                const sd = Math.sqrt(Math.max(m, 0.5));
+                const lo = Math.max(0, Math.floor(m - 2 * sd)), hi = Math.ceil(m + 2 * sd);
+                const state = (today > hi && today >= 3) ? 'spike' : (todaySubs > 0 && lo >= 2 && today < lo) ? 'good' : 'normal';
+                out.push({ branch: b, today, hist, m, lo, hi, state });
+            });
+            const order = { spike: 0, good: 1, normal: 2, short: 3 };
+            out.sort((a, b) => order[a.state] - order[b.state] || (b.today - (b.hi || 0)) - (a.today - (a.hi || 0)));
+            return out;
+        }
+        function ctlSpark(r){
+            const w = 200, h = 40, pts = r.hist.concat([r.today]), max = Math.max(r.hi || 1, ...pts, 1) * 1.15;
+            const y = v => (h - 4 - (v / max) * (h - 8)).toFixed(1), x = i => (i / Math.max(1, pts.length - 1) * (w - 8) + 2).toFixed(1);
+            const band = r.hi != null ? `<rect x="0" y="${y(r.hi)}" width="${w}" height="${Math.max(2, y(r.lo) - y(r.hi))}" fill="rgba(99,102,241,.1)"/>` : '';
+            const col = r.state === 'spike' ? '#DC2626' : r.state === 'good' ? '#059669' : '#64748B';
+            return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="ctl-sp">${band}<polyline fill="none" stroke="#94A3B8" stroke-width="1.5" vector-effect="non-scaling-stroke" points="${r.hist.map((v, i) => x(i) + ',' + y(v)).join(' ')}"/><line x1="${x(pts.length - 1)}" y1="${y(r.today)}" x2="${x(pts.length - 1)}" y2="${y(r.today)}" stroke="${col}" stroke-width="9" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+        }
+        function renderControl(){
+            const host = document.getElementById('ctl-body'); if(!host) return;
+            const end = (document.getElementById('filter-end-date') || {}).value || '';
+            const selB = (document.getElementById('filter-branch') || {}).value;
+            const pool = selB && selB !== 'all' ? [selB] : (typeof permBranches === 'function' && permBranches()) || null;
+            const R = computeControl(end, pool);
+            let html;
+            if(!R || !R.length || R.every(r => r.state === 'short')){
+                html = `<div class="ov-empty-msg" style="display:flex;align-items:center;gap:10px;padding:12px 0;color:var(--text-muted);font-size:0.82rem;"><i class="fas fa-circle-info"></i>Needs at least 10 trading days of history for each branch.</div>`;
+            } else {
+                const n = s => R.filter(r => r.state === s).length;
+                const list = R.filter(r => r.state !== 'short');
+                const show = list.filter(r => r.state !== 'normal').concat(list.filter(r => r.state === 'normal')).slice(0, 6);
+                const tag = { spike: '<span class="ctl-t sp">GENUINE SPIKE</span>', good: '<span class="ctl-t lo">UNUSUALLY GOOD</span>', normal: '<span class="ctl-t no">NORMAL</span>' };
+                html = `<div class="ctl-sum"><div><b style="color:#DC2626">${n('spike')}</b><small>Genuine spikes</small></div><div><b>${n('normal')}</b><small>Within normal range</small></div><div><b style="color:#059669">${n('good')}</b><small>Unusually good</small></div></div>`
+                    + show.map(r => `<div class="ctl-r"><div class="ctl-b"><b>${_drvEsc(r.branch)}</b><small>${r.today} incident${r.today === 1 ? '' : 's'} · normal ${r.lo}–${r.hi}</small></div>${ctlSpark(r)}${tag[r.state]}</div>`).join('')
+                    + `<div class="drv-foot">Normal range = each branch’s last 28 trading days (closed days and days with no responses left out). Fake cases are not counted.</div>`;
+            }
+            if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+        }
+
         const MC = (function(){
             const MQ = window.matchMedia('(max-width: 820px)');
             const FULL = 'sentinel_full_view';
@@ -14310,6 +14449,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const mine = (fu || []).filter(f => !f.done && (f.mine || role() === 'owner') && (!branch || (f.branches || []).indexOf(branch) !== -1)).slice(0, 3);
                 mine.forEach(f => { const left = Date.parse(f.due) - Date.now();
                     need.push(row(left <= 0 ? 'red' : 'amber', f.issue + ' — ' + f.branchLabel, (left <= 0 ? 'Overdue ' + ago(-left) : 'Due in ' + ago(left)) + ' · ' + f.action, `app.navigate('actions')`)); });
+                // v2.166.0: genuine spikes against each branch's normal range (latest day only).
+                if(range === 'today'){ try { const pool = branch ? [branch] : (myBranches() || null);
+                    (computeControl(latestIso(), pool) || []).filter(r => r.state === 'spike').slice(0, 3).forEach(r =>
+                        need.push(row('red', r.branch + ' — genuine spike', r.today + ' incidents · normal ' + r.lo + '–' + r.hi, `app.navigate('incidents')`))); } catch(e){} }
                 if(N.overdue.length) need.push(row('amber', N.overdue.length + ' case' + (N.overdue.length === 1 ? '' : 's') + ' past the time limit', 'Oldest waiting ' + ago(N.oldest), `app.navigate('incidents')`));
                 const status = need.length ? `<div class="td-st bad">⚠ ${need.length} thing${need.length === 1 ? '' : 's'} need${need.length === 1 ? 's' : ''} ${cc ? 'the team' : 'you'} now</div>` : `<div class="td-st ok">✓ All clear${live() ? ' so far today' : ''}</div>`;
                 const tgtTone = subs.length >= N.target ? 'good' : subs.length < S.subCritical * (N.target / Math.max(1, Number(S.subTarget) || 100)) ? 'bad' : 'warn';
@@ -17808,6 +17951,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 try { this.renderChurnRisk(); } catch(e){ console.warn('churn:', e); }
                 try { this.renderBreakingPoint(); } catch(e){ console.warn('breaking point:', e); }
                 try { this.renderForecast(); } catch(e){ console.warn('forecast:', e); }
+                try { renderDrivers(); } catch(e){ console.warn('drivers:', e); }        // v2.166.0
+                try { renderControl(); } catch(e){ console.warn('control:', e); }
                 try { this.renderBlinkLive(); } catch(e){ console.warn('blink live:', e); }
                 try { this.renderVerdict(); } catch(e){ console.warn('verdict:', e); }
                 try { renderTargets(); } catch(e){ console.warn('targets:', e); }
@@ -28635,7 +28780,7 @@ ${(() => {
             function start(){
                 let raf = 0;
                 const run = () => { if(!raf) raf = requestAnimationFrame(() => { raf = 0; try { ovArrange(); } catch(e){} }); };
-                ['exec-needs-attention', 'radar-body', 'churn-body', 'exec-repeat-risk', 'exec-top-reasons'].forEach(id => {
+                ['exec-needs-attention', 'radar-body', 'churn-body', 'exec-repeat-risk', 'exec-top-reasons', 'drv-body', 'ctl-body'].forEach(id => {
                     const el = document.getElementById(id); if(!el) return;
                     try { new MutationObserver(run).observe(el, { childList: true }); } catch(e){}
                 });
