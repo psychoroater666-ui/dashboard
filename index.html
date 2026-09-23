@@ -9314,7 +9314,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.162.0 · 23 Sep 2026 · Closed days and branch status; phone full view keeps a Today tab and switches off after 15 min';
+        const BUILD_VERSION = 'v2.163.0 · 23 Sep 2026 · Dine-In becomes an editable form (same Feedback tab); publish warns about new columns';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -27251,7 +27251,7 @@ ${(() => {
             const numeric = t => t === 'rating' || t === 'nps';
             const hasOptions = t => t === 'single' || t === 'multi' || t === 'dropdown';
 
-            let forms = [], tabs = [], loaded = false, inflight = null;
+            let forms = [], tabs = [], tabHeaders = {}, loaded = false, inflight = null;
             let E = null;              // the form being edited
             let saveTimer = null, previewTimer = null;
 
@@ -27259,7 +27259,7 @@ ${(() => {
             const CACHE = 'crumble_forms_cache_v2';
             function loadCached(){
                 if(loaded) return true;
-                try { const c = JSON.parse(sessionStorage.getItem(CACHE) || 'null'); if(c && Array.isArray(c.forms)){ forms = c.forms; tabs = c.tabs || []; return true; } } catch(e){}
+                try { const c = JSON.parse(sessionStorage.getItem(CACHE) || 'null'); if(c && Array.isArray(c.forms)){ forms = c.forms; tabs = c.tabs || []; tabHeaders = c.tabHeaders || {}; return true; } } catch(e){}
                 return false;
             }
             async function load(force){
@@ -27268,8 +27268,8 @@ ${(() => {
                 inflight = (async () => {
                     const res = await apiCall('get_forms');
                     if(!res || res.status !== 'success') throw new Error((res && res.message) || 'Could not load the forms.');
-                    forms = res.forms || []; tabs = res.tabs || []; loaded = true;
-                    try { sessionStorage.setItem(CACHE, JSON.stringify({ forms, tabs })); } catch(e){}
+                    forms = res.forms || []; tabs = res.tabs || []; tabHeaders = res.tabHeaders || {}; loaded = true;
+                    try { sessionStorage.setItem(CACHE, JSON.stringify({ forms, tabs, tabHeaders })); } catch(e){}
                 })().finally(() => { inflight = null; });
                 return inflight;
             }
@@ -27299,10 +27299,10 @@ ${(() => {
                             ${f.draft && f.status !== 'draft' ? '<span class="fb-badge" style="background:#FEF3C7;color:#92400E;">unpublished changes</span>' : ''}
                             ${custom ? '<span class="fb-badge" style="background:rgba(124,58,237,.12);color:#7C3AED;">custom page</span>' : ''}</div>
                         <div class="fb-meta"><span><b>${n}</b> question${n === 1 ? '' : 's'}</span><span>Responses go to <b>${esc(f.targetTab || '—')}</b></span></div>
-                        ${custom ? `<div class="fb-meta">A hand-built page. Use <b>Copy</b> to make an editable version.</div>` : ''}
+                        ${custom ? `<div class="fb-meta">${f.id === 'dinein' ? (DINEIN_FULL(f.config || {}) ? 'Editable. The table QR page opens it once the new Dine-In page is uploaded (see Share).' : 'Tables still use the hand-built page. <b>Make editable</b> turns it into a normal form writing to the same tab.') : 'A hand-built page. Use <b>Copy</b> to make an editable version.'}</div>` : ''}
                         <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(publicUrl(f.id))}</span><button class="ia-copy-btn" title="Copy link" onclick="FB.copyText('${esc(publicUrl(f.id))}')"><i class="fas fa-copy"></i></button></div>
                         <div class="fb-actions">
-                            ${custom ? '' : `<button class="fb-btn sm primary" onclick="FB.edit('${esc(f.id)}')"><i class="fas fa-pen"></i> Edit</button>`}
+                            ${custom && f.id !== 'dinein' ? '' : `<button class="fb-btn sm primary" onclick="FB.edit('${esc(f.id)}')"><i class="fas fa-pen"></i> ${f.id === 'dinein' && !DINEIN_FULL(f.draft || f.config || {}) ? 'Make editable' : 'Edit'}</button>`}
                             <button class="fb-btn sm" onclick="FB.startNew('${esc(f.id)}')">${IC.copy} Copy</button>
                             ${f.status === 'live' || custom ? `<button class="fb-btn sm" onclick="FB.qr('${esc(f.id)}')"><i class="fas fa-qrcode"></i> QR</button>
                             <a class="fb-btn sm" href="${esc(publicUrl(f.id))}" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i> Open</a>` : ''}
@@ -27371,6 +27371,21 @@ ${(() => {
                 ];
                 return { branches, welcome: { eyebrow: 'Thank you for choosing Crumble!', title: 'Please fill in this 30 second feedback form for a chance to win a special prize :)' }, questions: qs };
             }
+
+            /* v2.163.0: a tab's own headers, matched without regard to case. */
+            function headersOf(tab){ const k = Object.keys(tabHeaders || {}).find(t => String(t).toLowerCase() === String(tab || '').toLowerCase()); return k ? (tabHeaders[k] || []) : null; }
+            function fitColumns(cfg){
+                const hs = headersOf(cfg.targetTab); if(!hs) return cfg;
+                (cfg.questions || []).forEach(q => { ['column', 'negativeColumn'].forEach(k => { if(!q[k]) return; const m = hs.find(x => String(x).trim().toLowerCase() === String(q[k]).trim().toLowerCase()); if(m) q[k] = String(m).trim(); }); });
+                return cfg;
+            }
+            function newColumns(cfg){
+                const hs = headersOf(cfg.targetTab); if(!hs) return [];
+                const have = new Set(hs.map(x => String(x).trim().toLowerCase()));
+                const out = []; (cfg.questions || []).forEach(q => [q.column, q.negativeColumn].forEach(c => { if(c && !have.has(String(c).trim().toLowerCase())) out.push(c); }));
+                return out;
+            }
+            const DINEIN_FULL = cfg => (cfg.questions || []).length >= 12 && (cfg.questions || []).some(q => q.showIf);
 
             /* ── create ─────────────────────────────────────────────────── */
             let pick = 'blank';
@@ -27471,11 +27486,17 @@ ${(() => {
             /* ── editor ─────────────────────────────────────────────────── */
             async function edit(id){
                 const f = byId(id); if(!f) return;
-                const cfg = clone(f.draft || f.config || {}); cfg.id = f.id; cfg.name = cfg.name || f.name; cfg.targetTab = f.targetTab || cfg.targetTab;
+                let cfg = clone(f.draft || f.config || {}); cfg.id = f.id; cfg.name = cfg.name || f.name; cfg.targetTab = f.targetTab || cfg.targetTab;
+                // v2.163.0: Dine-In becomes an editable form -- the first edit starts from the full
+                // survey (product / service paths as rules), writing to the same Feedback tab.
+                let seeded = false;
+                if(f.id === 'dinein' && !DINEIN_FULL(cfg)){ const t = dineinTemplate(); cfg = Object.assign({ welcome: {}, thankYou: {}, design: {} }, cfg, t, { id: 'dinein', name: cfg.name || 'Dine-In Feedback', targetTab: f.targetTab || 'Feedback' }); seeded = true; }
+                fitColumns(cfg);
                 cfg.welcome = cfg.welcome || {}; cfg.thankYou = cfg.thankYou || {}; cfg.design = cfg.design || {}; cfg.questions = cfg.questions || [];
                 E = { id: f.id, isNew: false, cfg, live: f.status === 'draft' ? null : clone(f.config || {}), status: f.status, hasDraft: !!f.draft,
-                      sel: firstQ(cfg), tab: 'questions', dirty: false, saving: false, savedAt: f.draftAt || null, err: '', mobile: 'list' };
+                      sel: firstQ(cfg), tab: 'questions', dirty: seeded, saving: false, savedAt: f.draftAt || null, err: '', mobile: 'list' };
                 renderEditor();
+                if(seeded) scheduleSave(300);
             }
             function back(){
                 if(E && (E.dirty || E.saving)){ flushSave().then(() => { E = null; reload(); }); return; }
@@ -27617,8 +27638,10 @@ ${(() => {
             }
             function midShare(){
                 const url = publicUrl(E.cfg.id), pub = E.status === 'live';
+                const dineNote = E.cfg.id === 'dinein' ? `<div class="fx-note" style="margin:0 0 14px;"><b>Dine-In tables.</b> Test this form first at <button class="fx-link" onclick="FB.copyText('${esc(ORIGIN + '/?f=dinein')}')">${esc(ORIGIN.replace('https://', ''))}/?f=dinein</button>.
+                    When you are happy, upload the new Dine-In page (<b>feedback-site/dinein/index.html</b>) — the table QR codes then show the "This month's drop / Dine-In survey" choice and open this form. To go back, upload the old page again.</div>` : '';
                 const brs = (E.cfg.branches || []).map(b => b.name).filter(Boolean);
-                return `<div class="fx-h"><span>Link</span><small>${pub ? 'Live' : 'Works once published'}</small></div>
+                return dineNote + `<div class="fx-h"><span>Link</span><small>${pub ? 'Live' : 'Works once published'}</small></div>
                     <div class="fb-link-row"><i class="fas fa-link"></i><span>${esc(url)}</span><button class="ia-copy-btn" onclick="FB.copyText('${esc(url)}')"><i class="fas fa-copy"></i></button></div>
                     <div class="fx-qr"><img src="${esc(qrUrl(url))}" alt="QR code" width="150" height="150"><div><b>QR for the form</b><small>Print it on receipts, bags or table cards.</small>
                         <a class="fb-btn sm" href="${esc(qrUrl(url))}" target="_blank" rel="noopener">Open QR</a></div></div>
@@ -27792,7 +27815,9 @@ ${(() => {
             async function publish(){
                 const c = cleanConfig(), errs = problems(c);
                 if(errs.length){ showProblems(errs); return; }
-                if(!confirm(E.status === 'live' ? 'Publish your changes to "' + c.name + '"? Customers see them within about a minute.' : 'Publish "' + c.name + '"? The link goes live straight away.')) return;
+                const extra = newColumns(c);
+                const extraNote = extra.length ? '\n\nThese columns are not in the "' + c.targetTab + '" tab yet and will be added at its end:\n• ' + extra.join('\n• ') : '';
+                if(!confirm((E.status === 'live' ? 'Publish your changes to "' + c.name + '"? Customers see them within about a minute.' : 'Publish "' + c.name + '"? The link goes live straight away.') + extraNote)) return;
                 const b = document.getElementById('fx-pub'); if(b){ b.disabled = true; b.textContent = 'Publishing…'; }
                 try {
                     E.dirty = true; await flushSave();
