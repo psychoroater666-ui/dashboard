@@ -5503,6 +5503,10 @@
         /* v2.171.0: the action an email pointed to */
         .fu-row.fu-focus { box-shadow:0 0 0 3px #4F46E5, 0 10px 30px -12px rgba(79,70,229,.6); animation:fuGlow 1.2s ease 2; border-radius:14px; }
         @keyframes fuGlow { 50% { box-shadow:0 0 0 6px rgba(79,70,229,.35); } }
+        /* v2.172.0: when a case reached the team */
+        .inc-tl-reach { margin-top:4px; font-size:.74rem; color:var(--text-muted); } .inc-tl-reach:empty { display:none; }
+        .inc-tl-reach i { color:#4F46E5; margin-right:4px; } .inc-tl-reach b { color:var(--text-main); } .inc-tl-reach b.ok { color:#047857; }
+        body.dark-theme .inc-tl-reach b.ok { color:#34D399; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9623,7 +9627,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.171.0 · 23 Sep 2026 · Action emails open that exact action';
+        const BUILD_VERSION = 'v2.172.0 · 23 Sep 2026 · Incident timing: one review time for all screens, Reached the team · reviewed N s later';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -15159,6 +15163,52 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         setInterval(() => { try { if(!document.hidden) BELL.load(false); } catch(e){} }, 60000);
         setTimeout(() => { try { BELL.load(true); } catch(e){} }, 2500);
 
+
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.172.0 -- WHEN A CASE REACHED THE TEAM (Worker v5.6 inc_seen /
+           inc_times). Every queue screen reports the first moment it showed an
+           open case; the case timeline says "Reached the team at 07:38:52 ·
+           reviewed 11 s later", so agents are measured on their own speed.
+           ═══════════════════════════════════════════════════════════════════ */
+        (function(){
+            const SENT = 'sentinel_seen_reported';
+            let sent = {}; try { sent = JSON.parse(localStorage.getItem(SENT) || '{}') || {}; } catch(e){}
+            function report(){
+                try {
+                    if(document.hidden || typeof can !== 'function' || !(can('write') || can('review'))) return;
+                    const cutoff = Date.now() - 6 * 3600000; let n = 0;
+                    (rawData.incidents || []).forEach(inc => {
+                        if(n >= 20 || inc.reviewedAt || inc.resolved || inc.caseStatus === 'fake') return;
+                        const t = slaStart(inc); if(!(t > cutoff)) return;
+                        const k = _incidentStableKey(inc); if(!k || sent[k]) return;
+                        sent[k] = Date.now(); n++;
+                        apiCall('inc_seen', { key: k }).catch(() => {});
+                    });
+                    if(n){ const keys = Object.keys(sent); if(keys.length > 800) keys.sort((a, b) => sent[a] - sent[b]).slice(0, keys.length - 800).forEach(k => delete sent[k]);
+                           try { localStorage.setItem(SENT, JSON.stringify(sent)); } catch(e){} }
+                } catch(e){}
+            }
+            const cache = {};
+            const hms = t => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const span = s => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60); return m ? m + ' min ' + (s % 60) + ' s' : s + ' s'; };
+            async function fill(){
+                document.querySelectorAll('.inc-tl-reach:not([data-done])').forEach(async el => {
+                    el.setAttribute('data-done', '1');
+                    const key = el.dataset.reachKey; if(!key) return;
+                    let r = cache[key];
+                    if(!r){ r = await apiCall('inc_times', { key, branch: el.dataset.branch, created: el.dataset.created }).catch(() => null); if(r && r.status === 'success') cache[key] = r; }
+                    if(!r || r.status !== 'success') return;
+                    const times = [r.seen, r.rang].map(x => Date.parse(x || '')).filter(isFinite);
+                    if(!times.length) return;
+                    const reach = Math.min(...times), rev = Date.parse(el.dataset.reviewed || ''), created = slaStart({ _raw: { 'Created At': el.dataset.created } });
+                    const after = isFinite(created) ? Math.max(0, (reach - created) / 1000) : null;
+                    el.innerHTML = `<i class="fas fa-bell"></i> Reached the team at <b>${hms(reach)}</b>${after != null ? ` (${span(after)} after the customer sent it)` : ''}`
+                        + (isFinite(rev) && rev >= reach - 5000 ? ` · <b class="ok">reviewed ${span((rev - reach) / 1000)} later</b>` : '');
+                });
+            }
+            setInterval(report, 20000); setTimeout(report, 6000);
+            setInterval(fill, 1200);
+        })();
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
             const S = Std();
@@ -16513,7 +16563,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     return;
                 }
                 console.log('Incident review saved successfully for key:', stableKey);
-                const reviewedAt = new Date().toISOString();
+                const reviewedAt = (r && r.reviewedAt) || new Date().toISOString();   // v2.172.0: the server's time, the same on every screen
                 (rawData.incidents||[]).forEach(inc => {
                     if(_incidentStableKey(inc) === stableKey) inc.reviewedAt = reviewedAt;
                 });
@@ -19332,6 +19382,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
                             ${inc.reviewedBy ? `<div class="inc-tl-by"><i class="fas fa-user"></i> Reviewed by <b>${String(inc.reviewedBy).replace(/</g,'&lt;')}</b></div>` : ''}
+                            <div class="inc-tl-reach" data-reach-key="${String(_incidentStableKey(inc)).replace(/"/g,'&quot;')}" data-branch="${String(inc.branch||'').replace(/"/g,'&quot;')}" data-created="${String((inc._raw && (inc._raw['Created At'] || inc._raw['created at'])) || '').replace(/"/g,'&quot;')}" data-reviewed="${String(inc.reviewedAt||'')}"></div>
                         </div>
                     </div>` : ''}
                     ${isClosed ? `
@@ -19572,6 +19623,7 @@ ${(() => {
                         <div class="inc-tl-content-v2">
                             <div class="inc-tl-title-v2">Incident reviewed${reviewDurationLabel ? ` in ${reviewDurationLabel}` : ''} <span class="inc-tl-time-v2">${reviewedDisp}</span></div>
                             ${inc.reviewedBy ? `<div class="inc-tl-by"><i class="fas fa-user"></i> Reviewed by <b>${String(inc.reviewedBy).replace(/</g,'&lt;')}</b></div>` : ''}
+                            <div class="inc-tl-reach" data-reach-key="${String(_incidentStableKey(inc)).replace(/"/g,'&quot;')}" data-branch="${String(inc.branch||'').replace(/"/g,'&quot;')}" data-created="${String((inc._raw && (inc._raw['Created At'] || inc._raw['created at'])) || '').replace(/"/g,'&quot;')}" data-reviewed="${String(inc.reviewedAt||'')}"></div>
                         </div>
                     </div>` : ''}
                     ${isClosed ? `
