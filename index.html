@@ -9084,7 +9084,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.158.0 · 23 Sep 2026 · New Form Builder: create from any form or template, 13 question types, rules, drafts and publish, live preview';
+        const BUILD_VERSION = 'v2.158.1 · 23 Sep 2026 · Form Builder: rating, branch, phone and comment columns always named so the dashboard reads them';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -26507,7 +26507,7 @@ ${(() => {
                 cfg.questions = (cfg.questions || []).map((q, i) => {
                     const o = Object.assign({}, q);
                     if(!o.id) o.id = newQid(cfg, o.type);
-                    if(!o.column) o.column = uniqueColumn(cfg, o.title || TYPES[o.type].label, o.id);
+                    if(!o.column){ const tmp = { questions: (cfg.questions || []).map((x, k) => k === i ? o : x) }; o.column = uniqueColumn(cfg, colBase(tmp, o, o.title), o.id); }
                     idx[i] = o.id;
                     return o;
                 });
@@ -26524,6 +26524,21 @@ ${(() => {
                 if(['phone', 'name', 'rating', 'branch'].indexOf(type) !== -1 && !used.has(type)) return type;
                 let id; do { id = 'q' + Math.random().toString(36).slice(2, 7); } while(used.has(id));
                 return id;
+            }
+            /* v2.158.1: the dashboard, the daily reports and the incident rules find
+               a form's rating, branch, phone and comments by the words in the
+               column name -- the same way for every form. A column made from a
+               question's wording must still carry those words, or a 1-star
+               answer is never seen as a complaint. */
+            function colBase(cfg, q, title){
+                const t = String(title || '').trim();
+                const firstOf = type => (cfg.questions || []).find(x => x.type === type || (type === 'longtext' && x.type === 'text'));
+                if(q.type === 'rating' && firstOf('rating') === q && !/rate|experience/i.test(t)) return 'Experience rating';
+                if(q.type === 'branch') return 'Location';
+                if(q.type === 'phone' && !/phone/i.test(t)) return 'Phone Number';
+                if(q.type === 'name' && !/name/i.test(t)) return 'Name';
+                if((q.type === 'longtext' || q.type === 'text') && firstOf('longtext') === q && !/any other|improve|comments/i.test(t)) return 'Any other comments';
+                return t || TYPES[q.type].label;
             }
             function uniqueColumn(cfg, title, selfId){
                 let base = String(title || 'Answer').replace(/\s+/g, ' ').trim().slice(0, 90) || 'Answer', c = base, n = 2;
@@ -26707,7 +26722,7 @@ ${(() => {
             function select(id){ E.sel = id; E.mobile = 'q'; renderEditor(); focusPreview(id); }
             function setQ(k, v, fromColumn){
                 const q = selQ(); if(!q) return;
-                if(k === 'title' && !colLocked(q) && (!q.column || q._auto !== false)){ q.column = uniqueColumn(E.cfg, v || TYPES[q.type].label, q.id); }
+                if(k === 'title' && !colLocked(q) && (!q.column || q._auto !== false)){ q.column = uniqueColumn(E.cfg, colBase(E.cfg, q, v), q.id); }
                 if(fromColumn) q._auto = false;
                 if(v === '' || v === false) delete q[k]; else q[k] = v;
                 if(k === 'title' || k === 'column'){
@@ -26749,9 +26764,9 @@ ${(() => {
                           : type === 'nps' ? 'How likely are you to recommend Crumble?' : type === 'yesno' ? 'Would you order again?' : type === 'email' ? 'Your email' : type === 'date' ? 'Date' : 'New question' };
                 if(hasOptions(type)) q.options = ['Option 1', 'Option 2'];
                 if(type === 'phone') q.required = true;
-                q.column = uniqueColumn(E.cfg, q.title, q.id);
                 const qs = E.cfg.questions, at = qs.findIndex(x => x.id === E.sel);
                 if(type === 'phone' || type === 'name') qs.unshift(q); else qs.splice(at >= 0 ? at + 1 : qs.length, 0, q);
+                q.column = uniqueColumn(E.cfg, colBase(E.cfg, q, q.title), q.id);
                 if(type === 'branch' && !(E.cfg.branches || []).length){ const del = byId('delivery'); E.cfg.branches = clone((del && del.config && del.config.branches) || []); }
                 E.sel = q.id; E.mobile = 'q'; changed(); renderEditor(); focusPreview(q.id);
                 setTimeout(() => { const i = document.querySelector('#fx-mid .fx-in'); if(i && type !== 'phone'){ i.focus(); i.select(); } }, 40);
@@ -26831,6 +26846,9 @@ ${(() => {
                     else cols[col] = i + 1;
                     if(q.showIf && !(pos[q.showIf.q] < i)) out.push(label + ': its rule must look at a question above it — move it lower or change the rule.');
                     if(q.type === 'branch' && !(c.branches || []).length) out.push(label + ': list at least one branch.');
+                    if(q.type === 'rating' && c.questions.find(x => x.type === 'rating') === q && !/rate|experience/i.test(q.column || ''))
+                        out.push(label + ': its sheet column must contain "rate" or "experience" (e.g. "Experience rating") so the dashboard reads the score.');
+                    if(q.type === 'branch' && !/location/i.test(q.column || '')) out.push(label + ': its sheet column must contain "Location" so the dashboard knows the branch.');
                 });
                 return out;
             }
