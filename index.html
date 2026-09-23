@@ -5203,6 +5203,21 @@
         .ms-btn:focus-visible { outline:2px solid #3B5BDB; outline-offset:2px; }
         .ms-btn:disabled { opacity:.55; cursor:not-allowed; }
         .ms-panel .ms-list::-webkit-scrollbar { width:6px; } .ms-panel .ms-list::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:6px; }
+        /* v2.162.0: closed days */
+        .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
+        .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
+        .cal-tb td { padding:7px 6px; border-top:1px solid var(--border-color); color:var(--text-main); vertical-align:middle; }
+        .cal-tb select, .cal-tb input, .cal-day input { border:1.5px solid var(--border-color); border-radius:8px; padding:6px 8px; font:600 .76rem 'Inter',sans-serif; background:var(--white); color:var(--text-main); }
+        .cal-d { display:flex; gap:6px; flex-wrap:wrap; } .cal-d input[hidden] { display:none; }
+        .cal-tb input[type=date], .cal-day input[type=date] { font-size:.76rem !important; padding:5px 8px !important; min-height:0 !important; width:auto !important; }
+        .cal-tb td { background:transparent !important; }
+        .cal-day { border:1px solid var(--border-color); border-radius:12px; padding:10px; display:grid; gap:8px; }
+        .cal-dr { display:flex; gap:8px; align-items:center; flex-wrap:wrap; } .cal-dr .cal-n { flex:1 1 160px; } .cal-dr label { font-size:.72rem; color:var(--text-muted); display:flex; gap:5px; align-items:center; }
+        .cal-x { border:none; background:transparent; color:var(--text-muted); font-size:1.1rem; cursor:pointer; min-height:0 !important; }
+        .cal-bs summary { cursor:pointer; font:700 .74rem 'Inter',sans-serif; color:#010197; } body.dark-theme .cal-bs summary { color:#A5B4FC; }
+        .cal-bl { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:4px; max-height:160px; overflow:auto; margin-top:6px; }
+        .cal-bl label, .cal-all { font-size:.74rem; display:flex; gap:6px; align-items:center; color:var(--text-main); }
+        .td-closed { background:var(--bg-light); border:1px solid var(--border-color); border-radius:12px; padding:9px 12px; font:600 .76rem 'Inter',sans-serif; color:var(--text-muted); margin:-2px 0 10px; }
         /* v2.161.0: the assistant -- a living mark, a modern panel */
         .lm { --s:44px; position:relative; width:var(--s); height:var(--s); display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
         .lm > span { position:absolute; }
@@ -9299,7 +9314,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.161.1 · 23 Sep 2026 · Assistant: the living mark and greeting stay at the top of a chat';
+        const BUILD_VERSION = 'v2.162.0 · 23 Sep 2026 · Closed days and branch status; phone full view keeps a Today tab and switches off after 15 min';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -12339,7 +12354,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         async function saveOwnerSettings(tab){
             const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
             const payload = {};
-            if(tab === 'owners'){
+            if(tab === 'days'){
+                const got = calCollect();
+                if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
+                payload.branchCal = got.branchCal;
+            } else if(tab === 'owners'){
                 const got = owCollect();
                 if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
                 payload.owners = got.owners;
@@ -12422,6 +12441,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
               notice: noticePane(st),
               reports: `<div class="rp-host">${reportsPane()}</div>`,
               owners: `<div class="ow-host">${ownersPane(st)}</div>`,
+              days: calPane(st),
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
                         <select id="os-hour" style="${inp}">${hours(st.businessDayStart)}</select>
@@ -12511,12 +12531,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('owners','Owners')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('owners','Owners')}${tabBtn('days','Branches &amp; days')}${tabBtn('alerts','Alerts')}${tabBtn('status','Integrations')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
-                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice' || tab === 'owners') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
+                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice' || tab === 'owners' || tab === 'days') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
@@ -13088,6 +13108,98 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     row('Close within', num('sv-rs', s.resolveMin, 1, 240, 'min'), 'Counted from review; turns red after'))}
                 <button class="sv-reset" onclick="svResetDefaults()">Reset to company standard</button>
             </div>`;
+        }
+
+        /* v2.162.0: closed days and branch status (Owner setting branchCal,
+           Worker v4.96, Code.gs v8.44). Same rule everywhere: a branch that is
+           closed / renovating, inside its first 14 days, or on a closed day
+           raises nothing and is left out of targets and rankings that day. */
+        function calData(){ return ((window.OwnerSettings || {}).branchCal) || { status: {}, days: [] }; }
+        function calAddDays(ymd, n){ const t = new Date(ymd + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+        function calState(branch, ymd){
+            const cal = calData(); if(!branch || !ymd) return '';
+            const lb = String(branch).toLowerCase(), st = cal.status || {};
+            const k = Object.keys(st).find(x => x.toLowerCase() === lb);
+            if(k){ const x = st[k] || {};
+                if((x.s === 'closed' || x.s === 'renovating') && (!x.from || ymd >= x.from) && (!x.to || ymd <= x.to)) return x.s;
+                if(x.s === 'new' && x.from){ if(ymd < x.from) return 'closed'; if(ymd < calAddDays(x.from, 14)) return 'new'; } }
+            for(const d of (cal.days || [])){
+                if(ymd >= d.from && ymd <= (d.to || d.from) && (!(d.branches || []).length || d.branches.some(b => String(b).toLowerCase() === lb))) return 'day';
+            }
+            return '';
+        }
+        const calExempt = (branch, ymd) => !!calState(branch, ymd);
+        const calAllClosed = ymd => (calData().days || []).some(d => ymd >= d.from && ymd <= (d.to || d.from) && !(d.branches || []).length);
+        function calClosedList(ymd, among){
+            const out = [], cal = calData();
+            const pool = among || Array.from(new Set(Object.keys(cal.status || {}).concat((config.branches || []).map(b => b.name))));
+            pool.forEach(b => { const s = calState(b, ymd); if(s && s !== 'day') out.push(b + (s === 'renovating' ? ' (renovating)' : s === 'new' ? ' (new)' : '')); });
+            (cal.days || []).forEach(d => { if(ymd >= d.from && ymd <= (d.to || d.from)) out.push((d.branches || []).length ? d.branches.join(', ') + ' (' + d.name + ')' : 'All branches (' + d.name + ')'); });
+            return out;
+        }
+
+        /* Owner settings → Branches & days */
+        const CAL_ST = [['open', 'Open'], ['renovating', 'Renovating'], ['closed', 'Closed'], ['new', 'New']];
+        function calPane(st){
+            const cal = (st && st.branchCal) || { status: {}, days: [] };
+            const branches = (window.__svBranches || []).filter(b => b && b !== 'Unspecified');
+            const e = _ntEsc;
+            const rows = branches.map((b, i) => { const x = Object.entries(cal.status || {}).find(([k]) => k.toLowerCase() === String(b).toLowerCase()); const v = x ? x[1] : { s: 'open' };
+                return `<tr data-b="${e(b)}"><td><b>${e(b)}</b></td>
+                    <td><select class="cal-s" onchange="calRow(this)">${CAL_ST.map(([k, l]) => `<option value="${k}" ${v.s === k ? 'selected' : ''}>${l}</option>`).join('')}</select></td>
+                    <td class="cal-d"><input type="date" class="cal-f" value="${e(v.from || '')}" ${v.s === 'open' ? 'hidden' : ''} title="${v.s === 'new' ? 'Opening date' : 'From'}">
+                        <input type="date" class="cal-t" value="${e(v.to || '')}" ${v.s === 'open' || v.s === 'new' ? 'hidden' : ''} title="To (leave empty until further notice)"></td></tr>`; }).join('');
+            const days = (cal.days || []).map((d, i) => calDayRow(d, branches, i)).join('');
+            return `<div style="display:grid;gap:16px;">
+                <div class="sv-sec"><b>Branches &amp; days</b><span>A closed, renovating or new branch — or a closed day — raises no alarms, patterns, Level 1 escalations or automatic actions, is not "below target" in reports, and is left out of rankings. Nothing is deleted.</span></div>
+                <div class="sv-card"><div class="sv-h"><span class="cal-h">Branch status</span><span style="font-size:.7rem;color:var(--text-muted);">New: counted, but not ranked or flagged for 14 days</span></div>
+                    <div style="overflow:auto;"><table class="cal-tb"><tr><th>Branch</th><th>Status</th><th>Dates</th></tr>${rows || '<tr><td colspan="3" style="color:var(--text-muted);">No branches found.</td></tr>'}</table></div></div>
+                <div class="sv-card"><div class="sv-h"><span class="cal-h">Closed days</span><button class="fb-btn sm" onclick="calAddDay()">+ Add a day</button></div>
+                    <div id="cal-days" style="display:grid;gap:8px;">${days || '<div class="cal-none" style="font-size:.76rem;color:var(--text-muted);">None yet — add Eid, a strike day, a mall closure…</div>'}</div></div>
+            </div>`;
+        }
+        function calDayRow(d, branches, i){
+            const e = _ntEsc, all = !(d.branches || []).length;
+            return `<div class="cal-day"><div class="cal-dr">
+                    <input class="cal-n" maxlength="60" placeholder="e.g. Eid ul-Fitr" value="${e(d.name || '')}">
+                    <label>From <input type="date" class="cal-df" value="${e(d.from || '')}"></label>
+                    <label>To <input type="date" class="cal-dt" value="${e(d.to || '')}"></label>
+                    <button class="cal-x" title="Remove" onclick="this.closest('.cal-day').remove()">×</button></div>
+                <details class="cal-bs"><summary>${all ? 'All branches' : e(d.branches.join(', '))}</summary>
+                    <label class="cal-all"><input type="checkbox" class="cal-a" ${all ? 'checked' : ''} onchange="calSum(this)"> All branches</label>
+                    <div class="cal-bl">${branches.map(b => `<label><input type="checkbox" class="cal-b" value="${e(b)}" ${!all && d.branches.some(x => x.toLowerCase() === b.toLowerCase()) ? 'checked' : ''} onchange="calSum(this)"> ${e(b)}</label>`).join('')}</div>
+                </details></div>`;
+        }
+        function calRow(sel){ const tr = sel.closest('tr'), s = sel.value;
+            tr.querySelector('.cal-f').hidden = s === 'open'; tr.querySelector('.cal-t').hidden = s === 'open' || s === 'new';
+            tr.querySelector('.cal-f').title = s === 'new' ? 'Opening date' : 'From';
+            if(s === 'new' && !tr.querySelector('.cal-f').value) tr.querySelector('.cal-f').value = new Date().toISOString().slice(0, 10); }
+        function calAddDay(){ const host = document.getElementById('cal-days'); if(!host) return; const none = host.querySelector('.cal-none'); if(none) none.remove();
+            host.insertAdjacentHTML('beforeend', calDayRow({ name: '', from: '', to: '', branches: [] }, (window.__svBranches || []).filter(b => b && b !== 'Unspecified'), host.children.length)); }
+        function calSum(cb){ const box = cb.closest('.cal-bs'); if(cb.classList.contains('cal-a') && cb.checked) box.querySelectorAll('.cal-b').forEach(x => x.checked = false);
+            if(cb.classList.contains('cal-b') && cb.checked) box.querySelector('.cal-a').checked = false;
+            const picked = [...box.querySelectorAll('.cal-b:checked')].map(x => x.value);
+            if(!picked.length) box.querySelector('.cal-a').checked = true;
+            box.querySelector('summary').textContent = picked.length ? picked.join(', ') : 'All branches'; }
+        function calCollect(){
+            const status = {}, days = [];
+            let err = '';
+            document.querySelectorAll('#owner-settings-modal .cal-tb tr[data-b]').forEach(tr => {
+                const s = tr.querySelector('.cal-s').value; if(s === 'open') return;
+                const from = tr.querySelector('.cal-f').value, to = tr.querySelector('.cal-t').value;
+                if(s === 'new' && !from) err = err || (tr.dataset.b + ': give the opening date.');
+                if(from && to && to < from) err = err || (tr.dataset.b + ': the end date is before the start.');
+                status[tr.dataset.b] = { s, from, to: s === 'new' ? '' : to };
+            });
+            document.querySelectorAll('#owner-settings-modal .cal-day').forEach(el => {
+                const name = el.querySelector('.cal-n').value.trim(), from = el.querySelector('.cal-df').value, to = el.querySelector('.cal-dt').value || from;
+                if(!from && !name) return;
+                if(!from) err = err || ('"' + (name || 'Closed day') + '": pick the date.');
+                if(to < from) err = err || ('"' + (name || 'Closed day') + '": the end date is before the start.');
+                const all = el.querySelector('.cal-a').checked;
+                days.push({ name: name || 'Closed', from, to, branches: all ? [] : [...el.querySelectorAll('.cal-b:checked')].map(x => x.value) });
+            });
+            return err ? { error: err } : { branchCal: { status, days } };
         }
 
         function Std(){
@@ -13954,14 +14066,23 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         const MC = (function(){
             const MQ = window.matchMedia('(max-width: 820px)');
             const FULL = 'sentinel_full_view';
-            const full = () => { try { return sessionStorage.getItem(FULL) === '1'; } catch(e){ return false; } };
+            // v2.162.0: full view is remembered with the time it was last used and
+            // switches itself off after 15 minutes without use.
+            const IDLE = 15 * 60 * 1000;
+            const full = () => { try { const v = Number(sessionStorage.getItem(FULL) || 0); if(!v) return false;
+                if(Date.now() - v > IDLE){ sessionStorage.removeItem(FULL); return false; } return true; } catch(e){ return false; } };
+            let _seen = 0;
+            const touch = () => { if(Date.now() - _seen < 20000) return; _seen = Date.now(); try { if(sessionStorage.getItem(FULL)) sessionStorage.setItem(FULL, String(Date.now())); } catch(e){} };
+            ['pointerdown', 'keydown', 'scroll'].forEach(ev => document.addEventListener(ev, touch, { passive: true, capture: true }));
+            document.addEventListener('visibilitychange', () => { if(!document.hidden) sync(); });
+            setInterval(() => { try { if(document.body.classList.contains('m-fullview')) sync(); } catch(e){} }, 60000);
             const on = () => MQ.matches && !full();
             function sync(){
                 if(!document.body) return;
                 const was = document.body.classList.contains('m-compact'), now = on();
                 document.body.classList.toggle('m-compact', now);
                 document.body.classList.toggle('m-fullview', MQ.matches && full());
-                const t = document.getElementById('nav-today'); if(t) t.style.display = now ? '' : 'none';
+                const t = document.getElementById('nav-today'); if(t) t.style.display = MQ.matches ? '' : 'none';   // v2.162.0: also in full view
                 if(was !== now){
                     try {
                         if(now && state.currentView === 'executive') app.navigate('today');
@@ -13972,7 +14093,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             try { MQ.addEventListener('change', sync); } catch(e){ try { MQ.addListener(sync); } catch(x){} }
             if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); else sync();
             function setFull(v){
-                try { if(v) sessionStorage.setItem(FULL, '1'); else sessionStorage.removeItem(FULL); } catch(e){}
+                try { if(v) sessionStorage.setItem(FULL, String(Date.now())); else sessionStorage.removeItem(FULL); } catch(e){}
                 sync();
                 try { app.navigate(v ? 'executive' : 'today'); } catch(e){}
             }
@@ -14013,10 +14134,11 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const perDay = b => { const t = (S.branchTargets || {})[b]; return Number(t) || Number(S.subTarget) || 100; };
                 const days = range === 'week' ? 7 : 1;
                 const brs = branch ? [branch] : (myBranches() || config.branches.map(b => b.name)).filter(b => b !== 'Unspecified');
-                const target = brs.reduce((s, b) => s + perDay(b), 0) * days;
+                // v2.162.0: a branch closed (or new, or on a closed day) has no target that day.
+                const target = [...bizDays()].reduce((sum, d) => sum + brs.filter(b => !calExempt(b, d)).reduce((s, b) => s + perDay(b), 0), 0);
                 const rated = subs.filter(s => s.smileScore != null), pos = rated.length ? rated.filter(s => s.smileScore >= 4).length / rated.length * 100 : null;
                 const byB = {}; real.forEach(i => byB[i.branch] = (byB[i.branch] || 0) + 1);
-                const l1 = Object.keys(byB).filter(b => b !== 'Unspecified' && range !== 'week' && byB[b] >= S.incCritical);
+                const l1 = Object.keys(byB).filter(b => b !== 'Unspecified' && range !== 'week' && byB[b] >= S.incCritical && ![...bizDays()].some(d => calExempt(b, d)));
                 const open = real.filter(i => slaState(i).stage !== 'done');
                 const waiting = open.filter(i => slaState(i).stage === 'review'), reviewing = open.filter(i => slaState(i).stage === 'resolve');
                 const overdue = open.filter(i => slaState(i).breached);
@@ -14068,6 +14190,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <div class="td-top"><div><b>${range === 'week' ? 'Last 7 days' : range === 'yesterday' ? 'Yesterday' : 'Today'} · ${esc(scopeName())}</b><small>Updated ${esc(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</small></div>${brOpts}</div>
                     <div class="td-seg">${[['today', 'Today'], ['yesterday', 'Yesterday'], ['week', '7 days']].map(r => `<button class="${range === r[0] ? 'on' : ''}" onclick="TODAY.setRange('${r[0]}')">${r[1]}</button>`).join('')}</div>
                     ${status}
+                    ${(() => { const d = [...bizDays()].pop(); const pool = branch ? [branch] : (myBranches() || null); const cl = calClosedList(d, pool); return cl.length ? `<div class="td-closed">Closed ${range === 'today' ? 'today' : 'on ' + d}: ${esc(cl.join(' · '))} — not counted</div>` : ''; })()}
                     <div class="td-kp">${cards}</div>
                     ${need.length ? `<div class="td-h"><span>Needs ${cc ? 'the team' : 'you'} now</span></div>${need.slice(0, 6).join('')}` : ''}
                     <div class="td-h"><span>${cc ? 'Review next' : 'Latest complaints'}</span><button class="td-a" onclick="app.navigate('incidents')">${cc ? 'Queue' : 'All'} →</button></div>
@@ -14118,6 +14241,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             let today = ''; try { today = _businessToday(); } catch(e){}
             const per = {}, days = new Set(), todayPer = {};
             subs.forEach(s => { if(!s.branch || s.branch === 'Unspecified') return;
+                if(calExempt(s.branch, s.date)) return;                                   // v2.162.0: closed / new that day
                 if(s.date === today) todayPer[s.branch] = (todayPer[s.branch] || 0) + 1;
                 else if(s.date){ days.add(s.date); per[s.branch] = (per[s.branch] || 0) + 1; } });
             let colVal = null, colOk = 0, colN = 0, colNote = '';
@@ -16420,7 +16544,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
             navigate(viewId, elEvt) {
                 // v2.160.0: on a phone the Overview is "Today"; on a wide screen Today is the Overview.
-                try { if(viewId === 'executive' && MC.on()) viewId = 'today'; else if(viewId === 'today' && !MC.on()) viewId = 'executive'; } catch(e){}
+                try {
+                    if(viewId === 'executive' && MC.on()) viewId = 'today';
+                    else if(viewId === 'today' && !MC.on()){
+                        if(MC.phone()){ MC.setFull(false); return; }     // v2.162.0: the Today tab in full view goes back to Today
+                        viewId = 'executive';
+                    }
+                } catch(e){}
                 // A full page reload used to land on the Overview whatever was
                 // open. The address now carries the view, and the existing
                 // ?open= handler puts the agent back where they were.
@@ -17108,7 +17238,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // be visible before anyone has had time to verify it, or it is
                 // not emerging, it is history.
                 const all = (rawData.incidents || []).filter(i => i.caseStatus !== 'fake');
-                const today = all.filter(i => i.date === end);
+                const today = all.filter(i => i.date === end && !calExempt(i.branch, end));   // v2.162.0
                 // baseline: the 14 days before the day in view
                 const from = (() => { const t = new Date(end + 'T12:00:00'); t.setDate(t.getDate() - 14); return t.toISOString().split('T')[0]; })();
                 const base = all.filter(i => i.date >= from && i.date < end);
@@ -19667,7 +19797,7 @@ ${(() => {
                 state.p1.subs.forEach(s => { if(!daily[s.date]) daily[s.date]={s:0,i:0}; daily[s.date].s++; });
                 state.p1.incs.forEach(i => { if(!daily[i.date]) daily[i.date]={s:0,i:0}; daily[i.date].i++; });
                 
-                const labels = Object.keys(daily).sort();
+                const labels = Object.keys(daily).sort().filter(l => !calAllClosed(l));   // v2.162.0: days every branch was closed are skipped
                 const displayLabels = labels.map(l => { const d = new Date(l); return `${d.getDate()} ${d.toLocaleString('default', {month:'short'})}`; });
 
                 _renderOrUpdateChart(canvasId, {
@@ -19947,7 +20077,9 @@ ${(() => {
             const staff = rawData.branchStaff || {};
             const better = metric === 'incident' ? ((a,b)=>a-b) : ((a,b)=>b-a); // incident: lower is better; smile: higher is better
 
-            const branchMetrics = config.branches.map(b => {
+            // v2.162.0: a branch closed, renovating or new at the end of the period is not ranked.
+            const _rEnd = (document.getElementById('filter-end-date') || {}).value || '';
+            const branchMetrics = config.branches.filter(b => !_rEnd || !calExempt(b.name, _rEnd)).map(b => {
                 const subs = state.p1.subs.filter(x => x.branch === b.name);
                 const incs = state.p1.incs.filter(x => x.branch === b.name);
                 const rated = subs.filter(x => x.smileScore != null && x.smileScore > 0);
@@ -20388,7 +20520,8 @@ ${(() => {
             const { p1 } = state;
 
             // v2.159.1: "Unspecified" is a data-quality placeholder, not a branch -- left out here as on the KPI cards.
-            const branchData = config.branches.filter(b => b.name !== 'Unspecified').map(b => {
+            const _bEnd = (document.getElementById('filter-end-date') || {}).value || '';
+            const branchData = config.branches.filter(b => b.name !== 'Unspecified' && !(_bEnd && calExempt(b.name, _bEnd))).map(b => {
                 const s = (state.branchGroups[b.name] || {subs:[]}).subs;
                 const i = ((state.branchGroups[b.name] || {incs:[]}).incs || []).filter(x => x.caseStatus !== 'fake');
                 const sL = s.length, iL = i.length;
@@ -27761,7 +27894,7 @@ ${(() => {
                 if(!bar) return;
                 const ls = navLinks(), view = current();
                 // v2.160.0: the phone app's own four tabs.
-                const compact = document.body.classList.contains('m-compact');
+                const compact = document.body.classList.contains('m-compact') || document.body.classList.contains('m-fullview');
                 const want = compact ? ['today', 'incidents', 'actions', 'social'] : (PRIMARY[role()] || PRIMARY.viewer);
                 const byView = new Map(ls.map(l => [l.dataset.view, l]));
                 const prim = want.map(v => byView.get(v)).filter(Boolean);
