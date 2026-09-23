@@ -5455,6 +5455,51 @@
         @media (max-width:760px){ .fa2-row { grid-template-columns:1fr; justify-items:center; text-align:center; } .fa2-chips { justify-content:center; } .fa2-trend { width:100%; }
             .fa2-flow { grid-template-columns:1fr 1fr; } .fa2-fs:nth-child(3) { border-left:none; } .fa2-fs:nth-child(n+3) { border-top:1px solid var(--border-color); } .fa2-fs .arrow { display:none; }
             .fa2-g2 { grid-template-columns:1fr; } .fa2-js { grid-template-columns:22px minmax(0,1fr) 110px; } .fa2-js .jb { display:none; } .fa2-top { justify-content:flex-start; } .fa2-tabs { flex-wrap:nowrap; overflow-x:auto; } }
+        /* v2.170.0: Branch integrity, plain language */
+        .ig2 { display:grid; gap:16px; } .ig2 .bad { color:#B91C1C; }
+        .ig2-top { display:flex; align-items:center; gap:10px; flex-wrap:wrap; } .ig2-top h2 { margin:0; font:800 1.25rem 'Inter',sans-serif; color:var(--text-main); } .ig2-top p { margin:2px 0 0; font-size:.78rem; color:var(--text-muted); } .ig2-top .sp { flex:1; }
+        .ig2-rg { display:flex; gap:6px; flex-wrap:wrap; } .ig2-rg button, .ig2-rf { font:700 .74rem 'Inter',sans-serif; padding:7px 12px; border-radius:20px; border:1px solid var(--border-color); background:var(--white); color:var(--text-muted); cursor:pointer; min-height:0 !important; }
+        .ig2-rg button.on { background:#010197; color:#fff; border-color:#010197; }
+        .ig2-hero { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:18px; align-items:center; border-radius:22px; padding:22px; border:1px solid var(--border-color); background:radial-gradient(600px 220px at 0% -20%,rgba(79,70,229,.14),transparent),var(--white); }
+        .ig2-hero h3 { margin:0 0 4px; font:800 1.35rem 'Inter',sans-serif; letter-spacing:-.3px; color:var(--text-main); } .ig2-hero h3 span { color:#047857; } body.dark-theme .ig2-hero h3 span { color:#34D399; }
+        .ig2-hero p { margin:0 0 12px; font-size:.82rem; color:var(--text-muted); }
+        .ig2-seg { display:flex; height:14px; border-radius:10px; overflow:hidden; gap:3px; background:var(--bg-light); } .ig2-seg i { display:block; }
+        .ig2-leg { display:flex; gap:14px; margin-top:8px; font:700 .74rem 'Inter',sans-serif; color:var(--text-main); flex-wrap:wrap; } .ig2-leg span { display:flex; align-items:center; gap:6px; } .ig2-leg b { width:9px; height:9px; border-radius:3px; display:inline-block; }
+        .ig2-big { border:1px solid var(--border-color); border-radius:16px; padding:14px; background:var(--white); } .ig2-big .t { display:flex; gap:8px; align-items:center; font:700 .74rem 'Inter',sans-serif; color:var(--text-muted); }
+        .ig2-big .t i { width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:.72rem; } .ig2-big b { display:block; font:800 1.6rem 'Inter',sans-serif; margin-top:6px; color:var(--text-main); } .ig2-big small { font-size:.74rem; color:var(--text-muted); }
+        .ig2-card { padding:18px 20px !important; }
+        .ig2-h { margin:0 0 12px; font:800 .8rem 'Inter',sans-serif; letter-spacing:.3px; display:flex; align-items:center; gap:8px; color:var(--text-main); flex-wrap:wrap; } .ig2-h i.b { width:4px; height:16px; border-radius:3px; background:linear-gradient(#010197,#3B5BDB); } .ig2-h small { margin-left:auto; font:600 .7rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:0; }
+        .ig2-nl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+        .ig2-bc { border:1px solid var(--border-color); border-radius:16px; padding:14px 14px 14px 18px; display:grid; gap:10px; align-content:start; position:relative; overflow:hidden; cursor:pointer; }
+        .ig2-bc::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; } .ig2-bc.inv::before { background:#DC2626; } .ig2-bc.wat::before { background:#F59E0B; }
+        .ig2-bh { display:flex; align-items:center; gap:8px; } .ig2-bh b { font-size:.92rem; flex:1; color:var(--text-main); }
+        .ig2-bd { font:800 .62rem 'Inter',sans-serif; border-radius:6px; padding:3px 8px; letter-spacing:.3px; white-space:nowrap; } .ig2-bd.inv { background:#FEE2E2; color:#B91C1C; } .ig2-bd.wat { background:#FEF3C7; color:#92400E; } .ig2-bd.cl { background:#DCFCE7; color:#166534; }
+        .ig2-sg { display:grid; gap:4px; } .ig2-sg .l { display:flex; justify-content:space-between; gap:8px; font-size:.76rem; } .ig2-sg .l span { color:var(--text-main); font-weight:600; } .ig2-sg .l em { font-style:normal; font-weight:800; }
+        .ig2-sg small { font-size:.66rem; color:var(--text-muted); } .ig2 .hi { color:#B91C1C; font-weight:800; } .ig2 .md { color:#B45309; font-weight:800; }
+        body.dark-theme .ig2 .hi { color:#F87171; } body.dark-theme .ig2 .md { color:#FBBF24; }
+        .ig2-cmp { position:relative; height:8px; border-radius:6px; background:var(--bg-light); } .ig2-cmp i { position:absolute; left:0; top:0; bottom:0; border-radius:6px; } .ig2-cmp i.hi { background:#DC2626; } .ig2-cmp i.md { background:#F59E0B; }
+        .ig2-cmp u { position:absolute; top:-3px; width:2px; height:14px; background:var(--text-main); border-radius:2px; }
+        .ig2-why { font-size:.74rem; color:var(--text-muted); }
+        .ig2-mean { font-size:.74rem; color:var(--text-main); background:var(--bg-light); border-radius:10px; padding:8px 10px; line-height:1.45; }
+        .ig2-do { font:600 .74rem 'Inter',sans-serif; color:#065F46; background:#ECFDF5; border-radius:10px; padding:8px 10px; line-height:1.45; } body.dark-theme .ig2-do { background:rgba(16,185,129,.12); color:#6EE7B7; }
+        .ig2-more { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; font:700 .76rem 'Inter',sans-serif; color:#4F46E5; } .ig2-more button { border:none; background:none; color:#4F46E5; font:700 .76rem 'Inter',sans-serif; cursor:pointer; min-height:0 !important; }
+        .ig2-ok { font-size:.84rem; color:var(--text-muted); } .ig2-ok i { color:var(--status-good); }
+        .ig2-guide { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:10px; } .ig2-gd { border:1px solid var(--border-color); border-radius:14px; padding:10px; }
+        .ig2-gd i { width:28px; height:28px; border-radius:9px; background:rgba(79,70,229,.1); color:#4F46E5; display:flex; align-items:center; justify-content:center; font-size:.72rem; }
+        .ig2-gd b { display:block; font-size:.78rem; margin-top:8px; color:var(--text-main); } .ig2-gd small { display:block; font-size:.68rem; color:var(--text-muted); margin-top:3px; line-height:1.4; }
+        .ig2-scroll { overflow-x:auto; } .ig2-t { width:100%; border-collapse:collapse; font-size:.78rem; }
+        .ig2-t th { font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); text-align:left; padding:8px; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; }
+        .ig2-t td { padding:10px 8px; border-top:1px solid var(--border-color); color:var(--text-main); white-space:nowrap; } .ig2-t td:first-child { white-space:normal; }
+        .ig2-t td b { font-size:.8rem; } .ig2-t td small { display:block; font-size:.64rem; color:var(--text-muted); }
+        .ig2-t tr[data-branch] { cursor:pointer; } .ig2-t tr[data-branch]:hover td { background:var(--bg-light); } .ig2-t tr.sel td { background:rgba(79,70,229,.06); }
+        .ig2-detail { margin-top:12px; border:1px solid var(--border-color); border-radius:14px; padding:14px; background:var(--bg-light); }
+        .ig2-detail h5 { margin:0; font:800 .86rem 'Inter',sans-serif; color:var(--text-main); } .ig2-detail .sub { font-size:.7rem; color:var(--text-muted); margin:2px 0 8px; }
+        .ig2-line { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-top:1px solid var(--border-color); font:600 .78rem 'Inter',sans-serif; color:var(--text-main); } .ig2-line em { font-style:normal; font-weight:500; color:var(--text-muted); }
+        .ig2-mut { color:var(--text-muted); font-weight:600; }
+        .ig2-odd { margin-top:10px; font-size:.74rem; color:var(--text-muted); } .ig2-odd b { color:var(--text-main); } .ig2-odd span { cursor:pointer; text-decoration:underline dotted; }
+        .ig2-note { margin-top:10px; font-size:.68rem; color:var(--text-muted); line-height:1.5; }
+        @media (max-width:1000px){ .ig2-hero, .ig2-nl { grid-template-columns:1fr; } .ig2-guide { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+        @media (max-width:560px){ .ig2-guide { grid-template-columns:1fr 1fr; } .ig2-rg { flex-wrap:nowrap; overflow-x:auto; } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9575,7 +9620,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.169.1 · 23 Sep 2026 · One day rule everywhere; Form Analytics links hand-offs and leaves test forms out';
+        const BUILD_VERSION = 'v2.170.0 · 23 Sep 2026 · Branch integrity redesigned: headline, Needs a look with network average and what to do, plain table';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -26904,112 +26949,147 @@ ${(() => {
            integrated, so a branch whose orders are not in the system would
            look guilty of nothing more than that. */
         const INTEG = (function(){
+            /* v2.170.0: headline, "Needs a look" cards with the network average and
+               what to do, a plain-language table; every column still available. */
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-            // v2.119.5: today and yesterday as the branches live them, not only
-            // rolling windows.
             const RANGES = [['today','Today'],['yesterday','Yesterday'],['7','Last 7 days'],['14','Last 14 days'],['30','Last 30 days']];
-            let range = '7', data = null, open_ = '';
+            let range = '7', data = null, open_ = '', moreCols = false, allCards = false;
             const n = v => (v == null ? '\u2014' : Number(v).toLocaleString());
-            const mark = (v, warn, flag) => v >= flag ? 'intg-flag' : v >= warn ? 'intg-warn' : '';
-
+            const dash = '\u2014';
             async function load(){
                 const res = await apiCall('branch_integrity', { range }).catch(() => null);
                 data = (res && res.status === 'success') ? res : (res || { status: 'error', message: 'Could not load the report.' });
             }
+            const known = () => { try { return new Set((config.branches || []).map(b => String(b.name).toLowerCase())); } catch(e){ return new Set(); } };
+            function netAvg(rows){
+                // The typical branch (median), so one or two outliers cannot drag "normal" towards themselves.
+                const med = v => { const s = v.filter(x => x != null && isFinite(x)).sort((a, b) => a - b); return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0; };
+                const j = rows.filter(r => r.judged && r.attempts);
+                const burst = med(j.map(r => r.burstPct));
+                const subs = rows.reduce((a, r) => a + (r.subs || 0), 0);
+                const ooh = subs ? rows.reduce((a, r) => a + (r.outOfHours || 0), 0) / subs * 100 : 0;
+                const refusedPer = med(rows.filter(r => r.subs > 0).map(r => r.refused || 0));
+                const secs = j.filter(r => r.medianSeconds != null).map(r => r.medianSeconds).sort((a, b) => a - b);
+                return { burst, rep: data.networkRepeatPhonePct || 0, perf: data.networkPerfectSilentPct || 0, ooh, refusedPer, secs: secs.length ? secs[Math.floor(secs.length / 2)] : null };
+            }
+            /* The signals that make a branch stand out, strongest first, in plain words. */
+            function signals(r, N){
+                const out = [];
+                if(r.judged && r.burstPct != null && r.burstPct >= Math.max(10, N.burst + 10)) out.push({ k: 'burst', label: 'Same phone, minutes apart', v: r.burstPct, unit: '%', net: N.burst, sev: r.burstPct >= 25 ? 2 : 1 });
+                if((r.refused || 0) >= 5) out.push({ k: 'refused', label: 'Refused by the limits', v: r.refused, unit: '', net: N.refusedPer, max: Math.max(r.refused, N.refusedPer * 3, 10), sev: r.refused >= 15 ? 2 : 1,
+                    note: Object.keys(r.refusedBy || {}).map(k => k + ' ×' + r.refusedBy[k]).join(' · ') });
+                if(r.repeatPhonePct >= N.rep + 25) out.push({ k: 'rep', label: 'Same phone number on many forms', v: r.repeatPhonePct, unit: '%', net: N.rep, sev: 1 });
+                if(r.subs >= 40 && r.perfectSilentPct >= N.perf + 25) out.push({ k: 'perf', label: '5★ with no comment', v: r.perfectSilentPct, unit: '%', net: N.perf, sev: 1 });
+                if((r.outOfHours || 0) >= 10 && (r.outOfHoursPct || 0) >= 10) out.push({ k: 'ooh', label: 'Sent outside opening hours', v: r.outOfHoursPct, unit: '%', net: N.ooh, sev: 1, note: r.outOfHours + ' forms' });
+                if(r.medianSeconds != null && r.medianSeconds < 10) out.push({ k: 'fast', label: 'Whole form in a few seconds', v: r.medianSeconds, unit: ' s', net: N.secs, sev: 2, low: true });
+                return out.sort((a, b) => b.sev - a.sev);
+            }
+            const MEANS = {
+                burst: ['forms filled in on one phone for several people — often staff at the counter, or a customer asked to do it again.', 'call 5 recent customers of this branch to confirm they visited, and ask the manager how the QR is offered.'],
+                refused: ['the same device or number kept trying after the limits stopped it — someone is topping up the numbers.', 'area manager visit this week; watch how feedback is collected at the counter.'],
+                rep: ['one phone number is being typed into many forms — a staff or branch number instead of the customer\u2019s.', 'check the repeated number in Submissions and remind staff that customers enter their own.'],
+                perf: ['many perfect scores with nothing written — forms filled quickly to lift the rating.', 'spot-check a handful of these customers by phone.'],
+                ooh: ['forms sent while the branch was closed — filled in later, not by guests at the table.', 'ask the branch how and when the QR is being used.'],
+                fast: ['forms finished faster than anyone could read them.', 'treat this branch\u2019s ratings with care until a spot-check is done.']
+            };
+            const bar = (s) => { const max = s.max || (s.unit === '%' ? 100 : Math.max(s.v, s.net || 0) * 1.3 || 1);
+                const w = Math.min(100, s.v / max * 100), m = s.net == null ? null : Math.min(100, s.net / max * 100);
+                return `<div class="ig2-cmp"><i class="${s.sev >= 2 ? 'hi' : 'md'}" style="width:${s.low ? 100 - w : w}%"></i>${m == null ? '' : `<u style="left:${s.low ? 100 - m : m}%"></u>`}</div>`; };
+            const fmtV = s => (s.unit === '%' ? Math.round(s.v) + '%' : s.unit === ' s' ? Math.round(s.v) + ' s' : n(s.v));
+            const fmtN = s => s.net == null ? '' : 'typical branch ' + (s.unit === '%' ? Math.round(s.net) + '%' : s.unit === ' s' ? Math.round(s.net) + ' s' : (Math.round(s.net * 10) / 10) + ' per branch');
+
             function render(){
                 const host = document.getElementById('integrity-root'); if(!host) return;
-                if(roleKey(PERM.role) !== 'owner'){
-                    host.innerHTML = '<div class="fb-empty">Branch integrity is available to the Owner.</div>';
-                    return;
-                }
-                if(!data){
-                    host.innerHTML = '<div class="fb-empty"><i class="fas fa-circle-notch fa-spin"></i> Counting submissions\u2026</div>';
-                    load().then(() => render());
-                    return;
-                }
-                if(data.status !== 'success'){
-                    host.innerHTML = `<div class="fb-empty">${esc(data.message || 'Could not load the report.')}</div>`;
-                    return;
-                }
-                const rows = data.rows || [];
-                const bad = rows.filter(r => r.band === 'investigate');
-                const watch = rows.filter(r => r.band === 'watch');
-                const refused = rows.reduce((t, r) => t + (r.refused || 0), 0);
-                const subs = rows.reduce((t, r) => t + (r.subs || 0), 0);
-                const sel = rows.find(r => r.branch === open_) || rows[0] || null;
+                if(roleKey(PERM.role) !== 'owner'){ host.innerHTML = '<div class="fb-empty">Branch integrity is available to the Owner.</div>'; return; }
+                if(!data){ host.innerHTML = '<div class="fb-empty"><i class="fas fa-circle-notch fa-spin"></i> Counting submissions\u2026</div>'; load().then(() => render()); return; }
+                if(data.status !== 'success'){ host.innerHTML = `<div class="fb-empty">${esc(data.message || 'Could not load the report.')}</div>`; return; }
+                const K = known();
+                const all = data.rows || [];
+                const rows = K.size ? all.filter(r => K.has(String(r.branch).toLowerCase())) : all;
+                const odd = K.size ? all.filter(r => !K.has(String(r.branch).toLowerCase())) : [];
+                const N = netAvg(rows);
+                const bad = rows.filter(r => r.band === 'investigate'), watch = rows.filter(r => r.band === 'watch'), clean = rows.filter(r => r.band === 'clean');
+                const refused = all.reduce((t, r) => t + (r.refused || 0), 0), subs = all.reduce((t, r) => t + (r.subs || 0), 0);
+                const sel = rows.concat(odd).find(r => r.branch === open_) || null;
+                const lbl = /^(today|yesterday)$/i.test(data.label || '') ? data.label : 'the ' + (data.label || 'selected period');
 
-                const kpi = (cls, label, value, note) =>
-                    `<div class="intg-k ${cls}"><span>${esc(label)}</span><b>${esc(value)}</b><small>${esc(note)}</small></div>`;
-                // A measure with no data behind it yet shows a dash, not a zero:
-                // a blank is honest, a zero looks like a finding.
-                const dash = '\u2014';
-                const row = r => `<tr data-branch="${esc(r.branch)}">
-                    <td><b>${esc(r.branch)}</b><div class="intg-why">${esc(
-                        r.band === 'clean'
-                            ? (r.judged ? 'nothing unusual' : 'not enough recorded attempts to judge yet')
-                            : r.why.join(' \u00b7 '))}</div></td>
-                    <td data-label="Standing"><span class="intg-band ${r.band}">${r.band === 'investigate' ? 'Investigate' : r.band === 'watch' ? 'Watch' : 'Clean'}</span></td>
-                    <td data-label="Subs">${n(r.subs)}</td>
-                    <td data-label="Attempts">${n(r.attempts)}</td>
-                    <td data-label="Refused" class="${mark(r.refused, 1, 5)}">${n(r.refused)}</td>
-                    <td data-label="Devices">${r.devices == null ? dash : n(r.devices)}</td>
-                    <td data-label="Per device" class="${r.subsPerDevice == null ? '' : mark(r.subsPerDevice, 20, 40)}">${r.subsPerDevice == null ? dash : n(r.subsPerDevice)}</td>
-                    <td data-label="Repeat numbers" class="${r.repeatPhonePct >= (data.networkRepeatPhonePct + 25) ? 'intg-warn' : ''}">${n(r.repeatPhonePct)}%</td>
-                    <td data-label="Repeat device" class="${r.burstPct == null ? '' : mark(r.burstPct, 10, 25)}">${r.burstPct == null ? dash : n(r.burstPct) + '%'}</td>
-                    <td data-label="Out of hours" class="${r.outOfHoursPct >= 10 && r.outOfHours >= 10 ? 'intg-warn' : ''}">${n(r.outOfHours)}</td>
-                    <td data-label="5/5 no comment" class="${r.subs >= 40 && r.perfectSilentPct >= (data.networkPerfectSilentPct + 25) ? 'intg-warn' : ''}">${n(r.perfectSilentPct)}%</td>
-                    <td data-label="Median secs" class="${r.medianSeconds != null && r.medianSeconds < 10 ? 'intg-flag' : ''}">${r.medianSeconds == null ? dash : n(r.medianSeconds) + 's'}</td>
-                </tr>`;
+                // ── headline ─────────────────────────────────────────────
+                const names = list => list.map(r => r.branch);
+                const joinN = a => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+                const hero = `<div class="ig2-hero"><div><h3><span>${clean.length} of ${rows.length}</span> branches look clean.</h3>
+                        <p>${watch.length ? watch.length + ' ' + (watch.length === 1 ? 'is' : 'are') + ' worth watching' : 'None to watch'}${bad.length ? ' and <b class="bad">' + bad.length + ' need' + (bad.length === 1 ? 's' : '') + ' a closer look</b> — ' + esc(joinN(names(bad))) : ''}.</p>
+                        <div class="ig2-seg">${[[clean.length, '#10B981'], [watch.length, '#F59E0B'], [bad.length, '#DC2626']].filter(x => x[0]).map(([v, c]) => `<i style="flex:${v};background:${c}"></i>`).join('')}</div>
+                        <div class="ig2-leg"><span><b style="background:#10B981"></b>Clean ${clean.length}</span><span><b style="background:#F59E0B"></b>Watch ${watch.length}</span><span><b style="background:#DC2626"></b>Investigate ${bad.length}</span></div></div>
+                    <div class="ig2-big"><div class="t"><i style="background:#4F46E5" class="fas fa-shield-halved"></i>Stopped by the limits</div><b>${n(refused)}</b><small>submission attempts refused — the fake-feedback protection at work</small></div>
+                    <div class="ig2-big"><div class="t"><i style="background:#0EA5E9" class="fas fa-list-check"></i>Checked</div><b>${n(subs)}</b><small>submissions in ${esc(lbl)} · ${n(data.networkPerfectSilentPct)}% are 5★ with no comment</small></div></div>`;
 
-                const detail = sel ? `<div class="intg-detail">
-                    <h4>${esc(sel.branch)} \u2014 what was counted</h4>
-                    <div class="sub">Every line is a count from the submissions themselves. Nothing here is an opinion.</div>
-                    ${(sel.why && sel.why.length ? sel.why : ['Nothing unusual in this period.']).map(w => `<div class="intg-line">${esc(w)}</div>`).join('')}
-                    ${sel.band === 'clean' && sel.why && sel.why.length ? '<div class="intg-line" style="color:var(--text-muted);font-weight:600;">Below the level worth acting on \u2014 the branch reads clean.</div>' : ''}
-                    <div class="intg-line">${n(sel.subs)} submissions ${esc(/^(today|yesterday)$/.test(data.label || '') ? data.label : 'in ' + (data.label || 'this period'))}<em>${n(sel.attempts)} attempt${sel.attempts === 1 ? '' : 's'} recorded${sel.devices == null ? '' : ' from ' + n(sel.devices) + ' device' + (sel.devices === 1 ? '' : 's')}</em></div>
-                    ${sel.judged ? '' : `<div class="intg-line">Not judged on devices or timing yet<em>fewer than ${n(data.enough)} recorded attempts</em></div>`}
-                    ${Object.keys(sel.refusedBy || {}).length ? `<div class="intg-line">Refused by${Object.keys(sel.refusedBy).map(k => ' ' + esc(k) + ' \u00d7' + sel.refusedBy[k]).join(',')}</div>` : ''}
-                </div>` : '';
+                // ── needs a look ─────────────────────────────────────────
+                const flagged = bad.concat(watch);
+                const card = r => { const sg = signals(r, N);
+                    // The server flagged it for a reason our thresholds did not repeat: show that reason as a signal too.
+                    if(!sg.length){ const w = (r.why || []).join(' ').toLowerCase();
+                        if(/device already used|minutes earlier/.test(w) && r.burstPct != null) sg.push({ k: 'burst', label: 'Same phone, minutes apart', v: r.burstPct, unit: '%', net: N.burst, sev: 1 });
+                        else if(/refused/.test(w)) sg.push({ k: 'refused', label: 'Refused by the limits', v: r.refused || 0, unit: '', net: N.refusedPer, max: Math.max(r.refused || 0, N.refusedPer * 3, 10), sev: 1, note: Object.keys(r.refusedBy || {}).map(k => k + ' ×' + r.refusedBy[k]).join(' · ') });
+                        else if(/same number|phone number|repeat/.test(w)) sg.push({ k: 'rep', label: 'Same phone number on many forms', v: r.repeatPhonePct, unit: '%', net: N.rep, sev: 1 });
+                        else if(/5\/5|no comment|perfect/.test(w)) sg.push({ k: 'perf', label: '5★ with no comment', v: r.perfectSilentPct, unit: '%', net: N.perf, sev: 1 });
+                        else if(/hours|closed/.test(w)) sg.push({ k: 'ooh', label: 'Sent outside opening hours', v: r.outOfHoursPct || 0, unit: '%', net: N.ooh, sev: 1 });
+                        else if(/second/.test(w) && r.medianSeconds != null) sg.push({ k: 'fast', label: 'Whole form in a few seconds', v: r.medianSeconds, unit: ' s', net: N.secs, sev: 1, low: true }); }
+                    const top = sg[0];
+                    const why = !sg.length ? (r.why || []).slice(0, 2).map(w => `<div class="ig2-why">${esc(w)}</div>`).join('') : '';
+                    return `<div class="ig2-bc ${r.band === 'investigate' ? 'inv' : 'wat'}" onclick="INTEG.open('${esc(r.branch).replace(/'/g, "\\'")}')"><div class="ig2-bh"><b>${esc(r.branch)}</b><span class="ig2-bd ${r.band === 'investigate' ? 'inv' : 'wat'}">${r.band === 'investigate' ? 'INVESTIGATE' : 'WATCH'}</span></div>
+                        ${sg.slice(0, 3).map(s => `<div class="ig2-sg"><div class="l"><span>${esc(s.label)}</span><em class="${s.sev >= 2 ? 'hi' : 'md'}">${fmtV(s)}</em></div>${bar(s)}<small>${esc([fmtN(s), s.note].filter(Boolean).join(' · '))}</small></div>`).join('')}${why}
+                        ${top ? `<div class="ig2-mean"><b>Usually means:</b> ${esc(MEANS[top.k][0])}</div><div class="ig2-do"><b>Do:</b> ${esc(MEANS[top.k][1])}</div>` : ''}</div>`; };
+                const shownCards = allCards ? flagged : flagged.slice(0, 3);
+                const needs = flagged.length ? `<div class="card ig2-card"><h4 class="ig2-h"><i class="b"></i>NEEDS A LOOK<small>worst first · the dark mark is the typical branch</small></h4>
+                        <div class="ig2-nl">${shownCards.map(card).join('')}</div>
+                        ${flagged.length > 3 ? `<div class="ig2-more"><span>${allCards ? '' : '+ ' + (flagged.length - 3) + ' more: ' + esc(names(flagged.slice(3)).join(', '))}</span><button onclick="INTEG.cards()">${allCards ? 'Show fewer ▴' : 'Show all ▾'}</button></div>` : ''}</div>`
+                    : `<div class="card ig2-card"><div class="ig2-ok"><i class="fas fa-circle-check"></i> No branch stands out in ${esc(lbl)}.</div></div>`;
 
-                host.uiHTML = `
-                    <div class="fb-toolbar">
-                        <div><div class="section-header" style="margin-bottom:0;"><h3>Branch integrity</h3></div>
-                             <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px;">
-                                How trustworthy each branch's feedback looks. Built from every submission attempt, accepted or refused.</div></div>
-                        <div class="spacer"></div>
-                        <div class="intg-ranges">${RANGES.map(([v, t]) =>
-                            `<button type="button" class="intg-range${v === range ? ' on' : ''}" onclick="INTEG.setRange('${v}')">${t}</button>`).join('')}</div>
-                        <button class="fb-btn sm" onclick="INTEG.refresh()"><i class="fas fa-rotate"></i> Refresh</button>
-                    </div>
-                    <div class="intg-kpis">
-                        ${kpi('', 'Branches measured', n(rows.length), esc(data.label || ('last ' + days + ' days')))}
-                        ${kpi(bad.length ? 'bad' : '', 'Investigate', n(bad.length), bad.slice(0, 3).map(r => r.branch).join(', ') || 'none')}
-                        ${kpi(watch.length ? 'warn' : '', 'Watch', n(watch.length), watch.slice(0, 3).map(r => r.branch).join(', ') || 'none')}
-                        ${kpi('', 'Refused by limits', n(refused), 'every attempt is recorded')}
-                        ${kpi('', 'Submissions checked', n(subs), n(data.networkPerfectSilentPct) + '% are 5/5 with no comment')}
-                    </div>
-                    <div class="intg-scroll"><table class="intg-table"><thead><tr>
-                        <th style="width:24%">Branch</th><th>Standing</th><th>Subs</th><th>Attempts</th><th>Refused</th><th>Devices</th>
-                        <th>Per device</th><th>Repeat numbers</th><th>Repeat device</th><th>Out of hours</th><th>5/5 no comment</th><th>Median secs</th>
-                    </tr></thead><tbody>${rows.length ? rows.map(row).join('') : '<tr><td colspan="12" style="color:var(--text-muted);">No submissions in this period.</td></tr>'}</tbody></table></div>
+                const guide = `<div class="card ig2-card"><h4 class="ig2-h"><i class="b"></i>WHAT WE CHECK<small>each branch against the network's own average, not a fixed number</small></h4><div class="ig2-guide">
+                    ${[['fa-mobile-screen', 'Same phone again', 'Several forms from one phone within minutes.'], ['fa-phone', 'Same number again', 'One phone number on many forms.'], ['fa-shield-halved', 'Refused by limits', 'Attempts the protection blocked.'],
+                       ['fa-moon', 'Outside opening hours', 'Sent when the branch was closed.'], ['fa-star', 'Perfect but silent', '5★ with no comment at all.'], ['fa-bolt', 'Too fast to be real', 'Whole form in under 10 seconds.']]
+                      .map(([i, b, s]) => `<div class="ig2-gd"><i class="fas ${i}"></i><b>${b}</b><small>${s}</small></div>`).join('')}</div></div>`;
+
+                // ── the table ────────────────────────────────────────────
+                const cls = (on, hi) => on ? (hi ? 'hi' : 'md') : '';
+                const tr = r => { const band = r.band === 'investigate' ? ['inv', 'INVESTIGATE'] : r.band === 'watch' ? ['wat', 'WATCH'] : ['cl', 'CLEAN'];
+                    return `<tr data-branch="${esc(r.branch)}" class="${open_ === r.branch ? 'sel' : ''}"><td><b>${esc(r.branch)}</b>${r.judged ? '' : '<small>not enough attempts to judge phones and timing yet</small>'}</td><td><span class="ig2-bd ${band[0]}">${band[1]}</span></td>
+                        <td>${n(r.subs)}</td>
+                        <td class="${cls(r.burstPct != null && r.burstPct >= Math.max(10, N.burst + 10), r.burstPct >= 25)}">${r.burstPct == null ? dash : Math.round(r.burstPct) + '%'}</td>
+                        <td class="${cls(r.repeatPhonePct >= N.rep + 25, false)}">${n(r.repeatPhonePct)}%</td>
+                        <td class="${cls(r.subs >= 40 && r.perfectSilentPct >= N.perf + 25, false)}">${n(r.perfectSilentPct)}%</td>
+                        <td class="${cls(r.refused >= 5, r.refused >= 15)}">${n(r.refused)}</td>
+                        <td class="${cls(r.medianSeconds != null && r.medianSeconds < 10, true)}">${r.medianSeconds == null ? dash : n(r.medianSeconds) + ' s'}</td>
+                        ${moreCols ? `<td>${n(r.attempts)}</td><td>${r.devices == null ? dash : n(r.devices)}</td><td class="${r.subsPerDevice == null ? '' : cls(r.subsPerDevice >= 20, r.subsPerDevice >= 40)}">${r.subsPerDevice == null ? dash : n(r.subsPerDevice)}</td><td class="${cls(r.outOfHoursPct >= 10 && r.outOfHours >= 10, false)}">${n(r.outOfHours)}</td>` : ''}</tr>`; };
+                const detail = sel ? `<div class="ig2-detail"><h5>${esc(sel.branch)} — what was counted</h5><div class="sub">Every line is a count from the submissions themselves. Nothing here is an opinion.</div>
+                    ${(sel.why && sel.why.length ? sel.why : ['Nothing unusual in this period.']).map(w => `<div class="ig2-line">${esc(w)}</div>`).join('')}
+                    <div class="ig2-line">${n(sel.subs)} submissions in ${esc(lbl)}<em>${n(sel.attempts)} attempt${sel.attempts === 1 ? '' : 's'} recorded${sel.devices != null ? ' from ' + n(sel.devices) + ' devices' : ''}</em></div>
+                    ${sel.judged ? '' : `<div class="ig2-line">Not judged on phones or timing yet<em>fewer than ${n(data.enough)} recorded attempts</em></div>`}
+                    ${Object.keys(sel.refusedBy || {}).length ? `<div class="ig2-line">Refused by${Object.keys(sel.refusedBy).map(k => ' ' + esc(k) + ' ×' + sel.refusedBy[k]).join(',')}</div>` : ''}</div>` : '';
+                const table = `<div class="card ig2-card"><h4 class="ig2-h"><i class="b"></i>ALL BRANCHES<small>tap a branch for what was counted</small></h4>
+                    <div class="ig2-scroll"><table class="ig2-t"><thead><tr><th>Branch</th><th>Standing</th><th>Submissions</th><th>Same phone again</th><th>Same number again</th><th>Perfect but silent</th><th>Refused</th><th>Typical time</th>${moreCols ? '<th>Attempts</th><th>Devices</th><th>Forms per device</th><th>Outside hours</th>' : ''}</tr></thead>
+                    <tbody>${rows.length ? rows.map(tr).join('') : '<tr><td colspan="12" class="ig2-mut">No submissions in this period.</td></tr>'}</tbody></table></div>
                     ${detail}
-                    <div class="intg-note">Subs, repeat numbers, out-of-hours and 5/5 come from the submissions of ${esc(data.label || 'this period')}.
-                        Attempts, devices, repeat-device and timing come from the attempt record, which has ${n(data.integDays)} day${data.integDays === 1 ? '' : 's'} of data
-                        (${n(data.integRows)} attempts so far) — a branch with fewer than ${n(data.enough)} recorded attempts shows a dash and is not judged on them.
-                        Proportions are compared against the network's own averages, not a fixed number.</div>`;
-                // Never repaint while somebody is interacting with this tab:
-                // a rebuild mid-click throws the click away.
+                    <div class="ig2-more"><span class="ig2-mut">${moreCols ? 'Showing every column' : 'More columns: attempts, devices, forms per device, outside hours'}</span><button onclick="INTEG.cols()">${moreCols ? 'Fewer ▴' : 'Show ▾'}</button></div>
+                    ${odd.length ? `<div class="ig2-odd"><b>Names we don't recognise as branches</b> — ${odd.map(r => `<span data-branch="${esc(r.branch)}">${esc(r.branch)} (${n(r.subs)})</span>`).join(', ')}. Usually a typo or a name typed by hand; they are counted in the totals above.</div>` : ''}
+                    <div class="ig2-note">Submissions, same number, outside hours and perfect-but-silent come from the submissions of ${esc(lbl)}. Attempts, devices, same phone and timing come from the attempt record, which holds ${n(data.integDays)} day${data.integDays === 1 ? '' : 's'} so far (${n(data.integRows)} attempts) — so for longer ranges a branch can show more submissions than attempts. A branch with fewer than ${n(data.enough)} recorded attempts shows a dash and is not judged on them.</div></div>`;
+
+                host.uiHTML = `<div class="ig2"><div class="ig2-top"><div><h2>Branch integrity</h2><p>Can we trust each branch's feedback? Every submission attempt — accepted or refused — is checked.</p></div><span class="sp"></span>
+                        <div class="ig2-rg">${RANGES.map(([v, t]) => `<button class="${v === range ? 'on' : ''}" onclick="INTEG.setRange('${v}')">${t}</button>`).join('')}</div>
+                        <button class="ig2-rf" onclick="INTEG.refresh()" title="Refresh"><i class="fas fa-rotate"></i></button></div>
+                    ${hero}${needs}${guide}${table}</div>`;
                 const active = document.activeElement;
-                if(active && host.contains(active) && active.tagName !== 'BODY') return;
+                if(active && host.contains(active) && active.tagName !== 'BODY' && active.tagName !== 'BUTTON') return;
                 if(host.__lastHtml !== host.uiHTML){ host.__lastHtml = host.uiHTML; host.innerHTML = host.uiHTML; }
             }
             function setRange(v){ range = String(v || '7'); data = null; render(); }
             function refresh(){ data = null; render(); }
             document.addEventListener('click', e => {
-                const tr = e.target.closest && e.target.closest('#integrity-root tr[data-branch]');
-                if(tr){ open_ = tr.dataset.branch; render(); }
+                const tr = e.target.closest && e.target.closest('#integrity-root [data-branch]');
+                if(tr){ open_ = open_ === tr.dataset.branch ? '' : tr.dataset.branch; render(); }
             });
-            return { render, setRange, refresh };
+            return { render, setRange, refresh, open(b){ open_ = b; render(); setTimeout(() => { const d = document.querySelector('#integrity-root .ig2-detail'); if(d) d.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 50); },
+                     cols(){ moreCols = !moreCols; render(); }, cards(){ allCards = !allCards; render(); } };
         })();
 
         const ACTS = (function(){
