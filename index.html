@@ -8990,7 +8990,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.156.0 · 23 Sep 2026 · Redesigned screen notice: gradient card, headline, optional button; end time no longer shown';
+        const BUILD_VERSION = 'v2.157.0 · 23 Sep 2026 · Reports & alerts: Level 1 escalations (instant) and the Weekly summary';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -12981,8 +12981,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            Types now: Pattern alert (as it happens) and the Verified complaints
            report (scheduled). Owner-only; saved as the setting `reports`.
            ═══════════════════════════════════════════════════════════════════ */
-        const RP_TYPES = { pattern: { label: 'Pattern alert', kind: 'ALERT' }, daily_ops: { label: 'Daily operations report', kind: 'REPORT' },
+        const RP_TYPES = { pattern: { label: 'Pattern alert', kind: 'ALERT' }, escalation: { label: 'Level 1 escalation', kind: 'ALERT' },
+                           daily_ops: { label: 'Daily operations report', kind: 'REPORT' }, weekly: { label: 'Weekly summary', kind: 'REPORT' },
                            verified: { label: 'Verified complaints report', kind: 'REPORT' } };
+        const rpIsAlert = t => t === 'pattern' || t === 'escalation';
         const RP_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
         function rpDefaults(){
             const base = { staff: [], external: [], email: true, phone: false, hide: false, branches: [], desc: '' };
@@ -12990,19 +12992,22 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 Object.assign({}, base, { id: 'patterns', type: 'pattern', active: false, title: 'Pattern alerts', phone: true,
                                           desc: 'The same complaint at several branches, or several times at one branch, today.', schedule: { freq: 'daily', day: 1, time: '09:30' } }),
                 Object.assign({}, base, { id: 'dailyops', type: 'daily_ops', active: false, title: 'Daily operations report', schedule: { freq: 'daily', day: 1, time: '09:30' } }),
-                Object.assign({}, base, { id: 'verified', type: 'verified', active: false, title: 'Verified complaints report', schedule: { freq: 'daily', day: 1, time: '10:00' } })
+                Object.assign({}, base, { id: 'verified', type: 'verified', active: false, title: 'Verified complaints report', schedule: { freq: 'daily', day: 1, time: '10:00' } }),
+                Object.assign({}, base, { id: 'level1', type: 'escalation', active: false, title: 'Level 1 escalations', phone: true,
+                                          desc: 'A branch reached Level 1: incidents at the critical level, a food-safety complaint, or positive feedback below critical.', schedule: { freq: 'daily', day: 1, time: '09:30' } }),
+                Object.assign({}, base, { id: 'weekly', type: 'weekly', active: false, title: 'Weekly summary', schedule: { freq: 'weekly', day: 1, time: '09:00' } })
             ];
         }
         function rpList(){
             const r = (window.OwnerSettings || {}).reports;
             if(!Array.isArray(r)) return rpDefaults();
             const list = JSON.parse(JSON.stringify(r));
-            // v2.153.0: a list saved before the Daily operations report existed shows it, off, until edited.
-            if(!list.some(x => x.type === 'daily_ops')) list.splice(1, 0, rpDefaults()[1]);
+            // v2.153.0 / v2.157.0: a list saved before a type existed shows it, off, until edited.
+            rpDefaults().forEach(d => { if(!list.some(x => x.type === d.type)) list.push(d); });
             return list;
         }
         function rpWhen(r){
-            if(r.type === 'pattern') return 'As it happens · ' + [r.email ? 'email' : '', r.phone ? 'phone' : ''].filter(Boolean).join(' + ');
+            if(rpIsAlert(r.type)) return 'As it happens · ' + [r.email ? 'email' : '', r.phone ? 'phone' : ''].filter(Boolean).join(' + ');
             const t = r.schedule || {}; const [hh, mm] = String(t.time || '09:30').split(':').map(Number);
             const hm = ((hh % 12) || 12) + ':' + String(mm).padStart(2, '0') + (hh < 12 ? ' AM' : ' PM');
             return (t.freq === 'weekly' ? 'Weekly · ' + RP_DAYS[t.day || 0] : 'Daily') + ' · ' + hm;
@@ -13015,7 +13020,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         function reportsPane(){
             const list = rpList();
             const rows = list.map((r, i) => `<div class="rp-row"><div><b>${_ntEsc(r.title)}</b><div class="rp-meta">
-                    <span class="rp-chip ${r.type === 'pattern' ? 'instant' : 'report'}">${RP_TYPES[r.type].kind}</span><span>${_ntEsc(rpWhen(r))}</span><span>·</span><span>${rpWho(r)}</span>
+                    <span class="rp-chip ${rpIsAlert(r.type) ? 'instant' : 'report'}">${RP_TYPES[r.type].kind}</span><span>${_ntEsc(rpWhen(r))}</span><span>·</span><span>${rpWho(r)}</span>
                     </div></div>
                 <div class="rp-right"><button class="tg ${r.active ? 'on' : ''}" aria-label="${r.active ? 'Switch off' : 'Switch on'}" onclick="rpToggle(${i})"></button>
                 <button class="rp-edit" onclick="rpEdit(${i})">Edit</button></div></div>`).join('');
@@ -13085,15 +13090,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const users = _rpUsers || [];
             const nameOf = e => { const u = users.find(x => String(x.email).toLowerCase() === e); return u ? (u.name || u.email) : e; };
             const branches = window.__svBranches || [];
-            const isPat = r.type === 'pattern';
+            const isPat = rpIsAlert(r.type);
             const t = r.schedule || {};
             body.innerHTML = `<div class="rc">
                 <div>
                     <h4>Details</h4>
                     <div class="f"><input type="text" id="rp-title" maxlength="80" placeholder="Title" value="${_ntEsc(r.title)}"><small>Used as the email subject.</small></div>
                     <div class="f"><textarea id="rp-desc" maxlength="300" placeholder="Description (optional)">${_ntEsc(r.desc || '')}</textarea><small>Shown at the top of the email.</small></div>
-                    <div class="f"><select id="rp-type" onchange="rpRender()">${Object.keys(RP_TYPES).map(k => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${RP_TYPES[k].label}${k === 'pattern' ? ' — as it happens' : ' — scheduled'}</option>`).join('')}</select>
-                        <small>More types come next: Level 1 escalations, Weekly summary.</small></div>
+                    <div class="f"><select id="rp-type" onchange="rpRender()">${Object.keys(RP_TYPES).map(k => `<option value="${k}" ${r.type === k ? 'selected' : ''}>${RP_TYPES[k].label}${rpIsAlert(k) ? ' — as it happens' : ' — scheduled'}</option>`).join('')}</select>
+                        <small>Alerts go out as things happen; reports on their schedule.</small></div>
                     <label class="chk"><input type="checkbox" id="rp-active" ${r.active ? 'checked' : ''}><span>Active</span></label>
                     <h4 style="margin-top:6px;">Settings</h4>
                     <label class="chk"><input type="checkbox" id="rp-hide" ${r.hide ? 'checked' : ''}><span>Hide locations<small style="color:var(--text-muted);">No branch names — totals only, for outside readers.</small></span></label>
@@ -13112,7 +13117,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <h4 style="margin-top:6px;">${isPat ? 'How it is sent' : 'Schedule'}</h4>
                     ${isPat ? `<label class="chk"><input type="checkbox" id="rp-email" ${r.email ? 'checked' : ''}><span>Email</span></label>
                         <label class="chk"><input type="checkbox" id="rp-phone" ${r.phone ? 'checked' : ''}><span>Phone alert<small style="color:var(--text-muted);">Staff with the dashboard installed on their phone. Respects quiet hours and the alert pause.</small></span></label>
-                        <div class="inst">Sent the moment a pattern is found — once per pattern per day, and again only if it spreads to another branch. Thresholds are in Standards → Pattern alerts.</div>`
+                        <div class="inst">${r.type === 'escalation' ? 'Sent the moment a branch reaches Level 1 — incidents at the critical level, any food-safety complaint, or positive feedback below critical once 30 ratings are in. Once per branch per reason per day. Levels are in Standards.' : 'Sent the moment a pattern is found — once per pattern per day, and again only if it spreads to another branch. Thresholds are in Standards → Pattern alerts.'}</div>`
                     : `<input type="checkbox" id="rp-email" checked hidden>
                         <div class="row2"><select id="rp-freq" onchange="rpRender()"><option value="daily" ${t.freq !== 'weekly' ? 'selected' : ''}>Daily</option><option value="weekly" ${t.freq === 'weekly' ? 'selected' : ''}>Weekly</option></select>
                         <select id="rp-day" ${t.freq === 'weekly' ? '' : 'disabled'}>${RP_DAYS.map((d, n) => `<option value="${n}" ${n === (t.day || 0) ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
@@ -13136,14 +13141,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         function rpCheck(r){
             if(!r.title) return 'Give it a title.';
             if(r.active && !r.staff.length && !r.external.length) return 'Add at least one recipient, or switch Active off.';
-            if(r.type === 'pattern' && !r.email && !r.phone) return 'Choose email, phone, or both.';
+            if(rpIsAlert(r.type) && !r.email && !r.phone) return 'Choose email, phone, or both.';
             if(document.getElementById('rp-only') && document.getElementById('rp-only').checked && !r.branches.length) return 'Tick at least one branch, or untick "Only these branches".';
             return '';
         }
         async function rpSave(){
             const E = window.__rpEditing; const r = rpRead(); const err = rpCheck(r);
             if(err){ UI.toast(err, 'warning', 4000); return; }
-            if(r.type !== 'pattern'){ r.email = true; r.phone = false; }
+            if(!rpIsAlert(r.type)){ r.email = true; r.phone = false; }
             const list = rpList(); if(E.i >= 0) list[E.i] = r; else list.push(r);
             const b = document.getElementById('rp-save'); if(b){ b.disabled = true; b.textContent = 'Saving…'; }
             if(await rpSaveList(list, 'Saved.')){ const m = document.getElementById('rp-editor'); if(m) m.remove(); }
