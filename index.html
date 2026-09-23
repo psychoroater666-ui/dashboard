@@ -696,18 +696,31 @@
         
         .rc .chips a { cursor:pointer; margin-left:3px; opacity:.7; }
         .rp-brs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px 10px; max-height:180px; overflow:auto; border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; font-size:.74rem; }
-        /* v2.151.0: the screen notice */
-        .nt-bar { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; font-size:.82rem; font-weight:600; line-height:1.4; border:1px solid; }
-        .nt-bar .nt-ic { width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; font-size:.78rem; flex-shrink:0; color:#fff; }
-        .nt-bar .nt-tx { flex:1; min-width:0; }
-        .nt-bar em { font-style:normal; font-weight:500; opacity:.75; margin-left:4px; white-space:nowrap; }
-        .nt-bar .nt-x { border:none; background:transparent; font-size:1.1rem; cursor:pointer; color:inherit; opacity:.6; width:28px; height:28px; border-radius:8px; flex-shrink:0; }
-        .nt-info { background:rgba(1,1,151,.05); border-color:rgba(1,1,151,.18); color:#010197; } .nt-info .nt-ic { background:#010197; }
-        .nt-important { background:#FFFBEB; border-color:#FCD34D; color:#92400E; } .nt-important .nt-ic { background:#D97706; }
-        .nt-urgent { background:#FEF2F2; border-color:#FCA5A5; color:#991B1B; } .nt-urgent .nt-ic { background:#DC2626; }
+        /* v2.156.0: the screen notice -- gradient card */
+        #notice-host { margin-bottom:2px; }
+        .nt-bar { position:relative; overflow:hidden; display:flex; align-items:center; gap:16px; padding:16px 18px 16px 16px; border-radius:16px; color:#fff; box-shadow:0 10px 30px -10px rgba(1,1,151,.45); }
+        .nt-bar::before { content:''; position:absolute; inset:0; pointer-events:none; background:radial-gradient(600px 160px at 85% -40%, rgba(255,255,255,.22), transparent 60%), radial-gradient(300px 120px at 10% 140%, rgba(100,208,255,.35), transparent 60%); }
+        .nt-info { background:linear-gradient(120deg, #010197 0%, #1E3AE0 55%, #2F7BFF 100%); }
+        .nt-important { background:linear-gradient(120deg, #B45309 0%, #D97706 55%, #F59E0B 100%); box-shadow:0 10px 30px -10px rgba(217,119,6,.5); }
+        .nt-urgent { background:linear-gradient(120deg, #991B1B 0%, #DC2626 60%, #F43F5E 100%); box-shadow:0 10px 30px -10px rgba(220,38,38,.55); }
+        .nt-ic { position:relative; flex-shrink:0; width:46px; height:46px; border-radius:14px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:21px; font-weight:800; box-shadow:inset 0 0 0 1px rgba(255,255,255,.25); }
+        .nt-urgent .nt-ic::after { content:''; position:absolute; inset:-4px; border-radius:17px; border:2px solid rgba(255,255,255,.55); animation:ntRing 1.8s infinite; }
+        @keyframes ntRing { 0% { opacity:.9; transform:scale(.92); } 100% { opacity:0; transform:scale(1.18); } }
+        .nt-tx { position:relative; flex:1; min-width:0; display:grid; gap:3px; }
+        .nt-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .nt-pill { font:800 .62rem 'Inter',sans-serif; letter-spacing:.8px; background:#fff; color:#010197; border-radius:20px; padding:3px 8px; }
+        .nt-important .nt-pill, .nt-important .nt-cta { color:#B45309; } .nt-urgent .nt-pill, .nt-urgent .nt-cta { color:#B91C1C; }
+        .nt-h { font:800 1rem 'Inter',sans-serif; letter-spacing:-.2px; }
+        .nt-b { font:500 .84rem 'Inter',sans-serif; opacity:.92; line-height:1.45; }
+        .nt-plain .nt-b { font-weight:700; opacity:1; }
+        .nt-cta { position:relative; flex-shrink:0; border:none; background:#fff; color:#010197; font:800 .8rem 'Inter',sans-serif; padding:10px 16px; border-radius:11px; box-shadow:0 4px 14px rgba(0,0,0,.18); white-space:nowrap; cursor:pointer; }
+        .nt-x { position:relative; flex-shrink:0; width:32px; height:32px; border-radius:10px; border:none; background:rgba(255,255,255,.14); color:#fff; font-size:1.1rem; cursor:pointer; }
+        .nt-inline { box-shadow:none; }
         .nt-prev { display:grid; gap:6px; }
         .nt-lv .os-opt { padding:8px 10px; }
-        @media (max-width:520px){ .nt-lv { grid-template-columns:1fr !important; } .nt-bar { font-size:.78rem; align-items:flex-start; } }
+        @media (max-width:600px){ .nt-bar { flex-wrap:wrap; align-items:flex-start; padding:14px; } .nt-ic { width:40px; height:40px; font-size:18px; border-radius:12px; }
+            .nt-tx { flex:1 1 calc(100% - 100px); } .nt-cta { flex:1 1 100%; order:5; text-align:center; } .nt-x { position:absolute; top:10px; right:10px; }
+            .nt-h { font-size:.95rem; padding-right:30px; } .nt-lv { grid-template-columns:1fr !important; } }
         #notice-host:empty { display:none; }
         /* v2.150.0: Owner settings → Protection */
         .pr-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0; }
@@ -8977,7 +8990,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.155.0 · 23 Sep 2026 · Actions tab for everyone (scoped); only the assigned person closes an action; branch names on cross-branch actions';
+        const BUILD_VERSION = 'v2.156.0 · 23 Sep 2026 · Redesigned screen notice: gradient card, headline, optional button; end time no longer shown';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -11998,7 +12011,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const text = ((document.getElementById('nt-text') || {}).value || '').trim();
                 const until = (document.getElementById('nt-until') || {}).value || '';
                 if(until && until <= _ntNowPk()){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast('That end time has already passed.', 'warning', 4000); return; }
-                payload.notice = text ? { text, level: (document.querySelector('input[name="nt-lv"]:checked') || {}).value || 'info', until } : {};
+                payload.notice = text ? ntRead(text, (document.querySelector('input[name="nt-lv"]:checked') || {}).value || 'info', until) : {};
             } else if(tab === 'protection'){
                 const got = prCollect();
                 if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
@@ -12878,12 +12891,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' '
                  + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()] + ', ' + hm;
         }
+        /* v2.156.0: the redesigned banner -- a gradient card with a tag, an optional
+           headline and an optional button that opens one Sentinel tab. The end
+           time is never shown; the notice simply disappears at it. */
+        const NT_VIEWS = [['actions', 'Actions'], ['executive', 'Overview'], ['incidents', 'Incidents'], ['complaints', 'Complaints'],
+                          ['submissions', 'Submissions'], ['branches', 'Branches'], ['social', 'Social'], ['orders', 'Orders']];
         function noticeBar(n, preview){
             const lv = ['info', 'important', 'urgent'].indexOf(n.level) !== -1 ? n.level : 'info';
-            const ic = { info: 'i', important: '!', urgent: '!' }[lv];
-            const until = n.until ? ` <em>until ${_ntEsc(_ntUntilLabel(n.until))}</em>` : '';
+            const ic = { info: '✦', important: '★', urgent: '!' }[lv];
+            const tag = { info: 'NEW', important: 'IMPORTANT', urgent: 'URGENT' }[lv];
+            const b = n.button && n.button.view ? n.button : null;
+            const cta = b ? `<button class="nt-cta" ${preview ? 'tabindex="-1"' : `onclick="app.navigate('${_ntEsc(b.view)}')"`}>${_ntEsc(b.label || 'Open')} →</button>` : '';
             const x = lv !== 'urgent' ? `<button class="nt-x" aria-label="Close this notice" ${preview ? 'tabindex="-1"' : 'onclick="closeNotice()"'}>×</button>` : '';
-            return `<div class="nt-bar nt-${lv}${preview ? ' nt-inline' : ''}" role="status"><span class="nt-ic">${ic}</span><span class="nt-tx">${_ntEsc(n.text)}${until}</span>${x}</div>`;
+            const head = n.headline ? `<span class="nt-h">${_ntEsc(n.headline)}</span>` : '';
+            return `<div class="nt-bar nt-${lv}${preview ? ' nt-inline' : ''}${n.headline ? '' : ' nt-plain'}" role="status"><span class="nt-ic">${ic}</span>
+                <span class="nt-tx"><span class="nt-top"><span class="nt-pill">${tag}</span>${head}</span><span class="nt-b">${_ntEsc(n.text)}</span></span>${cta}${x}</div>`;
         }
         function renderNotice(){
             const scroll = document.getElementById('mainScroll'); if(!scroll) return;
@@ -12908,16 +12930,23 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const cur = n.level || 'info';
             const lvl = (v, t, d) => `<label class="os-opt ${cur === v ? 'on' : ''}"><input type="radio" name="nt-lv" value="${v}" ${cur === v ? 'checked' : ''} onchange="this.closest('.nt-lv').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this))); ntPreview()"><span><b>${t}</b><small>${d}</small></span></label>`;
             return `<div style="display:grid;gap:16px;">
-                <div style="display:grid;gap:6px;"><span style="${lbl}">Notice on every screen</span>
+                <div style="display:grid;gap:6px;"><span style="${lbl}">Headline <span style="text-transform:none;font-weight:600;">(optional)</span></span>
+                    <input id="nt-head" maxlength="80" oninput="ntPreview()" value="${_ntEsc(n.headline || '')}" placeholder="e.g. Actions now come to you automatically" style="${inp}"></div>
+                <div style="display:grid;gap:6px;"><span style="${lbl}">Message</span>
                     <textarea id="nt-text" rows="2" maxlength="200" oninput="ntPreview()" style="${inp}resize:vertical;" placeholder="e.g. Dashboard maintenance at 11 pm tonight — save your work before then.">${_ntEsc(n.text || '')}</textarea>
                     <span style="font-size:.7rem;color:var(--text-muted);">Shown at the top of every screen, for everyone, within a few seconds of saving. Up to 200 characters.</span></div>
                 <div style="display:grid;gap:8px;"><span style="${lbl}">How it looks</span>
                     <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;" class="nt-lv">
                         ${lvl('info', 'Info', 'Blue · can be closed')}${lvl('important', 'Important', 'Amber · can be closed')}${lvl('urgent', 'Urgent', 'Red · stays until it ends')}
                     </div></div>
+                <div style="display:grid;gap:6px;"><span style="${lbl}">Button <span style="text-transform:none;font-weight:600;">(optional)</span></span>
+                    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;">
+                        <input id="nt-btn" maxlength="30" oninput="ntPreview()" value="${_ntEsc((n.button || {}).label || '')}" placeholder="e.g. Open Actions" style="${inp}">
+                        <select id="nt-view" onchange="ntPreview()" style="${inp}"><option value="">No button</option>${NT_VIEWS.map(([v, l]) => `<option value="${v}" ${(n.button || {}).view === v ? 'selected' : ''}>Opens ${l}</option>`).join('')}</select>
+                    </div></div>
                 <div style="display:grid;gap:6px;"><span style="${lbl}">Show until</span>
                     <input id="nt-until" type="datetime-local" value="${_ntEsc(n.until || '')}" oninput="ntPreview()" style="${inp}">
-                    <span style="font-size:.7rem;color:var(--text-muted);">Pakistan time. Leave empty to keep it up until you remove it.</span></div>
+                    <span style="font-size:.7rem;color:var(--text-muted);">Pakistan time. Not shown on the banner — it just disappears then. Leave empty to keep it up until you remove it.</span></div>
                 <div class="nt-prev"><span style="${lbl}">Preview</span><div id="nt-prev"></div></div>
                 ${n.text ? `<button class="sv-reset" style="color:#DC2626;" onclick="removeNotice()">Remove the notice</button>` : ''}
             </div>`;
@@ -12927,8 +12956,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const text = (document.getElementById('nt-text') || {}).value || '';
             const lv = (document.querySelector('input[name="nt-lv"]:checked') || {}).value || 'info';
             const until = (document.getElementById('nt-until') || {}).value || '';
-            box.innerHTML = text.trim() ? noticeBar({ text: text.trim(), level: lv, until }, true)
+            box.innerHTML = text.trim() ? noticeBar(ntRead(text.trim(), lv, until), true)
                                         : '<span style="font-size:.74rem;color:var(--text-muted);">Type a message to see how it will look.</span>';
+        }
+        function ntRead(text, level, until){
+            const headline = ((document.getElementById('nt-head') || {}).value || '').trim();
+            const view = (document.getElementById('nt-view') || {}).value || '';
+            const label = ((document.getElementById('nt-btn') || {}).value || '').trim();
+            const o = { text, level, until, headline };
+            if(view) o.button = { view, label: label || ('Open ' + ((NT_VIEWS.find(x => x[0] === view) || [])[1] || '')) };
+            return o;
         }
         async function removeNotice(){
             const res = await apiCall('settings_set', { notice: {} }).catch(() => null);
