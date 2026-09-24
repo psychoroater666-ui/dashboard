@@ -2707,7 +2707,10 @@
         /* ── Tables: one row rhythm, sticky headers, no jumpy hovers ──────── */
         .table-wrapper{
             border-radius: var(--r-panel) !important;
-            overscroll-behavior: contain;
+            /* v2.173.1: when the table cannot scroll any further, the wheel moves
+               the page -- like Social Listening. Only sideways swipes stay in. */
+            overscroll-behavior-y: auto;
+            overscroll-behavior-x: contain;
             scrollbar-gutter: stable;
         }
         .table-wrapper thead th{
@@ -9627,7 +9630,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.173.0 · 24 Sep 2026 · Faster tab switching: instant switch, unchanged tabs are not rebuilt';
+        const BUILD_VERSION = 'v2.173.1 · 24 Sep 2026 · Tables hand the scroll to the page at their end (Submissions, Incidents)';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
