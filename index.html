@@ -9627,7 +9627,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.172.0 · 23 Sep 2026 · Incident timing: one review time for all screens, Reached the team · reviewed N s later';
+        const BUILD_VERSION = 'v2.173.0 · 24 Sep 2026 · Faster tab switching: instant switch, unchanged tabs are not rebuilt';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -17592,9 +17592,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const targetView = document.getElementById(targetId);
 
                 if(currentActive && currentActive !== targetView){
-                    currentActive.style.transition = 'opacity .18s cubic-bezier(.4,0,.2,1)';
-                    currentActive.style.opacity    = '0';
-                    setTimeout(() => {
+                    // v2.173.0: switch at once. The old view used to fade for 160 ms first,
+                    // then the new one was built while the faded page sat on screen.
+                    (fn => fn())(() => {
                         document.querySelectorAll('.view').forEach(el => {
                             el.classList.remove('active');
                             el.style.opacity    = '';
@@ -17613,16 +17613,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             _flushPendingCharts();
                             document.body.classList.add('do-anim');
                             requestAnimationFrame(() => {
-                                targetView.style.transition = 'opacity .26s var(--ease), transform .34s var(--ease-out)';
+                                targetView.style.transition = 'opacity .14s var(--ease), transform .18s var(--ease-out)';
                                 targetView.style.opacity    = '1';
                                 targetView.style.transform  = 'translateY(0)';
-                                setTimeout(() => { targetView.style.opacity = ''; targetView.style.transform = ''; targetView.style.transition = ''; }, 360);
+                                setTimeout(() => { targetView.style.opacity = ''; targetView.style.transform = ''; targetView.style.transition = ''; }, 200);
                             });
                             setTimeout(() => document.body.classList.remove('do-anim'), 700);
                         } else {
                             this.renderCurrentView();
                         }
-                    }, 160);
+                    });
                 } else {
                     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                     if(targetView) targetView.classList.add('active');
@@ -17670,6 +17670,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // but the Social branch further down still needs to know
                 // whether this render came from a real tab switch.
                 const _isNavigation = !!state._navRequested && !UI.isSilent();
+                /* v2.173.0: returning to a tab whose data and filters have not changed
+                   shows it as it was -- no rebuild. Anything that is not a tab switch
+                   (new data, a filter, a save) moves the revision on, so every other
+                   tab rebuilds the next time it is opened. */
+                window.__viewRev = window.__viewRev || 1;
+                if(!_isNavigation) window.__viewRev++;
+                const _vEl = document.querySelector('.view.active');
+                const _heavy = ['executive', 'branches', 'incidents', 'incident-analytics', 'resolution', 'insights', 'complaints', 'submissions', 'analytics'];
+                if(_isNavigation && _vEl && _heavy.indexOf(state.currentView) !== -1 && _vEl.dataset.rev === String(window.__viewRev)
+                   && _vEl.dataset.view === state.currentView && _vEl.innerText.trim().length > 50){
+                    state._navRequested = false;
+                    if(_cs){ const _p = _cs.style.scrollBehavior; _cs.style.scrollBehavior = 'auto'; _cs.scrollTop = 0; _cs.style.scrollBehavior = _p; }
+                    return;
+                }
+                if(_vEl){ _vEl.dataset.rev = String(window.__viewRev); _vEl.dataset.view = state.currentView; }
                 if(_isNavigation){
                     state._navRequested = false;
                     if(_cs){
