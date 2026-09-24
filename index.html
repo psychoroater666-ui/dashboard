@@ -10357,7 +10357,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.181.0 · 24 Sep 2026 · Rewards: gift codes (free S\'mores cookie) -- Owner import, each code shows what it gives';
+        const BUILD_VERSION = 'v2.181.2 · 24 Sep 2026 · Rewards: a failed gift-code save explains itself in the window';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -29570,10 +29570,26 @@ ${(() => {
                     const res = await apiCall('reward_gift_import', { rows: r.ok, label: "Free S'mores cookie" });
                     if(!res || res.status !== 'success') throw new Error((res && res.message) || 'failed');
                     document.getElementById('rw-imp').remove();
+                    // v2.181.1: show them at once -- the list used to wait for the next data refresh.
+                    try { const t = DataFeed.tabs.stamps, skip = new Set((res.skipped || []).concat(res.bad || []).map(x => String(x).toUpperCase()));
+                        if(t && Array.isArray(t.headers) && t.headers.length){
+                            const col = n => t.headers.findIndex(x => String(x).trim().toLowerCase() === n);
+                            const have = new Set((t.objRows || []).map(o => String(o['Reward Code'] || '').trim().toUpperCase()));
+                            const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                            r.ok.forEach(x => { if(skip.has(x.code) || have.has(x.code)) return; const arr = t.headers.map(() => '');
+                                const cp = col('phone'), cn = col('name'), cc = col('reward code'), ce = col('reward earned at');
+                                if(cp >= 0) arr[cp] = String(x.phone).replace(/[^0-9]/g, ''); if(cn >= 0) arr[cn] = x.name; if(cc >= 0) arr[cc] = x.code; if(ce >= 0) arr[ce] = stamp;
+                                t.rows.push(arr); have.add(x.code); });
+                            t.objRows = t.rows.map(row => { const o = {}; t.headers.forEach((k, i) => o[k] = row[i]); return o; });
+                        } } catch(e){}
+                    render();
                     UI.toast(res.added + ' gift code' + (res.added === 1 ? '' : 's') + ' added' + (res.skipped && res.skipped.length ? ' · ' + res.skipped.length + ' already there' : '') + (res.bad && res.bad.length ? ' · ' + res.bad.length + ' not valid' : '') + '.', 'success', 8000);
                     try { if(window.pollNow) window.pollNow(); } catch(e){}
                     setTimeout(render, 2500);
-                } catch(e){ b.disabled = false; b.textContent = 'Add codes'; UI.toast('Not added: ' + (e.message || e), 'error', 8000); }
+                } catch(e){ b.disabled = false; b.textContent = 'Try again';
+                    // v2.181.2: the reason stays in the window, so it can be read and sent to us.
+                    const n = document.getElementById('rw-imp-n'); if(n) n.innerHTML = '<span style="color:#B91C1C;font-weight:700;"><i class="fas fa-circle-xmark"></i> Not added: ' + String(e.message || e).replace(/</g, '&lt;') + '</span>';
+                    UI.toast('Not added: ' + (e.message || e), 'error', 12000); }
             }
             return { render, set, redeem, importOpen, importGo };
         })();
