@@ -5586,6 +5586,15 @@
         .drv-bar { background:none !important; height:auto !important; overflow:visible !important; } .ctl-sp { height:40px; min-width:120px; }
         .fa2-fs .mini-cv { margin-top:8px; }
         .bd2-barcv { display:inline-block; width:90px; margin-left:8px; vertical-align:middle; }
+        /* v2.181.0: reward kinds and gift import */
+        .rw-kind { display:inline-block; font:800 .62rem 'Inter',sans-serif; letter-spacing:.3px; border-radius:6px; padding:2px 7px; margin-right:8px; background:#EEF2FF; color:#3730A3; }
+        .rw-kind.smores { background:#FEF3C7; color:#92400E; } .rw-kind.goodwill { background:#DCFCE7; color:#166534; }
+        .rw-imp-ov { position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+        .rw-imp { background:var(--white); border-radius:18px; padding:20px; width:min(560px,100%); box-shadow:0 30px 60px -20px rgba(0,0,0,.4); }
+        .rw-imp h3 { margin:0 0 6px; font:800 1rem 'Inter',sans-serif; color:var(--text-main); } .rw-imp h3 i { color:#F59E0B; margin-right:6px; }
+        .rw-imp p { margin:0 0 10px; font-size:.8rem; color:var(--text-muted); line-height:1.5; }
+        .rw-imp textarea { width:100%; height:200px; border:1px solid var(--border-color); border-radius:12px; padding:10px; font:500 .78rem ui-monospace,Menlo,monospace; background:var(--bg-light); color:var(--text-main); resize:vertical; }
+        .rw-imp-n { font-size:.78rem; color:var(--text-main); margin:8px 0 12px; } .rw-imp-b { display:flex; justify-content:flex-end; gap:8px; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -10348,7 +10357,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.180.0 · 24 Sep 2026 · PIN lock: your own 6-digit PIN (and fingerprint / face) on top of the monthly Cloudflare sign-in';
+        const BUILD_VERSION = 'v2.181.0 · 24 Sep 2026 · Rewards: gift codes (free S\'mores cookie) -- Owner import, each code shows what it gives';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -26325,7 +26334,7 @@ ${(() => {
         // that wait is what made a newly logged incident feel slow to appear.
         const WRITE_ACTIONS = ['callcenter','social_mention','incident_resolution','incident_reviewed',
                                'incident_followup','sl_resolution','sl_escalate','action_save','action_close',
-                               'reward_redeem','save_user','delete_user'];
+                               'reward_redeem','reward_gift_import','save_user','delete_user'];
 
         async function apiCall(action, payload, _attempt){
             _attempt = _attempt || 1;
@@ -29414,6 +29423,12 @@ ${(() => {
         // ═══════════════════════════════════════════════════════════════════
         const RW = (function(){
             let q = '';
+            /* v2.181.0: what a code gives -- told apart by its start, so the agent
+               always knows what to hand over. */
+            const KIND = code => { const c = String(code || '').toUpperCase();
+                if(c.indexOf('SMR-') === 0) return { key: 'smores', label: "Free S'mores cookie", give: "add a FREE S'mores cookie to their order" };
+                if(c.indexOf('CG-') === 0) return { key: 'goodwill', label: 'Goodwill · 10% off', give: 'give the customer 10% off' };
+                return { key: 'earned', label: 'Stamp card · 10% off', give: 'give the customer 10% off' }; };
             const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
             // Older stamp rows were written before the form passed a name along.
             // Look the customer up by phone in the submissions we already hold, so
@@ -29459,6 +29474,7 @@ ${(() => {
                         <div class="rw-stat"><b>${used.length}</b><span>redeemed</span></div>
                         <div class="rw-stat"><b>${rate}%</b><span>redemption</span></div>
                         <div class="rw-stat"><b>${collecting.length}</b><span>collecting</span></div>
+                        ${can('users') ? `<button class="fb-btn sm" onclick="RW.importOpen()"><i class="fas fa-gift"></i> Add gift codes</button>` : ''}
                     </div>
                     <div class="rw-search"><i class="fas fa-magnifying-glass"></i>
                         <input id="rw-q" placeholder="Type or paste the customer's code…" value="${esc(q)}" oninput="RW.set(this.value)" autocomplete="off">
@@ -29489,7 +29505,7 @@ ${(() => {
                             return `<div class="rw-row ${redeemed ? 'used' : 'ok'}">
                                 <div class="rw-code">${esc(code)}</div>
                                 <div class="rw-who"><b>${esc(nameFor(r['Phone'], r['Name']) || 'Customer')}</b><span>${esc(r['Phone'] || '')}</span></div>
-                                <div class="rw-when">earned ${esc(String(r['Reward Earned At'] || '').slice(0, 16))}</div>
+                                <div class="rw-when"><span class="rw-kind ${KIND(code).key}">${esc(KIND(code).label)}</span>${KIND(code).key === 'smores' ? 'given' : 'earned'} ${esc(String(r['Reward Earned At'] || '').slice(0, 16))}</div>
                                 <div class="rw-act">${redeemed
                                     ? `<span class="rw-tag used"><i class="fas fa-lock"></i> used</span><span class="rw-by">${esc(redeemed)}</span>`
                                     : `<span class="rw-tag ok"><i class="fas fa-circle-check"></i> available</span><button class="fb-btn sm primary${_busy[code] ? ' is-busy' : ''}" ${_busy[code] ? 'disabled' : ''} onclick="RW.redeem('${esc(code)}')">${_busy[code] ? 'Saving…' : 'Mark as used'}</button>`}</div>
@@ -29517,13 +29533,49 @@ ${(() => {
                     const r = await apiCall('reward_redeem', { code, clientId: 'rw_' + code + '_' + Date.now().toString(36) });
                     if(!r || r.status !== 'success') throw new Error((r && r.message) || 'failed');
                     row['Redeemed At'] = r.redeemedAt || row['Redeemed At'];
-                    UI.toast('Marked as used — give the customer 10% off.', 'success');
+                    UI.toast('Marked as used — ' + KIND(code).give + '.', 'success', 7000);
                 } catch(e){
                     row['Redeemed At'] = before;
                     UI.toast('NOT marked: ' + (e.message || e) + ' — please try again.', 'error', 8000);
                 } finally { delete _busy[code]; render(); }
             }
-            return { render, set, redeem };
+            /* v2.181.0: Owner adds a batch of ready-made gift codes -- paste three
+               columns straight from Excel: Code, Name, Phone. */
+            function importOpen(){
+                const ov = document.createElement('div'); ov.className = 'rw-imp-ov'; ov.id = 'rw-imp';
+                ov.innerHTML = `<div class="rw-imp"><h3><i class="fas fa-gift"></i> Add gift codes</h3>
+                    <p>Copy the <b>Code</b>, <b>Name</b> and <b>Phone</b> columns from the sheet (in that order) and paste them below. Each code can be used once; the agent sees what it gives.</p>
+                    <textarea id="rw-imp-t" placeholder="SMR-4K7PQX&#9;Ayesha Atta&#9;0328 2571955"></textarea>
+                    <div class="rw-imp-n" id="rw-imp-n">Nothing pasted yet.</div>
+                    <div class="rw-imp-b"><button class="fb-btn sm" onclick="document.getElementById('rw-imp').remove()">Cancel</button><button class="fb-btn sm primary" id="rw-imp-go" disabled onclick="RW.importGo()">Add codes</button></div></div>`;
+                document.body.appendChild(ov);
+                const t = document.getElementById('rw-imp-t');
+                t.addEventListener('input', () => { const r = parseRows(t.value); document.getElementById('rw-imp-n').innerHTML = r.ok.length ? `<b>${r.ok.length}</b> code${r.ok.length === 1 ? '' : 's'} ready${r.bad ? ' · ' + r.bad + ' line' + (r.bad === 1 ? '' : 's') + ' not understood' : ''}` : 'Nothing understood yet — paste Code, Name, Phone.';
+                    document.getElementById('rw-imp-go').disabled = !r.ok.length; });
+                t.focus();
+            }
+            function parseRows(txt){
+                const ok = []; let bad = 0;
+                String(txt || '').split(/\r?\n/).forEach(line => { if(!line.trim()) return; const c = line.split(/\t|,(?=\s*\S)/).map(x => x.trim());
+                    const code = (c.find(x => /^[A-Z]{2,4}-[A-Z0-9]{4,10}$/i.test(x)) || '').toUpperCase();
+                    const phone = (c.find(x => x.replace(/[^0-9]/g, '').length >= 10) || '');
+                    const name = c.find(x => x && x.toUpperCase() !== code && x !== phone) || '';
+                    if(code && phone && !/^code$/i.test(code)) ok.push({ code, name, phone }); else if(!/^code\b/i.test(line.trim())) bad++; });
+                return { ok, bad };
+            }
+            async function importGo(){
+                const r = parseRows((document.getElementById('rw-imp-t') || {}).value); if(!r.ok.length) return;
+                const b = document.getElementById('rw-imp-go'); b.disabled = true; b.textContent = 'Adding…';
+                try {
+                    const res = await apiCall('reward_gift_import', { rows: r.ok, label: "Free S'mores cookie" });
+                    if(!res || res.status !== 'success') throw new Error((res && res.message) || 'failed');
+                    document.getElementById('rw-imp').remove();
+                    UI.toast(res.added + ' gift code' + (res.added === 1 ? '' : 's') + ' added' + (res.skipped && res.skipped.length ? ' · ' + res.skipped.length + ' already there' : '') + (res.bad && res.bad.length ? ' · ' + res.bad.length + ' not valid' : '') + '.', 'success', 8000);
+                    try { if(window.pollNow) window.pollNow(); } catch(e){}
+                    setTimeout(render, 2500);
+                } catch(e){ b.disabled = false; b.textContent = 'Add codes'; UI.toast('Not added: ' + (e.message || e), 'error', 8000); }
+            }
+            return { render, set, redeem, importOpen, importGo };
         })();
 
         /* ═══════════════════════════════════════════════════════════════════
