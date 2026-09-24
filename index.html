@@ -5595,6 +5595,7 @@
         .rw-imp p { margin:0 0 10px; font-size:.8rem; color:var(--text-muted); line-height:1.5; }
         .rw-imp textarea { width:100%; height:200px; border:1px solid var(--border-color); border-radius:12px; padding:10px; font:500 .78rem ui-monospace,Menlo,monospace; background:var(--bg-light); color:var(--text-main); resize:vertical; }
         .rw-imp-n { font-size:.78rem; color:var(--text-main); margin:8px 0 12px; } .rw-imp-b { display:flex; justify-content:flex-end; gap:8px; }
+        .rw-stat.gift b { color:#B45309; } .rw-stat.gift b small { font-size:.7em; color:var(--text-muted); font-weight:700; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -10357,7 +10358,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.181.2 · 24 Sep 2026 · Rewards: a failed gift-code save explains itself in the window';
+        const BUILD_VERSION = 'v2.183.0 · 24 Sep 2026 · Call Center case saved once; a case closed anywhere clears its alert everywhere';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -17114,6 +17115,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
         } catch(e){}
 
+        // v2.183.0: the Windows notification is kept so it can be taken down.
+        // It was shown with requireInteraction and never closed from code, so
+        // it sat on a laptop's screen after the case was reviewed or closed
+        // somewhere else -- "still appearing as a notification".
+        let _desktopIncidentNote = null;
+        function _closeDesktopIncidentNotification(){
+            try { if(_desktopIncidentNote) _desktopIncidentNote.close(); } catch(e){}
+            _desktopIncidentNote = null;
+        }
         function _showDesktopIncidentNotification(title, body){
             try {
                 if(typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
@@ -17130,6 +17140,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     requireInteraction: true         // stays on screen until dismissed, doesn't auto-vanish after a few seconds
                 });
                 n.onclick = () => { window.focus(); n.close(); };
+                _desktopIncidentNote = n;
             } catch(e){}
         }
 
@@ -17272,7 +17283,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             // Someone may have already reviewed this on another device while it
             // was waiting in this device's queue — skip straight to the next one.
             const _latest = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _incidentStableKey(inc));
-            if(_latest && _latest.reviewedAt){ showNextIncidentAlert(); return; }
+            if(_latest && (_latest.reviewedAt || _latest.resolved)){ showNextIncidentAlert(); return; }
             _lastAlertedIncidentKey = _incidentStableKey(inc);
             _lastAlertedIncident = inc;
             startRepeatingIncidentSound();
@@ -17361,6 +17372,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
         function closeIncidentAlert(){
             stopRepeatingIncidentSound();
+            _closeDesktopIncidentNotification();
             document.getElementById('incident-alert-modal').style.display = 'none';
             if(_lastAlertedIncident) _snoozeIncident(_lastAlertedIncident);
             _incidentAlertShowing = false;
@@ -17378,12 +17390,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const sm = document.getElementById('incident-alert-summary-modal');
             if(sm && sm.style.display === 'flex' && _summaryAlertKeys.length){
                 const allReviewed = _summaryAlertKeys.every(k => { const i = (rawData.incidents||[]).find(x => _incidentStableKey(x) === k); return i && (i.reviewedAt || i.resolved); });
-                if(allReviewed){ stopRepeatingIncidentSound(); sm.style.display = 'none'; _summaryAlertKeys = []; }
+                if(allReviewed){ stopRepeatingIncidentSound(); _closeDesktopIncidentNotification(); sm.style.display = 'none'; _summaryAlertKeys = []; }
             }
             if(_incidentAlertShowing && _lastAlertedIncidentKey){
                 const inc = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _lastAlertedIncidentKey);
-                if(inc && inc.reviewedAt){
+                // v2.183.0: closed counts too. A case closed on another laptop
+                // without a review stamp reaching this one kept ringing here.
+                if(inc && (inc.reviewedAt || inc.resolved)){
                     stopRepeatingIncidentSound();
+                    _closeDesktopIncidentNotification();
                     const modal = document.getElementById('incident-alert-modal');
                     if(modal) modal.style.display = 'none';
                     _incidentAlertShowing = false;
@@ -17394,13 +17409,14 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(_incidentAlertQueue.length){
                 _incidentAlertQueue = _incidentAlertQueue.filter(inc => {
                     const latest = (rawData.incidents||[]).find(i => _incidentStableKey(i) === _incidentStableKey(inc));
-                    return !(latest && latest.reviewedAt);
+                    return !(latest && (latest.reviewedAt || latest.resolved));
                 });
             }
         }
 
         function viewIncidentFromAlert(){
             stopRepeatingIncidentSound();
+            _closeDesktopIncidentNotification();
             document.getElementById('incident-alert-modal').style.display = 'none';
             _incidentAlertShowing = false;
             _incidentAlertQueue = [];
@@ -17623,7 +17639,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const reviewedBy = revByKey    ? String(row[revByKey]||'').trim()    : '';
                     const resolvedBy = resByKey    ? String(row[resByKey]||'').trim()    : '';
                     const followUps  = fuKey       ? String(row[fuKey]||'').trim()       : '';
-                    if(id) map[id] = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category, reviewedBy: reviewedBy, resolvedBy: resolvedBy, followUps: followUps };
+                    // v2.183.0: an id can have two stored rows (saved at the same
+                    // instant before Worker v5.10). The last one used to win whole,
+                    // so a review-only row hid the close. Merge: an empty field
+                    // never wipes a filled one.
+                    if(id){
+                        const e = { status: st, note: note, validity: validity, reviewedAt: reviewedAt, resolvedAt: resolvedAt, category: category, reviewedBy: reviewedBy, resolvedBy: resolvedBy, followUps: followUps };
+                        const prev = map[id];
+                        if(prev){ Object.keys(e).forEach(k => { if(!e[k] && prev[k]) e[k] = prev[k]; }); }
+                        map[id] = e;
+                    }
                 });
                 _lastGoodIncidentResolutions = map;
                 return map;
@@ -25812,6 +25837,7 @@ ${(() => {
         }
 
         function csStep(dir){
+            if(_csSubmitting) return;
             csSaveCurrentStep();
             const steps = csGetSteps();
             const step  = steps[csCurrentStep - 1];
@@ -25833,7 +25859,24 @@ ${(() => {
             csRenderStep(dir === 1 ? 'right' : 'left');
         }
 
+        // v2.183.0: one submission in flight at a time. Skip (on the last,
+        // optional step) and Back stayed live while Submit was waiting on the
+        // server, and pressing either sent the form a second time with a new
+        // id -- one of the ways a single complaint became two cases.
+        let _csSubmitting = false;
+        function _csLockNav(on){
+            ['cs-skip-btn', 'cs-prev-btn'].forEach(id => {
+                const b = document.getElementById(id);
+                if(!b) return;
+                b.disabled = !!on;
+                b.style.pointerEvents = on ? 'none' : '';
+                b.style.opacity = on ? '0.45' : '';
+            });
+        }
         async function csSubmit(){
+            if(_csSubmitting) return;
+            _csSubmitting = true;
+            _csLockNav(true);
             const nextBtn = document.getElementById('cs-next-btn');
             nextBtn.disabled = true;
             nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
@@ -25869,7 +25912,7 @@ ${(() => {
             // Re-enable the persistent Next button whatever happens: it lives
             // across modal opens, so leaving it disabled would break the next
             // submission in the same session.
-            const restore = () => { nextBtn.disabled = false; nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit'; };
+            const restore = () => { _csSubmitting = false; _csLockNav(false); nextBtn.disabled = false; nextBtn.innerHTML = '<i class="fas fa-check"></i> Submit'; };
 
             // Through apiCall, NOT a no-cors fetch.
             //
@@ -29453,14 +29496,19 @@ ${(() => {
             function render(){
                 const host = document.getElementById('rewards-root'); if(!host) return;
                 if(!can('reward')){ host.innerHTML = '<div class="fb-empty">Rewards are handled by the Call Center.</div>'; return; }
-                const all = rows().slice().reverse();
+                const allRows = rows().slice().reverse();
+                // v2.182.0: gift codes (S'mores) are counted on their own line, so the
+                // stamp-card and goodwill redemption rate is not diluted by unsent gifts.
+                const isGift = r => KIND(r['Reward Code']).key === 'smores';
+                const gifts = allRows.filter(isGift), giftsUsed = gifts.filter(r => String(r['Redeemed At'] || '').trim());
+                const all = allRows.filter(r => !isGift(r));
                 const used = all.filter(r => String(r['Redeemed At'] || '').trim());
                 const term = q.trim().toUpperCase();
                 // Search covers everyone, including customers still collecting, so
                 // an agent can answer "how many do I have?" from a phone number.
                 const everyone = all_().slice().reverse();
                 const matches = term ? everyone.filter(r => [r['Reward Code'], r['Phone'], r['Name']].join(' ').toUpperCase().includes(term)) : [];
-                const list = term ? matches.filter(r => String(r['Reward Code'] || '').trim()) : all.slice(0, 40);
+                const list = term ? matches.filter(r => String(r['Reward Code'] || '').trim()) : allRows.slice(0, 40);
                 const inProgress = term ? matches.filter(r => !String(r['Reward Code'] || '').trim() || (Number(r['Stamps']) || 0) > 0) : [];
                 const collecting = all_().filter(r => (Number(r['Stamps']) || 0) > 0);
                 const nearly = collecting.filter(r => (Number(r['Stamps']) || 0) >= 1);
@@ -29474,6 +29522,7 @@ ${(() => {
                         <div class="rw-stat"><b>${used.length}</b><span>redeemed</span></div>
                         <div class="rw-stat"><b>${rate}%</b><span>redemption</span></div>
                         <div class="rw-stat"><b>${collecting.length}</b><span>collecting</span></div>
+                        ${gifts.length ? `<div class="rw-stat gift" title="Free S'mores cookie codes"><b>${giftsUsed.length}<small> / ${gifts.length}</small></b><span>S'mores used</span></div>` : ''}
                         ${can('users') ? `<button class="fb-btn sm" onclick="RW.importOpen()"><i class="fas fa-gift"></i> Add gift codes</button>` : ''}
                     </div>
                     <div class="rw-search"><i class="fas fa-magnifying-glass"></i>
@@ -29512,7 +29561,7 @@ ${(() => {
                             </div>`;
                         }).join('') || (term ? '' : '<div class="fb-empty">No rewards earned yet.</div>')}
                     </div>
-                    ${!term && all.length > 40 ? `<div style="font-size:0.7rem;color:var(--text-muted);padding:8px 2px;">Showing the 40 most recent — search to find any code.</div>` : ''}`;
+                    ${!term && allRows.length > 40 ? `<div style="font-size:0.7rem;color:var(--text-muted);padding:8px 2px;">Showing the 40 most recent — search to find any code.</div>` : ''}`;
                 if(q){ const el = document.getElementById('rw-q'); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
             }
             function set(v){ q = v; render(); }
