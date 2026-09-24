@@ -5570,6 +5570,16 @@
         .bd2-lg { display:flex; gap:12px; flex-wrap:wrap; font-size:.66rem; color:var(--text-muted); margin-top:10px; } .bd2-lg i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
         .bd2-empty { font-size:.78rem; color:var(--text-muted); padding:12px 0; }
         @media (max-width:980px){ .bd2-g2 { grid-template-columns:1fr; } }
+        /* v2.178.0: Trend and Breakdown charts, period bar */
+        .tr2-cv { position:relative; height:170px; margin-top:6px; } .tr2-sp { position:relative; height:44px; margin-top:4px; }
+        .tr2-lg i.t { background:repeating-linear-gradient(90deg,#A5B4FC 0 4px,transparent 4px 7px); }
+        .tr2-period, .bd2-period { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+        .tr2-period span, .bd2-period span { font:800 .62rem 'Inter',sans-serif; letter-spacing:.5px; text-transform:uppercase; color:var(--text-muted); margin-right:4px; }
+        .tr2-period button, .bd2-period button { border:1px solid var(--border-color); background:var(--white); color:var(--text-main); border-radius:20px; padding:6px 12px; font:700 .74rem 'Inter',sans-serif; cursor:pointer; min-height:0 !important; }
+        .tr2-period button:hover, .bd2-period button:hover { border-color:#A5B4FC; color:#4F46E5; }
+        .tr2-period em, .bd2-period em { font-style:normal; margin-left:auto; font:600 .74rem 'Inter',sans-serif; color:var(--text-muted); }
+        .bd2-cv { position:relative; }
+        body.gc-lite #exec-view-toggles { display:none !important; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9694,7 +9704,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.177.1 · 24 Sep 2026 · Breakdown: Complaints by product removed';
+        const BUILD_VERSION = 'v2.178.0 · 24 Sep 2026 · Trend and Breakdown on Chart.js with a period bar; date bar on every date tab; Back returns to the previous tab';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -12044,6 +12054,30 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             );
         }
 
+        /* v2.178.0: the date bar travels with you -- every tab whose numbers follow
+           the chosen dates shows it, so nobody goes back to the Overview to change
+           them. The Overview-only buttons (Overview / Compare / Trend / Breakdown,
+           My view) stay on the Overview. */
+        const _DATE_VIEWS = ['executive', 'incidents', 'branches', 'incident-analytics', 'resolution', 'insights', 'submissions', 'channels', 'forms', 'products', 'data'];
+        /* v2.178.0: the browser's Back and Forward move between tabs and views. */
+        window.addEventListener('popstate', () => {
+            try {
+                const u = new URL(location.href), v = u.searchParams.get('open') || 'executive', m = u.searchParams.get('mode') || 'overview';
+                window.__navFromPop = true;
+                if(typeof app !== 'undefined'){
+                    app.navigate(v);
+                    if(v === 'executive' && state.execMode !== m){ const b = document.querySelector('#exec-view-toggles .view-btn[onclick*="\'' + m + '\'"]'); if(b) app.setExecMode(m, b); }
+                }
+            } catch(e){} finally { setTimeout(() => { window.__navFromPop = false; }, 0); }
+        });
+        // A reload of ?open=executive&mode=trend comes back to Trend, not the plain Overview.
+        setTimeout(() => { try { const m = new URL(location.href).searchParams.get('mode');
+            if(m && typeof app !== 'undefined' && state.currentView === 'executive' && state.execMode !== m){ const b = document.querySelector('#exec-view-toggles .view-btn[onclick*="\'' + m + '\'"]'); if(b){ window.__navFromPop = true; app.setExecMode(m, b); window.__navFromPop = false; } } } catch(e){} }, 2500);
+        function _gcShow(viewId){
+            const gc = document.getElementById('global-controls'); if(!gc) return;
+            gc.style.display = _DATE_VIEWS.indexOf(viewId) !== -1 ? 'flex' : 'none';
+            document.body.classList.toggle('gc-lite', viewId !== 'executive');
+        }
         function applyGlobalFilters() {
             try { if(document.activeElement && /^filter-(start|end)-date$/.test(document.activeElement.id)) window.__userTouchedDates = true; } catch(e){}
             const start = new Date(document.getElementById('filter-start-date').value);
@@ -15309,31 +15343,59 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             const med = v => { const s = v.filter(x => isFinite(x)).sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; };
             const ma = (v, k) => v.map((_, i) => { const w = v.slice(Math.max(0, i - k + 1), i + 1).filter(x => x != null); return w.length ? w.reduce((a, b) => a + b, 0) / w.length : null; });
-            /* One line chart: daily (light), 7-day average (bold), previous period (dashed), target (dotted), markers. */
+            /* v2.178.0: Chart.js, styled like every other chart in Sentinel -- smooth
+               lines, hover tooltips, the target and the previous period as
+               dashed lines, markers drawn by a small plugin. */
+            let pending = [];
+            const dark = () => document.body.classList.contains('dark-theme');
+            const tip = () => ({ backgroundColor: dark() ? '#1E293B' : '#0F172A', titleColor: '#fff', bodyColor: '#E2E8F0', padding: 10, cornerRadius: 10,
+                titleFont: { family: 'Inter', weight: '700', size: 12 }, bodyFont: { family: 'Inter', weight: '500', size: 11 }, boxPadding: 4, displayColors: true });
+            const axisColor = () => getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#64748B';
+            const gridColor = () => dark() ? 'rgba(148,163,184,.12)' : '#F1F5F9';
+            const markPlugin = (marks, closed) => ({ id: 'tr2marks', afterDatasetsDraw(c){
+                const x = c.scales.x, a = c.chartArea, ctx = c.ctx; if(!x || !a) return;
+                ctx.save();
+                (closed || []).forEach(i => { const px = x.getPixelForValue(i), w = (a.right - a.left) / Math.max(1, (c.data.labels || []).length - 1);
+                    ctx.fillStyle = 'rgba(148,163,184,.14)'; ctx.fillRect(px - w / 2, a.top, w, a.bottom - a.top); });
+                (marks || []).forEach(m => { const px = x.getPixelForValue(m.i); if(!isFinite(px)) return;
+                    ctx.strokeStyle = m.c; ctx.lineWidth = 1; ctx.setLineDash([2, 3]); ctx.beginPath(); ctx.moveTo(px, a.top + 8); ctx.lineTo(px, a.bottom); ctx.stroke(); ctx.setLineDash([]);
+                    ctx.fillStyle = m.c; ctx.beginPath(); ctx.arc(px, a.top + 6, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = '700 8px Inter, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(m.s, px, a.top + 6.5); });
+                ctx.restore(); } });
+            let cid = 0;
             function chart(o){
-                const W = 520, H = 150, n = o.cur.length;
-                const all = o.cur.concat(o.prev || []).concat([o.target]).filter(v => v != null && isFinite(v));
-                if(!all.length) return `<div class="tr2-empty">Not enough data yet.</div>`;
-                let mn = Math.min(...all), mx = Math.max(...all); const pad = (mx - mn) * 0.15 || 1; mn = Math.max(o.floor ?? -Infinity, mn - pad); mx = mx + pad;
-                const x = i => (n <= 1 ? W / 2 : i * (W - 10) / (n - 1) + 5), y = v => H - 8 - (v - mn) / (mx - mn) * (H - 20);
-                const path = (v, attrs) => { const pts = v.map((val, i) => val == null ? null : x(i).toFixed(1) + ',' + y(val).toFixed(1)).filter(Boolean);
-                    return pts.length > 1 ? `<polyline fill="none" vector-effect="non-scaling-stroke" ${attrs} points="${pts.join(' ')}"/>` : ''; };
-                const marks = (o.marks || []).map(m => `<line x1="${x(m.i).toFixed(1)}" x2="${x(m.i).toFixed(1)}" y1="6" y2="${H - 6}" stroke="${m.c}" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>`).join('');
-                const shade = (o.closed || []).map(i => `<rect x="${(x(i) - (W - 10) / Math.max(1, n - 1) / 2).toFixed(1)}" y="0" width="${((W - 10) / Math.max(1, n - 1)).toFixed(1)}" height="${H}" fill="rgba(148,163,184,.14)"/>`).join('');
-                const tgt = o.target != null ? `<line x1="0" x2="${W}" y1="${y(o.target).toFixed(1)}" y2="${y(o.target).toFixed(1)}" stroke="#A5B4FC" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : '';
+                const id = 'tr2c-' + (o.key || (++cid));
+                const labels = o.labels, avg = ma(o.cur, 7);
+                const fmt = v => v == null ? '—' : (o.fmt ? o.fmt(v) : v);
+                pending.push([id, {
+                    type: 'line',
+                    data: { labels, datasets: [
+                        { label: '7-day average', data: avg, borderColor: o.col, backgroundColor: o.col + '1f', fill: 'origin', borderWidth: 2.6, tension: 0.35, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: o.col, spanGaps: true, order: 1 },
+                        { label: 'Daily', data: o.cur, borderColor: o.col + '66', backgroundColor: o.col + '66', borderWidth: 1.2, tension: 0.3, pointRadius: 0, pointHoverRadius: 4, spanGaps: true, order: 2 },
+                        { label: 'Previous period', data: o.prev || [], borderColor: '#CBD5E1', backgroundColor: '#CBD5E1', borderWidth: 1.5, borderDash: [5, 4], tension: 0.3, pointRadius: 0, pointHoverRadius: 3, spanGaps: true, order: 3 },
+                        { label: 'Target', data: labels.map(() => o.target), borderColor: '#A5B4FC', backgroundColor: '#A5B4FC', borderWidth: 1.2, borderDash: [4, 4], pointRadius: 0, pointHoverRadius: 0, order: 4 }
+                    ] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, interaction: { mode: 'index', intersect: false },
+                        layout: { padding: { top: 14, right: 6, left: 0, bottom: 0 } },
+                        plugins: { legend: { display: false }, datalabels: { display: false },
+                            tooltip: Object.assign(tip(), { callbacks: { label: c => ' ' + c.dataset.label + ': ' + fmt(c.parsed.y) } }) },
+                        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: axisColor(), font: { family: 'Inter', size: 10 }, maxTicksLimit: 6, maxRotation: 0 } },
+                                  y: { grid: { color: gridColor() }, border: { display: false }, suggestedMin: o.floor, ticks: { color: axisColor(), font: { family: 'Inter', size: 10 }, maxTicksLimit: 5, callback: v => o.fmt ? o.fmt(v) : v } } } },
+                    plugins: [markPlugin(o.marks, o.closed)]
+                }]);
                 const chipC = o.good == null ? 'fl' : o.good ? 'up' : 'dn';
-                const markDots = (o.marks || []).map(m => `<span class="tr2-m" style="left:${(x(m.i) / W * 100).toFixed(2)}%;background:${m.c}" title="${esc(m.t)}">${m.s}</span>`).join('');
                 return `<div class="tr2-q"><div class="tr2-qh"><b>${esc(o.label)}</b><span class="v">${o.value}</span>${o.change ? `<span class="c ${chipC}">${o.change}</span>` : ''}</div>
-                    <div class="tr2-plot">${markDots}<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}">${shade}${tgt}${marks}
-                        ${path(o.prev || [], `stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="5 4"`)}${path(o.cur, `stroke="${o.col}" stroke-opacity=".35" stroke-width="1.2"`)}${path(ma(o.cur, 7), `stroke="${o.col}" stroke-width="2.6" stroke-linejoin="round"`)}</svg>
-                        ${o.target != null ? `<em class="tr2-t">target ${o.targetLabel}</em>` : ''}</div>
-                    <div class="tr2-lg"><span><i style="background:${o.col}"></i>7-day average</span><span><i style="background:${o.col};opacity:.35"></i>daily</span><span><i class="d"></i>previous period</span></div></div>`;
+                    <div class="tr2-cv"><canvas id="${id}"></canvas></div>
+                    <div class="tr2-lg"><span><i style="background:${o.col}"></i>7-day average</span><span><i style="background:${o.col};opacity:.4"></i>daily</span><span><i class="d"></i>previous period</span>${o.target != null ? `<span><i class="t"></i>target ${esc(o.targetLabel)}</span>` : ''}</div></div>`;
             }
-            function spark(v, col){
-                const W = 160, H = 40, vv = v.filter(x => x != null); if(vv.length < 2) return '';
-                let mn = Math.min(...vv), mx = Math.max(...vv); const pad = (mx - mn) * 0.2 || 0.5; mn -= pad; mx += pad;
-                const pts = v.map((val, i) => val == null ? null : ((i * (W - 4) / (v.length - 1)) + 2).toFixed(1) + ',' + (H - 4 - (val - mn) / (mx - mn) * (H - 8)).toFixed(1)).filter(Boolean);
-                return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}"><polyline fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.join(' ')}"/></svg>`;
+            function drawAll(){ const list = pending; pending = []; list.forEach(([id, cfg]) => { try { _renderOrUpdateChart(id, cfg); } catch(e){ console.warn('trend chart', e); } }); }
+            function spark(v, col, key){
+                const id = 'tr2s-' + key;
+                pending.push([id, { type: 'line', data: { labels: v.map((_, i) => i), datasets: [{ data: v, borderColor: col, backgroundColor: col + '22', fill: 'origin', borderWidth: 2, tension: 0.35, pointRadius: 0, pointHoverRadius: 3, spanGaps: true }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 400 }, plugins: { legend: { display: false }, datalabels: { display: false },
+                        tooltip: Object.assign(tip(), { displayColors: false, callbacks: { title: () => '', label: c => ' ' + (c.parsed.y == null ? '—' : c.parsed.y.toFixed(1) + '% incident rate') } }) },
+                        interaction: { mode: 'index', intersect: false }, scales: { x: { display: false }, y: { display: false } } } }]);
+                return `<div class="tr2-sp"><canvas id="${id}"></canvas></div>`;
             }
             function render(){
                 const host = document.getElementById('trend2'); if(!host) return;
@@ -15344,6 +15406,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if(!start || start === end){ start = addD(end, -29); widened = true; }
                 const days = []; for(let d = start; d <= end && days.length < 400; d = addD(d, 1)) days.push(d);
                 const n = days.length, pStart = addD(start, -n), idx = {}; days.forEach((d, i) => idx[d] = i);
+                const lab = days.map(dLabel); pending = [];
                 const pdays = days.map((_, i) => addD(pStart, i)), pidx = {}; pdays.forEach((d, i) => pidx[d] = i);
                 const mk = () => days.map(() => ({ s: 0, r: 0, p: 0, sum: 0, inc: 0, rev: [], cls: [] }));
                 const C = mk(), P = mk();
@@ -15377,12 +15440,12 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 incs.forEach(i => { if(idx[i.date] == null) return; const l = incLabel(i); catCount[l] = (catCount[l] || 0) + 1; const b = Math.floor(idx[i.date] / step); (catB[l] = catB[l] || new Array(nb).fill(0))[b]++; });
                 const top = Object.keys(catCount).sort((a, b) => catCount[b] - catCount[a]).slice(0, 5);
                 const COLS = ['#DC2626', '#F59E0B', '#4F46E5', '#0EA5E9', '#94A3B8'];
-                const W = 520, H = 150; const totB = new Array(nb).fill(0); top.forEach(l => catB[l].forEach((v, k) => totB[k] += v)); const mxB = Math.max(1, ...totB) * 1.1;
-                const xb = k => nb <= 1 ? W / 2 : k * (W - 10) / (nb - 1) + 5, yb = v => H - 8 - v / mxB * (H - 16);
-                let base = new Array(nb).fill(0), areas = '';
-                top.forEach((l, j) => { const tp = base.map((b, k) => b + catB[l][k]);
-                    const pts = tp.map((v, k) => xb(k).toFixed(1) + ',' + yb(v).toFixed(1)).concat(base.map((v, k) => xb(k).toFixed(1) + ',' + yb(v).toFixed(1)).reverse());
-                    areas += `<polygon points="${pts.join(' ')}" fill="${COLS[j]}" opacity=".85"/>`; base = tp; });
+                const bl = []; for(let k = 0; k < nb; k++) bl.push(dLabel(days[Math.min(n - 1, k * step)]));
+                if(top.length) pending.push(['tr2c-cats', { type: 'line', data: { labels: bl, datasets: top.map((l, j) => ({ label: l, data: catB[l], borderColor: COLS[j], backgroundColor: COLS[j] + 'cc', fill: j ? '-1' : 'origin', borderWidth: 1.5, tension: 0.35, pointRadius: 0, pointHoverRadius: 4 })) },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip() },
+                        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { color: axisColor(), font: { family: 'Inter', size: 10 }, maxTicksLimit: 6, maxRotation: 0 } },
+                                  y: { stacked: true, beginAtZero: true, grid: { color: gridColor() }, border: { display: false }, ticks: { color: axisColor(), font: { family: 'Inter', size: 10 }, precision: 0, maxTicksLimit: 5 } } } } }]);
                 const half = Math.floor(n / 2), rise = Object.keys(catCount).filter(l => catCount[l] >= 4).map(l => { let a = 0, b = 0; incs.forEach(i => { const k = idx[i.date]; if(k == null || incLabel(i) !== l) return; if(k < half) a++; else b++; }); return { l, a, b, ch: a ? (b - a) / a * 100 : (b ? 100 : 0) }; }).sort((p, q) => q.ch - p.ch);
                 const riseList = rise.slice(0, 3).concat(rise.length > 3 ? rise.slice(-Math.min(3, rise.length - 3)) : []);
                 // branches slipping
@@ -15394,32 +15457,45 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const rate = (from, to) => { const s = bS[b].slice(from, to).reduce((a, c) => a + c, 0), i = I.slice(from, to).reduce((a, c) => a + c, 0); return s ? i / s * 100 : 0; };
                     return { b, line: bS[b].map((s, k) => s ? I[k] / s * 100 : null), ch: rate(hb, nb) - rate(0, hb) }; }).sort((p, q) => q.ch - p.ch);
                 const brHtml = br.slice(0, 9).map(r => { const c = r.ch > 0.3 ? '#DC2626' : r.ch < -0.3 ? '#059669' : '#64748B', a = r.ch > 0.3 ? '↑' : r.ch < -0.3 ? '↓' : '→';
-                    return `<div class="tr2-bc"><div><b>${esc(r.b)}</b><span style="color:${c}">${a} ${Math.abs(r.ch).toFixed(1)} pts</span></div>${spark(r.line, c)}</div>`; }).join('');
+                    return `<div class="tr2-bc"><div><b>${esc(r.b)}</b><span style="color:${c}">${a} ${Math.abs(r.ch).toFixed(1)} pts</span></div>${spark(r.line, c, r.b.replace(/[^a-z0-9]/gi, ''))}</div>`; }).join('');
                 const revT = S.reviewMin || 3, clsT = S.tCloseMin || S.resolveMin || 15;
-                const html = `${widened ? `<div class="tr2-note"><i class="fas fa-circle-info"></i> Trends need more than one day — showing the <b>last 30 days up to ${esc(dLabel(end))}</b>. Pick 7 days, 30 days or a custom range above to change it.</div>` : ''}
+                const html = `${widened ? `<div class="tr2-note"><i class="fas fa-circle-info"></i> A single day has no trend — showing the <b>last 30 days up to ${esc(dLabel(end))}</b>. Choose a period here or at the top.</div>` : ''}
                     <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>QUALITY OVER TIME<small>${esc(dLabel(start))} – ${esc(dLabel(end))} vs the ${n} days before</small></h3>
                         ${sentence.length ? `<div class="tr2-sum">In this period ${sentence.join(', ').replace(/, ([^,]*)$/, ' and $1')}.</div>` : ''}
                         <div class="tr2-g3">
-                            ${chart({ label: 'Positive feedback', value: posC == null ? '—' : posC.toFixed(1) + '%', change: cP.txt, good: cP.good, cur: pos(C), prev: pos(P), col: '#059669', target: S.tPositive, targetLabel: S.tPositive + '%', marks: mk2, closed, floor: 0 })}
-                            ${chart({ label: 'Incident rate', value: irC == null ? '—' : irC.toFixed(1) + '%', change: cI.txt, good: cI.good, cur: ir(C), prev: ir(P), col: '#DC2626', target: S.tIncRate, targetLabel: S.tIncRate + '%', marks: mk2, closed, floor: 0 })}
-                            ${chart({ label: 'Average rating', value: rC == null ? '—' : rC.toFixed(2), change: cR.txt, good: cR.good, cur: rat(C), prev: rat(P), col: '#4F46E5', target: S.tRating, targetLabel: String(S.tRating), marks: mk2, closed, floor: 1 })}
+                            ${chart({ key: 'pos', labels: lab, fmt: v => v.toFixed(1) + '%', label: 'Positive feedback', value: posC == null ? '—' : posC.toFixed(1) + '%', change: cP.txt, good: cP.good, cur: pos(C), prev: pos(P), col: '#059669', target: S.tPositive, targetLabel: S.tPositive + '%', marks: mk2, closed })}
+                            ${chart({ key: 'ir', labels: lab, fmt: v => v.toFixed(1) + '%', label: 'Incident rate', value: irC == null ? '—' : irC.toFixed(1) + '%', change: cI.txt, good: cI.good, cur: ir(C), prev: ir(P), col: '#DC2626', target: S.tIncRate, targetLabel: S.tIncRate + '%', marks: mk2, closed, floor: 0 })}
+                            ${chart({ key: 'rat', labels: lab, fmt: v => v.toFixed(2), label: 'Average rating', value: rC == null ? '—' : rC.toFixed(2), change: cR.txt, good: cR.good, cur: rat(C), prev: rat(P), col: '#4F46E5', target: S.tRating, targetLabel: String(S.tRating), marks: mk2, closed })}
                         </div>
-                        ${mk2.length ? `<div class="tr2-keys"><span><em style="background:#10B981">✓</em> action logged</span><span><em style="background:#4F46E5">F</em> form published</span>${closed.length ? '<span><em class="sh"></em> closed day</span>' : ''} · hover a marker for what it was</div>` : ''}</div>
+                        ${mk2.length ? `<div class="tr2-keys"><span><em style="background:#10B981">✓</em> action logged</span><span><em style="background:#4F46E5">F</em> form published</span>${closed.length ? '<span><em class="sh"></em> closed day</span>' : ''} · hover a chart for the numbers of that day</div>` : ''}</div>
                     <div class="tr2-g2">
                         <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>WHICH COMPLAINTS ARE GROWING<small>top 5 by the agent's label · ${step === 1 ? 'daily' : step + '-day steps'}</small></h3>
-                            ${top.length ? `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}">${areas}</svg><div class="tr2-leg2">${top.map((l, j) => `<span><i style="background:${COLS[j]}"></i>${esc(l)} · ${catCount[l]}</span>`).join('')}</div>` : '<div class="tr2-empty">No complaints in this period.</div>'}</div>
+                            ${top.length ? `<div class="tr2-cv"><canvas id="tr2c-cats"></canvas></div><div class="tr2-leg2">${top.map((l, j) => `<span><i style="background:${COLS[j]}"></i>${esc(l)} · ${catCount[l]}</span>`).join('')}</div>` : '<div class="tr2-empty">No complaints in this period.</div>'}</div>
                         <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>RISING AND FALLING<small>second half vs first half</small></h3>
                             ${riseList.length ? `<div class="tr2-rf">${riseList.map(r => `<div><span>${esc(r.l)}<small>${r.a} → ${r.b}</small></span><b class="${r.ch > 5 ? 'up' : r.ch < -5 ? 'dn' : 'fl'}">${r.ch > 5 ? '↑' : r.ch < -5 ? '↓' : '→'} ${Math.abs(Math.round(r.ch))}%</b></div>`).join('')}</div>` : '<div class="tr2-empty">Needs at least 4 cases of a complaint.</div>'}</div>
                     </div>
                     <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>BRANCHES — WHO IS SLIPPING<small>incident rate · worst change first · 20+ submissions</small></h3>
                         ${brHtml ? `<div class="tr2-bg">${brHtml}</div>` : '<div class="tr2-empty">Not enough submissions per branch in this period.</div>'}</div>
                     <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>SPEED OVER TIME<small>typical per day · against your targets</small></h3><div class="tr2-g2 even">
-                        ${chart({ label: 'Time to review', value: revC == null ? '—' : Math.round(revC) + ' min', change: cV.txt, good: cV.good, cur: C.map(a => med(a.rev)), prev: P.map(a => med(a.rev)), col: '#0EA5E9', target: revT, targetLabel: revT + ' min', marks: mk2, closed, floor: 0 })}
-                        ${chart({ label: 'Time to close', value: clsC == null ? '—' : Math.round(clsC) + ' min', change: cL.txt, good: cL.good, cur: C.map(a => med(a.cls)), prev: P.map(a => med(a.cls)), col: '#8B5CF6', target: clsT, targetLabel: clsT + ' min', marks: mk2, closed, floor: 0 })}
+                        ${chart({ key: 'rev', labels: lab, fmt: v => Math.round(v) + ' min', label: 'Time to review', value: revC == null ? '—' : Math.round(revC) + ' min', change: cV.txt, good: cV.good, cur: C.map(a => med(a.rev)), prev: P.map(a => med(a.rev)), col: '#0EA5E9', target: revT, targetLabel: revT + ' min', marks: mk2, closed, floor: 0 })}
+                        ${chart({ key: 'cls', labels: lab, fmt: v => Math.round(v) + ' min', label: 'Time to close', value: clsC == null ? '—' : Math.round(clsC) + ' min', change: cL.txt, good: cL.good, cur: C.map(a => med(a.cls)), prev: P.map(a => med(a.cls)), col: '#8B5CF6', target: clsT, targetLabel: clsT + ' min', marks: mk2, closed, floor: 0 })}
                     </div></div>`;
-                if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+                const bar = `<div class="tr2-period"><span>Period</span>${[['7d', '7 days'], ['30d', '30 days'], ['90', '90 days'], ['180', '6 months']].map(([k, t]) => `<button onclick="TR2.period('${k}')">${t}</button>`).join('')}<em>${esc(dLabel(start))} – ${esc(dLabel(end))}</em></div>`;
+                const full = bar + html;
+                if(host.__h !== full){ host.__h = full; host.innerHTML = full; }
+                drawAll();
             }
-            return { render };
+            /* The quick periods set the same dates as the chips at the top, so every tab agrees. */
+            function period(k){
+                try {
+                    if(k === '7d' || k === '30d') return app.setDateRange(k);
+                    const e = document.getElementById('filter-end-date'), s = document.getElementById('filter-start-date');
+                    if(!DATA_MAX_DATE) computeDataDateRange();
+                    e.value = DATA_MAX_DATE; s.value = _shiftDays(DATA_MAX_DATE, -(parseInt(k, 10) - 1));
+                    window.__userTouchedDates = true; app.setDateRange('custom'); app.applyFilters();
+                } catch(err){ console.warn(err); }
+            }
+            return { render, period };
         })();
         /* ═══════════════════════════════════════════════════════════════════
            v2.177.0 -- BREAKDOWN VIEW: branches (sortable, against targets),
@@ -15454,7 +15530,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             function render(){
                 const host = document.getElementById('bd2'); if(!host) return;
-                const S = Std(), inScope = scope();
+                const S = Std(), inScope = scope(); const charts = [];
                 let start = (document.getElementById('filter-start-date') || {}).value, end = (document.getElementById('filter-end-date') || {}).value;
                 if(!end) return;
                 let widened = false;
@@ -15514,15 +15590,21 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const prodCats = [...new Set(prodRows.flatMap(p => Object.keys(P[p].cats)))].sort((a, b) => (catTot[b] || 0) - (catTot[a] || 0)).slice(0, 6);
                 // ── rating spread and case outcomes ──────────────────────
                 const STAR = ['#DC2626', '#F97316', '#F59E0B', '#84CC16', '#10B981'];
-                const spread = active.filter(b => b.r >= 10).sort((a, b) => (a.pos || 0) - (b.pos || 0)).map(b => `<div class="bd2-sp"><b title="${esc(b.n)}">${esc(b.n)}</b>
-                    <div class="bd2-stk">${b.stars.map((v, k) => v ? `<i style="width:${(v / b.r * 100).toFixed(1)}%;background:${STAR[k]}" title="${k + 1}★ ${v} (${Math.round(v / b.r * 100)}%)"></i>` : '').join('')}</div>
-                    <small>${Math.round(b.stars[0] / b.r * 100 + b.stars[1] / b.r * 100)}% 1–2★</small></div>`).join('');
+                // v2.178.0: drawn by Chart.js like every other chart -- hover for the numbers.
+                const hbar = (id, rowsL, sets) => { const dk = document.body.classList.contains('dark-theme'), mut = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#64748B';
+                    charts.push([id, { type: 'bar', data: { labels: rowsL, datasets: sets.map(x => Object.assign({ borderWidth: 0, borderRadius: 3, barThickness: 14, borderSkipped: false }, x)) },
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 500 }, interaction: { mode: 'index', intersect: false },
+                            plugins: { legend: { display: false }, datalabels: { display: false },
+                                tooltip: { backgroundColor: dk ? '#1E293B' : '#0F172A', padding: 10, cornerRadius: 10, titleFont: { family: 'Inter', weight: '700', size: 12 }, bodyFont: { family: 'Inter', size: 11 },
+                                    callbacks: { label: c => ' ' + c.dataset.label + ': ' + c.parsed.x.toFixed(0) + '%' + (c.dataset.counts ? ' (' + c.dataset.counts[c.dataIndex] + ')' : '') } } },
+                            scales: { x: { stacked: true, max: 100, display: false }, y: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { color: mut, font: { family: 'Inter', size: 11, weight: '600' } } } } } }]);
+                    return `<div class="bd2-cv" style="height:${rowsL.length * 30 + 20}px"><canvas id="${id}"></canvas></div>`; };
+                const spRows = active.filter(b => b.r >= 10).sort((a, b) => (a.pos || 0) - (b.pos || 0));
+                const spread = spRows.length ? hbar('bd2-spread', spRows.map(b => b.n), STAR.map((c, k) => ({ label: (k + 1) + '★', backgroundColor: c, data: spRows.map(b => b.stars[k] / b.r * 100), counts: spRows.map(b => b.stars[k]) }))) : '';
                 const OUT = [['verified', 'Verified', '#10B981'], ['fake', 'Fake', '#DC2626'], ['not_responding', 'Not responding', '#8B5CF6'], ['review', 'Needs review', '#F59E0B'], ['open', 'Still open', '#94A3B8']];
                 const outRows = active.filter(b => Object.values(b.out).reduce((a, c) => a + c, 0) > 0).map(b => { const t = Object.values(b.out).reduce((a, c) => a + c, 0); return { b, t }; }).sort((x, y) => y.t - x.t);
-                const outcomes = outRows.map(({ b, t }) => `<div class="bd2-sp"><b title="${esc(b.n)}">${esc(b.n)}</b>
-                    <div class="bd2-stk">${OUT.map(([k, l, c]) => b.out[k] ? `<i style="width:${(b.out[k] / t * 100).toFixed(1)}%;background:${c}" title="${l}: ${b.out[k]}"></i>` : '').join('')}</div>
-                    <small>${t} case${t === 1 ? '' : 's'}${b.out.fake ? ' · ' + Math.round(b.out.fake / t * 100) + '% fake' : ''}</small></div>`).join('');
-                const html = `${widened ? `<div class="bd2-note"><i class="fas fa-circle-info"></i> A breakdown needs more than one day — showing the <b>last 30 days up to ${esc(new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</b>. Pick a range above to change it.</div>` : ''}
+                const outcomes = outRows.length ? hbar('bd2-outcomes', outRows.map(({ b, t }) => b.n + ' · ' + t), OUT.map(([k, l, c]) => ({ label: l, backgroundColor: c, data: outRows.map(({ b, t }) => b.out[k] / t * 100), counts: outRows.map(({ b }) => b.out[k]) }))) : '';
+                const html = `${widened ? `<div class="bd2-note"><i class="fas fa-circle-info"></i> A single day is too little to compare — showing the <b>last 30 days up to ${esc(new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</b> Choose a period here or at the top.</div>` : ''}
                     ${branchTable}
                     <div class="bd2-g2">${channels}${sources}</div>
                     ${heat(brRows, topCats, byBC, 'COMPLAINTS BY BRANCH', "by the agent's label · darker = more", 'No complaints in this period.')}
@@ -15532,7 +15614,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>HOW CASES TURNED OUT<small>every incident, fake included</small></h3>
                             ${outcomes || '<div class="bd2-empty">No incidents in this period.</div>'}<div class="bd2-lg">${OUT.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>
                     </div>`;
-                if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+                const bar = `<div class="bd2-period"><span>Period</span>${[['7d', '7 days'], ['30d', '30 days'], ['90', '90 days'], ['180', '6 months']].map(([k, t]) => `<button onclick="TR2.period('${k}')">${t}</button>`).join('')}<em>${esc(new Date(start + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))} – ${esc(new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</em></div>`;
+                const full = bar + html;
+                if(host.__h !== full){ host.__h = full; host.innerHTML = full; }
+                charts.forEach(([id, cfg]) => { try { _renderOrUpdateChart(id, cfg); } catch(e){ console.warn('breakdown chart', e); } });
             }
             return { render, sort(k){ if(sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === 'n' ? 1 : -1; } render(); } };
         })();
@@ -17437,7 +17522,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         if(targetView) targetView.classList.add('active');
 
                         const gc = document.getElementById('global-controls');
-                        if(gc) gc.style.display = savedView === 'executive' ? 'flex' : 'none';
+                        if(gc) _gcShow(savedView);
                     }
                 } catch(e){}
 
@@ -17878,7 +17963,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 // A full page reload used to land on the Overview whatever was
                 // open. The address now carries the view, and the existing
                 // ?open= handler puts the agent back where they were.
-                try { if(viewId && history.replaceState) history.replaceState(null, '', location.pathname + '?open=' + encodeURIComponent(viewId)); } catch(e){}
+                // v2.178.0: every tab you open is a step the browser's Back button can
+                // return to. It used to replace the address, so Back left Sentinel
+                // altogether -- to the sign-in page.
+                try {
+                    const _u = location.pathname + '?open=' + encodeURIComponent(viewId) + (viewId === 'executive' && state.execMode && state.execMode !== 'overview' ? '&mode=' + encodeURIComponent(state.execMode) : '');
+                    if(viewId && history.pushState){
+                        if(window.__navFromPop || (location.pathname + location.search) === _u || !state.currentView) history.replaceState({ v: viewId }, '', _u);
+                        else if(state.currentView !== viewId) history.pushState({ v: viewId }, '', _u);
+                    }
+                } catch(e){}
                 // Someone is working: go back to the fast polling rate.
                 try { if(window.pollWakeUp) pollWakeUp(); } catch(e){}
                 if(state.currentView === viewId && document.querySelector('.view.active')){
@@ -17929,7 +18023,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                             el.style.transition = '';
                         });
                         const gc = document.getElementById('global-controls');
-                        if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                        if(gc) _gcShow(viewId);
                         if(targetView){
                             // Render FIRST, while the view is still invisible, then reveal.
                             // Rendering after the reveal replaced the children mid-animation
@@ -17955,7 +18049,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                     if(targetView) targetView.classList.add('active');
                     const gc = document.getElementById('global-controls');
-                    if(gc) gc.style.display = viewId === 'executive' ? 'flex' : 'none';
+                    if(gc) _gcShow(viewId);
                     this.renderCurrentView();            // content in place before the entrance animation starts
                     document.body.classList.add('do-anim');
                     setTimeout(() => document.body.classList.remove('do-anim'), 700);
@@ -17963,6 +18057,10 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             },
 
             setExecMode(mode, btnElement) {
+                // v2.178.0: Overview / Compare / Trend / Breakdown are steps for Back too.
+                try { if(!window.__navFromPop && state.execMode !== mode && history.pushState){
+                        const _u = location.pathname + '?open=executive' + (mode && mode !== 'overview' ? '&mode=' + encodeURIComponent(mode) : '');
+                        history.pushState({ v: 'executive', m: mode }, '', _u); } } catch(e){}
                 state.execMode = mode;
 
                 document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
