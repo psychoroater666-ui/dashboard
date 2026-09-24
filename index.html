@@ -5515,6 +5515,32 @@
             background:rgba(79,70,229,.08); border:1px solid #C7D2FE; font-size:.82rem; color:var(--text-main); }
         #inc-focus-bar i { color:#4F46E5; margin-right:6px; }
         #inc-focus-bar button { border:1px solid #C7D2FE; background:var(--white); color:#4F46E5; font:700 .76rem 'Inter',sans-serif; border-radius:20px; padding:6px 12px; cursor:pointer; min-height:0 !important; }
+        /* v2.176.0: Trend view */
+        #trend2 { display:grid; gap:16px; margin-bottom:16px; }
+        .tr2-note { display:flex; gap:10px; align-items:center; background:rgba(79,70,229,.08); border:1px solid #C7D2FE; border-radius:12px; padding:10px 14px; font-size:.82rem; color:var(--text-main); } .tr2-note i { color:#4F46E5; }
+        .tr2-card { padding:18px 20px !important; }
+        .tr2-h { margin:0 0 12px; font:800 .8rem 'Inter',sans-serif !important; letter-spacing:.3px; display:flex; align-items:center; gap:8px; color:var(--text-main); flex-wrap:wrap; }
+        .tr2-h i.b { width:4px; height:16px; border-radius:3px; background:linear-gradient(#010197,#3B5BDB); } .tr2-h small { margin-left:auto; font:600 .7rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:0; }
+        .tr2-sum { font-size:.86rem; line-height:1.55; background:var(--bg-light); border-radius:12px; padding:12px 14px; margin-bottom:14px; color:var(--text-main); }
+        .tr2-sum b.g { color:#047857; } .tr2-sum b.r { color:#B91C1C; } body.dark-theme .tr2-sum b.g { color:#34D399; } body.dark-theme .tr2-sum b.r { color:#F87171; }
+        .tr2-g3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; } .tr2-g2 { display:grid; grid-template-columns:1.3fr 1fr; gap:16px; } .tr2-g2.even { grid-template-columns:1fr 1fr; gap:14px; }
+        .tr2-q { border:1px solid var(--border-color); border-radius:14px; padding:12px; }
+        .tr2-qh { display:flex; align-items:baseline; gap:8px; } .tr2-qh b { flex:1; font-size:.78rem; color:var(--text-main); } .tr2-qh .v { font:800 1.1rem 'Inter',sans-serif; color:var(--text-main); }
+        .tr2-qh .c { font:700 .72rem 'Inter',sans-serif; } .tr2-qh .c.up { color:#047857; } .tr2-qh .c.dn { color:#B91C1C; } .tr2-qh .c.fl { color:var(--text-muted); }
+        .tr2-plot { position:relative; margin-top:8px; } .tr2-t { position:absolute; right:2px; top:2px; font-style:normal; font-size:.6rem; color:#818CF8; background:var(--white); padding:0 3px; border-radius:4px; }
+        .tr2-m { position:absolute; top:-2px; transform:translateX(-50%); width:14px; height:14px; border-radius:50%; color:#fff; font:800 .5rem 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; z-index:1; cursor:help; }
+        .tr2-lg { display:flex; gap:10px; flex-wrap:wrap; font-size:.64rem; color:var(--text-muted); margin-top:4px; } .tr2-lg i { display:inline-block; width:12px; height:3px; border-radius:2px; margin-right:4px; vertical-align:middle; }
+        .tr2-lg i.d { background:repeating-linear-gradient(90deg,#CBD5E1 0 4px,transparent 4px 7px); }
+        .tr2-keys { display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:.68rem; color:var(--text-muted); margin-top:10px; }
+        .tr2-keys em { font-style:normal; display:inline-flex; width:14px; height:14px; border-radius:50%; color:#fff; font:800 .5rem 'Inter',sans-serif; align-items:center; justify-content:center; margin-right:4px; vertical-align:-2px; }
+        .tr2-keys em.sh { border-radius:3px; background:rgba(148,163,184,.3); }
+        .tr2-leg2 { display:flex; gap:12px; flex-wrap:wrap; font-size:.7rem; margin-top:8px; color:var(--text-main); } .tr2-leg2 i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+        .tr2-rf { display:grid; gap:6px; } .tr2-rf div { display:flex; justify-content:space-between; align-items:center; font-size:.78rem; padding:7px 10px; border-radius:10px; background:var(--bg-light); color:var(--text-main); }
+        .tr2-rf small { display:block; font-size:.64rem; color:var(--text-muted); } .tr2-rf .up { color:#B91C1C; } .tr2-rf .dn { color:#047857; } .tr2-rf .fl { color:var(--text-muted); }
+        .tr2-bg { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+        .tr2-bc { border:1px solid var(--border-color); border-radius:12px; padding:10px 12px; } .tr2-bc > div { display:flex; justify-content:space-between; gap:8px; } .tr2-bc b { font-size:.78rem; color:var(--text-main); } .tr2-bc span { font:800 .7rem 'Inter',sans-serif; }
+        .tr2-empty { font-size:.78rem; color:var(--text-muted); padding:14px 0; }
+        @media (max-width:980px){ .tr2-g3, .tr2-g2, .tr2-g2.even, .tr2-bg { grid-template-columns:1fr; } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -8614,6 +8640,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 <!-- SUB-MODE: TREND -->
                 <div id="exec-mode-trend" class="exec-mode-container">
+                    <div id="trend2"></div>
                     <div class="card">
                         <div class="section-header" style="margin-bottom: 8px;">
                             <h3><i class="fas fa-chart-area" style="color:var(--accent-blue); margin-right:6px;"></i> Expanded Historical Time-Series</h3>
@@ -9636,7 +9663,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.175.0 · 24 Sep 2026 · One label per case everywhere: the agent\'s category first';
+        const BUILD_VERSION = 'v2.176.0 · 24 Sep 2026 · Trend view: quality over time, complaints growing, branches slipping, speed, markers';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -15229,6 +15256,140 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             try { BELL.close(); } catch(e){}
         };
         window.clearCaseFocus = function(){ window.__incFocus = null; try { app.filterIncidents(); } catch(e){} };
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.176.0 -- TREND VIEW: quality over time, what is growing, who is
+           slipping, speed over time, and what changed -- always over a real
+           period (a single day widens to the 30 days up to it).
+           ═══════════════════════════════════════════════════════════════════ */
+        const TR2 = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const addD = (d, n) => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return _fmtDate(t); };
+            const dLabel = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+            function scope(){
+                let region = (document.getElementById('filter-region') || {}).value || 'all';
+                let branch = (document.getElementById('filter-branch') || {}).value || 'all';
+                const channel = (document.getElementById('filter-channel') || {}).value || 'all';
+                const survey = (document.getElementById('filter-survey') || {}).value || 'all';
+                if(PERM.region !== 'All') region = PERM.region;
+                { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
+                const regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
+                return item => (region === 'all' || regionOf(item.branch) === region) && (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch)
+                    && (channel === 'all' || item.channel === channel) && (survey === 'all' || item.surveyForm === survey);
+            }
+            const med = v => { const s = v.filter(x => isFinite(x)).sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : null; };
+            const ma = (v, k) => v.map((_, i) => { const w = v.slice(Math.max(0, i - k + 1), i + 1).filter(x => x != null); return w.length ? w.reduce((a, b) => a + b, 0) / w.length : null; });
+            /* One line chart: daily (light), 7-day average (bold), previous period (dashed), target (dotted), markers. */
+            function chart(o){
+                const W = 520, H = 150, n = o.cur.length;
+                const all = o.cur.concat(o.prev || []).concat([o.target]).filter(v => v != null && isFinite(v));
+                if(!all.length) return `<div class="tr2-empty">Not enough data yet.</div>`;
+                let mn = Math.min(...all), mx = Math.max(...all); const pad = (mx - mn) * 0.15 || 1; mn = Math.max(o.floor ?? -Infinity, mn - pad); mx = mx + pad;
+                const x = i => (n <= 1 ? W / 2 : i * (W - 10) / (n - 1) + 5), y = v => H - 8 - (v - mn) / (mx - mn) * (H - 20);
+                const path = (v, attrs) => { const pts = v.map((val, i) => val == null ? null : x(i).toFixed(1) + ',' + y(val).toFixed(1)).filter(Boolean);
+                    return pts.length > 1 ? `<polyline fill="none" vector-effect="non-scaling-stroke" ${attrs} points="${pts.join(' ')}"/>` : ''; };
+                const marks = (o.marks || []).map(m => `<line x1="${x(m.i).toFixed(1)}" x2="${x(m.i).toFixed(1)}" y1="6" y2="${H - 6}" stroke="${m.c}" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>`).join('');
+                const shade = (o.closed || []).map(i => `<rect x="${(x(i) - (W - 10) / Math.max(1, n - 1) / 2).toFixed(1)}" y="0" width="${((W - 10) / Math.max(1, n - 1)).toFixed(1)}" height="${H}" fill="rgba(148,163,184,.14)"/>`).join('');
+                const tgt = o.target != null ? `<line x1="0" x2="${W}" y1="${y(o.target).toFixed(1)}" y2="${y(o.target).toFixed(1)}" stroke="#A5B4FC" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>` : '';
+                const chipC = o.good == null ? 'fl' : o.good ? 'up' : 'dn';
+                const markDots = (o.marks || []).map(m => `<span class="tr2-m" style="left:${(x(m.i) / W * 100).toFixed(2)}%;background:${m.c}" title="${esc(m.t)}">${m.s}</span>`).join('');
+                return `<div class="tr2-q"><div class="tr2-qh"><b>${esc(o.label)}</b><span class="v">${o.value}</span>${o.change ? `<span class="c ${chipC}">${o.change}</span>` : ''}</div>
+                    <div class="tr2-plot">${markDots}<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}">${shade}${tgt}${marks}
+                        ${path(o.prev || [], `stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="5 4"`)}${path(o.cur, `stroke="${o.col}" stroke-opacity=".35" stroke-width="1.2"`)}${path(ma(o.cur, 7), `stroke="${o.col}" stroke-width="2.6" stroke-linejoin="round"`)}</svg>
+                        ${o.target != null ? `<em class="tr2-t">target ${o.targetLabel}</em>` : ''}</div>
+                    <div class="tr2-lg"><span><i style="background:${o.col}"></i>7-day average</span><span><i style="background:${o.col};opacity:.35"></i>daily</span><span><i class="d"></i>previous period</span></div></div>`;
+            }
+            function spark(v, col){
+                const W = 160, H = 40, vv = v.filter(x => x != null); if(vv.length < 2) return '';
+                let mn = Math.min(...vv), mx = Math.max(...vv); const pad = (mx - mn) * 0.2 || 0.5; mn -= pad; mx += pad;
+                const pts = v.map((val, i) => val == null ? null : ((i * (W - 4) / (v.length - 1)) + 2).toFixed(1) + ',' + (H - 4 - (val - mn) / (mx - mn) * (H - 8)).toFixed(1)).filter(Boolean);
+                return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}"><polyline fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" points="${pts.join(' ')}"/></svg>`;
+            }
+            function render(){
+                const host = document.getElementById('trend2'); if(!host) return;
+                const S = Std(), inScope = scope();
+                let start = (document.getElementById('filter-start-date') || {}).value, end = (document.getElementById('filter-end-date') || {}).value;
+                if(!end) return;
+                let widened = false;
+                if(!start || start === end){ start = addD(end, -29); widened = true; }
+                const days = []; for(let d = start; d <= end && days.length < 400; d = addD(d, 1)) days.push(d);
+                const n = days.length, pStart = addD(start, -n), idx = {}; days.forEach((d, i) => idx[d] = i);
+                const pdays = days.map((_, i) => addD(pStart, i)), pidx = {}; pdays.forEach((d, i) => pidx[d] = i);
+                const mk = () => days.map(() => ({ s: 0, r: 0, p: 0, sum: 0, inc: 0, rev: [], cls: [] }));
+                const C = mk(), P = mk();
+                (rawData.submissions || []).forEach(s => { if(!inScope(s)) return; const a = idx[s.date] != null ? C[idx[s.date]] : pidx[s.date] != null ? P[pidx[s.date]] : null; if(!a) return;
+                    a.s++; if(s.smileScore != null && s.smileScore > 0){ a.r++; a.sum += s.smileScore; if(s.smileScore >= 4) a.p++; } });
+                const incs = (rawData.incidents || []).filter(i => i.caseStatus !== 'fake' && inScope(i));
+                incs.forEach(i => { const a = idx[i.date] != null ? C[idx[i.date]] : pidx[i.date] != null ? P[pidx[i.date]] : null; if(!a) return; a.inc++;
+                    try { const t0 = slaStart(i), rv = i.reviewedAt ? Date.parse(i.reviewedAt) : NaN, rs = i.resolvedAt ? Date.parse(i.resolvedAt) : NaN;
+                          if(isFinite(rv) && rv >= t0) a.rev.push((rv - t0) / 60000); if(isFinite(rs) && isFinite(rv) && rs >= rv) a.cls.push((rs - rv) / 60000); } catch(e){} });
+                const series = (A, f) => A.map(f);
+                const pos = A => series(A, a => a.r >= 3 ? a.p / a.r * 100 : null), rat = A => series(A, a => a.r >= 3 ? a.sum / a.r : null), ir = A => series(A, a => a.s >= 5 ? a.inc / a.s * 100 : null);
+                const tot = (A, f) => { const t = A.reduce((o, a) => { o.s += a.s; o.r += a.r; o.p += a.p; o.sum += a.sum; o.inc += a.inc; return o; }, { s: 0, r: 0, p: 0, sum: 0, inc: 0 }); return f(t); };
+                const posC = tot(C, t => t.r ? t.p / t.r * 100 : null), posP = tot(P, t => t.r ? t.p / t.r * 100 : null);
+                const irC = tot(C, t => t.s ? t.inc / t.s * 100 : null), irP = tot(P, t => t.s ? t.inc / t.s * 100 : null);
+                const rC = tot(C, t => t.r ? t.sum / t.r : null), rP = tot(P, t => t.r ? t.sum / t.r : null);
+                const revC = med(C.flatMap(a => a.rev)), revP = med(P.flatMap(a => a.rev)), clsC = med(C.flatMap(a => a.cls)), clsP = med(P.flatMap(a => a.cls));
+                const chg = (c, p, unit, dp, higherGood) => { if(c == null || p == null) return { txt: '', good: null }; const d = c - p; const r = Math.abs(d) < Math.pow(10, -dp) / 2;
+                    return { txt: (r ? '→ ' : d > 0 ? '▲ ' : '▼ ') + Math.abs(d).toFixed(dp) + unit, good: r ? null : (d > 0) === higherGood }; };
+                // markers: actions logged, forms published, closed days
+                const marks = [], closed = [];
+                try { const t = DataFeed.tabs.actions; (t && t.objRows || []).forEach(a => { const d = String(a['Opened At'] || '').slice(0, 10); if(idx[d] != null) marks.push({ i: idx[d], c: '#10B981', s: '✓', t: 'Action: ' + (a['Reason'] || '') + ' at ' + (a['Branch'] || '') }); }); } catch(e){}
+                try { const c = JSON.parse(sessionStorage.getItem('crumble_forms_cache_v2') || 'null'); ((c && c.forms) || []).forEach(f => { const d = String(f.publishedAt || f.liveAt || f.updatedAt || '').slice(0, 10); if(idx[d] != null) marks.push({ i: idx[d], c: '#4F46E5', s: 'F', t: 'Form published: ' + (f.name || f.id) }); }); } catch(e){}
+                try { days.forEach((d, i) => { if(typeof calAllClosed === 'function' && calAllClosed(d)) closed.push(i); }); } catch(e){}
+                const mk2 = marks.slice(0, 12);
+                const cP = chg(posC, posP, ' pts', 1, true), cI = chg(irC, irP, ' pts', 1, false), cR = chg(rC, rP, '', 2, true), cV = chg(revC, revP, ' min', 0, false), cL = chg(clsC, clsP, ' min', 0, false);
+                const say = (label, c, p, good, fmt) => c == null ? '' : `${label} <b class="${good == null ? '' : good ? 'g' : 'r'}">${good == null ? 'held at' : (c > p ? 'rose to' : 'fell to')} ${fmt(c)}</b>${p != null && good != null ? ' (from ' + fmt(p) + ')' : ''}`;
+                const sentence = [say('positive feedback', posC, posP, cP.good, v => v.toFixed(1) + '%'), say('the incident rate', irC, irP, cI.good, v => v.toFixed(1) + '%'), say('average rating', rC, rP, cR.good, v => v.toFixed(2))].filter(Boolean);
+                // complaints growing (by agent label)
+                const step = n > 45 ? 7 : n > 14 ? 3 : 1, nb = Math.ceil(n / step);
+                const catCount = {}, catB = {};
+                incs.forEach(i => { if(idx[i.date] == null) return; const l = incLabel(i); catCount[l] = (catCount[l] || 0) + 1; const b = Math.floor(idx[i.date] / step); (catB[l] = catB[l] || new Array(nb).fill(0))[b]++; });
+                const top = Object.keys(catCount).sort((a, b) => catCount[b] - catCount[a]).slice(0, 5);
+                const COLS = ['#DC2626', '#F59E0B', '#4F46E5', '#0EA5E9', '#94A3B8'];
+                const W = 520, H = 150; const totB = new Array(nb).fill(0); top.forEach(l => catB[l].forEach((v, k) => totB[k] += v)); const mxB = Math.max(1, ...totB) * 1.1;
+                const xb = k => nb <= 1 ? W / 2 : k * (W - 10) / (nb - 1) + 5, yb = v => H - 8 - v / mxB * (H - 16);
+                let base = new Array(nb).fill(0), areas = '';
+                top.forEach((l, j) => { const tp = base.map((b, k) => b + catB[l][k]);
+                    const pts = tp.map((v, k) => xb(k).toFixed(1) + ',' + yb(v).toFixed(1)).concat(base.map((v, k) => xb(k).toFixed(1) + ',' + yb(v).toFixed(1)).reverse());
+                    areas += `<polygon points="${pts.join(' ')}" fill="${COLS[j]}" opacity=".85"/>`; base = tp; });
+                const half = Math.floor(n / 2), rise = Object.keys(catCount).filter(l => catCount[l] >= 4).map(l => { let a = 0, b = 0; incs.forEach(i => { const k = idx[i.date]; if(k == null || incLabel(i) !== l) return; if(k < half) a++; else b++; }); return { l, a, b, ch: a ? (b - a) / a * 100 : (b ? 100 : 0) }; }).sort((p, q) => q.ch - p.ch);
+                const riseList = rise.slice(0, 3).concat(rise.length > 3 ? rise.slice(-Math.min(3, rise.length - 3)) : []);
+                // branches slipping
+                const bS = {}, bI = {};
+                (rawData.submissions || []).forEach(s => { if(!inScope(s) || idx[s.date] == null || !s.branch || s.branch === 'Unspecified') return; const k = Math.floor(idx[s.date] / step); (bS[s.branch] = bS[s.branch] || new Array(nb).fill(0))[k]++; });
+                incs.forEach(i => { if(idx[i.date] == null || !bS[i.branch]) return; const k = Math.floor(idx[i.date] / step); (bI[i.branch] = bI[i.branch] || new Array(nb).fill(0))[k]++; });
+                const hb = Math.floor(nb / 2);
+                const br = Object.keys(bS).filter(b => bS[b].reduce((a, c) => a + c, 0) >= 20).map(b => { const I = bI[b] || new Array(nb).fill(0);
+                    const rate = (from, to) => { const s = bS[b].slice(from, to).reduce((a, c) => a + c, 0), i = I.slice(from, to).reduce((a, c) => a + c, 0); return s ? i / s * 100 : 0; };
+                    return { b, line: bS[b].map((s, k) => s ? I[k] / s * 100 : null), ch: rate(hb, nb) - rate(0, hb) }; }).sort((p, q) => q.ch - p.ch);
+                const brHtml = br.slice(0, 9).map(r => { const c = r.ch > 0.3 ? '#DC2626' : r.ch < -0.3 ? '#059669' : '#64748B', a = r.ch > 0.3 ? '↑' : r.ch < -0.3 ? '↓' : '→';
+                    return `<div class="tr2-bc"><div><b>${esc(r.b)}</b><span style="color:${c}">${a} ${Math.abs(r.ch).toFixed(1)} pts</span></div>${spark(r.line, c)}</div>`; }).join('');
+                const revT = S.reviewMin || 3, clsT = S.tCloseMin || S.resolveMin || 15;
+                const html = `${widened ? `<div class="tr2-note"><i class="fas fa-circle-info"></i> Trends need more than one day — showing the <b>last 30 days up to ${esc(dLabel(end))}</b>. Pick 7 days, 30 days or a custom range above to change it.</div>` : ''}
+                    <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>QUALITY OVER TIME<small>${esc(dLabel(start))} – ${esc(dLabel(end))} vs the ${n} days before</small></h3>
+                        ${sentence.length ? `<div class="tr2-sum">In this period ${sentence.join(', ').replace(/, ([^,]*)$/, ' and $1')}.</div>` : ''}
+                        <div class="tr2-g3">
+                            ${chart({ label: 'Positive feedback', value: posC == null ? '—' : posC.toFixed(1) + '%', change: cP.txt, good: cP.good, cur: pos(C), prev: pos(P), col: '#059669', target: S.tPositive, targetLabel: S.tPositive + '%', marks: mk2, closed, floor: 0 })}
+                            ${chart({ label: 'Incident rate', value: irC == null ? '—' : irC.toFixed(1) + '%', change: cI.txt, good: cI.good, cur: ir(C), prev: ir(P), col: '#DC2626', target: S.tIncRate, targetLabel: S.tIncRate + '%', marks: mk2, closed, floor: 0 })}
+                            ${chart({ label: 'Average rating', value: rC == null ? '—' : rC.toFixed(2), change: cR.txt, good: cR.good, cur: rat(C), prev: rat(P), col: '#4F46E5', target: S.tRating, targetLabel: String(S.tRating), marks: mk2, closed, floor: 1 })}
+                        </div>
+                        ${mk2.length ? `<div class="tr2-keys"><span><em style="background:#10B981">✓</em> action logged</span><span><em style="background:#4F46E5">F</em> form published</span>${closed.length ? '<span><em class="sh"></em> closed day</span>' : ''} · hover a marker for what it was</div>` : ''}</div>
+                    <div class="tr2-g2">
+                        <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>WHICH COMPLAINTS ARE GROWING<small>top 5 by the agent's label · ${step === 1 ? 'daily' : step + '-day steps'}</small></h3>
+                            ${top.length ? `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" width="100%" height="${H}">${areas}</svg><div class="tr2-leg2">${top.map((l, j) => `<span><i style="background:${COLS[j]}"></i>${esc(l)} · ${catCount[l]}</span>`).join('')}</div>` : '<div class="tr2-empty">No complaints in this period.</div>'}</div>
+                        <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>RISING AND FALLING<small>second half vs first half</small></h3>
+                            ${riseList.length ? `<div class="tr2-rf">${riseList.map(r => `<div><span>${esc(r.l)}<small>${r.a} → ${r.b}</small></span><b class="${r.ch > 5 ? 'up' : r.ch < -5 ? 'dn' : 'fl'}">${r.ch > 5 ? '↑' : r.ch < -5 ? '↓' : '→'} ${Math.abs(Math.round(r.ch))}%</b></div>`).join('')}</div>` : '<div class="tr2-empty">Needs at least 4 cases of a complaint.</div>'}</div>
+                    </div>
+                    <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>BRANCHES — WHO IS SLIPPING<small>incident rate · worst change first · 20+ submissions</small></h3>
+                        ${brHtml ? `<div class="tr2-bg">${brHtml}</div>` : '<div class="tr2-empty">Not enough submissions per branch in this period.</div>'}</div>
+                    <div class="card tr2-card"><h3 class="tr2-h"><i class="b"></i>SPEED OVER TIME<small>typical per day · against your targets</small></h3><div class="tr2-g2 even">
+                        ${chart({ label: 'Time to review', value: revC == null ? '—' : Math.round(revC) + ' min', change: cV.txt, good: cV.good, cur: C.map(a => med(a.rev)), prev: P.map(a => med(a.rev)), col: '#0EA5E9', target: revT, targetLabel: revT + ' min', marks: mk2, closed, floor: 0 })}
+                        ${chart({ label: 'Time to close', value: clsC == null ? '—' : Math.round(clsC) + ' min', change: cL.txt, good: cL.good, cur: C.map(a => med(a.cls)), prev: P.map(a => med(a.cls)), col: '#8B5CF6', target: clsT, targetLabel: clsT + ' min', marks: mk2, closed, floor: 0 })}
+                    </div></div>`;
+                if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+            }
+            return { render };
+        })();
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
             const S = Std();
@@ -18534,6 +18695,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 if (state.execMode === 'compare') { compareEngine.render(); if(typeof branchCompare!=='undefined') branchCompare.render(); }
                 
                 if (state.execMode === 'trend') {
+                    try { TR2.render(); } catch(e){ console.warn('trend2:', e); }   // v2.176.0
                     this.renderExecTrendChart('execTrendExpandedChart');
 
                     const breakdownCounts = {};
