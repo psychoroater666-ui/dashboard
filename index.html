@@ -5580,6 +5580,12 @@
         .tr2-period em, .bd2-period em { font-style:normal; margin-left:auto; font:600 .74rem 'Inter',sans-serif; color:var(--text-muted); }
         .bd2-cv { position:relative; }
         body.gc-lite #exec-view-toggles { display:none !important; }
+        /* v2.179.0: small charts */
+        .mini-cv { position:relative; width:100%; }
+        .fa2-ring canvas { position:absolute; inset:0; } .fa2-ring .c { pointer-events:none; z-index:1; } .fa2-js .jb { background:none !important; height:auto !important; overflow:visible !important; }
+        .drv-bar { background:none !important; height:auto !important; overflow:visible !important; } .ctl-sp { height:40px; min-width:120px; }
+        .fa2-fs .mini-cv { margin-top:8px; }
+        .bd2-barcv { display:inline-block; width:90px; margin-left:8px; vertical-align:middle; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -9704,7 +9710,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.178.0 · 24 Sep 2026 · Trend and Breakdown on Chart.js with a period bar; date bar on every date tab; Back returns to the previous tab';
+        const BUILD_VERSION = 'v2.179.0 · 24 Sep 2026 · Every newer chart and bar drawn with Chart.js (MINI): hover, animation, one style';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -14517,6 +14523,109 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const up = rows.filter(r => r.lift >= 0.3 && r.share >= 0.1).sort((a, b) => b.lift * b.share - a.lift * a.share)[0] || null;
             return { N, down, up };
         }
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.179.0 -- MINI: small charts drawn by Chart.js, the same library and
+           style as every other chart -- hover for the number, animated, dark
+           mode aware. Every bar, spark line, ring and grid in the newer cards
+           (Form Analytics, Integrity, Breakdown, What moves the rating, Real
+           problem or normal noise) goes through here. Call MINI.flush() after
+           the HTML holding the canvases is on the page.
+           ═══════════════════════════════════════════════════════════════════ */
+        const MINI = (function(){
+            let q = [];
+            const dark = () => document.body.classList.contains('dark-theme');
+            const tip = extra => Object.assign({ backgroundColor: dark() ? '#1E293B' : '#0F172A', titleColor: '#fff', bodyColor: '#E2E8F0', padding: 8, cornerRadius: 8,
+                titleFont: { family: 'Inter', weight: '700', size: 11 }, bodyFont: { family: 'Inter', weight: '600', size: 11 }, displayColors: false }, extra || {});
+            const safe = k => 'mini-' + String(k).replace(/[^a-z0-9_-]/gi, '_').slice(0, 80);
+            const track = { id: 'miniTrack', beforeDatasetsDraw(c){ const a = c.chartArea; if(!a) return; const ctx = c.ctx, r = Math.min(6, (a.bottom - a.top) / 2);
+                ctx.save(); ctx.fillStyle = dark() ? 'rgba(148,163,184,.16)' : '#EEF2F7'; ctx.beginPath();
+                if(ctx.roundRect) ctx.roundRect(a.left, a.top, a.right - a.left, a.bottom - a.top, r); else ctx.rect(a.left, a.top, a.right - a.left, a.bottom - a.top);
+                ctx.fill(); ctx.restore(); } };
+            const markAt = (v, col) => ({ id: 'miniMark', afterDatasetsDraw(c){ const x = c.scales.x, a = c.chartArea; if(!x || !a || v == null) return; const px = x.getPixelForValue(v);
+                const ctx = c.ctx; ctx.save(); ctx.fillStyle = col || (dark() ? '#E2E8F0' : '#0F172A'); ctx.fillRect(px - 1, a.top - 3, 2, a.bottom - a.top + 6); ctx.restore(); } });
+            /** A single progress bar: value out of max, with an optional mark (e.g. the typical branch). */
+            function bar(key, value, max, color, tipText, o){
+                o = o || {}; const id = safe(key), h = o.h || 8;
+                q.push([id, { type: 'bar', data: { labels: [''], datasets: [{ data: [Math.max(0, Math.min(max, value || 0))], backgroundColor: color, borderRadius: 6, borderSkipped: false, barPercentage: 1, categoryPercentage: 1 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 600 }, layout: { padding: { top: o.mark != null ? 3 : 0, bottom: o.mark != null ? 3 : 0 } },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ callbacks: { title: () => '', label: () => ' ' + tipText } }) },
+                        scales: { x: { min: 0, max: max || 1, display: false }, y: { display: false } } },
+                    plugins: o.mark != null ? [track, markAt(o.mark)] : [track] }]);
+                return `<div class="mini-cv" style="height:${h + (o.mark != null ? 6 : 0)}px"><canvas id="${id}"></canvas></div>`;
+            }
+            /** Several parts side by side in one bar (e.g. clean / watch / investigate). */
+            function stack(key, parts, o){
+                o = o || {}; const id = safe(key), h = o.h || 14, tot = parts.reduce((a, p) => a + (p.v || 0), 0) || 1;
+                q.push([id, { type: 'bar', data: { labels: [''], datasets: parts.map(p => ({ label: p.label, data: [p.v / tot * 100], counts: p.v, backgroundColor: p.c, borderRadius: 4, borderSkipped: false, barPercentage: 1, categoryPercentage: 1 })) },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ mode: 'point', callbacks: { title: () => '', label: c => ' ' + c.dataset.label + ': ' + c.dataset.counts } }) },
+                        scales: { x: { stacked: true, min: 0, max: 100, display: false }, y: { stacked: true, display: false } } }, plugins: [track] }]);
+                return `<div class="mini-cv" style="height:${h}px"><canvas id="${id}"></canvas></div>`;
+            }
+            /** A small line, with an optional shaded normal range and the last point marked. */
+            function line(key, data, color, o){
+                o = o || {}; const id = safe(key), h = o.h || 40;
+                const sets = [{ data, borderColor: color, backgroundColor: color + '22', fill: o.fill === false ? false : 'origin', borderWidth: 2, tension: 0.35, pointRadius: data.map((_, i) => o.dotLast && i === data.length - 1 ? 3.5 : 0), pointBackgroundColor: color, pointHoverRadius: 4, spanGaps: true }];
+                if(o.band) sets.push({ data: data.map(() => o.band[1]), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, backgroundColor: 'rgba(99,102,241,.12)', fill: '+1' }, { data: data.map(() => o.band[0]), borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, fill: false });
+                q.push([id, { type: 'line', data: { labels: o.labels || data.map((_, i) => i), datasets: sets },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 600 }, interaction: { mode: 'index', intersect: false },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ filter: c => c.datasetIndex === 0, callbacks: { title: c => o.labels ? String(c[0].label) : '', label: c => ' ' + (o.fmt ? o.fmt(c.parsed.y, c.dataIndex) : c.parsed.y) } }) },
+                        scales: { x: { display: !!o.axis, grid: { display: false }, border: { display: false }, ticks: { maxTicksLimit: 5, maxRotation: 0, font: { family: 'Inter', size: 9 } } },
+                                  y: { display: false, suggestedMin: o.min, suggestedMax: o.max } } } }]);
+                return `<div class="mini-cv" style="height:${h}px"><canvas id="${id}"></canvas></div>`;
+            }
+            /** Vertical bars (e.g. finish rate by hour). */
+            function cols(key, labels, data, colors, o){
+                o = o || {}; const id = safe(key), h = o.h || 120;
+                q.push([id, { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, borderSkipped: false, maxBarThickness: 28 }] },
+                    options: { responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ callbacks: { label: c => ' ' + (o.fmt ? o.fmt(c.parsed.y, c.dataIndex) : c.parsed.y) } }) },
+                        scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter', size: 10 }, maxRotation: 0 } }, y: { display: false, beginAtZero: true, max: o.max } } } }]);
+                return `<div class="mini-cv" style="height:${h}px"><canvas id="${id}"></canvas></div>`;
+            }
+            /** Horizontal bars with names (e.g. the steps of a form). */
+            function rows(key, labels, data, colors, o){
+                o = o || {}; const id = safe(key), h = o.h || Math.max(60, labels.length * (o.row || 30) + 10);
+                q.push([id, { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 6, borderSkipped: false, barThickness: o.thick || 14 }] },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 600 },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ callbacks: { label: c => ' ' + (o.fmt ? o.fmt(c.parsed.x, c.dataIndex) : c.parsed.x) } }) },
+                        scales: { x: { display: false, beginAtZero: true, max: o.max }, y: { grid: { display: false }, border: { display: false },
+                            ticks: { color: getComputedStyle(document.body).getPropertyValue('--text-main').trim() || '#0F172A', font: { family: 'Inter', size: 11, weight: '600' }, callback: function(v){ const s = this.getLabelForValue(v); return s.length > (o.cut || 34) ? s.slice(0, (o.cut || 34) - 1) + '…' : s; } } } } } }]);
+                return `<div class="mini-cv" style="height:${h}px"><canvas id="${id}"></canvas></div>`;
+            }
+            /** A ring showing one share (e.g. finish rate), with a mark for the target. */
+            function ring(key, pct, color, o){
+                o = o || {}; const id = safe(key), v = Math.max(0, Math.min(100, pct || 0));
+                const tgt = o.target != null ? { id: 'ringMark', afterDatasetsDraw(c){ const m = c.getDatasetMeta(0).data[0]; if(!m) return; const a = -Math.PI / 2 + o.target / 100 * Math.PI * 2;
+                    const r = (m.outerRadius + m.innerRadius) / 2, x = m.x + r * Math.cos(a), y = m.y + r * Math.sin(a), ctx = c.ctx;
+                    ctx.save(); ctx.fillStyle = dark() ? '#0F172A' : '#fff'; ctx.strokeStyle = '#4F46E5'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore(); } } : null;
+                q.push([id, { type: 'doughnut', data: { labels: [o.label || 'Done', 'Not yet'], datasets: [{ data: [v, 100 - v], backgroundColor: [color, dark() ? 'rgba(148,163,184,.16)' : '#EEF2F7'], borderWidth: 0, borderRadius: v > 0 && v < 100 ? 8 : 0 }] },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '78%', rotation: 0, animation: { duration: 800 },
+                        plugins: { legend: { display: false }, datalabels: { display: false }, tooltip: tip({ callbacks: { label: c => ' ' + c.label + ': ' + Math.round(c.parsed) + '%' + (c.dataIndex === 0 && o.target != null ? ' · target ' + o.target + '%' : '') } }) } },
+                    plugins: tgt ? [tgt] : [] }]);
+                return `<canvas id="${id}"></canvas>`;
+            }
+            /** A shaded grid (rows × columns) with the count in each cell -- full-width tiles. */
+            function heat(key, rowsL, colsL, get, o){
+                o = o || {}; const id = safe(key), h = rowsL.length * 38 + 34;
+                let mx = 1; rowsL.forEach(r => colsL.forEach(c => { mx = Math.max(mx, get(r, c) || 0); }));
+                const shade = v => !v ? (dark() ? 'rgba(148,163,184,.10)' : '#F1F5F9') : `rgba(220,38,38,${(0.14 + v / mx * 0.82).toFixed(2)})`;
+                const ink = v => v / mx > 0.5 ? '#fff' : (dark() ? '#E2E8F0' : '#334155');
+                const cut = (s, n) => s.length > n ? s.slice(0, n - 1) + '…' : s;
+                q.push([id, { type: 'bar', data: { labels: rowsL, datasets: colsL.map(c => { const vals = rowsL.map(r => get(r, c) || 0);
+                        return { label: c, data: rowsL.map(() => 1), counts: vals, backgroundColor: vals.map(shade), borderColor: dark() ? '#0F172A' : '#FFFFFF', borderWidth: 3, borderRadius: 8, borderSkipped: false, barPercentage: 1, categoryPercentage: 1,
+                            datalabels: { display: true, color: c2 => ink(vals[c2.dataIndex]), font: { family: 'Inter', weight: '700', size: 11 }, formatter: (v, c2) => vals[c2.dataIndex] } }; }) },
+                    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 500 },
+                        plugins: { legend: { display: false }, tooltip: tip({ mode: 'point', callbacks: { title: c => c[0].label, label: c => ' ' + c.dataset.label + ': ' + c.dataset.counts[c.dataIndex] } }) },
+                        scales: { x: { stacked: true, position: 'top', min: 0, max: colsL.length, grid: { display: false }, border: { display: false },
+                                       afterBuildTicks: sc => { sc.ticks = colsL.map((_, i) => ({ value: i + 0.5 })); },
+                                       ticks: { autoSkip: false, maxRotation: 0, font: { family: 'Inter', size: 10, weight: '700' }, callback: v => cut(colsL[Math.floor(v)] || '', 16) } },
+                                  y: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { font: { family: 'Inter', size: 11, weight: '700' }, callback: function(v){ return cut(this.getLabelForValue(v), 18); } } } } } }]);
+                return `<div class="mini-cv" style="height:${h}px"><canvas id="${id}"></canvas></div>`;
+            }
+            function flush(){ const list = q; q = []; list.forEach(([id, cfg]) => { try { _renderOrUpdateChart(id, cfg); } catch(e){ console.warn('mini chart', id, e); } }); }
+            return { bar, stack, line, cols, rows, ring, heat, flush };
+        })();
         function renderDrivers(){
             const host = document.getElementById('drv-body'); if(!host) return;
             const R = computeDrivers((state.p1 || {}).subs || []);
@@ -14528,12 +14637,13 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const top = R.down[0], max = top.pull;
                 html = `<div class="drv-lead">Fix <b>${_drvEsc(top.val.toLowerCase())}</b> first: guests who answered <b>${_drvEsc(top.val)}</b> rated <b>${top.withAvg.toFixed(1)}★</b> against <b>${top.restAvg.toFixed(1)}★</b> for everyone else — it pulls the whole average down by <b>${top.pull.toFixed(2)}★</b>.</div>`
                     + R.down.map((r, i) => `<div class="drv-r"><span class="drv-k">${i + 1}</span><div class="drv-t"><b>${_drvEsc(r.val)}</b><small>${_drvEsc(qLabel(r.q))} · ${Math.round(r.share * 100)}% of guests · ${r.withAvg.toFixed(1)}★ vs ${r.restAvg.toFixed(1)}★</small></div>
-                        <div class="drv-bar"><i style="width:${Math.max(6, r.pull / max * 100).toFixed(0)}%"></i></div><div class="drv-v">−${r.pull.toFixed(2)}★<small>on average</small></div></div>`).join('')
+                        <div class="drv-bar">${MINI.bar('drv-' + i, Math.max(max * 0.06, r.pull), max, '#DC2626', '−' + r.pull.toFixed(2) + '★ on the average rating')}</div><div class="drv-v">−${r.pull.toFixed(2)}★<small>on average</small></div></div>`).join('')
                     + (R.up ? `<div class="drv-sep">WHAT LIFTS IT</div><div class="drv-r up"><span class="drv-k">+</span><div class="drv-t"><b>${_drvEsc(R.up.val)}</b><small>${_drvEsc(qLabel(R.up.q))} · ${Math.round(R.up.share * 100)}% of guests · ${R.up.withAvg.toFixed(1)}★ vs ${R.up.restAvg.toFixed(1)}★</small></div>
-                        <div class="drv-bar"><i style="width:${Math.min(100, R.up.lift / 2 * 100).toFixed(0)}%"></i></div><div class="drv-v">+${R.up.lift.toFixed(2)}★<small>vs the rest</small></div></div>` : '')
+                        <div class="drv-bar">${MINI.bar('drv-up', Math.min(2, R.up.lift), 2, '#059669', '+' + R.up.lift.toFixed(2) + '★ vs the rest')}</div><div class="drv-v">+${R.up.lift.toFixed(2)}★<small>vs the rest</small></div></div>` : '')
                     + `<div class="drv-foot">From ${R.N.toLocaleString()} rated responses · only answers given by at least 10 guests · follows the dates and branches above</div>`;
             }
             if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+            MINI.flush();
         }
 
         /* Each branch against its own last 28 trading days (closed days and days
@@ -14563,11 +14673,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             return out;
         }
         function ctlSpark(r){
-            const w = 200, h = 40, pts = r.hist.concat([r.today]), max = Math.max(r.hi || 1, ...pts, 1) * 1.15;
-            const y = v => (h - 4 - (v / max) * (h - 8)).toFixed(1), x = i => (i / Math.max(1, pts.length - 1) * (w - 8) + 2).toFixed(1);
-            const band = r.hi != null ? `<rect x="0" y="${y(r.hi)}" width="${w}" height="${Math.max(2, y(r.lo) - y(r.hi))}" fill="rgba(99,102,241,.1)"/>` : '';
-            const col = r.state === 'spike' ? '#DC2626' : r.state === 'good' ? '#059669' : '#64748B';
-            return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="ctl-sp">${band}<polyline fill="none" stroke="#94A3B8" stroke-width="1.5" vector-effect="non-scaling-stroke" points="${r.hist.map((v, i) => x(i) + ',' + y(v)).join(' ')}"/><line x1="${x(pts.length - 1)}" y1="${y(r.today)}" x2="${x(pts.length - 1)}" y2="${y(r.today)}" stroke="${col}" stroke-width="9" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`;
+            // v2.179.0: Chart.js -- the shaded band is the branch's normal range; hover for each day.
+            const col = r.state === 'spike' ? '#DC2626' : r.state === 'good' ? '#059669' : '#64748B', data = r.hist.concat([r.today]), n = data.length;
+            return `<div class="ctl-sp">${MINI.line('ctl-' + r.branch, data, col, { band: [r.lo, r.hi], dotLast: true, h: 40, min: 0, fmt: (v, i) => (i === n - 1 ? 'Latest day: ' : (n - 1 - i) + ' day' + (n - 1 - i === 1 ? '' : 's') + ' before: ') + v + ' incident' + (v === 1 ? '' : 's') + ' · normal ' + r.lo + '–' + r.hi })}</div>`;
         }
         function renderControl(){
             const host = document.getElementById('ctl-body'); if(!host) return;
@@ -14588,6 +14696,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     + `<div class="drv-foot">Normal range = each branch’s last 28 trading days (closed days and days with no responses left out). Fake cases are not counted.</div>`;
             }
             if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+            MINI.flush();
         }
 
         const MC = (function(){
@@ -15521,12 +15630,9 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             const pct = (a, b) => b ? a / b * 100 : null;
             const tone = (v, target, higherGood, warn) => { if(v == null) return 'mut'; const gap = higherGood ? target - v : v - target; return gap <= 0 ? 'ok' : gap <= warn ? 'md' : 'bad'; };
             function heat(rows, cols, get, title, sub, empty){
+                // v2.179.0: Chart.js grid -- hover a cell for the branch, the complaint and the count.
                 if(!rows.length || !cols.length) return `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3><div class="bd2-empty">${empty}</div></div>`;
-                const mx = Math.max(1, ...rows.flatMap(r => cols.map(c => get(r, c))));
-                const shade = v => { if(!v) return 'background:var(--bg-light);color:var(--text-muted)'; const a = 0.12 + v / mx * 0.85; return `background:rgba(220,38,38,${a.toFixed(2)});color:${a > 0.55 ? '#fff' : 'var(--text-main)'}`; };
-                return `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3><div class="bd2-scroll"><div class="bd2-hm" style="grid-template-columns:minmax(110px,1.2fr) repeat(${cols.length},minmax(64px,1fr))">
-                    <div></div>${cols.map(c => `<div class="h" title="${esc(c)}">${esc(c)}</div>`).join('')}
-                    ${rows.map(r => `<div class="r" title="${esc(r)}">${esc(r)}</div>${cols.map(c => { const v = get(r, c); return `<div style="${shade(v)}">${v}</div>`; }).join('')}`).join('')}</div></div></div>`;
+                return `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3>${MINI.heat('bd-heat-' + title, rows, cols, get)}</div>`;
             }
             function render(){
                 const host = document.getElementById('bd2'); if(!host) return;
@@ -15560,7 +15666,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     ${active.map(b => { const ti = irT(b.ir, S.tIncRate, false, 1.5); const col = ti === 'ok' ? '#10B981' : ti === 'md' ? '#F59E0B' : '#DC2626';
                         return `<tr><td><b>${esc(b.n)}</b></td><td>${b.s.toLocaleString()}</td><td class="${tone(b.smile, S.tSmile, true, 5)}">${b.smile == null ? '—' : Math.round(b.smile)}</td>
                             <td class="${tone(b.pos, S.tPositive, true, 3)}">${b.pos == null ? '—' : b.pos.toFixed(1) + '%'}</td>
-                            <td class="${ti}">${b.ir == null ? '—' : b.ir.toFixed(1) + '%'}<span class="bd2-bar"><i style="width:${((b.ir || 0) / maxIr * 100).toFixed(0)}%;background:${col}"></i></span></td>
+                            <td class="${ti}">${b.ir == null ? '—' : b.ir.toFixed(1) + '%'}<span class="bd2-barcv">${MINI.bar('bd-ir-' + b.n, b.ir || 0, maxIr, col, (b.ir == null ? '—' : b.ir.toFixed(1) + '%') + ' incident rate · ' + b.inc + ' of ' + b.s + ' · target ' + S.tIncRate + '%', { h: 8 })}</span></td>
                             <td>${b.inc}</td><td class="${tone(b.rr, S.tResolveRate, true, 10)}">${b.rr == null ? '—' : Math.round(b.rr) + '%'}</td><td>${esc(b.top || '—')}</td></tr>`; }).join('')}
                     ${idle.length ? `<tr class="sep"><td colspan="8">NO SUBMISSIONS IN THIS PERIOD</td></tr>${idle.map(b => `<tr class="idle"><td>${esc(b.n)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`).join('')}` : ''}
                     </table></div>${unspec ? `<div class="bd2-foot">${unspec.toLocaleString()} submission${unspec === 1 ? '' : 's'} with no branch detected ${unspec === 1 ? 'is' : 'are'} counted in the totals only.</div>` : ''}</div>`;
@@ -15571,7 +15677,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const chList = Object.entries(CH).sort((a, b) => b[1].s - a[1].s), totS = subs.length || 1;
                 const list = (title, sub, entries, total, emptyTxt) => `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3>
                     ${entries.length ? `<div class="bd2-ch hd"><span></span><span>Share</span><span>Incident</span><span>Positive</span></div>${entries.map(([k, c]) => { const ir = c.s ? c.inc / c.s * 100 : null, ps = c.r ? c.p / c.r * 100 : null;
-                        return `<div class="bd2-ch"><div><b title="${esc(k)}">${esc(k)}</b><small>${c.s.toLocaleString()}</small><div class="bd2-share"><i style="width:${(c.s / total * 100).toFixed(1)}%"></i></div></div>
+                        return `<div class="bd2-ch"><div><b title="${esc(k)}">${esc(k)}</b><small>${c.s.toLocaleString()}</small>${MINI.bar('bd-sh-' + title + '-' + k, c.s, total, '#4F46E5', Math.round(c.s / total * 100) + '% of submissions · ' + c.s.toLocaleString(), { h: 7 })}</div>
                             <span><b>${Math.round(c.s / total * 100)}%</b></span><span class="${tone(ir, S.tIncRate, false, 1.5)}">${ir == null ? '—' : ir.toFixed(1) + '%'}</span><span class="${tone(ps, S.tPositive, true, 3)}">${ps == null ? '—' : ps.toFixed(1) + '%'}</span></div>`; }).join('')}`
                         : `<div class="bd2-empty">${emptyTxt}</div>`}</div>`;
                 const channels = list('CHANNELS', 'share of submissions', chList, totS, 'No submissions in this period.');
@@ -15618,6 +15724,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const full = bar + html;
                 if(host.__h !== full){ host.__h = full; host.innerHTML = full; }
                 charts.forEach(([id, cfg]) => { try { _renderOrUpdateChart(id, cfg); } catch(e){ console.warn('breakdown chart', e); } });
+                MINI.flush();
             }
             return { render, sort(k){ if(sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === 'n' ? 1 : -1; } render(); } };
         })();
@@ -27341,24 +27448,17 @@ ${(() => {
                 const delta = last && prev && prev.o >= 5 && last.o >= 5 ? Math.round(last.r - prev.r) : null;
                 const fr = Object.entries(byForm).filter(([, v]) => v.o >= 5).map(([k, v]) => [k, pct(v.s, v.o)]).sort((a, b) => b[1] - a[1]);
                 const R = 62, C = 2 * Math.PI * R, arc = Math.max(0, Math.min(100, rate)) / 100 * C, tpos = target / 100 * C;
-                const spark = (() => { const t = trendList.slice(-14); if(t.length < 2) return ''; const W = 230, H = 70, x = i => (i / (t.length - 1) * (W - 10)).toFixed(1), y = v => (H - 6 - v / 100 * (H - 14)).toFixed(1);
-                    const pts = t.map((p, i) => x(i) + ',' + y(p.r)).join(' ');
-                    return `<div class="fa2-trend"><small>LAST ${t.length} DAYS</small><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><defs><linearGradient id="fa2a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6366F1" stop-opacity=".28"/><stop offset="1" stop-color="#6366F1" stop-opacity="0"/></linearGradient></defs>
-                        <line x1="0" x2="${W}" y1="${y(target)}" y2="${y(target)}" stroke="#A5B4FC" stroke-dasharray="3 3"/><text x="${W - 2}" y="${Math.max(9, y(target) - 4)}" font-size="9" fill="#818CF8" text-anchor="end">target ${target}%</text>
-                        <path d="M0,${H} L${pts.replace(/ /g, ' L')} L${x(t.length - 1)},${H} Z" fill="url(#fa2a)"/><polyline fill="none" stroke="#4F46E5" stroke-width="2.2" stroke-linejoin="round" points="${pts}"/>
-                        <circle cx="${x(t.length - 1)}" cy="${y(t[t.length - 1].r)}" r="4.5" fill="${t[t.length - 1].r >= target ? '#059669' : '#4F46E5'}" stroke="#fff" stroke-width="2"/></svg>
-                        <div class="fa2-lb"><span>${esc(new Date(t[0].d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span><span>${esc(new Date(t[t.length - 1].d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</span></div></div>`; })();
+                const spark = (() => { const t = trendList.slice(-14); if(t.length < 2) return '';
+                    const dl = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                    return `<div class="fa2-trend"><small>LAST ${t.length} DAYS</small>${MINI.line('fa-trend', t.map(p => +p.r.toFixed(1)), '#4F46E5', { labels: t.map(p => dl(p.d)), h: 78, dotLast: true, min: 0, max: 100, fmt: (v, i) => Math.round(v) + '% finished · ' + t[i].s + ' of ' + t[i].o + ' · target ' + target + '%' })}</div>`; })();
                 const r100 = Math.round(rate);
                 const chips = [delta == null ? '' : `<span class="fa2-chip ${delta >= 0 ? 'c-up' : 'c-dn'}"><i class="fas fa-arrow-trend-${delta >= 0 ? 'up' : 'down'}"></i>${delta >= 0 ? '+' : ''}${delta} points since the day before</span>`,
                     `<span class="fa2-chip c-tg"><i class="fas fa-bullseye"></i>Target ${target}% · ${r100 >= target ? 'reached' : (target - r100) + ' to go'}</span>`,
                     fsel === 'all' && fr.length > 1 ? `<span class="fa2-chip c-wr"><i class="fas fa-circle-info"></i>Best: ${esc(formLabel(fr[0][0]))} ${Math.round(fr[0][1])}% · Worst: ${esc(formLabel(fr[fr.length - 1][0]))} ${Math.round(fr[fr.length - 1][1])}%</span>` : ''].join('');
-                const stepBox = (icon, bg, label, n, sub, w, barCol, arrow) => `<div class="fa2-fs"><div class="t"><i style="background:${bg}" class="fas ${icon}"></i>${label}</div><b>${n}</b><em>${sub}</em><div class="bar"><span style="width:${Math.max(0, Math.min(100, w))}%;background:${barCol}"></span></div>${arrow ? '<span class="arrow"><i class="fas fa-chevron-right"></i></span>' : ''}</div>`;
+                const stepBox = (icon, bg, label, n, sub, w, barCol, arrow) => `<div class="fa2-fs"><div class="t"><i style="background:${bg}" class="fas ${icon}"></i>${label}</div><b>${n}</b><em>${sub}</em>${MINI.bar('fa-flow-' + label, Math.max(0, Math.min(100, w)), 100, barCol, label + ': ' + n + ' · ' + sub)}${arrow ? '<span class="arrow"><i class="fas fa-chevron-right"></i></span>' : ''}</div>`;
                 const topLeak = dropList[0];
                 const hero = `<div class="fa2-hero"><div class="fa2-row">
-                        <div class="fa2-ring"><svg width="150" height="150" viewBox="0 0 150 150"><defs><linearGradient id="fa2g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${rate >= target ? '#34D399' : rate >= target * .6 ? '#818CF8' : '#F87171'}"/><stop offset="1" stop-color="${rate >= target ? '#059669' : rate >= target * .6 ? '#4F46E5' : '#DC2626'}"/></linearGradient></defs>
-                            <circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--bg-light)" stroke-width="14"/>
-                            <circle cx="75" cy="75" r="${R}" fill="none" stroke="url(#fa2g)" stroke-width="14" stroke-linecap="round" stroke-dasharray="${arc.toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 75 75)"/>
-                            ${(() => { const a = (target / 100 * 360 - 90) * Math.PI / 180; return `<circle cx="${(75 + R * Math.cos(a)).toFixed(1)}" cy="${(75 + R * Math.sin(a)).toFixed(1)}" r="5.5" fill="var(--white)" stroke="#4F46E5" stroke-width="2.5"><title>Target ${target}%</title></circle>`; })()}</svg>
+                        <div class="fa2-ring">${MINI.ring('fa-ring', rate, rate >= target ? '#10B981' : rate >= target * .6 ? '#4F46E5' : '#DC2626', { target, label: 'Finished' })}
                             <div class="c"><b>${r100}<sup>%</sup></b><small>finish the form</small></div></div>
                         <div class="fa2-txt"><div class="k">${esc(fsel === 'all' ? 'ALL FORMS' : formLabel(fsel).toUpperCase())} · ${esc(widened ? 'EVERYTHING RECORDED' : 'SELECTED DATES')}</div>
                             <h2>Of every 100 people who open ${fsel === 'all' ? 'a form' : 'the ' + esc(formLabel(fsel)) + ' form'}, <span class="${rate >= target ? 'ok' : rate >= target * .6 ? '' : 'bad'}">${r100} finish it.</span></h2><div class="fa2-chips">${chips}</div></div>
@@ -27398,14 +27498,14 @@ ${(() => {
                 const leftOn = order.map((st, i) => Math.max(0, reached[st] - (i < order.length - 1 ? reached[order[i + 1]] : subs)));
                 const openLoss = Math.max(0, opens - firstN);
                 const maxLoss = Math.max(1, openLoss, ...leftOn);
-                const jRows = [`<div class="fa2-js ${openLoss >= 5 && openLoss === maxLoss ? 'loss' : ''}"><span class="dt"></span><div><b>Opened the form</b><small>everyone</small></div><div class="jb"><i style="width:100%"></i></div><div class="jl">${opens.toLocaleString()}${openLoss ? ' · ' + openLoss + ' left without starting' : ''}</div></div>`]
+                const jRows = [`<div class="fa2-js ${openLoss >= 5 && openLoss === maxLoss ? 'loss' : ''}"><span class="dt"></span><div><b>Opened the form</b><small>everyone</small></div><div class="jb">${MINI.bar('fa-j-open', 100, 100, '#3B5BDB', opens + ' opened')}</div><div class="jl">${opens.toLocaleString()}${openLoss ? ' · ' + openLoss + ' left without starting' : ''}</div></div>`]
                     .concat(order.map((st, i) => { const n = reached[st], lost = leftOn[i], heavy = lost >= 5 && lost === maxLoss; const nm = stepName(st, fsel);
-                        return `<div class="fa2-js ${heavy ? 'loss' : ''}"><span class="dt"></span><div><b>${esc(nm[0])}</b><small>${esc(nm[1])}</small></div><div class="jb"><i style="width:${pct(n, opens).toFixed(1)}%"></i></div><div class="jl">${n.toLocaleString()} reached${lost ? ' · ' + lost + ' left here' : ''}</div></div>`; }))
-                    .concat([`<div class="fa2-js done"><span class="dt"></span><div><b>Finished</b><small>sent</small></div><div class="jb"><i style="width:${rate.toFixed(1)}%"></i></div><div class="jl">${subs.toLocaleString()}</div></div>`]);
+                        return `<div class="fa2-js ${heavy ? 'loss' : ''}"><span class="dt"></span><div><b>${esc(nm[0])}</b><small>${esc(nm[1])}</small></div><div class="jb">${MINI.bar('fa-j-' + st, pct(n, opens), 100, heavy ? '#DC2626' : '#3B5BDB', n + ' reached' + (lost ? ' · ' + lost + ' left here' : ''))}</div><div class="jl">${n.toLocaleString()} reached${lost ? ' · ' + lost + ' left here' : ''}</div></div>`; }))
+                    .concat([`<div class="fa2-js done"><span class="dt"></span><div><b>Finished</b><small>sent</small></div><div class="jb">${MINI.bar('fa-j-done', rate, 100, '#10B981', subs + ' finished (' + Math.round(rate) + '%)')}</div><div class="jl">${subs.toLocaleString()}</div></div>`]);
                 // Several forms have different steps: side by side, one line each, until one is picked.
                 const multi = fsel === 'all' && Object.keys(byForm).length > 1;
                 const perForm = Object.entries(byForm).sort((a, b) => b[1].o - a[1].o).map(([f, v]) => { const w = Object.entries(v.drop).sort((a, b) => b[1] - a[1])[0]; const r2 = pct(v.s, v.o);
-                    return `<div class="fa2-js ${r2 < target * .5 ? 'loss' : r2 >= target ? 'done' : ''}" style="cursor:pointer" onclick="FAT.form('${esc(f)}')"><span class="dt"></span><div><b>${esc(formLabel(f))}</b><small>${v.o.toLocaleString()} opened · tap for its steps</small></div><div class="jb"><i style="width:${r2.toFixed(1)}%"></i></div><div class="jl">${Math.round(r2)}% finish${w ? ' · most left at ' + esc(stepName(w[0], f)[0]) : ''}</div></div>`; }).join('');
+                    return `<div class="fa2-js ${r2 < target * .5 ? 'loss' : r2 >= target ? 'done' : ''}" style="cursor:pointer" onclick="FAT.form('${esc(f)}')"><span class="dt"></span><div><b>${esc(formLabel(f))}</b><small>${v.o.toLocaleString()} opened · tap for its steps</small></div><div class="jb">${MINI.bar('fa-jf-' + f, r2, 100, r2 < target * .5 ? '#DC2626' : r2 >= target ? '#10B981' : '#3B5BDB', Math.round(r2) + '% finish · ' + v.s + ' of ' + v.o)}</div><div class="jl">${Math.round(r2)}% finish${w ? ' · most left at ' + esc(stepName(w[0], f)[0]) : ''}</div></div>`; }).join('');
                 const journey = `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>THE JOURNEY<small>${multi ? 'each form has its own steps — pick one to follow them' : 'how many are still with us at each step'}</small></h3><div class="fa2-jr">${multi ? perForm : jRows.join('')}</div>
                     ${Object.keys(hopTo).length ? `<div class="fa2-note"><i class="fas fa-share"></i> From the table QR choice screen, ${Object.entries(hopTo).map(([k, n]) => n + ' went on to ' + (k === 'drop' ? 'the monthly drop form' : k === 'dinein' ? 'the Dine-In survey' : esc(nice(k)))).join(' and ')} — they are counted in that form, not as drop-offs.</div>` : ''}</div>`;
 
@@ -27423,18 +27523,18 @@ ${(() => {
                     <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>HOW THEY ARRIVED</h3>${so.big || '<div class="fa2-sm">Not enough yet.</div>'}${note(so.small, 'opens')}
                         <div class="fa2-sub">DEVICE</div>${ty.big || '<div class="fa2-sm">Not enough yet.</div>'}${note(ty.small, 'opens')}</div>
                     <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>BEST TIME TO ASK</h3>
-                        ${hoursShown.length ? `<div class="fa2-hrs">${hoursShown.map(x => `<div title="${x.s} of ${x.o} finished"><i class="${bestHour && x.h === bestHour.h ? 'best' : ''}" style="height:${Math.max(4, x.r / maxR * 100).toFixed(0)}%"></i>${(x.h % 12 || 12) + (x.h < 12 ? 'a' : 'p')}</div>`).join('')}</div>
+                        ${hoursShown.length ? `${MINI.cols('fa-hours', hoursShown.map(x => (x.h % 12 || 12) + (x.h < 12 ? 'a' : 'p')), hoursShown.map(x => +x.r.toFixed(1)), hoursShown.map(x => bestHour && x.h === bestHour.h ? '#10B981' : '#A5B4FC'), { h: 110, max: 100, fmt: (v, i) => Math.round(v) + '% finish · ' + hoursShown[i].s + ' of ' + hoursShown[i].o })}
                         <div class="fa2-sm">${bestHour ? '<b class="ok">' + ((bestHour.h % 12 || 12) + (bestHour.h < 12 ? ' am' : ' pm')) + '</b> is when customers are most willing: ' + Math.round(bestHour.r) + '% finish.' : ''}${worstHour && bestHour && worstHour.h !== bestHour.h ? ' Weakest: ' + ((worstHour.h % 12 || 12) + (worstHour.h < 12 ? ' am' : ' pm')) + ' (' + Math.round(worstHour.r) + '%).' : ''} Bar = finish rate; hours with 3+ opens.</div>` : '<div class="fa2-sm">Not enough opens per hour yet.</div>'}</div></div>`;
 
                 // ── all the detail (nothing dropped) ────────────────────────
                 const table = (title, m, sub) => { const list = Object.entries(m).sort((a, b) => b[1].o - a[1].o); const max = Math.max(1, ...list.map(([, v]) => v.o));
-                    return `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>${esc(title)}<small>${esc(sub || '')}</small></h3>${list.map(([k, v]) => `<div class="fa2-tr"><div><b>${esc(k)}</b><span class="${col(pct(v.s, v.o))}">${Math.round(pct(v.s, v.o))}%</span><small>${v.s} of ${v.o}</small></div><div class="fa2-bar"><i style="width:${(v.o / max * 100).toFixed(0)}%"></i><i class="s" style="width:${(v.s / max * 100).toFixed(0)}%"></i></div></div>`).join('')}</div>`; };
+                    return `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>${esc(title)}<small>${esc(sub || '')}</small></h3>${list.map(([k, v]) => `<div class="fa2-tr"><div><b>${esc(k)}</b><span class="${col(pct(v.s, v.o))}">${Math.round(pct(v.s, v.o))}%</span><small>${v.s} of ${v.o}</small></div>${MINI.stack('fa-t-' + title + '-' + k, [{ label: 'Finished', v: v.s, c: '#010197' }, { label: 'Did not finish', v: v.o - v.s, c: 'rgba(1,1,151,.22)' }, { label: '', v: max - v.o, c: 'rgba(0,0,0,0)' }], { h: 8 })}</div>`).join('')}</div>`; };
                 const tile = (n, label, sub, bad) => `<div class="fa2-tile"><b class="${bad ? 'bad' : ''}">${n}</b><span>${label}</span><small>${sub}</small></div>`;
                 const detail = `<div class="card fa2-card fa2-more" onclick="FAT.toggle()"><b>All the detail</b><span>every drop-off, time on each question, second thoughts, forms, days, screens and branches</span><em>${showAll ? 'Hide ▴' : 'Show ▾'}</em></div>
                     ${showAll ? `
                     <div class="fa2-g2">
-                        <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>WHERE PEOPLE STOP<small>${left.toLocaleString()} did not finish</small></h3>${dropList.map(([st, n]) => `<div class="fa2-tr"><div><b>${esc(stepName(st, fsel)[0])}</b><span class="bad">${n}</span><small>${Math.round(pct(n, left))}%</small></div><div class="fa2-bar"><i class="r" style="width:${(n / dropList[0][1] * 100).toFixed(0)}%"></i></div></div>`).join('') || '<div class="fa2-sm">Everyone who opened finished.</div>'}</div>
-                        <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>TIME ON EACH QUESTION<small>typical seconds · slowest first</small></h3>${dwellList.map(d => { const slow = dwellMed && d.med > dwellMed * 2; return `<div class="fa2-tr"><div><b>${esc(stepName(d.step, d.form)[0])}${slow ? ' <em class="fa2-slow">SLOW</em>' : ''}</b><span class="${slow ? 'bad' : ''}">${d.med.toFixed(1)}s</span><small>${d.n} answered${drop[d.step] ? ' · ' + drop[d.step] + ' quit here' : ''}</small></div><div class="fa2-bar"><i class="${slow ? 'r' : ''}" style="width:${(d.med / dwellList[0].med * 100).toFixed(0)}%"></i></div></div>`; }).join('') || '<div class="fa2-sm">Not enough answered steps yet.</div>'}
+                        <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>WHERE PEOPLE STOP<small>${left.toLocaleString()} did not finish</small></h3>${dropList.map(([st, n]) => `<div class="fa2-tr"><div><b>${esc(stepName(st, fsel)[0])}</b><span class="bad">${n}</span><small>${Math.round(pct(n, left))}%</small></div>${MINI.bar('fa-stop-' + st, n, dropList[0][1], '#DC2626', n + ' stopped here (' + Math.round(pct(n, left)) + '% of those who left)')}</div>`).join('') || '<div class="fa2-sm">Everyone who opened finished.</div>'}</div>
+                        <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>TIME ON EACH QUESTION<small>typical seconds · slowest first</small></h3>${dwellList.map(d => { const slow = dwellMed && d.med > dwellMed * 2; return `<div class="fa2-tr"><div><b>${esc(stepName(d.step, d.form)[0])}${slow ? ' <em class="fa2-slow">SLOW</em>' : ''}</b><span class="${slow ? 'bad' : ''}">${d.med.toFixed(1)}s</span><small>${d.n} answered${drop[d.step] ? ' · ' + drop[d.step] + ' quit here' : ''}</small></div>${MINI.bar('fa-dw-' + d.step, d.med, dwellList[0].med, slow ? '#DC2626' : 'rgba(1,1,151,.35)', d.med.toFixed(1) + ' s typical · ' + d.n + ' answered')}</div>`; }).join('') || '<div class="fa2-sm">Not enough answered steps yet.</div>'}
                             <div class="fa2-sm">Slow and losing people = confusing: reword or remove it. Slow but rarely abandoned usually means people are thinking.</div></div></div>
                     <div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>WHAT THE NUMBERS DO NOT SHOW<small>hesitation, second thoughts, returning</small></h3><div class="fa2-tiles">
                         ${tile(bounces.toLocaleString(), 'Left immediately', Math.round(pct(bounces, opens)) + '% opened and never started', pct(bounces, opens) > 30)}
@@ -27450,7 +27550,7 @@ ${(() => {
                     <div class="fa2-g2">
                         ${Object.keys(byForm).length > 1 ? `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>BY FORM<small>different products, different problems</small></h3>${Object.entries(byForm).sort((a, b) => b[1].o - a[1].o).map(([f, v]) => { const w = Object.entries(v.drop).sort((a, b) => b[1] - a[1])[0];
                             return `<div class="fa2-tr"><div><b>${esc(formLabel(f))}</b><span class="${col(pct(v.s, v.o))}">${Math.round(pct(v.s, v.o))}%</span><small>${v.s} of ${v.o}${w ? ' · most quit at ' + esc(stepName(w[0], f)[0]) : ''}</small></div></div>`; }).join('')}</div>` : ''}
-                        ${trendList.length > 1 ? `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>FINISH RATE BY DAY<small>a form change should show here within a day or two</small></h3>${trendList.slice(-14).map(t => `<div class="fa2-tr"><div><b>${esc(new Date(t.d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}</b><span class="${col(t.r)}">${Math.round(t.r)}%</span><small>${t.s} of ${t.o}</small></div><div class="fa2-bar"><i class="s" style="width:${t.r.toFixed(0)}%"></i></div></div>`).join('')}</div>` : ''}
+                        ${trendList.length > 1 ? `<div class="card fa2-card"><h3 class="fa2-h"><i class="b"></i>FINISH RATE BY DAY<small>a form change should show here within a day or two</small></h3>${trendList.slice(-14).map(t => `<div class="fa2-tr"><div><b>${esc(new Date(t.d + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }))}</b><span class="${col(t.r)}">${Math.round(t.r)}%</span><small>${t.s} of ${t.o}</small></div>${MINI.bar('fa-day-' + t.d, t.r, 100, '#010197', Math.round(t.r) + '% finished · ' + t.s + ' of ' + t.o)}</div>`).join('')}</div>` : ''}
                     </div>
                     <div class="fa2-g2">
                         ${dayList.length > 1 ? table('BY DAY OF WEEK', Object.fromEntries(dayList.map(x => [x.d, x])), 'opened (light) and finished (solid)') : ''}
@@ -27463,6 +27563,7 @@ ${(() => {
                 const testNote = testKeys.length && fsel === 'all' ? `<button class="fa2-test ${withTests ? 'on' : ''}" onclick="FAT.tests()" title="${esc(testKeys.map(formLabel).join(', '))}"><i class="fas fa-flask"></i>${withTests ? 'Test forms included' : 'Test forms left out'}</button>` : '';
                 const tabs = `<div class="fa2-top">${testNote}<div class="fa2-tabs">${[['all', 'All forms']].concat(Object.keys(formsSeen).sort((a, b) => formsSeen[b] - formsSeen[a]).map(k => [k, formLabel(k)])).map(([k, l]) => `<button class="${fsel === k ? 'on' : ''}" onclick="FAT.form('${esc(k)}')">${esc(l)}</button>`).join('')}</div></div>`;
                 host.innerHTML = `<div class="fa2">${tabs}${hero}${fixHtml}${journey}${cards}${detail}</div>`;
+                MINI.flush();   // v2.179.0
             }
             return { render, form(k){ fsel = k; render(); }, toggle(){ showAll = !showAll; render(); }, tests(){ withTests = !withTests; render(); } };
         })();
@@ -27526,9 +27627,10 @@ ${(() => {
                 ooh: ['forms sent while the branch was closed — filled in later, not by guests at the table.', 'ask the branch how and when the QR is being used.'],
                 fast: ['forms finished faster than anyone could read them.', 'treat this branch\u2019s ratings with care until a spot-check is done.']
             };
-            const bar = (s) => { const max = s.max || (s.unit === '%' ? 100 : Math.max(s.v, s.net || 0) * 1.3 || 1);
-                const w = Math.min(100, s.v / max * 100), m = s.net == null ? null : Math.min(100, s.net / max * 100);
-                return `<div class="ig2-cmp"><i class="${s.sev >= 2 ? 'hi' : 'md'}" style="width:${s.low ? 100 - w : w}%"></i>${m == null ? '' : `<u style="left:${s.low ? 100 - m : m}%"></u>`}</div>`; };
+            let bi = 0;
+            const bar = (s) => { const max = s.max || (s.unit === '%' ? 100 : Math.max(s.v, s.net || 0) * 1.3 || 1);   // v2.179.0: Chart.js, mark = typical branch
+                return MINI.bar('ig-' + (bi++), s.low ? Math.max(0, max - s.v) : s.v, max, s.sev >= 2 ? '#DC2626' : '#F59E0B',
+                    s.label + ': ' + fmtV(s) + (s.net != null ? ' · typical branch ' + fmtN(s).replace('typical branch ', '') : ''), { mark: s.net == null ? null : (s.low ? Math.max(0, max - s.net) : Math.min(max, s.net)), h: 8 }); };
             const fmtV = s => (s.unit === '%' ? Math.round(s.v) + '%' : s.unit === ' s' ? Math.round(s.v) + ' s' : n(s.v));
             const fmtN = s => s.net == null ? '' : 'typical branch ' + (s.unit === '%' ? Math.round(s.net) + '%' : s.unit === ' s' ? Math.round(s.net) + ' s' : (Math.round(s.net * 10) / 10) + ' per branch');
 
@@ -27537,7 +27639,7 @@ ${(() => {
                 if(roleKey(PERM.role) !== 'owner'){ host.innerHTML = '<div class="fb-empty">Branch integrity is available to the Owner.</div>'; return; }
                 if(!data){ host.innerHTML = '<div class="fb-empty"><i class="fas fa-circle-notch fa-spin"></i> Counting submissions\u2026</div>'; load().then(() => render()); return; }
                 if(data.status !== 'success'){ host.innerHTML = `<div class="fb-empty">${esc(data.message || 'Could not load the report.')}</div>`; return; }
-                const K = known();
+                const K = known(); bi = 0;
                 const all = data.rows || [];
                 const rows = K.size ? all.filter(r => K.has(String(r.branch).toLowerCase())) : all;
                 const odd = K.size ? all.filter(r => !K.has(String(r.branch).toLowerCase())) : [];
@@ -27552,7 +27654,7 @@ ${(() => {
                 const joinN = a => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
                 const hero = `<div class="ig2-hero"><div><h3><span>${clean.length} of ${rows.length}</span> branches look clean.</h3>
                         <p>${watch.length ? watch.length + ' ' + (watch.length === 1 ? 'is' : 'are') + ' worth watching' : 'None to watch'}${bad.length ? ' and <b class="bad">' + bad.length + ' need' + (bad.length === 1 ? 's' : '') + ' a closer look</b> — ' + esc(joinN(names(bad))) : ''}.</p>
-                        <div class="ig2-seg">${[[clean.length, '#10B981'], [watch.length, '#F59E0B'], [bad.length, '#DC2626']].filter(x => x[0]).map(([v, c]) => `<i style="flex:${v};background:${c}"></i>`).join('')}</div>
+                        ${MINI.stack('ig-seg', [{ label: 'Clean', v: clean.length, c: '#10B981' }, { label: 'Watch', v: watch.length, c: '#F59E0B' }, { label: 'Investigate', v: bad.length, c: '#DC2626' }], { h: 14 })}
                         <div class="ig2-leg"><span><b style="background:#10B981"></b>Clean ${clean.length}</span><span><b style="background:#F59E0B"></b>Watch ${watch.length}</span><span><b style="background:#DC2626"></b>Investigate ${bad.length}</span></div></div>
                     <div class="ig2-big"><div class="t"><i style="background:#4F46E5" class="fas fa-shield-halved"></i>Stopped by the limits</div><b>${n(refused)}</b><small>submission attempts refused — the fake-feedback protection at work</small></div>
                     <div class="ig2-big"><div class="t"><i style="background:#0EA5E9" class="fas fa-list-check"></i>Checked</div><b>${n(subs)}</b><small>submissions in ${esc(lbl)} · ${n(data.networkPerfectSilentPct)}% are 5★ with no comment</small></div></div>`;
@@ -27615,6 +27717,7 @@ ${(() => {
                 const active = document.activeElement;
                 if(active && host.contains(active) && active.tagName !== 'BODY' && active.tagName !== 'BUTTON') return;
                 if(host.__lastHtml !== host.uiHTML){ host.__lastHtml = host.uiHTML; host.innerHTML = host.uiHTML; }
+                MINI.flush();
             }
             function setRange(v){ range = String(v || '7'); data = null; render(); }
             function refresh(){ data = null; render(); }
