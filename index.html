@@ -5510,6 +5510,11 @@
         .inc-tl-reach { margin-top:4px; font-size:.74rem; color:var(--text-muted); } .inc-tl-reach:empty { display:none; }
         .inc-tl-reach i { color:#4F46E5; margin-right:4px; } .inc-tl-reach b { color:var(--text-main); } .inc-tl-reach b.ok { color:#047857; }
         body.dark-theme .inc-tl-reach b.ok { color:#34D399; }
+        /* v2.174.0: "View cases" focus bar */
+        #inc-focus-bar { display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin:0 0 12px; padding:10px 14px; border-radius:12px;
+            background:rgba(79,70,229,.08); border:1px solid #C7D2FE; font-size:.82rem; color:var(--text-main); }
+        #inc-focus-bar i { color:#4F46E5; margin-right:6px; }
+        #inc-focus-bar button { border:1px solid #C7D2FE; background:var(--white); color:#4F46E5; font:700 .76rem 'Inter',sans-serif; border-radius:20px; padding:6px 12px; cursor:pointer; min-height:0 !important; }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -8699,6 +8704,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 <!-- Summary stat strip -->
                 <div class="inc-stats" id="inc-stats"></div>
+                <div id="inc-focus-bar"></div>
 
                 <!-- Toolbar: search + rating filter -->
                 <div class="card" style="padding:14px 18px;">
@@ -9630,7 +9636,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.173.2 · 24 Sep 2026 · Submissions: Data completeness card removed';
+        const BUILD_VERSION = 'v2.174.0 · 24 Sep 2026 · View cases opens only the cases behind a pattern or action';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -13962,7 +13968,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     const canLog = (typeof can === 'function' && can('action'));
                     return `<div class="pt-row"><div class="pt-l">${head}<div class="pt-br">${names.map(b => `<span>${esc(b)} ×${p.branches[b]}</span>`).join('')}</div>
                         <div class="pt-f">${esc(p.failure)}${p.first ? ' · first seen ' + hm(p.first) : ''}</div></div>
-                        <div class="pt-a"><button onclick="app.navigate('incidents')">View cases</button>${canLog ? `<button class="pr" data-b="${esc(logB)}" data-t="${esc(p.title)}" onclick="ACTS.log(this.dataset.b, this.dataset.t)">Log action</button>` : ''}</div></div>`;
+                        <div class="pt-a"><button data-f="${esc(JSON.stringify({ date: data.date || '', branches: names, title: p.title, cat: p.cat || '' }))}" onclick="openCases(JSON.parse(this.dataset.f))">View cases</button>${canLog ? `<button class="pr" data-b="${esc(logB)}" data-t="${esc(p.title)}" onclick="ACTS.log(this.dataset.b, this.dataset.t)">Log action</button>` : ''}</div></div>`;
                 }).join('');
                 const html = `<div class="tg-h"><b>Patterns today${list.length ? ` <span class="pt-cnt">${list.length} · LEVEL 1</span>` : ''}</b><span>Same complaint at ${data.cross || S.patCross}+ branches, or ${data.per || S.patBranch}+ times at one branch</span></div>`
                            + (rows || '<div class="pt-none">✓ No patterns today</div>');
@@ -14008,7 +14014,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <div class="fu-top"><span class="fu-chip ${f.kind === 'pattern' ? 'c-pat' : 'c-em'}">${f.kind === 'pattern' ? 'PATTERN' : 'EMERGING'}</span><span class="fu-chip ${f.pri === 'Critical' ? 'c-crit' : 'c-high'}">${esc(String(f.pri).toUpperCase())}</span><b>${esc(f.branchLabel)}</b> · ${esc(f.issue)}</div>
                         ${brs}<div class="fu-do">${esc(f.done ? 'Done: ' + (f.note || '') : f.action)}</div>
                         <div class="fu-meta"><span>Owner <b>${esc(f.ownerLabel)}</b></span><span class="fu-due ${f.done ? 'ok' : late ? 'late' : soon ? 'soon' : 'ok'}">${due}</span>${late && f.reminded ? `<span>Reminded ${f.reminded}×</span>` : ''}<span>${esc(f.why || '')}</span></div></div>
-                        <div class="fu-a"><button onclick="app.navigate('incidents')">View cases</button>${mayClose ? `<button class="pr" data-id="${esc(f.id)}" onclick="FU.done(this.dataset.id)">Mark done</button>` : ''}</div></div>`;
+                        <div class="fu-a"><button data-f="${esc(JSON.stringify({ date: String(f.id || '').slice(0, 10), branches: (f.branches && f.branches.length ? f.branches : [f.branch]).filter(Boolean), title: f.issue || '', cat: f.cat || '' }))}" onclick="openCases(JSON.parse(this.dataset.f))">View cases</button>${mayClose ? `<button class="pr" data-id="${esc(f.id)}" onclick="FU.done(this.dataset.id)">Mark done</button>` : ''}</div></div>`;
                 }).join('');
                 const html = `<div class="fu-card"><div class="fu-h"><b>Waiting for action</b><span>Created automatically from patterns and emerging issues</span></div>
                     <div class="fu-tabs">${chip('open', 'All open', open.length)}${chip('overdue', 'Overdue', over.length, over.length ? 'od' : '')}${chip('mine', 'Mine', mine.length)}${chip('done', 'Done today', done.length)}</div>
@@ -15007,7 +15013,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 ((window.__patternsToday || {}).list || []).forEach(p => {
                     out.push({ id: 'pat:' + ((window.__patternsToday || {}).date || d) + ':' + (p.id || p.title + (p.branch || '')), me: true, sev: 'crit', icon: 'fa-diagram-project', color: '#B91C1C',
                         title: 'Pattern · ' + p.title + (p.kind === 'cross' ? ' at ' + p.allBranches + ' branches' : ' ×' + p.n + ' at ' + p.branch),
-                        text: p.failure || '', meta: 'Level 1', at: p.first || new Date().toISOString(), btns: [['View cases', `app.navigate('incidents')`, 'p']] });
+                        text: p.failure || '', meta: 'Level 1', at: p.first || new Date().toISOString(),
+                        btns: [['View cases', `openCases(${JSON.stringify({ date: (window.__patternsToday || {}).date || d, branches: p.kind === 'cross' ? Object.keys(p.branches || {}) : [p.branch], title: p.title, cat: p.cat || '' }).replace(/"/g, '&quot;')})`, 'p']] });
                 });
                 // 3. Level 1 by incident count, and 4. genuine spikes -- the latest day, my branches
                 try {
@@ -15212,6 +15219,16 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             setInterval(report, 20000); setTimeout(report, 6000);
             setInterval(fill, 1200);
         })();
+        /* v2.174.0: open the Incidents list showing only the cases behind a pattern or action. */
+        window.openCases = function(f){
+            window.__incFocus = f || null;
+            try { const s = document.getElementById('inc-search'); if(s) s.value = '';
+                  ['inc-rating-filter', 'inc-chan-filter', 'inc-valid-filter', 'inc-survey-filter'].forEach(id => { const el = document.getElementById(id); if(el) el.value = 'all'; }); } catch(e){}
+            if(state.currentView === 'incidents'){ try { app.filterIncidents(); } catch(e){} }
+            else { window.__viewRev = (window.__viewRev || 1) + 1; app.navigate('incidents'); }
+            try { BELL.close(); } catch(e){}
+        };
+        window.clearCaseFocus = function(){ window.__incFocus = null; try { app.filterIncidents(); } catch(e){} };
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
             const S = Std();
@@ -17562,6 +17579,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     // whole view down and rebuild it — that read as a flicker.
                     return;
                 }
+                if(viewId !== 'incidents') window.__incFocus = null;   // v2.174.0: "View cases" focus ends when you leave
                 state.currentView = viewId;
                 // Activity and Form Analytics are only fetched while their tab is
                 // open -- they are large and rarely looked at. But arriving on the
@@ -19154,7 +19172,25 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             },
 
             filterIncidents() {
-                const incs = this._incAll || [];
+                // v2.174.0: "View cases" from a pattern or an action opens only its cases.
+                const F = window.__incFocus;
+                let incs = this._incAll || [];
+                if(F){
+                    const lb = new Set((F.branches || []).map(b => String(b).toLowerCase()));
+                    const tt = String(F.title || '').toLowerCase(), cid = String(F.cat || '').toLowerCase();
+                    incs = (rawData.incidents || []).filter(i => {
+                        if(i.caseStatus === 'fake') return false;
+                        if(F.date && i.date !== F.date) return false;
+                        if(lb.size && !lb.has(String(i.branch || '').toLowerCase())) return false;
+                        if(tt || cid){ let c = null; try { c = classifyComplaint(i); } catch(e){}
+                            const ct = String((c && c.title) || '').toLowerCase(), ci = String((c && c.id) || '').toLowerCase();
+                            if(!(ct === tt || (cid && ci === cid))) return false; }
+                        return true;
+                    }).sort((a, b) => slaStart(b) - slaStart(a));
+                }
+                const fb = document.getElementById('inc-focus-bar');
+                if(fb){ fb.style.display = F ? 'flex' : 'none';
+                    if(F) fb.innerHTML = `<span><i class="fas fa-filter"></i> Showing the <b>${incs.length}</b> case${incs.length === 1 ? '' : 's'} behind <b>${_ntEsc(F.title || 'this action')}</b>${(F.branches || []).length ? ' · ' + _ntEsc(F.branches.join(', ')) : ''}${F.date ? ' · ' + _ntEsc(new Date(F.date + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) : ''}</span><button onclick="clearCaseFocus()">Show all cases ✕</button>`; }
                 const q = (document.getElementById('inc-search')?.value || '').toLowerCase().trim();
                 const rf = document.getElementById('inc-rating-filter')?.value || 'all';
                 const cf = document.getElementById('inc-chan-filter')?.value || 'all';
@@ -19174,7 +19210,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 });
 
                 const countEl = document.getElementById('inc-count-label');
-                if(countEl) countEl.textContent = filtered.length === incs.length
+                if(countEl) countEl.textContent = F ? `${filtered.length} case${filtered.length === 1 ? '' : 's'} behind this ${F.title ? 'pattern' : 'action'}` : filtered.length === incs.length
                     ? `${incs.length} incidents in selected period`
                     : `${filtered.length} of ${incs.length} shown`;
 
