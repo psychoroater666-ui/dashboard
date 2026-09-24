@@ -9694,7 +9694,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.177.0 · 24 Sep 2026 · Breakdown view: branches, channels, order source, complaints by branch and product, rating spread, case outcomes';
+        const BUILD_VERSION = 'v2.177.1 · 24 Sep 2026 · Breakdown: Complaints by product removed';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -15525,8 +15525,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 const html = `${widened ? `<div class="bd2-note"><i class="fas fa-circle-info"></i> A breakdown needs more than one day — showing the <b>last 30 days up to ${esc(new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</b>. Pick a range above to change it.</div>` : ''}
                     ${branchTable}
                     <div class="bd2-g2">${channels}${sources}</div>
-                    <div class="bd2-g2">${heat(brRows, topCats, byBC, 'COMPLAINTS BY BRANCH', "by the agent's label · darker = more", 'No complaints in this period.')}
-                        ${heat(prodRows, prodCats, (r, c) => (P[r] && P[r].cats[c]) || 0, 'COMPLAINTS BY PRODUCT', "5+ complaints · by the agent's label", 'No product has 5 or more complaints in this period.')}</div>
+                    ${heat(brRows, topCats, byBC, 'COMPLAINTS BY BRANCH', "by the agent's label · darker = more", 'No complaints in this period.')}
                     <div class="bd2-g2">
                         <div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>HOW RATINGS ARE SPREAD<small>1★ to 5★ · 10+ ratings · most low ratings first</small></h3>
                             ${spread || '<div class="bd2-empty">Not enough ratings per branch.</div>'}<div class="bd2-lg">${STAR.map((c, k) => `<span><i style="background:${c}"></i>${k + 1}★</span>`).join('')}</div></div>
