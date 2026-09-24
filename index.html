@@ -5541,6 +5541,35 @@
         .tr2-bc { border:1px solid var(--border-color); border-radius:12px; padding:10px 12px; } .tr2-bc > div { display:flex; justify-content:space-between; gap:8px; } .tr2-bc b { font-size:.78rem; color:var(--text-main); } .tr2-bc span { font:800 .7rem 'Inter',sans-serif; }
         .tr2-empty { font-size:.78rem; color:var(--text-muted); padding:14px 0; }
         @media (max-width:980px){ .tr2-g3, .tr2-g2, .tr2-g2.even, .tr2-bg { grid-template-columns:1fr; } }
+        /* v2.177.0: Breakdown view */
+        #bd2 { display:grid; gap:16px; } .bd-old { display:none !important; }
+        .bd2-note { display:flex; gap:10px; align-items:center; background:rgba(79,70,229,.08); border:1px solid #C7D2FE; border-radius:12px; padding:10px 14px; font-size:.82rem; color:var(--text-main); } .bd2-note i { color:#4F46E5; }
+        .bd2-card { padding:18px 20px !important; min-width:0; }
+        .bd2-h { margin:0 0 12px; font:800 .8rem 'Inter',sans-serif !important; letter-spacing:.3px; display:flex; align-items:center; gap:8px; color:var(--text-main); flex-wrap:wrap; }
+        .bd2-h i.b { width:4px; height:16px; border-radius:3px; background:linear-gradient(#010197,#3B5BDB); } .bd2-h small { margin-left:auto; font:600 .7rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:0; }
+        .bd2-scroll { overflow-x:auto; overscroll-behavior-x:contain; }
+        .bd2-t { width:100%; border-collapse:collapse; font-size:.78rem; }
+        .bd2-t th { font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); text-align:left; padding:8px; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; cursor:pointer; user-select:none; }
+        .bd2-t th.s { color:#4F46E5; } .bd2-t td { padding:9px 8px; border-top:1px solid var(--border-color); color:var(--text-main); white-space:nowrap; }
+        .bd2-t tr.sep td { background:var(--bg-light); font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; } .bd2-t tr.idle td { color:var(--text-muted); }
+        #bd2 .ok { color:#047857; font-weight:800; } #bd2 .md { color:#B45309; font-weight:800; } #bd2 .bad { color:#B91C1C; font-weight:800; } #bd2 .mut { color:var(--text-muted); }
+        body.dark-theme #bd2 .ok { color:#34D399; } body.dark-theme #bd2 .md { color:#FBBF24; } body.dark-theme #bd2 .bad { color:#F87171; }
+        .bd2-bar { display:inline-block; width:90px; height:7px; border-radius:5px; background:var(--bg-light); margin-left:8px; vertical-align:middle; overflow:hidden; } .bd2-bar i { display:block; height:100%; border-radius:5px; }
+        .bd2-foot { font-size:.7rem; color:var(--text-muted); margin-top:10px; }
+        .bd2-g2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+        .bd2-ch { display:grid; grid-template-columns:minmax(0,1fr) 56px 70px 70px; gap:8px; align-items:center; padding:9px 0; border-top:1px solid var(--border-color); font-size:.78rem; color:var(--text-main); }
+        .bd2-ch.hd { border-top:none; font:800 .6rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; text-transform:uppercase; padding-top:0; }
+        .bd2-ch b { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .bd2-ch small { color:var(--text-muted); font-size:.68rem; }
+        .bd2-share { height:7px; border-radius:5px; background:rgba(79,70,229,.1); overflow:hidden; margin-top:5px; } .bd2-share i { display:block; height:100%; background:#4F46E5; border-radius:5px; }
+        .bd2-hm { display:grid; gap:4px; font-size:.72rem; min-width:420px; } .bd2-hm > div { padding:7px 6px; border-radius:7px; text-align:center; }
+        .bd2-hm .h { font:800 .6rem 'Inter',sans-serif; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .bd2-hm .r { text-align:left; font-weight:700; color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .bd2-sp { display:grid; grid-template-columns:minmax(90px,130px) minmax(0,1fr) 88px; gap:10px; align-items:center; padding:6px 0; font-size:.76rem; }
+        .bd2-sp b { color:var(--text-main); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .bd2-sp small { color:var(--text-muted); font-size:.66rem; text-align:right; }
+        .bd2-stk { display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--bg-light); } .bd2-stk i { display:block; height:100%; }
+        .bd2-lg { display:flex; gap:12px; flex-wrap:wrap; font-size:.66rem; color:var(--text-muted); margin-top:10px; } .bd2-lg i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+        .bd2-empty { font-size:.78rem; color:var(--text-muted); padding:12px 0; }
+        @media (max-width:980px){ .bd2-g2 { grid-template-columns:1fr; } }
         /* v2.162.0: closed days */
         .cal-h { font:800 .68rem 'Inter',sans-serif; letter-spacing:.4px; text-transform:uppercase; color:var(--text-muted); }
         .cal-tb { width:100%; border-collapse:collapse; font-size:.8rem; } .cal-tb th { text-align:left; font:800 .62rem 'Inter',sans-serif; color:var(--text-muted); letter-spacing:.4px; padding:6px 6px; text-transform:uppercase; }
@@ -8669,7 +8698,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
 
                 <!-- SUB-MODE: BREAKDOWN -->
                 <div id="exec-mode-breakdown" class="exec-mode-container">
-                    <div class="grid-half">
+                    <div id="bd2"></div>
+                    <div class="bd-old"><div class="grid-half">
                         <div class="card"><div class="section-header"><h3>TOP PRODUCTS BY INCIDENT RATE</h3><span class="text-xs text-muted" style="font-weight:600;">Worst 10 · min 5 responses</span></div><div class="chart-container"><canvas id="formBarChartExpanded"></canvas></div></div>
                         <div class="card"><div class="section-header"><h3>CHANNEL DISTRIBUTION</h3></div><div class="chart-container"><canvas id="channelDoughnutExpanded"></canvas></div></div>
                     </div>
@@ -8677,6 +8707,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                         <div class="section-header"><h3>FULL BRANCH PERFORMANCE BREAKDOWN</h3></div>
                         <div class="chart-container" style="height:200px;margin-bottom:14px;"><canvas id="execBranchPosFBChart"></canvas></div>
                         <div class="table-wrapper"><table id="exec-branch-master-expanded"><thead><tr><th>Branch</th><th>Smile Score</th><th>Submissions</th><th>Incidents</th><th>Incident Rate</th><th>Positive Feedback</th><th>Resolved</th><th>Resolution Rate</th></tr></thead><tbody></tbody></table></div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -9663,7 +9694,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.176.0 · 24 Sep 2026 · Trend view: quality over time, complaints growing, branches slipping, speed, markers';
+        const BUILD_VERSION = 'v2.177.0 · 24 Sep 2026 · Breakdown view: branches, channels, order source, complaints by branch and product, rating spread, case outcomes';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -15390,6 +15421,122 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             return { render };
         })();
+        /* ═══════════════════════════════════════════════════════════════════
+           v2.177.0 -- BREAKDOWN VIEW: branches (sortable, against targets),
+           channels, where orders came from, complaints by branch and product
+           (agent's labels), rating spread and how cases turned out.
+           ═══════════════════════════════════════════════════════════════════ */
+        const BD2 = (function(){
+            const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+            const addD = (d, n) => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + n); return _fmtDate(t); };
+            let sortKey = 'ir', sortDir = -1;
+            function scope(){
+                let region = (document.getElementById('filter-region') || {}).value || 'all';
+                let branch = (document.getElementById('filter-branch') || {}).value || 'all';
+                const channel = (document.getElementById('filter-channel') || {}).value || 'all';
+                const survey = (document.getElementById('filter-survey') || {}).value || 'all';
+                if(PERM.region !== 'All') region = PERM.region;
+                { const mine = permBranches(); if(mine){ if(mine.length === 1) branch = mine[0]; else if(branch !== 'all' && !permBranchOK(branch)) branch = 'all'; } }
+                const regionOf = name => { const b = config.branches.find(x => x.name === name); return b ? b.region : 'Other'; };
+                return item => (region === 'all' || regionOf(item.branch) === region) && (branch === 'all' ? permBranchOK(item.branch) : item.branch === branch)
+                    && (channel === 'all' || item.channel === channel) && (survey === 'all' || item.surveyForm === survey);
+            }
+            const srcOf = s => { const r = s._raw || {}; const k = Object.keys(r).find(x => /order\s*source|source of (the )?order|ordered (from|via)|platform/i.test(x)); const v = k ? String(r[k] || '').trim() : ''; return v && v !== '—' ? v : ''; };
+            const pct = (a, b) => b ? a / b * 100 : null;
+            const tone = (v, target, higherGood, warn) => { if(v == null) return 'mut'; const gap = higherGood ? target - v : v - target; return gap <= 0 ? 'ok' : gap <= warn ? 'md' : 'bad'; };
+            function heat(rows, cols, get, title, sub, empty){
+                if(!rows.length || !cols.length) return `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3><div class="bd2-empty">${empty}</div></div>`;
+                const mx = Math.max(1, ...rows.flatMap(r => cols.map(c => get(r, c))));
+                const shade = v => { if(!v) return 'background:var(--bg-light);color:var(--text-muted)'; const a = 0.12 + v / mx * 0.85; return `background:rgba(220,38,38,${a.toFixed(2)});color:${a > 0.55 ? '#fff' : 'var(--text-main)'}`; };
+                return `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3><div class="bd2-scroll"><div class="bd2-hm" style="grid-template-columns:minmax(110px,1.2fr) repeat(${cols.length},minmax(64px,1fr))">
+                    <div></div>${cols.map(c => `<div class="h" title="${esc(c)}">${esc(c)}</div>`).join('')}
+                    ${rows.map(r => `<div class="r" title="${esc(r)}">${esc(r)}</div>${cols.map(c => { const v = get(r, c); return `<div style="${shade(v)}">${v}</div>`; }).join('')}`).join('')}</div></div></div>`;
+            }
+            function render(){
+                const host = document.getElementById('bd2'); if(!host) return;
+                const S = Std(), inScope = scope();
+                let start = (document.getElementById('filter-start-date') || {}).value, end = (document.getElementById('filter-end-date') || {}).value;
+                if(!end) return;
+                let widened = false;
+                if(!start || start === end){ start = addD(end, -29); widened = true; }
+                const inRange = d => d && d >= start && d <= end;
+                const subs = (rawData.submissions || []).filter(s => inRange(s.date) && inScope(s));
+                const incsAll = (rawData.incidents || []).filter(i => inRange(i.date) && inScope(i));
+                const incs = incsAll.filter(i => i.caseStatus !== 'fake');
+                // ── branches ─────────────────────────────────────────────
+                const names = (config.branches || []).map(b => b.name).filter(n => n && n !== 'Unspecified' && permBranchOK(n));
+                const B = {}; names.forEach(n => B[n] = { n, s: 0, r: 0, sum: 0, p: 0, inc: 0, res: 0, cats: {}, stars: [0, 0, 0, 0, 0], out: { verified: 0, fake: 0, not_responding: 0, review: 0, open: 0 } });
+                let unspec = 0;
+                subs.forEach(s => { const b = B[s.branch]; if(!b){ if(!s.branch || s.branch === 'Unspecified') unspec++; return; } b.s++;
+                    if(s.smileScore != null && s.smileScore > 0){ b.r++; b.sum += s.smileScore; if(s.smileScore >= 4) b.p++; const k = Math.round(s.smileScore); if(k >= 1 && k <= 5) b.stars[k - 1]++; } });
+                incs.forEach(i => { const b = B[i.branch]; if(!b) return; b.inc++; if(i.resolved) b.res++; const l = incLabel(i); b.cats[l] = (b.cats[l] || 0) + 1; });
+                incsAll.forEach(i => { const b = B[i.branch]; if(!b) return; const st = i.caseStatus || 'verified'; if(!i.resolved && st !== 'fake') b.out.open++; else if(b.out[st] != null) b.out[st]++; else b.out.verified++; });
+                const rows = Object.values(B).map(b => Object.assign(b, { smile: b.r ? smile100(b.sum / b.r) : null, pos: pct(b.p, b.r), ir: b.s ? b.inc / b.s * 100 : null, rr: b.inc ? b.res / b.inc * 100 : null,
+                    top: Object.keys(b.cats).sort((x, y) => b.cats[y] - b.cats[x])[0] || '' }));
+                const active = rows.filter(b => b.s > 0), idle = rows.filter(b => !b.s);
+                const val = (b, k) => k === 'n' ? b.n.toLowerCase() : b[k] == null ? -Infinity : b[k];
+                active.sort((a, b) => { const x = val(a, sortKey), y = val(b, sortKey); return (x > y ? 1 : x < y ? -1 : 0) * sortDir; });
+                const maxIr = Math.max(1, ...active.map(b => b.ir || 0));
+                const th = (k, t) => `<th class="${sortKey === k ? 's' : ''}" onclick="BD2.sort('${k}')">${t}${sortKey === k ? (sortDir < 0 ? ' ▾' : ' ▴') : ''}</th>`;
+                const irT = tone;
+                const branchTable = `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>BRANCHES<small>click a heading to sort · colours against your targets</small></h3><div class="bd2-scroll"><table class="bd2-t">
+                    <tr>${th('n', 'Branch')}${th('s', 'Submissions')}${th('smile', 'Smile score')}${th('pos', 'Positive')}${th('ir', 'Incident rate')}${th('inc', 'Incidents')}${th('rr', 'Resolved')}<th>Top complaint</th></tr>
+                    ${active.map(b => { const ti = irT(b.ir, S.tIncRate, false, 1.5); const col = ti === 'ok' ? '#10B981' : ti === 'md' ? '#F59E0B' : '#DC2626';
+                        return `<tr><td><b>${esc(b.n)}</b></td><td>${b.s.toLocaleString()}</td><td class="${tone(b.smile, S.tSmile, true, 5)}">${b.smile == null ? '—' : Math.round(b.smile)}</td>
+                            <td class="${tone(b.pos, S.tPositive, true, 3)}">${b.pos == null ? '—' : b.pos.toFixed(1) + '%'}</td>
+                            <td class="${ti}">${b.ir == null ? '—' : b.ir.toFixed(1) + '%'}<span class="bd2-bar"><i style="width:${((b.ir || 0) / maxIr * 100).toFixed(0)}%;background:${col}"></i></span></td>
+                            <td>${b.inc}</td><td class="${tone(b.rr, S.tResolveRate, true, 10)}">${b.rr == null ? '—' : Math.round(b.rr) + '%'}</td><td>${esc(b.top || '—')}</td></tr>`; }).join('')}
+                    ${idle.length ? `<tr class="sep"><td colspan="8">NO SUBMISSIONS IN THIS PERIOD</td></tr>${idle.map(b => `<tr class="idle"><td>${esc(b.n)}</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>`).join('')}` : ''}
+                    </table></div>${unspec ? `<div class="bd2-foot">${unspec.toLocaleString()} submission${unspec === 1 ? '' : 's'} with no branch detected ${unspec === 1 ? 'is' : 'are'} counted in the totals only.</div>` : ''}</div>`;
+                // ── channels ─────────────────────────────────────────────
+                const CH = {};
+                subs.forEach(s => { const k = s.surveyForm || s.channel || 'Other'; const c = CH[k] = CH[k] || { s: 0, r: 0, p: 0, inc: 0 }; c.s++; if(s.smileScore != null && s.smileScore > 0){ c.r++; if(s.smileScore >= 4) c.p++; } });
+                incs.forEach(i => { const k = i.surveyForm || i.channel || 'Other'; if(CH[k]) CH[k].inc++; else CH[k] = { s: 0, r: 0, p: 0, inc: 1 }; });
+                const chList = Object.entries(CH).sort((a, b) => b[1].s - a[1].s), totS = subs.length || 1;
+                const list = (title, sub, entries, total, emptyTxt) => `<div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>${title}<small>${sub}</small></h3>
+                    ${entries.length ? `<div class="bd2-ch hd"><span></span><span>Share</span><span>Incident</span><span>Positive</span></div>${entries.map(([k, c]) => { const ir = c.s ? c.inc / c.s * 100 : null, ps = c.r ? c.p / c.r * 100 : null;
+                        return `<div class="bd2-ch"><div><b title="${esc(k)}">${esc(k)}</b><small>${c.s.toLocaleString()}</small><div class="bd2-share"><i style="width:${(c.s / total * 100).toFixed(1)}%"></i></div></div>
+                            <span><b>${Math.round(c.s / total * 100)}%</b></span><span class="${tone(ir, S.tIncRate, false, 1.5)}">${ir == null ? '—' : ir.toFixed(1) + '%'}</span><span class="${tone(ps, S.tPositive, true, 3)}">${ps == null ? '—' : ps.toFixed(1) + '%'}</span></div>`; }).join('')}`
+                        : `<div class="bd2-empty">${emptyTxt}</div>`}</div>`;
+                const channels = list('CHANNELS', 'share of submissions', chList, totS, 'No submissions in this period.');
+                // ── where the orders came from ───────────────────────────
+                const SRC = {};
+                subs.forEach(s => { const k = srcOf(s); if(!k) return; const c = SRC[k] = SRC[k] || { s: 0, r: 0, p: 0, inc: 0 }; c.s++; if(s.smileScore != null && s.smileScore > 0){ c.r++; if(s.smileScore >= 4) c.p++; } if(s.smileScore != null && s.smileScore > 0 && s.smileScore <= INCIDENT_MAX_RATING) c.inc++; });
+                const srcList = Object.entries(SRC).filter(([, c]) => c.s >= 3).sort((a, b) => b[1].s - a[1].s), srcTot = srcList.reduce((a, [, c]) => a + c.s, 0) || 1;
+                const sources = list('WHERE THE ORDERS CAME FROM', 'order source given on the form', srcList, srcTot, 'No order source recorded on the forms in this period.');
+                // ── complaints by branch / by product ────────────────────
+                const catTot = {}; incs.forEach(i => { const l = incLabel(i); catTot[l] = (catTot[l] || 0) + 1; });
+                const topCats = Object.keys(catTot).sort((a, b) => catTot[b] - catTot[a]).slice(0, 6);
+                const brRows = active.filter(b => b.inc).sort((a, b) => b.inc - a.inc).slice(0, 12).map(b => b.n);
+                const byBC = (r, c) => (B[r] && B[r].cats[c]) || 0;
+                const P = {}; incs.forEach(i => { const p = String(i.product || '').trim(); if(!p || p === '—') return; const l = incLabel(i); const x = P[p] = P[p] || { n: 0, cats: {} }; x.n++; x.cats[l] = (x.cats[l] || 0) + 1; });
+                const prodRows = Object.keys(P).filter(p => P[p].n >= 5).sort((a, b) => P[b].n - P[a].n).slice(0, 10);
+                const prodCats = [...new Set(prodRows.flatMap(p => Object.keys(P[p].cats)))].sort((a, b) => (catTot[b] || 0) - (catTot[a] || 0)).slice(0, 6);
+                // ── rating spread and case outcomes ──────────────────────
+                const STAR = ['#DC2626', '#F97316', '#F59E0B', '#84CC16', '#10B981'];
+                const spread = active.filter(b => b.r >= 10).sort((a, b) => (a.pos || 0) - (b.pos || 0)).map(b => `<div class="bd2-sp"><b title="${esc(b.n)}">${esc(b.n)}</b>
+                    <div class="bd2-stk">${b.stars.map((v, k) => v ? `<i style="width:${(v / b.r * 100).toFixed(1)}%;background:${STAR[k]}" title="${k + 1}★ ${v} (${Math.round(v / b.r * 100)}%)"></i>` : '').join('')}</div>
+                    <small>${Math.round(b.stars[0] / b.r * 100 + b.stars[1] / b.r * 100)}% 1–2★</small></div>`).join('');
+                const OUT = [['verified', 'Verified', '#10B981'], ['fake', 'Fake', '#DC2626'], ['not_responding', 'Not responding', '#8B5CF6'], ['review', 'Needs review', '#F59E0B'], ['open', 'Still open', '#94A3B8']];
+                const outRows = active.filter(b => Object.values(b.out).reduce((a, c) => a + c, 0) > 0).map(b => { const t = Object.values(b.out).reduce((a, c) => a + c, 0); return { b, t }; }).sort((x, y) => y.t - x.t);
+                const outcomes = outRows.map(({ b, t }) => `<div class="bd2-sp"><b title="${esc(b.n)}">${esc(b.n)}</b>
+                    <div class="bd2-stk">${OUT.map(([k, l, c]) => b.out[k] ? `<i style="width:${(b.out[k] / t * 100).toFixed(1)}%;background:${c}" title="${l}: ${b.out[k]}"></i>` : '').join('')}</div>
+                    <small>${t} case${t === 1 ? '' : 's'}${b.out.fake ? ' · ' + Math.round(b.out.fake / t * 100) + '% fake' : ''}</small></div>`).join('');
+                const html = `${widened ? `<div class="bd2-note"><i class="fas fa-circle-info"></i> A breakdown needs more than one day — showing the <b>last 30 days up to ${esc(new Date(end + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }))}</b>. Pick a range above to change it.</div>` : ''}
+                    ${branchTable}
+                    <div class="bd2-g2">${channels}${sources}</div>
+                    <div class="bd2-g2">${heat(brRows, topCats, byBC, 'COMPLAINTS BY BRANCH', "by the agent's label · darker = more", 'No complaints in this period.')}
+                        ${heat(prodRows, prodCats, (r, c) => (P[r] && P[r].cats[c]) || 0, 'COMPLAINTS BY PRODUCT', "5+ complaints · by the agent's label", 'No product has 5 or more complaints in this period.')}</div>
+                    <div class="bd2-g2">
+                        <div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>HOW RATINGS ARE SPREAD<small>1★ to 5★ · 10+ ratings · most low ratings first</small></h3>
+                            ${spread || '<div class="bd2-empty">Not enough ratings per branch.</div>'}<div class="bd2-lg">${STAR.map((c, k) => `<span><i style="background:${c}"></i>${k + 1}★</span>`).join('')}</div></div>
+                        <div class="card bd2-card"><h3 class="bd2-h"><i class="b"></i>HOW CASES TURNED OUT<small>every incident, fake included</small></h3>
+                            ${outcomes || '<div class="bd2-empty">No incidents in this period.</div>'}<div class="bd2-lg">${OUT.map(([, l, c]) => `<span><i style="background:${c}"></i>${l}</span>`).join('')}</div></div>
+                    </div>`;
+                if(host.__h !== html){ host.__h = html; host.innerHTML = html; }
+            }
+            return { render, sort(k){ if(sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === 'n' ? 1 : -1; } render(); } };
+        })();
         /** Timers written into static text: the Live queue card. */
         function applyStandardsToPage(){
             const S = Std();
@@ -18715,6 +18862,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                 }
                 
                 if (state.execMode === 'breakdown') {
+                    try { BD2.render(); } catch(e){ console.warn('breakdown:', e); }   // v2.177.0
                     // Build per-product stats, then keep only items with enough responses to be
                     // meaningful (a single 1-star on a 1-response product is not a "100% rate").
                     // Rank worst-first and cap to the top 10 so the chart stays readable.
