@@ -7830,6 +7830,644 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
         }
         </style>
+    <style id="pinlock-css">
+        /* ══════════════════════════════════════════════════════════════════
+           v2.180.0 PIN LOCK — full-screen, always dark (black + navy glow),
+           the same in light and dark theme. Lives on <html>, outside <body>,
+           so body's boot opacity can never hide it.
+           ══════════════════════════════════════════════════════════════════ */
+        #pinlock{ position:fixed; inset:0; z-index:2147483600; background:#000; color:#EDEDF0;
+            font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased;
+            overflow:hidden; opacity:0; transition:opacity .28s ease; user-select:none; -webkit-user-select:none;
+            padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box; }
+        #pinlock *{ box-sizing:border-box; }
+        #pinlock.on{ opacity:1; }
+        #pinlock.bye{ opacity:0; transition:opacity .35s ease; }
+        html.pl-open, html.pl-open body{ overflow:hidden !important; }
+        #pinlock .pl-bg{ position:absolute; inset:0; pointer-events:none; }
+        #pinlock .pl-au{ position:absolute; left:50%; top:-38%; width:1300px; height:900px; transform:translateX(-50%);
+            background:radial-gradient(closest-side,rgba(59,91,219,.55),rgba(1,1,151,.35) 45%,transparent 75%); filter:blur(40px);
+            animation:plBreath 9s ease-in-out infinite; }
+        #pinlock .pl-au2{ position:absolute; left:50%; top:-12%; width:560px; height:420px; transform:translateX(-50%);
+            background:radial-gradient(closest-side,rgba(100,208,255,.38),transparent 70%); filter:blur(30px); }
+        @keyframes plBreath{ 0%,100%{ opacity:.85; } 50%{ opacity:1; } }
+        #pinlock .pl-grid{ position:absolute; inset:0;
+            background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+            background-size:64px 64px; -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 30%,#000,transparent); mask-image:radial-gradient(ellipse 60% 55% at 50% 30%,#000,transparent); }
+        #pinlock .pl-noise{ position:absolute; inset:0; opacity:.09; mix-blend-mode:overlay;
+            background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+        #pinlock .pl-stars{ position:absolute; inset:0; opacity:.8;
+            background-image:radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 72% 18%,rgba(255,255,255,.4),transparent),radial-gradient(1px 1px at 84% 42%,rgba(100,208,255,.5),transparent),radial-gradient(1px 1px at 12% 60%,rgba(255,255,255,.3),transparent),radial-gradient(1px 1px at 60% 8%,rgba(255,255,255,.45),transparent),radial-gradient(1px 1px at 35% 12%,rgba(100,208,255,.4),transparent); }
+
+        #pinlock .pl-nav{ position:absolute; top:env(safe-area-inset-top,0px); left:0; right:0; display:flex; align-items:center; justify-content:space-between;
+            padding:22px 32px; font-size:14px; font-weight:600; z-index:3; }
+        #pinlock .pl-brand{ display:flex; align-items:center; gap:9px; letter-spacing:-.2px; }
+        #pinlock .pl-brand span{ color:#8A8F98; font-weight:500; }
+        #pinlock .pl-right{ display:flex; align-items:center; gap:14px; }
+        #pinlock .pl-time{ font-size:12.5px; color:#8A8F98; font-weight:500; }
+        #pinlock .pl-chip{ display:flex; align-items:center; gap:8px; padding:5px 12px 5px 9px; border-radius:999px; border:1px solid rgba(255,255,255,.1);
+            background:rgba(255,255,255,.03); font-size:12.5px; color:#B4B8C0; font-weight:500; }
+        #pinlock .pl-chip i{ width:6px; height:6px; border-radius:50%; background:#34D399; box-shadow:0 0 8px #34D399; }
+
+        #pinlock .pl-col{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:2; padding:80px 20px 60px; }
+        #pinlock .pl-stage{ position:relative; }
+        #pinlock .pl-stage::before{ content:""; position:absolute; left:50%; bottom:calc(100% + 22px); width:1px; height:100vh; transform:translateX(-50%);
+            background:linear-gradient(rgba(100,208,255,0),rgba(100,208,255,.7)); box-shadow:0 0 24px 2px rgba(100,208,255,.5); pointer-events:none; }
+        #pinlock .pl-stage::after{ content:""; position:absolute; top:50%; left:50%; width:200vw; height:1px; transform:translateX(-50%); z-index:-1;
+            background:linear-gradient(90deg,transparent 20%,rgba(255,255,255,.14) 38%,rgba(100,208,255,.55) 50%,rgba(255,255,255,.14) 62%,transparent 80%); pointer-events:none; }
+        #pinlock .pl-orb{ position:relative; width:64px; height:64px; border-radius:18px; display:grid; place-items:center; background-color:#05061a;
+            background-image:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.14);
+            box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 60px rgba(100,208,255,.35),inset 0 1px 0 rgba(255,255,255,.18); transition:box-shadow .4s, border-color .4s; }
+        #pinlock .pl-orb .r1{ position:absolute; inset:-10px; border-radius:24px; border:1px solid rgba(100,208,255,.25); transition:border-color .4s; }
+        #pinlock .pl-orb .r2{ position:absolute; inset:-22px; border-radius:30px; border:1px solid rgba(100,208,255,.10); transition:border-color .4s; }
+        #pinlock.is-bad .pl-orb, #pinlock.is-locked .pl-orb{ border-color:rgba(239,68,68,.45); box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 60px rgba(239,68,68,.35),inset 0 1px 0 rgba(255,255,255,.18); }
+        #pinlock.is-bad .pl-orb .r1, #pinlock.is-locked .pl-orb .r1{ border-color:rgba(239,68,68,.3); } #pinlock.is-bad .pl-orb .r2, #pinlock.is-locked .pl-orb .r2{ border-color:rgba(239,68,68,.12); }
+        #pinlock.is-ok .pl-orb{ border-color:rgba(52,211,153,.5); box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 80px rgba(52,211,153,.45),inset 0 1px 0 rgba(255,255,255,.18); }
+        #pinlock.is-ok .pl-orb .r1{ border-color:rgba(52,211,153,.35); } #pinlock.is-ok .pl-orb .r2{ border-color:rgba(52,211,153,.15); }
+        #pinlock .pl-orb .pl-lockic{ display:none; }
+        #pinlock.is-locked .pl-orb .pl-mark{ display:none; } #pinlock.is-locked .pl-orb .pl-lockic{ display:block; }
+
+        #pinlock .pl-body{ display:flex; flex-direction:column; align-items:center; text-align:center; width:100%; max-width:440px; margin-top:34px; }
+        #pinlock .pl-h{ font-size:40px; font-weight:600; letter-spacing:-1.6px; line-height:1.1; margin:0;
+            background:linear-gradient(180deg,#fff 30%,rgba(255,255,255,.55)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+        #pinlock .pl-s{ margin-top:12px; font-size:15px; color:#8A8F98; letter-spacing:-.1px; line-height:1.5; min-height:22px; }
+        #pinlock .pl-s.err{ color:#F87171; }
+        #pinlock .pl-steps{ margin-top:16px; display:flex; gap:6px; }
+        #pinlock .pl-steps i{ width:24px; height:3px; border-radius:2px; background:rgba(255,255,255,.15); }
+        #pinlock .pl-steps i.on{ background:#64D0FF; box-shadow:0 0 8px #64D0FF; }
+
+        #pinlock .pl-otp{ margin-top:30px; display:flex; align-items:center; position:relative; border-radius:14px; padding:1px; }
+        #pinlock .pl-otp::before{ content:""; position:absolute; inset:-1px; border-radius:14px; padding:1px; pointer-events:none;
+            background:conic-gradient(from var(--pl-a,210deg),transparent 0 62%,#64D0FF 74%,#fff 76%,#3B5BDB 80%,transparent 86%);
+            -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;
+            filter:drop-shadow(0 0 6px rgba(100,208,255,.8)); animation:plSweep 4.5s linear infinite; }
+        @property --pl-a{ syntax:'<angle>'; inherits:false; initial-value:210deg; }
+        @keyframes plSweep{ to{ --pl-a:570deg; } }
+        #pinlock.is-bad .pl-otp::before, #pinlock.is-ok .pl-otp::before{ display:none; }
+        #pinlock .pl-grp{ display:flex; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:rgba(255,255,255,.03); overflow:hidden; transition:border-color .25s, box-shadow .25s; }
+        #pinlock .pl-c{ width:54px; height:62px; display:grid; place-items:center; border-right:1px solid rgba(255,255,255,.08); position:relative; }
+        #pinlock .pl-c:last-child{ border-right:none; }
+        #pinlock .pl-c.f::after{ content:""; width:10px; height:10px; border-radius:50%; background:#fff; box-shadow:0 0 12px rgba(255,255,255,.7); animation:plPop .18s ease-out; }
+        @keyframes plPop{ from{ transform:scale(.3); opacity:0; } to{ transform:scale(1); opacity:1; } }
+        #pinlock .pl-c.a{ background:rgba(100,208,255,.06); box-shadow:inset 0 0 0 1.5px #64D0FF,0 0 24px rgba(100,208,255,.35); }
+        #pinlock .pl-c.a::after{ content:""; width:1.5px; height:24px; background:#64D0FF; animation:plCaret 1.05s steps(1) infinite; }
+        @keyframes plCaret{ 50%{ opacity:0; } }
+        #pinlock .pl-dash{ width:14px; height:1.5px; background:rgba(255,255,255,.25); margin:0 12px; }
+        #pinlock.is-bad .pl-grp{ border-color:rgba(239,68,68,.6); box-shadow:0 0 30px rgba(239,68,68,.25); }
+        #pinlock.is-bad .pl-c.f::after{ background:#F87171; box-shadow:0 0 12px rgba(248,113,113,.8); }
+        #pinlock.is-bad .pl-otp{ animation:plShake .42s cubic-bezier(.36,.07,.19,.97); }
+        @keyframes plShake{ 15%,55%{ transform:translateX(-8px); } 35%,75%{ transform:translateX(8px); } 90%{ transform:translateX(-3px); } }
+        #pinlock.is-ok .pl-grp{ border-color:rgba(52,211,153,.6); box-shadow:0 0 34px rgba(52,211,153,.3); }
+        #pinlock.is-ok .pl-c.f::after{ background:#34D399; box-shadow:0 0 12px rgba(52,211,153,.9); }
+        #pinlock .pl-prog{ margin-top:26px; width:388px; max-width:100%; height:3px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; }
+        #pinlock .pl-prog i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#3B5BDB,#64D0FF,#34D399); box-shadow:0 0 12px #64D0FF; animation:plProg .75s ease-out forwards; }
+        @keyframes plProg{ to{ width:100%; } }
+
+        #pinlock .pl-btn{ margin-top:22px; width:388px; max-width:100%; height:46px; border-radius:10px; border:none; background:#fff; color:#000; font:600 14.5px 'Inter',sans-serif;
+            display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; box-shadow:0 0 0 1px rgba(255,255,255,.2),0 8px 30px rgba(100,208,255,.15); transition:transform .12s, opacity .2s; }
+        #pinlock .pl-btn:hover{ transform:translateY(-1px); } #pinlock .pl-btn:active{ transform:scale(.98); }
+        #pinlock .pl-btn:disabled{ opacity:.45; cursor:default; transform:none; }
+        #pinlock .pl-btn kbd{ font:600 11px 'Inter',sans-serif; color:#555; border:1px solid #D4D4D8; border-radius:5px; padding:1px 6px; }
+        #pinlock .pl-btn.ghost{ background:rgba(255,255,255,.03); color:#EDEDF0; border:1px solid rgba(255,255,255,.12); box-shadow:none; font-weight:500; }
+        #pinlock .pl-btn:focus-visible, #pinlock .pl-lk:focus-visible, #pinlock .pl-k:focus-visible{ outline:2px solid #64D0FF; outline-offset:3px; }
+        #pinlock .pl-or{ margin-top:16px; display:flex; align-items:center; gap:12px; width:388px; max-width:100%; font-size:11.5px; color:#5B5F68; }
+        #pinlock .pl-or::before, #pinlock .pl-or::after{ content:""; flex:1; height:1px; background:rgba(255,255,255,.08); }
+        #pinlock .pl-or + .pl-btn{ margin-top:14px; }
+        #pinlock .pl-away{ margin-top:24px; display:inline-flex; align-items:center; border:1px solid rgba(255,255,255,.09); border-radius:999px; background:rgba(255,255,255,.025);
+            font-size:12.5px; color:#8A8F98; max-width:100%; }
+        #pinlock .pl-away > span{ padding:7px 14px; display:flex; align-items:center; gap:7px; white-space:nowrap; }
+        #pinlock .pl-away > span + span{ border-left:1px solid rgba(255,255,255,.08); }
+        #pinlock .pl-away b{ color:#EDEDF0; font-weight:600; }
+        #pinlock .pl-away .dr{ width:6px; height:6px; border-radius:50%; background:#F87171; box-shadow:0 0 8px #F87171; }
+        #pinlock .pl-away .dc{ width:6px; height:6px; border-radius:50%; background:#64D0FF; box-shadow:0 0 8px #64D0FF; }
+        #pinlock .pl-links{ margin-top:22px; display:flex; gap:10px; font-size:13.5px; color:#8A8F98; align-items:center; flex-wrap:wrap; justify-content:center; }
+        #pinlock .pl-lk{ color:#EDEDF0; font-weight:500; background:none; border:none; font:500 13.5px 'Inter',sans-serif; cursor:pointer; padding:2px; }
+        #pinlock .pl-lk:hover{ color:#64D0FF; }
+        #pinlock .pl-dot{ width:3px; height:3px; border-radius:50%; background:#44474F; }
+        #pinlock .pl-card{ margin-top:22px; width:388px; max-width:100%; padding:13px 16px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.03);
+            font-size:13px; color:#8A8F98; line-height:1.55; text-align:left; }
+        #pinlock .pl-ft{ position:absolute; bottom:calc(22px + env(safe-area-inset-bottom,0px)); left:0; right:0; text-align:center; font-size:12px; color:#5B5F68; z-index:3;
+            display:flex; justify-content:center; gap:8px; align-items:center; }
+        #pinlock .pl-sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+        /* keypad — touch screens only */
+        #pinlock .pl-kp{ display:none; }
+        #pinlock.touch .pl-kp{ display:grid; position:absolute; left:0; right:0; bottom:calc(18px + env(safe-area-inset-bottom,0px)); grid-template-columns:repeat(3,1fr);
+            padding:0 26px; z-index:3; row-gap:4px; max-width:420px; margin:0 auto; }
+        #pinlock.touch.no-kp .pl-kp{ display:none; }
+        #pinlock .pl-k{ height:62px; display:grid; place-items:center; font:400 28px 'Inter',sans-serif; color:#EDEDF0; border-radius:16px; background:none; border:none;
+            cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s; }
+        #pinlock .pl-k:active, #pinlock .pl-k.p{ background:radial-gradient(closest-side,rgba(100,208,255,.28),transparent); color:#fff; }
+        #pinlock .pl-k.t{ font-size:14px; color:#8A8F98; font-weight:500; }
+        #pinlock.touch .pl-ft{ display:none; }
+        #pinlock.touch .pl-btn.go{ display:none; }
+
+        @media (max-width:820px){
+            #pinlock .pl-nav{ padding:16px 20px; }
+            #pinlock .pl-brand span, #pinlock .pl-time{ display:none; }
+            #pinlock .pl-col{ justify-content:flex-start; padding-top:max(120px, 16vh); }
+            #pinlock .pl-h{ font-size:30px; letter-spacing:-1.1px; }
+            #pinlock .pl-s{ font-size:14px; }
+            #pinlock .pl-body{ margin-top:26px; }
+            #pinlock .pl-c{ width:46px; height:54px; }
+            #pinlock .pl-dash{ margin:0 8px; width:10px; }
+            #pinlock .pl-otp{ margin-top:24px; }
+            #pinlock .pl-away{ font-size:11.5px; margin-top:18px; } #pinlock .pl-away > span{ padding:6px 11px; }
+            #pinlock .pl-btn, #pinlock .pl-card, #pinlock .pl-or{ width:320px; }
+        }
+        @media (max-width:820px) and (max-height:720px){
+            #pinlock .pl-col{ padding-top:84px; }
+            #pinlock .pl-orb{ transform:scale(.8); }
+            #pinlock .pl-body{ margin-top:14px; }
+            #pinlock .pl-h{ font-size:26px; }
+            #pinlock .pl-k{ height:54px; }
+        }
+        @media (prefers-reduced-motion: reduce){
+            #pinlock *, #pinlock *::before, #pinlock *::after{ animation:none !important; transition:none !important; }
+            #pinlock .pl-prog i{ width:100%; }
+        }
+    </style>
+    <script>
+        /* ══════════════════════════════════════════════════════════════════
+           v2.180.0 PIN LOCK (Worker v5.7). Cloudflare proves who you are once
+           a month per device; the PIN proves you are the one at the screen.
+             - Owner setting pinLock { on, idleMin } (public). Off = nothing here runs.
+             - Asked on opening and after idleMin without use (any tab counts).
+             - An unlock gives a 12 h token, sent on every /api/ call as
+               X-Sentinel-Unlock (the fetch wrapper below). The Worker refuses
+               calls without it (code pin_required) and apiCall brings this
+               screen up, then retries.
+             - While locked the app keeps running underneath (alerts still ring)
+               and the screen counts what arrived meanwhile.
+             - Fingerprint / face: WebAuthn with this device's own sensor.
+           ══════════════════════════════════════════════════════════════════ */
+        (function(){
+            'use strict';
+            var K_TOK = 'sentinel_unlock', K_ACT = 'sentinel_active', K_CFG = 'sentinel_pincfg', K_BIO = 'sentinel_bio_id', K_NOBIO = 'sentinel_nobio_until';
+            function ls(k, v){
+                try {
+                    if (v === undefined) return localStorage.getItem(k);
+                    if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+                } catch(e){}
+                return null;
+            }
+            var cfg = (function(){ try { var o = JSON.parse(ls(K_CFG) || 'null'); if (o && typeof o.on === 'boolean') return { on: o.on, idleMin: (+o.idleMin || 30) }; } catch(e){} return { on: false, idleMin: 30 }; })();
+            function saveCfg(){ ls(K_CFG, JSON.stringify(cfg)); }
+            var user = null;
+            function myEmail(){ return String((user && user.email) || '').toLowerCase(); }
+            function tokObj(){ try { return JSON.parse(ls(K_TOK) || 'null'); } catch(e){ return null; } }
+            function token(){
+                var o = tokObj();
+                if (!o || !o.t || !(o.exp > Date.now())) return '';
+                if (user && o.e && o.e !== myEmail()) return '';
+                return o.t;
+            }
+            function setToken(t, exp){ ls(K_TOK, JSON.stringify({ t: t, exp: exp, e: myEmail() })); }
+            function forget(){ ls(K_TOK, null); }
+            var lastTouch = 0;
+            function touch(force){ var n = Date.now(); if (!force && n - lastTouch < 10000) return; lastTouch = n; ls(K_ACT, String(n)); }
+            function lastActive(){ return parseInt(ls(K_ACT), 10) || 0; }
+            function idleOver(){ return Date.now() - lastActive() > cfg.idleMin * 60000; }
+            function needed(){ return cfg.on && (!token() || idleOver()); }
+
+            // Every same-origin /api/ request carries the unlock token.
+            var _fetch = window.fetch ? window.fetch.bind(window) : null;
+            if (_fetch) window.fetch = function(input, init){
+                try {
+                    var url = typeof input === 'string' ? input : (input && input.url) || '';
+                    if (url.indexOf('/api/') === 0 || url === '/api' || url.indexOf(location.origin + '/api/') === 0) {
+                        var t = token();
+                        if (t) {
+                            init = Object.assign({}, init || {});
+                            var h = new Headers(init.headers || (typeof input !== 'string' && input.headers) || undefined);
+                            h.set('X-Sentinel-Unlock', t);
+                            init.headers = h;
+                        }
+                    }
+                } catch(e){}
+                return _fetch(input, init);
+            };
+
+            // ── fingerprint / face support on this device ──
+            var bioOK = false;
+            try {
+                if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable)
+                    PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(v){ bioOK = !!v; }).catch(function(){});
+            } catch(e){}
+            var UA = navigator.userAgent || '';
+            function bioName(){
+                if (/iPhone|iPad/.test(UA)) return 'Face ID or Touch ID';
+                if (/Macintosh/.test(UA)) return 'Touch ID';
+                if (/Windows/.test(UA)) return 'Windows Hello';
+                if (/Android/.test(UA)) return 'your fingerprint';
+                return 'this device\'s sensor';
+            }
+            function deviceLabel(){
+                var d = /iPhone/.test(UA) ? 'iPhone' : /iPad/.test(UA) ? 'iPad' : /Android/.test(UA) ? 'Android phone' : /Macintosh/.test(UA) ? 'Mac' : /Windows/.test(UA) ? 'Windows PC' : 'Device';
+                return d + ' · ' + new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+            }
+            var u8b64u = function(buf){ var u = new Uint8Array(buf), s = ''; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); };
+            var b64uU8 = function(s){ s = String(s || '').replace(/-/g,'+').replace(/_/g,'/'); while (s.length % 4) s += '='; var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+
+            // ── the screen ──
+            var el = null, mode = '', digits = '', firstPin = '', curPin = '', resetCode = '', busy = false, waiters = [], status = null, reason = '', msg = '', msgErr = false;
+            var away = null, awayTimer = 0, clockTimer = 0, afterOk = null;
+            var MARK = '<svg class="pl-mark" viewBox="0 0 120 120" width="SZ" height="SZ" aria-hidden="true"><defs><clipPath id="plU_ID"><rect width="120" height="62"/></clipPath><clipPath id="plD_ID"><rect y="62" width="120" height="58"/></clipPath></defs>'
+                + '<g clip-path="url(#plD_ID)"><path d="M22 88 L41 88 L60 29 L79 88 L98 88" fill="none" stroke="#64D0FF" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></g>'
+                + '<g clip-path="url(#plU_ID)"><path d="M22 88 L41 88 L60 29 L79 88 L98 88" fill="none" stroke="#fff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></g></svg>';
+            function mark(sz, id){ return MARK.replace(/SZ/g, sz).replace(/_ID/g, id); }
+            var LOCKIC = '<svg class="pl-lockic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F87171" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+            var FP = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64D0FF" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M12 11v3a8 8 0 0 1-1.5 4.7"/><path d="M8.5 9.5a3.5 3.5 0 0 1 7 0V13a12 12 0 0 1-.8 4.3"/><path d="M5.5 12V9.5a6.5 6.5 0 0 1 11.6-4"/><path d="M18.5 9.5V12a15 15 0 0 1-.6 4"/><path d="M5.5 15.5a10 10 0 0 0 1-1.8"/></svg>';
+            var SHIELD = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/></svg>';
+            var BACK = '<svg width="24" height="18" viewBox="0 0 26 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M8 1h16a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8L1 10z"/><path d="M12 6l8 8M20 6l-8 8" stroke-linecap="round"/></svg>';
+            var esc = function(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); };
+            function firstName(){ var n = String((user && user.name) || '').trim().split(/\s+/)[0]; return n || 'there'; }
+            function isTouch(){ try { return matchMedia('(pointer: coarse)').matches || window.innerWidth <= 820; } catch(e){ return false; } }
+            var DIGIT_MODES = { unlock:1, create1:1, create2:1, code:1, change0:1, change1:1, change2:1, ok:1 };
+
+            function build(){
+                el = document.createElement('div');
+                el.id = 'pinlock';
+                el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Sentinel is locked');
+                el.innerHTML =
+                    '<div class="pl-bg"><div class="pl-noise"></div><div class="pl-stars"></div><div class="pl-au"></div><div class="pl-au2"></div><div class="pl-grid"></div></div>'
+                  + '<div class="pl-nav"><div class="pl-brand">' + mark(24, 'n') + 'Sentinel <span>/ Crumble Pakistan</span></div>'
+                  + '<div class="pl-right"><span class="pl-time" id="pl-time"></span><span class="pl-chip"><i></i>Protected</span></div></div>'
+                  + '<div class="pl-col"><div class="pl-stage"><div class="pl-orb"><span class="r1"></span><span class="r2"></span>' + mark(34, 'o') + LOCKIC + '</div></div>'
+                  + '<div class="pl-body" id="pl-body"></div></div>'
+                  + '<div class="pl-kp" id="pl-kp">'
+                  + [1,2,3,4,5,6,7,8,9].map(function(n){ return '<button type="button" class="pl-k" data-k="' + n + '">' + n + '</button>'; }).join('')
+                  + '<button type="button" class="pl-k t" data-k="out">Sign out</button><button type="button" class="pl-k" data-k="0">0</button>'
+                  + '<button type="button" class="pl-k t" data-k="del" aria-label="Delete">' + BACK + '</button></div>'
+                  + '<div class="pl-ft">' + SHIELD + ' Secured by Cloudflare Access and your personal PIN</div>'
+                  + '<div class="pl-sr" aria-live="polite" id="pl-live"></div>';
+                if (isTouch()) el.classList.add('touch');
+                document.documentElement.appendChild(el);
+                document.documentElement.classList.add('pl-open');
+                requestAnimationFrame(function(){ if (el) el.classList.add('on'); });
+                el.addEventListener('click', onClick);
+                el.addEventListener('pointerdown', function(e){ var k = e.target.closest && e.target.closest('.pl-k'); if (k){ k.classList.add('p'); setTimeout(function(){ k.classList.remove('p'); }, 160); } });
+                document.addEventListener('keydown', onKey, true);
+                document.addEventListener('paste', onPaste, true);
+                clock(); clockTimer = setInterval(clock, 20000);
+            }
+            function clock(){
+                var t = document.getElementById('pl-time'); if (!t) return;
+                var d = new Date();
+                t.textContent = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + ', ' + d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+            }
+            function close(withOk){
+                var done = function(){
+                    if (el){ el.remove(); el = null; }
+                    document.documentElement.classList.remove('pl-open');
+                    document.removeEventListener('keydown', onKey, true);
+                    document.removeEventListener('paste', onPaste, true);
+                    clearInterval(clockTimer); clearInterval(awayTimer); away = null;
+                    mode = ''; digits = ''; firstPin = ''; curPin = ''; resetCode = ''; busy = false; msg = '';
+                    touch(true);
+                    var w = waiters.splice(0); w.forEach(function(r){ try { r(); } catch(e){} });
+                };
+                if (!el) return done();
+                if (withOk){ mode = 'ok'; msg = ''; msgErr = false; busy = false; digits = 'xxxxxx'; if (el) el.classList.remove('is-bad'); render(); setTimeout(function(){ if (el) el.classList.add('bye'); setTimeout(done, 340); }, 780); }
+                else { el.classList.add('bye'); setTimeout(done, 300); }
+            }
+
+            function otp(){
+                var cells = function(from, to){ var h = ''; for (var i = from; i < to; i++) h += '<div class="pl-c' + (i < digits.length ? ' f' : (i === digits.length && mode !== 'ok' && !busy ? ' a' : '')) + '"></div>'; return h; };
+                return '<div class="pl-otp" aria-hidden="true"><div class="pl-grp">' + cells(0, 3) + '</div><div class="pl-dash"></div><div class="pl-grp">' + cells(3, 6) + '</div></div>';
+            }
+            function awayStrip(){
+                if (!away) return '';
+                var inc = 0, m = 0;
+                try {
+                    if (typeof rawData !== 'undefined' && typeof _incidentStableKey === 'function')
+                        (rawData.incidents || []).forEach(function(x){ if (!away.keys.has(_incidentStableKey(x))) inc++; });
+                } catch(e){}
+                try { m = Math.max(0, (window.__chatUnreadN || 0) - away.msg); } catch(e){}
+                var since = new Date(away.t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+                if (!inc && !m) return '<div class="pl-away" id="pl-away"><span>Nothing new since ' + esc(since) + '</span></div>';
+                return '<div class="pl-away" id="pl-away">'
+                    + '<span><i class="dr"></i><b>' + inc + '</b> new incident' + (inc === 1 ? '' : 's') + '</span>'
+                    + '<span><i class="dc"></i><b>' + m + '</b> message' + (m === 1 ? '' : 's') + '</span>'
+                    + '<span>since ' + esc(since) + '</span></div>';
+            }
+            function links(list){
+                return '<div class="pl-links">' + list.map(function(l, i){ return (i ? '<span class="pl-dot"></span>' : '') + (l.pre ? '<span>' + esc(l.pre) + '</span>' : '') + '<button type="button" class="pl-lk" data-a="' + l.a + '">' + esc(l.t) + '</button>'; }).join('') + '</div>';
+            }
+            function sub(text){ return '<div class="pl-s' + (msgErr ? ' err' : '') + '" id="pl-sub">' + esc(msg || text) + '</div>'; }
+            function steps(n){ return '<div class="pl-steps"><i class="on"></i><i' + (n > 1 ? ' class="on"' : '') + '></i></div>'; }
+            function goBtn(label){ return '<button type="button" class="pl-btn go" data-a="go"' + (digits.length < 6 || busy ? ' disabled' : '') + '>' + (busy ? 'Checking…' : esc(label) + ' <kbd>Enter</kbd>') + '</button>'; }
+            function mask(){ return (status && status.email) || 'your email'; }
+
+            function render(){
+                if (!el) return;
+                var body = document.getElementById('pl-body'); if (!body) return;
+                el.classList.toggle('is-locked', mode === 'locked');
+                el.classList.toggle('is-ok', mode === 'ok');
+                el.classList.toggle('no-kp', !DIGIT_MODES[mode] || mode === 'ok');
+                var h = '';
+                if (mode === 'loading') h = '<h1 class="pl-h">&nbsp;</h1>' + '<div class="pl-s">Checking…</div>';
+                else if (mode === 'error') h = '<h1 class="pl-h">Can\'t reach Sentinel</h1><div class="pl-s">Check the connection, then try again.</div>'
+                    + '<button type="button" class="pl-btn" data-a="retry">Try again</button>' + links([{ a: 'out', t: 'Sign out' }]);
+                else if (mode === 'unlock') {
+                    var s0 = reason === 'idle' ? 'Locked after ' + cfg.idleMin + ' minutes without use' : reason === 'manual' ? 'You locked Sentinel' : 'Enter your PIN to unlock Sentinel';
+                    var bio = bioOK && ls(K_BIO) && status && (status.bio || []).indexOf(ls(K_BIO)) !== -1;
+                    h = '<h1 class="pl-h">Welcome back, ' + esc(firstName()) + '</h1>' + sub(s0) + otp() + goBtn('Unlock')
+                      + (bio ? '<div class="pl-or">or</div><button type="button" class="pl-btn ghost" data-a="bio">' + FP + ' Use ' + esc(bioName()) + '</button>' : '')
+                      + awayStrip()
+                      + links([{ a: 'forgot', t: 'Forgot PIN?' }, { a: 'out', t: 'Sign out', pre: 'Not you?' }]);
+                }
+                else if (mode === 'create1') h = '<h1 class="pl-h">' + (resetCode ? 'Choose a new PIN' : 'Create your PIN') + '</h1>'
+                    + sub('Six digits. You\'ll enter it each time you open Sentinel.') + steps(1) + otp() + goBtn('Continue')
+                    + links([{ a: 'out', t: 'Sign out' }]);
+                else if (mode === 'create2' || mode === 'change2') h = '<h1 class="pl-h">Enter it once more</h1>' + sub('Just to be sure it\'s the PIN you meant.') + steps(2) + otp() + goBtn('Save PIN')
+                    + links([{ a: 'restart', t: 'Start again' }]);
+                else if (mode === 'change0') h = '<h1 class="pl-h">Change your PIN</h1>' + sub('First, enter your current PIN.') + otp() + goBtn('Continue')
+                    + links([{ a: 'cancel', t: 'Cancel' }]);
+                else if (mode === 'change1') h = '<h1 class="pl-h">Choose a new PIN</h1>' + sub('Six digits. Avoid repeats and runs like 123456.') + steps(1) + otp() + goBtn('Continue')
+                    + links([{ a: 'cancel', t: 'Cancel' }]);
+                else if (mode === 'locked') h = '<h1 class="pl-h">Sentinel is locked</h1>'
+                    + sub('Five wrong PINs in a row. We\'ll email a code to ' + mask() + ' so you can set a new PIN.')
+                    + '<button type="button" class="pl-btn" data-a="send"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Sending…' : 'Email me a code') + '</button>'
+                    + '<div class="pl-card">Every Owner has been told. If this wasn\'t you, tell them now.</div>'
+                    + links([{ a: 'havecode', t: 'I already have a code' }, { a: 'out', t: 'Sign out' }]);
+                else if (mode === 'forgot') h = '<h1 class="pl-h">Forgot your PIN?</h1>'
+                    + sub('We\'ll email a code to ' + mask() + '. Use it to set a new PIN.')
+                    + '<button type="button" class="pl-btn" data-a="send"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Sending…' : 'Email me a code') + '</button>'
+                    + links([{ a: 'back', t: 'Back' }, { a: 'out', t: 'Sign out' }]);
+                else if (mode === 'code') h = '<h1 class="pl-h">Check your email</h1>'
+                    + sub('Enter the code sent to ' + mask() + '. It works for 15 minutes.') + otp() + goBtn('Continue')
+                    + links([{ a: 'send', t: 'Send a new code' }, { a: 'out', t: 'Sign out' }]);
+                else if (mode === 'offer') h = '<h1 class="pl-h">Unlock faster next time</h1>'
+                    + sub('Use ' + bioName() + ' on this device instead of typing your PIN. Your PIN still works.')
+                    + '<button type="button" class="pl-btn" data-a="bioon"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Waiting for the sensor…' : FP.replace('#64D0FF', '#010197') + ' Turn on ' + esc(bioName())) + '</button>'
+                    + links([{ a: 'nobio', t: 'Not now' }]);
+                else if (mode === 'ok') h = '<h1 class="pl-h">Unlocked</h1><div class="pl-s">' + (reason === 'boot' ? 'Opening Sentinel' : 'Back to where you left off') + '</div>'
+                    + (digits.length === 6 ? otp() : '') + '<div class="pl-prog"><i></i></div>';
+                body.innerHTML = h;
+                var live = document.getElementById('pl-live');
+                if (live) live.textContent = DIGIT_MODES[mode] && mode !== 'ok' ? digits.length + ' of 6 digits entered' : '';
+            }
+            function paintBoxes(){
+                if (!el) return;
+                var o = el.querySelector('.pl-otp');
+                if (o) o.outerHTML = otp();
+                var g = el.querySelector('.pl-btn.go'); if (g) g.disabled = digits.length < 6 || busy;
+                var live = document.getElementById('pl-live'); if (live) live.textContent = digits.length + ' of 6 digits entered';
+            }
+            function setMode(m, text, isErr){
+                mode = m; digits = ''; msg = text || ''; msgErr = !!isErr; busy = false;
+                if (el) el.classList.remove('is-bad');
+                render();
+            }
+            function flashBad(text, back){
+                msg = text; msgErr = true; busy = false;
+                if (el){ el.classList.remove('is-bad'); void el.offsetWidth; el.classList.add('is-bad'); }
+                render();
+                try { if (navigator.vibrate) navigator.vibrate([40, 40, 40]); } catch(e){}
+                setTimeout(function(){
+                    if (!el) return;
+                    el.classList.remove('is-bad');
+                    digits = '';
+                    if (back) { mode = back; }
+                    render();
+                }, 900);
+            }
+
+            function add(d){
+                if (busy || !DIGIT_MODES[mode] || mode === 'ok' || digits.length >= 6) return;
+                if (el && el.classList.contains('is-bad')) { el.classList.remove('is-bad'); digits = ''; }
+                digits += d; if (msgErr){ msg = ''; msgErr = false; var s = document.getElementById('pl-sub'); if (s){ s.classList.remove('err'); } render(); } else paintBoxes();
+                if (digits.length === 6) setTimeout(submit, 120);
+            }
+            function del(){ if (busy) return; digits = digits.slice(0, -1); paintBoxes(); }
+            function weak(p){
+                if (/^(\d)\1{5}$/.test(p)) return true;
+                var up = true, down = true;
+                for (var i = 1; i < 6; i++){ var a = +p[i - 1], b = +p[i]; if (b !== (a + 1) % 10) up = false; if (b !== (a + 9) % 10) down = false; }
+                return up || down;
+            }
+
+            async function call(action, payload){
+                try { return await apiCall(action, payload || {}); } catch(e){ return null; }
+            }
+            async function submit(){
+                if (busy || digits.length !== 6) return;
+                var p = digits, r;
+                if (mode === 'unlock') {
+                    busy = true; render();
+                    r = await call('pin_verify', { pin: p });
+                    if (r && r.status === 'success') return unlocked(r);
+                    if (r && r.code === 'pin_locked') return setMode('locked');
+                    if (r && r.code === 'pin_none') return setMode('create1');
+                    if (r && r.code === 'pin_wrong') return flashBad('Wrong PIN. ' + r.left + ' tr' + (r.left === 1 ? 'y' : 'ies') + ' left before Sentinel locks.');
+                    return flashBad((r && r.message) || 'Could not check the PIN. Check the connection and try again.');
+                }
+                if (mode === 'create1' || mode === 'change1') {
+                    if (weak(p)) return flashBad('Too easy to guess. Avoid repeats and runs like 123456.');
+                    if (mode === 'change1' && p === curPin) return flashBad('That\'s your current PIN. Choose a different one.');
+                    firstPin = p; return setMode(mode === 'create1' ? 'create2' : 'change2');
+                }
+                if (mode === 'create2' || mode === 'change2') {
+                    var back = mode === 'create2' ? 'create1' : 'change1';
+                    if (p !== firstPin) return flashBad('Those didn\'t match. Choose your PIN again.', back);
+                    busy = true; render();
+                    var payload = { pin: p };
+                    if (mode === 'change2') payload.current = curPin; else if (resetCode) payload.code = resetCode;
+                    r = await call('pin_set', payload);
+                    if (r && r.status === 'success') { resetCode = ''; curPin = ''; return unlocked(r, true); }
+                    if (r && r.code === 'code_bad') { resetCode = ''; return setMode('code', r.message, true); }
+                    if (r && r.code === 'pin_weak') return flashBad(r.message, back);
+                    if (r && r.code === 'pin_wrong') { curPin = ''; return setMode('change0', 'Your current PIN was wrong. ' + r.left + ' tr' + (r.left === 1 ? 'y' : 'ies') + ' left.', true); }
+                    if (r && r.code === 'pin_locked') return setMode('locked');
+                    return flashBad((r && r.message) || 'Could not save the PIN. Try again.', back);
+                }
+                if (mode === 'change0') { curPin = p; return setMode('change1'); }
+                if (mode === 'code') { resetCode = p; return setMode('create1'); }
+            }
+            function unlocked(r, fresh){
+                setToken(r.token, r.exp);
+                touch(true);
+                if (status){ status.hasPin = true; status.locked = false; }
+                var canOffer = bioOK && !ls(K_BIO) && !(parseInt(ls(K_NOBIO), 10) > Date.now()) && reason !== 'change'
+                    && typeof navigator.credentials !== 'undefined' && !!window.PublicKeyCredential;
+                if (canOffer) { mode = 'offer'; digits = ''; busy = false; render(); return; }
+                close(true);
+            }
+
+            async function sendCode(){
+                if (busy) return;
+                busy = true; render();
+                var r = await call('pin_reset_send', {});
+                busy = false;
+                if (r && r.status === 'success') { if (status && r.to) status.email = r.to; return setMode('code', 'Code sent to ' + (r.to || 'your email') + '. It works for 15 minutes.'); }
+                msg = (r && r.message) || 'The email could not be sent. Try again in a minute.'; msgErr = true; render();
+            }
+
+            async function bioUnlock(){
+                if (busy) return;
+                var id = ls(K_BIO); if (!id) return;
+                busy = true; msg = 'Waiting for ' + bioName() + '…'; msgErr = false; render();
+                try {
+                    var c = await call('bio_challenge', { mode: 'get' });
+                    if (!c || c.status !== 'success') throw new Error((c && c.message) || 'Could not start.');
+                    var cred = await navigator.credentials.get({ publicKey: {
+                        challenge: b64uU8(c.challenge), rpId: c.rpId, userVerification: 'required', timeout: 60000,
+                        allowCredentials: [{ type: 'public-key', id: b64uU8(id) }] } });
+                    if (!cred) throw new Error('cancelled');
+                    var rsp = cred.response;
+                    var r = await call('bio_verify', { id: cred.id, authenticatorData: u8b64u(rsp.authenticatorData), clientDataJSON: u8b64u(rsp.clientDataJSON), signature: u8b64u(rsp.signature) });
+                    if (r && r.status === 'success') { reason = reason || 'bio'; return unlocked(r); }
+                    if (r && r.code === 'bio_unknown') ls(K_BIO, null);
+                    if (r && r.code === 'pin_locked') return setMode('locked');
+                    busy = false; msg = (r && r.message) || 'That did not work. Use your PIN.'; msgErr = true; render();
+                } catch(e){
+                    busy = false;
+                    msg = /cancel|NotAllowed|abort/i.test(String(e && (e.name + e.message))) ? 'Cancelled. Use your PIN, or try again.' : 'That did not work. Use your PIN.';
+                    msgErr = true; render();
+                }
+            }
+            async function bioRegister(){
+                if (busy) return;
+                busy = true; render();
+                try {
+                    var c = await call('bio_challenge', { mode: 'reg' });
+                    if (!c || c.status !== 'success') throw new Error((c && c.message) || 'Could not start.');
+                    var cred = await navigator.credentials.create({ publicKey: {
+                        challenge: b64uU8(c.challenge), rp: { name: 'Crumble Sentinel', id: c.rpId },
+                        user: { id: b64uU8(c.user.id), name: c.user.name, displayName: c.user.displayName },
+                        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged', requireResidentKey: false },
+                        timeout: 60000, attestation: 'none' } });
+                    var rsp = cred && cred.response;
+                    if (!rsp || typeof rsp.getPublicKey !== 'function') throw new Error('This browser can\'t use the sensor for Sentinel.');
+                    var pk = rsp.getPublicKey(), alg = rsp.getPublicKeyAlgorithm();
+                    if (!pk) throw new Error('This browser can\'t use the sensor for Sentinel.');
+                    var r = await call('bio_register', { id: cred.id, publicKey: u8b64u(pk), alg: alg, clientDataJSON: u8b64u(rsp.clientDataJSON), label: deviceLabel() });
+                    if (!r || r.status !== 'success') throw new Error((r && r.message) || 'Could not save it.');
+                    ls(K_BIO, cred.id);
+                    try { UI.toast(bioName().charAt(0).toUpperCase() + bioName().slice(1) + ' is on for this device.', 'success'); } catch(e){}
+                    return true;
+                } catch(e){
+                    var m = String((e && e.message) || '');
+                    if (/NotAllowed|cancel|abort|timed out/i.test(String(e && e.name) + m)) m = 'Cancelled — you can turn it on later from your profile menu.';
+                    try { UI.toast(m || 'Could not turn it on.', 'warning', 5000); } catch(err){}
+                    return false;
+                } finally { busy = false; }
+            }
+
+            function onClick(e){
+                var k = e.target.closest && e.target.closest('.pl-k');
+                if (k){ var v = k.getAttribute('data-k'); if (v === 'del') del(); else if (v === 'out') signOut(); else add(v); return; }
+                var b = e.target.closest && e.target.closest('[data-a]'); if (!b) return;
+                var a = b.getAttribute('data-a');
+                if (a === 'go') submit();
+                else if (a === 'retry') start();
+                else if (a === 'out') signOut();
+                else if (a === 'forgot') setMode('forgot');
+                else if (a === 'back') setMode(status && status.hasPin ? 'unlock' : 'create1');
+                else if (a === 'send') sendCode();
+                else if (a === 'havecode') setMode('code');
+                else if (a === 'restart') setMode(mode === 'change2' ? 'change1' : 'create1');
+                else if (a === 'cancel') close(false);
+                else if (a === 'bio') bioUnlock();
+                else if (a === 'bioon') bioRegister().then(function(){ close(true); });
+                else if (a === 'nobio') { ls(K_NOBIO, String(Date.now() + 30 * 86400000)); close(true); }
+            }
+            function onKey(e){
+                if (!el) return;
+                var k = e.key;
+                if (/^[0-9]$/.test(k)) { add(k); }
+                else if (k === 'Backspace') { del(); }
+                else if (k === 'Enter') { var g = el.querySelector('.pl-btn:not(:disabled)'); if (DIGIT_MODES[mode]) submit(); else if (g) g.click(); }
+                else if (k === 'Escape') { digits = ''; paintBoxes(); }
+                else if (k === 'Tab') { return; }
+                else return;
+                e.preventDefault(); e.stopPropagation();
+            }
+            function onPaste(e){
+                if (!el || !DIGIT_MODES[mode]) return;
+                var t = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, '').slice(0, 6 - digits.length);
+                e.preventDefault(); e.stopPropagation();
+                for (var i = 0; i < t.length; i++) add(t[i]);
+            }
+            function signOut(){
+                forget();
+                try { authLogout(); } catch(e){ location.href = '/cdn-cgi/access/logout?returnTo=' + encodeURIComponent(location.origin); }
+            }
+
+            async function start(){
+                setMode('loading');
+                status = await call('pin_status', {});
+                if (!el) return;
+                if (!status || status.status !== 'success') return setMode('error');
+                if (!status.on){ cfg.on = false; saveCfg(); return close(false); }
+                cfg.idleMin = status.idleMin || cfg.idleMin; saveCfg();
+                if (status.bio && ls(K_BIO) && status.bio.indexOf(ls(K_BIO)) === -1) ls(K_BIO, null);
+                if ((reason === 'boot' || reason === 'server') && status.tokenOk && !idleOver()) return close(false);
+                if (status.locked) return setMode('locked');
+                if (!status.hasPin) return setMode('create1');
+                if (reason === 'change') return setMode('change0');
+                setMode('unlock');
+            }
+            function show(why){
+                return new Promise(function(res){
+                    waiters.push(res);
+                    if (el) return;
+                    reason = why || '';
+                    if (why === 'idle' || why === 'manual') {
+                        var keys = new Set();
+                        try { if (typeof rawData !== 'undefined' && typeof _incidentStableKey === 'function') (rawData.incidents || []).forEach(function(x){ keys.add(_incidentStableKey(x)); }); } catch(e){}
+                        away = { t: Date.now(), keys: keys, msg: window.__chatUnreadN || 0 };
+                        awayTimer = setInterval(function(){ var a = document.getElementById('pl-away'); if (a && mode === 'unlock'){ var tmp = document.createElement('div'); tmp.innerHTML = awayStrip(); if (tmp.firstChild && a.outerHTML !== tmp.firstChild.outerHTML) a.replaceWith(tmp.firstChild); } }, 4000);
+                    }
+                    build(); start();
+                });
+            }
+
+            // ── idle watch (any tab's activity counts; it is shared through localStorage) ──
+            ['pointerdown', 'keydown', 'wheel', 'touchstart', 'mousemove'].forEach(function(ev){
+                document.addEventListener(ev, function(){ if (!el) touch(); }, { passive: true, capture: true });
+            });
+            function idleCheck(){ if (cfg.on && user && !el && idleOver()) show('idle'); }
+            setInterval(idleCheck, 15000);
+            document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') idleCheck(); });
+            window.addEventListener('storage', function(e){
+                // Unlocked in another tab: this one follows.
+                if (e.key === K_TOK && el && mode !== 'ok' && token() && !idleOver() && reason !== 'change') close(false);
+            });
+
+            window.PinLock = {
+                on: function(){ return !!cfg.on; },
+                token: token,
+                /** Before the app starts: ask for the PIN if this device needs it. */
+                gate: function(u){ user = u || user; if (!needed()) { touch(true); return Promise.resolve(); } return show('boot'); },
+                /** The server refused a call for want of an unlock. */
+                require: function(){ if (!cfg.on){ cfg.on = true; saveCfg(); } forget(); return show('server'); },
+                /** Every settings answer. */
+                onSettings: function(st){
+                    if (!st || !st.pinLock || typeof st.pinLock !== 'object') return;
+                    var was = cfg.on;
+                    cfg = { on: !!st.pinLock.on, idleMin: (+st.pinLock.idleMin || 30) }; saveCfg();
+                    if (!was && cfg.on && user && !el && needed()) show('boot');
+                    if (was && !cfg.on && el && reason !== 'change') close(false);
+                },
+                lockNow: function(){ if (!cfg.on || el) return; try { document.querySelectorAll('.profile-dropdown.is-open, #profile-dropdown').forEach(function(d){ d.classList.remove('is-open'); }); } catch(e){} show('manual'); },
+                changePin: function(){ if (!cfg.on || el) return; show('change'); },
+                bioAvailable: function(){ return bioOK; },
+                bioOnHere: function(){ return !!ls(K_BIO); },
+                bioName: bioName,
+                bioTurnOn: function(){ return bioRegister(); },
+                bioTurnOff: async function(){
+                    var id = ls(K_BIO); if (!id) return;
+                    var r = await call('bio_remove', { id: id });
+                    ls(K_BIO, null);
+                    try { UI.toast((r && r.status === 'success') ? 'Turned off for this device.' : 'Turned off here; the server copy will be removed next time.', 'success'); } catch(e){}
+                },
+                forget: function(){ forget(); }
+            };
+        })();
+    </script>
 </head>
 <body class="app-loading">
     <!-- ═══════════════════════════════════════════════════════════════
@@ -9710,7 +10348,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.179.0 · 24 Sep 2026 · Every newer chart and bar drawn with Chart.js (MINI): hover, animation, one style';
+        const BUILD_VERSION = 'v2.180.0 · 24 Sep 2026 · PIN lock: your own 6-digit PIN (and fingerprint / face) on top of the monthly Cloudflare sign-in';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -9878,6 +10516,8 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             }
             // v2.146.0: how much history this browser keeps (see HistoryWindow).
             if(typeof st.historyDays === 'number'){ try { HistoryWindow.accept(st.historyDays); } catch(e){} }
+            // v2.180.0: PIN lock on / off and its idle time.
+            if(st.pinLock){ try { if (window.PinLock) PinLock.onSettings(st); } catch(e){} }
             window.__settingsApplied = true;
         }
         let LIVE_MODE = false;
@@ -12772,7 +13412,15 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
         async function saveOwnerSettings(tab){
             const btn = document.getElementById('os-save'); if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
             const payload = {};
-            if(tab === 'days'){
+            if(tab === 'signin'){
+                const on = (document.querySelector('input[name="os-pl"]:checked') || {}).value === 'on';
+                const idleMin = parseInt((document.getElementById('os-pl-idle') || {}).value, 10) || 30;
+                const was = !!((window.OwnerSettings || {}).pinLock || {}).on;
+                if(on && !was && !confirm('Turn the PIN lock on?\n\nEveryone will be asked to create a 6-digit PIN the next time they use Sentinel. You will create yours straight away.')){
+                    if(btn){ btn.disabled = false; btn.textContent = 'Save'; } return;
+                }
+                payload.pinLock = { on, idleMin };
+            } else if(tab === 'days'){
                 const got = calCollect();
                 if(got.error){ if(btn){ btn.disabled = false; btn.textContent = 'Save'; } UI.toast(got.error, 'warning', 5000); return; }
                 payload.branchCal = got.branchCal;
@@ -12860,6 +13508,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
               reports: `<div class="rp-host">${reportsPane()}</div>`,
               owners: `<div class="ow-host">${ownersPane(st)}</div>`,
               days: calPane(st),
+              signin: pinSettingsPane(st),
               integrations: `<div class="ig-host"></div>`,
               rules: `<div style="display:grid;gap:18px;">
                     <label style="display:grid;gap:6px;"><span style="${lbl()}">Trading day starts at</span>
@@ -12950,17 +13599,18 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
                     <button class="ia-close-x" onclick="document.getElementById('owner-settings-modal').remove()"><i class="fas fa-xmark"></i></button>
                 </div>
                 <div style="display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap;flex-shrink:0;">
-                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('owners','Owners')}${tabBtn('days','Branches &amp; days')}${tabBtn('alerts','Alerts')}${tabBtn('integrations','Integrations')}${tabBtn('status','System')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
+                    ${tabBtn('rules','Rules')}${tabBtn('standards','Standards')}${tabBtn('protection','Protection')}${tabBtn('notice','Notice')}${tabBtn('reports','Reports &amp; alerts')}${tabBtn('owners','Owners')}${tabBtn('days','Branches &amp; days')}${tabBtn('signin','Sign-in &amp; PIN')}${tabBtn('alerts','Alerts')}${tabBtn('integrations','Integrations')}${tabBtn('status','System')}${tabBtn('audit','Audit')}${tabBtn('impact','Impact')}${tabBtn('gaps','Blind spots')}${tabBtn('people','People')}${tabBtn('team','Team &amp; device')}
                 </div>
                 <div style="padding:16px 22px 4px;flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;">${panes[tab]}</div>
                 <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 22px 20px;flex-shrink:0;border-top:1px solid var(--border-color);">
                     <button class="fb-btn sm" onclick="document.getElementById('owner-settings-modal').remove()">Close</button>
-                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice' || tab === 'owners' || tab === 'days') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
+                    ${(tab === 'rules' || tab === 'alerts' || tab === 'standards' || tab === 'protection' || tab === 'notice' || tab === 'owners' || tab === 'days' || tab === 'signin') ? `<button class="fb-btn sm" id="os-save" onclick="saveOwnerSettings('${tab}')" style="background:var(--brand-accent);color:#fff;border-color:var(--brand-accent);">Save</button>` : ''}
                 </div>
             </div>`;
             el.onclick = e => { if(e.target === el) el.remove(); };
             document.body.appendChild(el);
             if(tab === 'status') loadSystemStatus();
+            if(tab === 'signin') loadPinPeople();
             if(tab === 'integrations') INTG.load();
             if(tab === 'audit'){ loadAudit(); loadAuditFlags(); }
             if(tab === 'impact') loadImpact();
@@ -12969,6 +13619,57 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
             if(tab === 'protection') loadProtectionStats();
             if(tab === 'notice') ntPreview();
             if(tab === 'owners' && !_rpUsers) rpUsers().then(() => { const h = document.querySelector('#owner-settings-modal .ow-host'); if(h) h.innerHTML = ownersPane(window.OwnerSettings || {}); });
+        }
+
+        /* v2.180.0: Owner settings → Sign-in & PIN. */
+        function pinSettingsPane(st){
+            const pl = st.pinLock || {}, on = !!pl.on, idle = +pl.idleMin || 30;
+            const lbl = `font:800 .68rem 'Inter',sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--text-muted);`;
+            const inp = `padding:10px 12px;border:1.5px solid var(--border-color);border-radius:10px;font:600 .84rem 'Inter',sans-serif;background:var(--white);color:var(--text-main);width:100%;`;
+            const hint = `font-size:.7rem;color:var(--text-muted);line-height:1.5;`;
+            const opts = [5,10,15,30,60,120,240,480].map(m => `<option value="${m}" ${m===idle?'selected':''}>${m < 60 ? m + ' minutes' : (m/60) + (m === 60 ? ' hour' : ' hours')} without use</option>`).join('');
+            const radio = (v, title, text) => `<label class="os-opt ${(v === 'on') === on ? 'on' : ''}"><input type="radio" name="os-pl" value="${v}" ${(v === 'on') === on ? 'checked' : ''} onchange="this.closest('.os-grp').querySelectorAll('.os-opt').forEach(o => o.classList.toggle('on', o.contains(this)))"><span><b>${title}</b><small>${text}</small></span></label>`;
+            return `<div style="display:grid;gap:18px;">
+                <div class="os-grp" style="display:grid;gap:8px;"><span style="${lbl}">PIN lock <span class="os-new">NEW</span></span>
+                    ${radio('on', 'On — a personal PIN every time', 'Each person creates a 6-digit PIN and enters it when they open Sentinel or come back after a break. Phones and laptops with a fingerprint or face sensor can use that instead.')}
+                    ${radio('off', 'Off', 'Only the Cloudflare email sign-in, as before.')}
+                </div>
+                <label style="display:grid;gap:6px;"><span style="${lbl}">Lock the screen after</span>
+                    <select id="os-pl-idle" style="${inp}">${opts}</select>
+                    <span style="${hint}">Sentinel keeps running underneath — alerts still ring and the lock screen counts what arrived. Any open Sentinel tab being used keeps the others unlocked. On a Call Centre screen people watch without touching, choose a longer time.</span></label>
+                <div style="display:grid;gap:4px;border:1px solid var(--border-color);border-radius:10px;padding:12px;">
+                    <span style="${lbl}">Cloudflare sign-in</span>
+                    <span style="${hint}">Cloudflare's email code is needed once per device per month when the Access application's session duration (and the global session timeout) is set to 1 month in Zero Trust. Signing out asks for it again.</span></div>
+                <div style="display:grid;gap:6px;"><span style="${lbl}">People</span>
+                    <div id="os-pins" style="border:1px solid var(--border-color);border-radius:10px;max-height:36vh;overflow:auto;"><div style="padding:14px;${hint}">Loading…</div></div>
+                    <span style="${hint}">Five wrong PINs lock an account; the person gets a code by email to set a new PIN, and every Owner is told. Reset clears a person's PIN and fingerprints so they create a new one next time.</span></div>
+            </div>`;
+        }
+        async function loadPinPeople(){
+            const box = document.getElementById('os-pins'); if(!box) return;
+            const r = await apiCall('pin_admin_list', {}).catch(() => null);
+            if(!r || r.status !== 'success'){ box.innerHTML = `<div style="padding:14px;font-size:.76rem;color:#DC2626;">${(r && r.message) || 'Could not load the list.'}</div>`; return; }
+            const e = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            const ago = iso => { const t = Date.parse(iso); if(!isFinite(t)) return ''; const m = Math.round((Date.now() - t) / 60000); return m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+            const people = (r.people || []).filter(p => !p.disabled);
+            const set = people.filter(p => p.hasPin).length;
+            box.innerHTML = `<div style="padding:9px 12px;font-size:.72rem;color:var(--text-muted);border-bottom:1px solid var(--border-color);">${set} of ${people.length} people have a PIN</div>` + people.map(p => {
+                const chip = p.locked ? `<span style="font:700 .66rem 'Inter',sans-serif;color:#B91C1C;background:rgba(220,38,38,.1);border-radius:6px;padding:2px 7px;">Locked</span>`
+                           : p.hasPin ? `<span style="font:700 .66rem 'Inter',sans-serif;color:#047857;background:rgba(5,150,105,.1);border-radius:6px;padding:2px 7px;">PIN set</span>`
+                           : `<span style="font:700 .66rem 'Inter',sans-serif;color:var(--text-muted);background:var(--bg-light);border-radius:6px;padding:2px 7px;">No PIN yet</span>`;
+                const meta = [p.role, p.branch && p.branch !== 'All' ? p.branch : '', p.bio ? p.bio + ' fingerprint' + (p.bio > 1 ? 's' : '') : '', p.lastOk ? 'unlocked ' + ago(p.lastOk) : ''].filter(Boolean).join(' · ');
+                return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border-color);">
+                    <div style="flex:1;min-width:0;"><div style="font:700 .78rem 'Inter',sans-serif;color:var(--text-main);display:flex;gap:8px;align-items:center;flex-wrap:wrap;">${e(p.name)} ${chip}</div>
+                    <div style="font-size:.7rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e(meta)}</div></div>
+                    ${(p.hasPin || p.bio) ? `<button class="fb-btn sm" data-email="${e(p.email)}" data-name="${e(p.name)}" onclick="pinAdminReset(this.dataset.email, this.dataset.name)">Reset</button>` : ''}</div>`;
+            }).join('');
+        }
+        async function pinAdminReset(email, name){
+            if(!confirm('Reset ' + name + '\'s PIN?\n\nTheir PIN and fingerprints are cleared, and they create a new PIN the next time they open Sentinel.')) return;
+            const r = await apiCall('pin_admin_reset', { email }).catch(() => null);
+            if(!r || r.status !== 'success'){ UI.toast((r && r.message) || 'Could not reset the PIN.', 'error'); return; }
+            UI.toast(name + '\'s PIN was reset.', 'success');
+            loadPinPeople();
         }
 
         /** Each integration in one line: working, or what is wrong. */
@@ -25658,6 +26359,12 @@ ${(() => {
                 await new Promise(r => setTimeout(r, 400));
                 return apiCall(action, payload, _attempt + 1);
             }
+            // v2.180.0: the PIN lock is on and this device is not unlocked (or
+            // its unlock was withdrawn). Bring up the lock screen, then retry.
+            if(data && data.code === 'pin_required' && window.PinLock && _attempt < 4 && String(action).indexOf('pin_') !== 0){
+                await PinLock.require();
+                return apiCall(action, payload, _attempt + 1);
+            }
             // A save just succeeded: fetch straight away so it appears here now,
             // and so anything a colleague changed in the meantime comes with it.
             // The Worker has already pulled the row through on its side.
@@ -25993,6 +26700,11 @@ ${(() => {
                             </div>
                             <!-- Sign out -->
                             <div class="dpm-group">
+                                ${(window.PinLock && PinLock.on()) ? `<button class="dpm-row" onclick="PinLock.lockNow()"><span class="dpm-ico"><i class="fas fa-lock"></i></span><span>Lock now</span></button>
+                                <button class="dpm-row" onclick="PinLock.changePin()"><span class="dpm-ico"><i class="fas fa-key"></i></span><span>Change PIN</span></button>
+                                ${PinLock.bioAvailable() ? (PinLock.bioOnHere()
+                                    ? `<button class="dpm-row" onclick="PinLock.bioTurnOff()"><span class="dpm-ico"><i class="fas fa-fingerprint"></i></span><span>Turn off ${PinLock.bioName()}</span></button>`
+                                    : `<button class="dpm-row" onclick="PinLock.bioTurnOn()"><span class="dpm-ico"><i class="fas fa-fingerprint"></i></span><span>Unlock with ${PinLock.bioName()}</span></button>`) : ''}` : ''}
                                 <button class="dpm-row is-danger" onclick="authLogout()"><span class="dpm-ico is-bad"><i class="fas fa-sign-out-alt"></i></span><span>Sign out</span></button>
                             </div>
                             <!-- Dashboard version -->
@@ -26443,6 +27155,7 @@ ${(() => {
             // accounts at all. Send the browser through Cloudflare's logout,
             // which clears that cookie and then returns to the dashboard.
             authClearSession();
+            try { if (window.PinLock) PinLock.forget(); } catch(e){}
             try {
                 localStorage.removeItem('crumble_seen_incident_keys');
                 sessionStorage.clear();
@@ -26551,6 +27264,8 @@ ${(() => {
         document.addEventListener('DOMContentLoaded', async () => {
             const session = authGetSession();
             if(session && session.email){
+                // v2.180.0: the PIN first, when this device needs it.
+                try { if (window.PinLock) await PinLock.gate(session); } catch(e){ console.warn('pin gate:', e); }
                 // Cached session — instant paint, no round trip.
                 authShowApp(session);
                 // Revalidate in the background: catches a user removed since
@@ -26588,6 +27303,8 @@ ${(() => {
                     if (data.settings) applyOwnerSettings(data.settings, true);
                     const user = { name: data.name, email: data.email, role: data.role, region: data.region || 'All', branch: data.branch || 'All' };
                     authSaveSession(user);
+                    // v2.180.0: the PIN first, when this device needs it.
+                    try { if (window.PinLock) await PinLock.gate(user); } catch(e){ console.warn('pin gate:', e); }
                     authShowApp(user);
                     return;
                 }
@@ -33731,6 +34448,8 @@ ${(() => {
             function paintUnread(){
                 paintBell();
                 const total = chatUnreadTotal();
+                window.__chatUnreadN = total;          // v2.180.0: the lock screen's "while you were away"
+
                 const tab = $('vc-tab-unread');
                 if (tab) { tab.textContent = total || ''; tab.style.display = total ? 'inline-block' : 'none'; }
                 // Same badge the incoming call uses, so one dot means "something
