@@ -9630,7 +9630,7 @@ body.dark-theme .ord-tag.wait{ color:#64D0FF; background:rgba(100,208,255,.12); 
            into rawData. Falls back to the built-in sample generator if
            the sheet is empty or unreachable, so the dashboard never breaks.
            ═══════════════════════════════════════════════════════════ */
-        const BUILD_VERSION = 'v2.173.1 · 24 Sep 2026 · Tables hand the scroll to the page at their end (Submissions, Incidents)';
+        const BUILD_VERSION = 'v2.173.2 · 24 Sep 2026 · Submissions: Data completeness card removed';
         /* v2.143.0: the Smile Score, one formula everywhere.
            The average star rating on a 0-100 scale where 1 star is 0 and 5
            stars is 100 -- (average - 1) x 25 -- the way Harlyy reads its
@@ -19990,7 +19990,10 @@ ${(() => {
                 // this dashboard right now, and why, instead of leaving that
                 // gap invisible and unexplained.
                 const excludedCard = document.getElementById('submissions-excluded-card');
-                if(excludedCard){
+                // v2.173.2: removed from the Submissions tab (it stays hidden). The
+                // counts are still worked out, so nothing else changes.
+                if(excludedCard) excludedCard.style.display = 'none';
+                if(false){
                     const exc = window.__excluded || { status:0, branch:0, rating:0, blank:0, samples:[] };
                     // "branch" rows are no longer truly excluded — they're counted
                     // under an "Unspecified" branch bucket now (see mapSource) — so
